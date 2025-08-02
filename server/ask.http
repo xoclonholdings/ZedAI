@@ -1,0 +1,8 @@
+POST http://localhost:5000/api/ask
+Content-Type: application/json
+
+{
+   "question": "What is the capital of France?",
+   "model": "tinyllama",
+   "stream": false  
+}

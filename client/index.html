@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- For Firefox and Opera, set theme color via JavaScript -->
+    <script>
+      // Dynamically set theme color for all browsers
+      function setThemeColor() {
+        let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (!metaThemeColor) {
+          metaThemeColor = document.createElement('meta');
+          metaThemeColor.setAttribute('name', 'theme-color');
+          document.head.appendChild(metaThemeColor);
+        }
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          metaThemeColor.setAttribute('content', '#000000');
+        } else {
+          metaThemeColor.setAttribute('content', '#ffffff');
+        }
+        // For Firefox and Opera, set theme color using CSS property
+        document.querySelector('html').style.backgroundColor = metaThemeColor.getAttribute('content');
+      }
+      setThemeColor();
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', setThemeColor);
+    </script>
+    <meta name="msapplication-navbutton-color" content="#000000" />
+    <meta name="msapplication-TileColor" content="#000000" />
+    <title>ZED - Enhanced AI Assistant</title>
+    <meta name="description" content="ZED is an enhanced AI assistant combining OpenAI's conversational capabilities with advanced document processing in a seamless chat interface." />
+    <style>
+      /* Prevent FOUC - Apply black background immediately */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #000000 !important;
+        color: #ffffff;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+      
+      /* Loading skeleton to prevent layout shifts */
+      #root {
+        min-height: 100vh;
+        background: #000000;
+      }
+      
+      /* Hide any flash of default styling */
+      .loading-prevent-fouc {
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

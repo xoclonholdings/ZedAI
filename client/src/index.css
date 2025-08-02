@@ -1,0 +1,604 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .h-screen-mobile {
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+:root {
+  /* --background: hsl(245, 15%, 6%); */
+  --foreground: hsl(240, 10%, 95%);
+  --muted: hsl(240, 6%, 12%);
+  --muted-foreground: hsl(240, 4%, 65%);
+  --popover: hsl(240, 10%, 8%);
+  --popover-foreground: hsl(240, 10%, 95%);
+  --card: hsl(240, 10%, 8%);
+  --card-foreground: hsl(240, 10%, 95%);
+  --border: hsl(240, 6%, 16%);
+  --input: hsl(240, 6%, 14%);
+  --primary: hsl(266, 85%, 58%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(270, 70%, 65%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --accent: hsl(195, 100%, 50%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(266, 85%, 58%);
+  --radius: 1rem;
+
+  /* ZED Brand Colors */
+  --zed-purple: hsl(266, 85%, 58%);
+  --zed-cyan: hsl(195, 100%, 50%);
+  --zed-pink: hsl(320, 85%, 60%);
+  --zed-gradient: linear-gradient(135deg, hsl(266, 85%, 58%) 0%, hsl(195, 100%, 50%) 50%, hsl(320, 85%, 60%) 100%);
+  --zed-glass: rgba(255, 255, 255, 0.05);
+  --zed-glow: 0 0 50px rgba(138, 43, 226, 0.3);
+}
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  
+  * {
+    border-width: 0;
+    border-style: solid;
+    border-color: var(--border);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #000000 !important;
+    color: var(--foreground);
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow-x: hidden;
+    /* Prevent any layout shifts during loading */
+    visibility: visible;
+    opacity: 1;
+    transition: none;
+    /* Mobile-specific optimizations */
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  
+  /* Ensure immediate black background */
+  html {
+    background: #000000 !important;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(240, 6%, 12%);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(266, 85%, 58%);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(266, 85%, 68%);
+  }
+}
+
+/* Mobile and Responsive Design */
+@layer utilities {
+  /* Responsive layout utilities */
+  .h-screen-mobile {
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height */
+  }
+  
+  .min-h-screen-mobile {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  
+  /* Mobile-first responsive sidebar */
+  .sidebar-mobile {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: 20rem; /* w-80 */
+    transform: none;
+    transition-property: transform;
+    transition-duration: 300ms;
+    transition-timing-function: ease-in-out;
+  }
+  
+  .sidebar-mobile.hidden {
+    transform: translateX(-100%);
+  }
+  
+  /* Chat area responsive */
+  .chat-area-mobile {
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Responsive text sizing */
+  .text-responsive {
+    font-size: 0.875rem; /* text-sm */
+  }
+  @media (min-width: 640px) {
+    .text-responsive {
+      font-size: 1rem; /* sm:text-base */
+    }
+  }
+  
+  /* Touch-friendly buttons */
+  .btn-touch {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  /* Mobile portrait and landscape */
+  .sidebar-desktop {
+    display: none;
+  }
+  
+  .chat-container {
+    flex-direction: column;
+  }
+  
+  /* Ensure sidebar doesn't take full width on mobile */
+  .sidebar-mobile {
+    width: min(80vw, 320px);
+  }
+}
+
+@media (max-width: 640px) {
+  /* Small mobile devices */
+  .sidebar-mobile {
+    width: min(85vw, 280px);
+  }
+  
+  /* Smaller padding on mobile */
+  .p-mobile {
+    padding: 0.75rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Mobile landscape - reduce vertical spacing */
+  .py-mobile-landscape {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+  }
+  
+  /* Compact sidebar on landscape */
+  .sidebar-mobile {
+    width: min(60vw, 280px);
+  }
+  
+  /* Ensure content fits in landscape */
+  .h-screen-mobile {
+    height: 100vh;
+  }
+}
+
+/* Ensure proper viewport on iOS */
+@supports (-webkit-touch-callout: none) {
+  .h-screen-mobile {
+    height: -webkit-fill-available;
+  }
+  
+  .min-h-screen-mobile {
+    min-height: -webkit-fill-available;
+  }
+}
+
+@layer components {
+  /* Prevent layout shifts and flashing */
+  .no-flash {
+    visibility: visible !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+
+  /* ZED Cyberpunk Gradient */
+  .zed-gradient {
+    background: linear-gradient(135deg, #8B00FF 0%, #00BFFF 50%, #FF1493 100%);
+    border: 1px solid rgba(139, 0, 255, 0.3);
+    box-shadow: 0 0 20px rgba(139, 0, 255, 0.5), inset 0 0 20px rgba(0, 191, 255, 0.2);
+  }
+  
+  .zed-gradient-hover {
+    background: linear-gradient(135deg, #9A00FF 0%, #1EC5FF 50%, #FF69B4 100%);
+    box-shadow: 0 0 30px rgba(139, 0, 255, 0.7), inset 0 0 30px rgba(0, 191, 255, 0.3);
+  }
+
+  /* Cyberpunk Glass Effect */
+  .zed-glass {
+    backdrop-filter: blur(10px) saturate(120%);
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(139, 0, 255, 0.2);
+    box-shadow: 0 0 15px rgba(139, 0, 255, 0.3), inset 0 0 15px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Floating Animation */
+  .zed-float {
+    animation: zed-float 8s ease-in-out infinite;
+  }
+
+  @keyframes zed-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-8px) rotate(1deg); }
+    50% { transform: translateY(-4px) rotate(-1deg); }
+    75% { transform: translateY(-12px) rotate(0.5deg); }
+  }
+
+  /* Pulse Glow Effect */
+  .zed-glow {
+    box-shadow: var(--zed-glow);
+    animation: zed-pulse-glow 3s ease-in-out infinite alternate;
+  }
+
+  @keyframes zed-pulse-glow {
+    from { box-shadow: 0 0 20px rgba(139, 0, 255, 0.3); }
+    to { box-shadow: 0 0 40px rgba(139, 0, 255, 0.6), 0 0 60px rgba(0, 191, 255, 0.3); }
+  }
+  
+  /* Cyberpunk Button Styles */
+  .zed-button {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(139, 0, 255, 0.3);
+    color: #FFFFFF;
+    transition: all 0.3s ease;
+  }
+  
+  .zed-button:hover {
+    background: rgba(139, 0, 255, 0.1);
+    border-color: rgba(139, 0, 255, 0.6);
+    box-shadow: 0 0 15px rgba(139, 0, 255, 0.4);
+    color: #FFFFFF;
+  }
+  
+  /* Cyberpunk Input Styles */
+  .zed-input {
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(139, 0, 255, 0.3);
+    color: #FFFFFF;
+  }
+  
+  .zed-input:focus {
+    border-color: rgba(139, 0, 255, 0.8);
+    box-shadow: 0 0 10px rgba(139, 0, 255, 0.5);
+  }
+  
+  /* Cyberpunk Avatar */
+  .zed-avatar {
+    background: linear-gradient(135deg, #8B00FF 0%, #00BFFF 100%);
+    box-shadow: 0 0 10px rgba(139, 0, 255, 0.5);
+  }
+
+  /* Shimmer Effect */
+  .zed-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .zed-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: zed-shimmer-old 3s infinite;
+  }
+
+  @keyframes zed-shimmer-old {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+
+  /* Morphing Border */
+  .zed-morph-border {
+    position: relative;
+    border: 2px solid transparent;
+    background: linear-gradient(var(--card), var(--card)) padding-box,
+                var(--zed-gradient) border-box;
+    animation: zed-morph 6s ease-in-out infinite;
+  }
+
+  @keyframes zed-morph {
+    0%, 100% { border-radius: 1rem; }
+    25% { border-radius: 2rem 1rem 2rem 1rem; }
+    50% { border-radius: 1rem 2rem 1rem 2rem; }
+    75% { border-radius: 2rem 1rem 1rem 2rem; }
+  }
+
+  /* Typing Indicator */
+  .zed-typing {
+    animation: zed-typing 2s ease-in-out infinite;
+  }
+
+  @keyframes zed-typing {
+    0%, 20% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+    80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  }
+
+  /* Message Bubble Enhancement */
+  .zed-message {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .zed-message:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Avatar Gradient */
+  .zed-avatar {
+    background: var(--zed-gradient);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .zed-avatar::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: zed-avatar-spin 4s linear infinite;
+  }
+
+  @keyframes zed-avatar-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Enhanced Input Field */
+  .zed-input {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+  }
+
+  .zed-input:focus {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: hsl(266, 85%, 58%);
+    box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.2);
+  }
+
+  /* Sidebar Enhancement */
+  .zed-sidebar {
+    background: linear-gradient(180deg, hsl(240, 10%, 8%) 0%, hsl(240, 6%, 6%) 100%);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  /* Button Enhancements */
+  .zed-button {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .zed-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: all 0.5s ease;
+  }
+
+  .zed-button:hover::before {
+    left: 100%;
+  }
+
+  /* ZED Logo Animations */
+  @keyframes zed-glow-pulse {
+    0% {
+      filter: 
+        drop-shadow(0 0 50px rgba(168, 85, 247, 0.4))
+        drop-shadow(0 0 100px rgba(59, 130, 246, 0.3))
+        drop-shadow(0 0 150px rgba(236, 72, 153, 0.2));
+      opacity: 0.25;
+    }
+    100% {
+      filter: 
+        drop-shadow(0 0 70px rgba(168, 85, 247, 0.6))
+        drop-shadow(0 0 140px rgba(59, 130, 246, 0.5))
+        drop-shadow(0 0 210px rgba(236, 72, 153, 0.4));
+      opacity: 0.35;
+    }
+  }
+
+  @keyframes zed-active-pulse {
+    0% {
+      filter: 
+        drop-shadow(0 0 60px rgba(168, 85, 247, 0.6))
+        drop-shadow(0 0 120px rgba(59, 130, 246, 0.5))
+        drop-shadow(0 0 180px rgba(236, 72, 153, 0.4))
+        brightness(1.2)
+        contrast(1.1);
+      opacity: 0.4;
+      transform: scale(1.05);
+    }
+    100% {
+      filter: 
+        drop-shadow(0 0 80px rgba(168, 85, 247, 0.8))
+        drop-shadow(0 0 160px rgba(59, 130, 246, 0.7))
+        drop-shadow(0 0 240px rgba(236, 72, 153, 0.6))
+        brightness(1.4)
+        contrast(1.2);
+      opacity: 0.5;
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes shimmer-sweep {
+    0% {
+      transform: translateX(-200%) rotate(45deg);
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(200%) rotate(45deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes shimmer-fast {
+    0% {
+      transform: translateX(-150%) rotate(45deg);
+      opacity: 0;
+    }
+    30% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(150%) rotate(45deg);
+      opacity: 0;
+    }
+  }
+
+  .zed-shimmer {
+    animation: shimmer-sweep 8s ease-in-out infinite;
+  }
+
+  .zed-active-shimmer {
+    animation: shimmer-fast 2s ease-in-out infinite;
+  }
+}
+
+/* Prose styling for chat messages */
+.prose {
+  max-width: none;
+  color: hsl(240, 10%, 90%);
+}
+
+.prose p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.prose ul {
+  margin: 0.75rem 0;
+  padding-left: 1rem;
+}
+
+.prose li {
+  margin-bottom: 0.25rem;
+}
+
+.prose code {
+  background: hsl(240, 6%, 12%);
+  color: hsl(195, 100%, 50%);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.prose pre {
+  background: hsl(240, 6%, 10%);
+  border: 1px solid hsl(240, 6%, 16%);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.prose blockquote {
+  border-left: 3px solid hsl(266, 85%, 58%);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: hsl(240, 4%, 75%);
+}
+
+/* Mobile responsiveness and scrolling optimizations */
+.h-screen-mobile {
+  height: 100vh;
+  height: -webkit-fill-available;
+  height: 100dvh;
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.overflow-auto {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+}
+
+.overflow-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 3px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.5);
+}
+
+/* Touch-friendly mobile interactions */
+.btn-touch {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+  .zed-button {
+    min-height: 44px;
+    padding: 0.75rem 1rem;
+  }
+  
+  .zed-input {
+    min-height: 48px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
