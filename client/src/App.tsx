@@ -1,16 +1,12 @@
-import React from 'react'
 import { Router, Route, Switch } from 'wouter'
 import { AuthProvider } from './hooks/useAuthProvider'
-import { Toaster } from './components/ui/toaster'
+import { Toaster } from './components/ui/toaster-simple'
 
 // Pages
-import LoginPage from './pages/login'
-import ChatPage from './pages/chat'
-import LandingPage from './pages/landing'
+import LoginPage from './pages/login-simple'
+import ChatPage from './pages/chat-full'
+import LandingPage from './pages/landing-onboarding'
 import NotFoundPage from './pages/not-found'
-
-// Components
-import AuthGuard from './components/auth/AuthGuard'
 
 function App() {
   return (
@@ -21,18 +17,14 @@ function App() {
             {/* Public routes */}
             <Route path="/login" component={LoginPage} />
             <Route path="/" component={LandingPage} />
-            
-            {/* Protected routes */}
-            <Route path="/chat">
-              <AuthGuard>
-                <ChatPage />
-              </AuthGuard>
-            </Route>
-            
+
+            {/* Chat routes - accessible without authentication for demo */}
+            <Route path="/chat/:id?" component={ChatPage} />
+
             {/* 404 route */}
             <Route component={NotFoundPage} />
           </Switch>
-          
+
           <Toaster />
         </div>
       </Router>

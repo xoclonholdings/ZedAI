@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { 
-  Sparkles, 
-  Zap, 
-  Shield, 
-  Users, 
+import {
+  Sparkles,
+  Zap,
+  Shield,
+  Users,
   MessageSquare,
   FileText,
   Rss
@@ -46,7 +46,7 @@ export default function LandingPage() {
               </div>
               <span className="text-2xl font-bold gradient-text">ZED</span>
             </div>
-            <Button 
+            <Button
               onClick={() => setLocation('/login')}
               variant="outline"
               className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
@@ -63,12 +63,12 @@ export default function LandingPage() {
               ZED AI
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-12 leading-relaxed">
-              Advanced AI Assistant with comprehensive file processing, 
+              Advanced AI Assistant with comprehensive file processing,
               multi-tier memory system, and enterprise-grade security
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Button 
+              <Button
                 onClick={() => setLocation('/login')}
                 size="lg"
                 className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white font-semibold px-8 py-3 btn-hover"
@@ -76,7 +76,7 @@ export default function LandingPage() {
                 Get Started
                 <Zap className="ml-2 w-5 h-5" />
               </Button>
-              <Button 
+              <Button
                 variant="outline"
                 size="lg"
                 className="border-gray-700 text-gray-300 hover:bg-gray-800"

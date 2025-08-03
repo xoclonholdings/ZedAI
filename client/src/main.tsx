@@ -6,18 +6,18 @@ import './index.css'
 
 // Create a client
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
+    defaultOptions: {
+        queries: {
+            staleTime: 1000 * 60 * 5, // 5 minutes
+            retry: 2,
+        },
     },
-  },
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </React.StrictMode>,
+    <React.StrictMode>
+        <QueryClientProvider client={queryClient}>
+            <App />
+        </QueryClientProvider>
+    </React.StrictMode>,
 )
