@@ -7,6 +7,19 @@
     height: 100vh;
     height: 100dvh;
   }
+
+  /* Font family utilities */
+  .font-inter {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  .font-orbitron {
+    font-family: 'Orbitron', monospace;
+  }
+
+  .font-space-grotesk {
+    font-family: 'Space Grotesk', sans-serif;
+  }
 }
 
 :root {
@@ -41,10 +54,13 @@
 }
 
 @layer base {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
   }
-  
+
   * {
     border-width: 0;
     border-style: solid;
@@ -55,10 +71,13 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-weight: 400;
+    font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04';
     background: #000000 !important;
     color: var(--foreground);
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: 100dvh;
+    /* Dynamic viewport height for mobile */
     overflow-x: hidden;
     /* Prevent any layout shifts during loading */
     visibility: visible;
@@ -69,7 +88,7 @@
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
-  
+
   /* Ensure immediate black background */
   html {
     background: #000000 !important;
@@ -96,17 +115,19 @@
 
 /* Mobile and Responsive Design */
 @layer utilities {
+
   /* Responsive layout utilities */
   .h-screen-mobile {
     height: 100vh;
-    height: 100dvh; /* Dynamic viewport height */
+    height: 100dvh;
+    /* Dynamic viewport height */
   }
-  
+
   .min-h-screen-mobile {
     min-height: 100vh;
     min-height: 100dvh;
   }
-  
+
   /* Mobile-first responsive sidebar */
   .sidebar-mobile {
     position: fixed;
@@ -114,34 +135,38 @@
     bottom: 0;
     left: 0;
     z-index: 50;
-    width: 20rem; /* w-80 */
+    width: 20rem;
+    /* w-80 */
     transform: none;
     transition-property: transform;
     transition-duration: 300ms;
     transition-timing-function: ease-in-out;
   }
-  
+
   .sidebar-mobile.hidden {
     transform: translateX(-100%);
   }
-  
+
   /* Chat area responsive */
   .chat-area-mobile {
     flex: 1 1 0%;
     display: flex;
     flex-direction: column;
   }
-  
+
   /* Responsive text sizing */
   .text-responsive {
-    font-size: 0.875rem; /* text-sm */
+    font-size: 0.875rem;
+    /* text-sm */
   }
+
   @media (min-width: 640px) {
     .text-responsive {
-      font-size: 1rem; /* sm:text-base */
+      font-size: 1rem;
+      /* sm:text-base */
     }
   }
-  
+
   /* Touch-friendly buttons */
   .btn-touch {
     min-height: 44px;
@@ -151,15 +176,16 @@
 
 /* Responsive breakpoints */
 @media (max-width: 768px) {
+
   /* Mobile portrait and landscape */
   .sidebar-desktop {
     display: none;
   }
-  
+
   .chat-container {
     flex-direction: column;
   }
-  
+
   /* Ensure sidebar doesn't take full width on mobile */
   .sidebar-mobile {
     width: min(80vw, 320px);
@@ -167,11 +193,12 @@
 }
 
 @media (max-width: 640px) {
+
   /* Small mobile devices */
   .sidebar-mobile {
     width: min(85vw, 280px);
   }
-  
+
   /* Smaller padding on mobile */
   .p-mobile {
     padding: 0.75rem;
@@ -179,17 +206,18 @@
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
+
   /* Mobile landscape - reduce vertical spacing */
   .py-mobile-landscape {
     padding-top: 0.25rem;
     padding-bottom: 0.25rem;
   }
-  
+
   /* Compact sidebar on landscape */
   .sidebar-mobile {
     width: min(60vw, 280px);
   }
-  
+
   /* Ensure content fits in landscape */
   .h-screen-mobile {
     height: 100vh;
@@ -201,13 +229,14 @@
   .h-screen-mobile {
     height: -webkit-fill-available;
   }
-  
+
   .min-h-screen-mobile {
     min-height: -webkit-fill-available;
   }
 }
 
 @layer components {
+
   /* Prevent layout shifts and flashing */
   .no-flash {
     visibility: visible !important;
@@ -221,7 +250,7 @@
     border: 1px solid rgba(139, 0, 255, 0.3);
     box-shadow: 0 0 20px rgba(139, 0, 255, 0.5), inset 0 0 20px rgba(0, 191, 255, 0.2);
   }
-  
+
   .zed-gradient-hover {
     background: linear-gradient(135deg, #9A00FF 0%, #1EC5FF 50%, #FF69B4 100%);
     box-shadow: 0 0 30px rgba(139, 0, 255, 0.7), inset 0 0 30px rgba(0, 191, 255, 0.3);
@@ -241,10 +270,23 @@
   }
 
   @keyframes zed-float {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    25% { transform: translateY(-8px) rotate(1deg); }
-    50% { transform: translateY(-4px) rotate(-1deg); }
-    75% { transform: translateY(-12px) rotate(0.5deg); }
+
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+
+    25% {
+      transform: translateY(-8px) rotate(1deg);
+    }
+
+    50% {
+      transform: translateY(-4px) rotate(-1deg);
+    }
+
+    75% {
+      transform: translateY(-12px) rotate(0.5deg);
+    }
   }
 
   /* Pulse Glow Effect */
@@ -254,10 +296,15 @@
   }
 
   @keyframes zed-pulse-glow {
-    from { box-shadow: 0 0 20px rgba(139, 0, 255, 0.3); }
-    to { box-shadow: 0 0 40px rgba(139, 0, 255, 0.6), 0 0 60px rgba(0, 191, 255, 0.3); }
+    from {
+      box-shadow: 0 0 20px rgba(139, 0, 255, 0.3);
+    }
+
+    to {
+      box-shadow: 0 0 40px rgba(139, 0, 255, 0.6), 0 0 60px rgba(0, 191, 255, 0.3);
+    }
   }
-  
+
   /* Cyberpunk Button Styles */
   .zed-button {
     background: rgba(0, 0, 0, 0.8);
@@ -265,26 +312,26 @@
     color: #FFFFFF;
     transition: all 0.3s ease;
   }
-  
+
   .zed-button:hover {
     background: rgba(139, 0, 255, 0.1);
     border-color: rgba(139, 0, 255, 0.6);
     box-shadow: 0 0 15px rgba(139, 0, 255, 0.4);
     color: #FFFFFF;
   }
-  
+
   /* Cyberpunk Input Styles */
   .zed-input {
     background: rgba(0, 0, 0, 0.9);
     border: 1px solid rgba(139, 0, 255, 0.3);
     color: #FFFFFF;
   }
-  
+
   .zed-input:focus {
     border-color: rgba(139, 0, 255, 0.8);
     box-shadow: 0 0 10px rgba(139, 0, 255, 0.5);
   }
-  
+
   /* Cyberpunk Avatar */
   .zed-avatar {
     background: linear-gradient(135deg, #8B00FF 0%, #00BFFF 100%);
@@ -309,8 +356,13 @@
   }
 
   @keyframes zed-shimmer-old {
-    0% { left: -100%; }
-    100% { left: 100%; }
+    0% {
+      left: -100%;
+    }
+
+    100% {
+      left: 100%;
+    }
   }
 
   /* Morphing Border */
@@ -318,15 +370,28 @@
     position: relative;
     border: 2px solid transparent;
     background: linear-gradient(var(--card), var(--card)) padding-box,
-                var(--zed-gradient) border-box;
+      var(--zed-gradient) border-box;
     animation: zed-morph 6s ease-in-out infinite;
   }
 
   @keyframes zed-morph {
-    0%, 100% { border-radius: 1rem; }
-    25% { border-radius: 2rem 1rem 2rem 1rem; }
-    50% { border-radius: 1rem 2rem 1rem 2rem; }
-    75% { border-radius: 2rem 1rem 1rem 2rem; }
+
+    0%,
+    100% {
+      border-radius: 1rem;
+    }
+
+    25% {
+      border-radius: 2rem 1rem 2rem 1rem;
+    }
+
+    50% {
+      border-radius: 1rem 2rem 1rem 2rem;
+    }
+
+    75% {
+      border-radius: 2rem 1rem 1rem 2rem;
+    }
   }
 
   /* Typing Indicator */
@@ -335,9 +400,23 @@
   }
 
   @keyframes zed-typing {
-    0%, 20% { opacity: 0.3; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.1); }
-    80%, 100% { opacity: 0.3; transform: scale(0.8); }
+
+    0%,
+    20% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    80%,
+    100% {
+      opacity: 0.3;
+      transform: scale(0.8);
+    }
   }
 
   /* Message Bubble Enhancement */
@@ -373,8 +452,13 @@
   }
 
   @keyframes zed-avatar-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   /* Enhanced Input Field */
@@ -423,39 +507,29 @@
   /* ZED Logo Animations */
   @keyframes zed-glow-pulse {
     0% {
-      filter: 
-        drop-shadow(0 0 50px rgba(168, 85, 247, 0.4))
-        drop-shadow(0 0 100px rgba(59, 130, 246, 0.3))
-        drop-shadow(0 0 150px rgba(236, 72, 153, 0.2));
+      filter:
+        drop-shadow(0 0 50px rgba(168, 85, 247, 0.4)) drop-shadow(0 0 100px rgba(59, 130, 246, 0.3)) drop-shadow(0 0 150px rgba(236, 72, 153, 0.2));
       opacity: 0.25;
     }
+
     100% {
-      filter: 
-        drop-shadow(0 0 70px rgba(168, 85, 247, 0.6))
-        drop-shadow(0 0 140px rgba(59, 130, 246, 0.5))
-        drop-shadow(0 0 210px rgba(236, 72, 153, 0.4));
+      filter:
+        drop-shadow(0 0 70px rgba(168, 85, 247, 0.6)) drop-shadow(0 0 140px rgba(59, 130, 246, 0.5)) drop-shadow(0 0 210px rgba(236, 72, 153, 0.4));
       opacity: 0.35;
     }
   }
 
   @keyframes zed-active-pulse {
     0% {
-      filter: 
-        drop-shadow(0 0 60px rgba(168, 85, 247, 0.6))
-        drop-shadow(0 0 120px rgba(59, 130, 246, 0.5))
-        drop-shadow(0 0 180px rgba(236, 72, 153, 0.4))
-        brightness(1.2)
-        contrast(1.1);
+      filter:
+        drop-shadow(0 0 60px rgba(168, 85, 247, 0.6)) drop-shadow(0 0 120px rgba(59, 130, 246, 0.5)) drop-shadow(0 0 180px rgba(236, 72, 153, 0.4)) brightness(1.2) contrast(1.1);
       opacity: 0.4;
       transform: scale(1.05);
     }
+
     100% {
-      filter: 
-        drop-shadow(0 0 80px rgba(168, 85, 247, 0.8))
-        drop-shadow(0 0 160px rgba(59, 130, 246, 0.7))
-        drop-shadow(0 0 240px rgba(236, 72, 153, 0.6))
-        brightness(1.4)
-        contrast(1.2);
+      filter:
+        drop-shadow(0 0 80px rgba(168, 85, 247, 0.8)) drop-shadow(0 0 160px rgba(59, 130, 246, 0.7)) drop-shadow(0 0 240px rgba(236, 72, 153, 0.6)) brightness(1.4) contrast(1.2);
       opacity: 0.5;
       transform: scale(1.08);
     }
@@ -466,9 +540,11 @@
       transform: translateX(-200%) rotate(45deg);
       opacity: 0;
     }
+
     50% {
       opacity: 1;
     }
+
     100% {
       transform: translateX(200%) rotate(45deg);
       opacity: 0;
@@ -480,12 +556,15 @@
       transform: translateX(-150%) rotate(45deg);
       opacity: 0;
     }
+
     30% {
       opacity: 1;
     }
+
     70% {
       opacity: 1;
     }
+
     100% {
       transform: translateX(150%) rotate(45deg);
       opacity: 0;
@@ -596,9 +675,10 @@
     min-height: 44px;
     padding: 0.75rem 1rem;
   }
-  
+
   .zed-input {
     min-height: 48px;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
+    /* Prevents zoom on iOS */
   }
 }

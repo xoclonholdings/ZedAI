@@ -26,6 +26,9 @@ export default {
             },
             fontFamily: {
                 sans: ['Inter', 'system-ui', 'sans-serif'],
+                'inter': ['Inter', 'system-ui', 'sans-serif'],
+                'orbitron': ['Orbitron', 'monospace'],
+                'space-grotesk': ['Space Grotesk', 'sans-serif'],
             },
             backgroundImage: {
                 'gradient-cyberpunk': 'linear-gradient(135deg, #a855f7, #06b6d4, #ec4899)',

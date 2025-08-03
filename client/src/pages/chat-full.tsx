@@ -132,7 +132,7 @@ export default function ChatFull() {
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center space-x-2">
                                     <ZedLogo className="w-8 h-8" />
-                                    <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                                    <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent font-orbitron tracking-wider">
                                         ZED
                                     </h1>
                                 </div>
@@ -147,7 +147,7 @@ export default function ChatFull() {
                             </div>
 
                             <Button
-                                className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
+                                className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 font-space-grotesk font-medium"
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 New Chat
@@ -160,7 +160,7 @@ export default function ChatFull() {
                                 <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                                 <Input
                                     placeholder="Search conversations..."
-                                    className="pl-10 bg-gray-800 border-gray-700 focus:border-purple-500"
+                                    className="pl-10 bg-gray-800/70 border-gray-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 font-inter"
                                 />
                             </div>
                         </div>
@@ -178,17 +178,17 @@ export default function ChatFull() {
                                     <div className="flex items-start space-x-3">
                                         <MessageSquare className="w-5 h-5 text-purple-400 mt-1 flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-white truncate">
+                                            <h3 className="font-medium text-white truncate font-space-grotesk">
                                                 {conversation.title}
                                             </h3>
-                                            <p className="text-sm text-gray-400 truncate mt-1">
+                                            <p className="text-sm text-gray-400 truncate mt-1 font-inter">
                                                 {conversation.lastMessage}
                                             </p>
                                             <div className="flex items-center justify-between mt-2">
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-gray-500 font-space-grotesk">
                                                     {conversation.messageCount} messages
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-gray-500 font-inter">
                                                     {conversation.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
@@ -212,31 +212,42 @@ export default function ChatFull() {
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col">
                 {/* Chat Header */}
-                <div className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/50">
+                <div className="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-gray-900/50 backdrop-blur-sm">
                     <div className="flex items-center space-x-3">
                         {!isSidebarOpen && (
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setIsSidebarOpen(true)}
+                                className="hover:bg-purple-500/10"
                             >
                                 <Menu className="w-5 h-5" />
                             </Button>
                         )}
-                        <div className="flex items-center space-x-2">
-                            <Bot className="w-6 h-6 text-purple-400" />
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center">
+                                <Bot className="w-5 h-5 text-white" />
+                            </div>
                             <div>
-                                <h2 className="font-semibold text-white">ZED Assistant</h2>
-                                <p className="text-xs text-gray-400">AI-powered chat</p>
+                                <h2 className="font-semibold text-white font-space-grotesk tracking-wide">ZED Assistant</h2>
+                                <p className="text-xs text-gray-400 font-inter">Enhanced AI Intelligence</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="icon">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-purple-500/10 hover:text-purple-400 transition-colors"
+                        >
                             <Upload className="w-5 h-5" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-purple-500/10 hover:text-purple-400 transition-colors"
+                        >
                             <Settings className="w-5 h-5" />
                         </Button>
                     </div>
@@ -266,16 +277,16 @@ export default function ChatFull() {
 
                                 {/* Message Bubble */}
                                 <div className={`
-                  rounded-2xl px-4 py-3 max-w-full
+                  rounded-2xl px-5 py-4 max-w-full shadow-lg
                   ${message.sender === 'user'
-                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                                        : 'bg-gray-800 text-white border border-gray-700'
+                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-purple-500/20'
+                                        : 'bg-gray-800/90 text-white border border-gray-700/50 backdrop-blur-sm'
                                     }
                 `}>
-                                    <p className="whitespace-pre-wrap">{message.content}</p>
+                                    <p className="whitespace-pre-wrap font-inter leading-relaxed">{message.content}</p>
                                     <div className={`
-                    text-xs mt-2 
-                    ${message.sender === 'user' ? 'text-purple-100' : 'text-gray-400'}
+                    text-xs mt-2 font-space-grotesk
+                    ${message.sender === 'user' ? 'text-purple-100/80' : 'text-gray-400'}
                   `}>
                                         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
@@ -286,14 +297,14 @@ export default function ChatFull() {
                 </div>
 
                 {/* Chat Input */}
-                <div className="border-t border-gray-800 p-4 bg-gray-900/50">
-                    <div className="flex items-end space-x-2">
+                <div className="border-t border-gray-800 p-4 bg-gray-900/50 backdrop-blur-sm">
+                    <div className="flex items-end space-x-3">
                         {/* File Upload Button */}
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => setShowFileUpload(!showFileUpload)}
-                            className="flex-shrink-0"
+                            className="flex-shrink-0 hover:bg-purple-500/10 hover:text-purple-400 transition-colors"
                         >
                             <Paperclip className="w-5 h-5" />
                         </Button>
@@ -304,17 +315,25 @@ export default function ChatFull() {
                                 value={newMessage}
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder="Type your message..."
-                                className="pr-24 bg-gray-800 border-gray-700 focus:border-purple-500 min-h-[44px]"
+                                placeholder="Type your message to ZED..."
+                                className="pr-24 bg-gray-800/70 border-gray-700 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 min-h-[48px] font-inter placeholder:text-gray-500 rounded-xl"
                                 multiline
                             />
 
                             {/* Input Actions */}
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
-                                <Button variant="ghost" size="icon" className="w-8 h-8">
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-8 h-8 hover:bg-purple-500/10 hover:text-purple-400"
+                                >
                                     <Smile className="w-4 h-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="w-8 h-8">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="w-8 h-8 hover:bg-purple-500/10 hover:text-cyan-400"
+                                >
                                     <Mic className="w-4 h-4" />
                                 </Button>
                             </div>
@@ -324,9 +343,10 @@ export default function ChatFull() {
                         <Button
                             onClick={handleSendMessage}
                             disabled={!newMessage.trim()}
-                            className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 flex-shrink-0"
+                            className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 flex-shrink-0 shadow-lg shadow-purple-500/25 font-space-grotesk font-medium px-6 h-12 rounded-xl"
                         >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-4 h-4 mr-2" />
+                            Send
                         </Button>
                     </div>
 
