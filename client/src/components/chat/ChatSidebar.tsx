@@ -13,42 +13,31 @@ import {
   Bell,
   Shield,
   Database,
-  Bot
+  Bot,
+  LogOut,
+  Settings
 } from "lucide-react";
-const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iemVkR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYTg1NWY3O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZWI0ODk5O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0idXJsKCN6ZWRHcmFkaWVudCkiLz4KICA8cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4K";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuthProvider.tsx";
 import { apiRequest } from "@/lib/queryClient";
 import type { Conversation } from "@shared/schema";
 
-import LogoutButton from "@/components/auth/LogoutButton";
-
 interface ChatSidebarProps {
   conversations: Conversation[];
   onClose?: () => void;
   isMobile?: boolean;
-  onMenuClick?: () => void;
 }
 
-interface LocalUser {
-  id: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-  profileImageUrl?: string;
-}
-
-export default function ChatSidebar({ conversations = [], onClose, isMobile = false, onMenuClick }: ChatSidebarProps) {
+export default function ChatSidebar({ conversations = [], onClose, isMobile = false }: ChatSidebarProps) {
   const [location] = useLocation();
   const queryClient = useQueryClient();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [currentMode, setCurrentMode] = useState<"chat" | "agent">("chat");
   const [notifications, setNotifications] = useState(true);
   const [dataSharing, setDataSharing] = useState(false);
   const [analytics, setAnalytics] = useState(true);
-  const { user } = useAuth() as { user?: LocalUser };
+  const { user, logout } = useAuth();
   const { toast } = useToast();
 
   const deleteConversationMutation = useMutation({
@@ -87,35 +76,6 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
     }
   };
 
-  if (isCollapsed) {
-    return (
-      <div className="w-16 flex flex-col items-center py-4 space-y-4 zed-glass border-r border-white/10 backdrop-blur-xl">
-        <Button
-          onClick={() => setIsCollapsed(false)}
-          variant="ghost"
-          size="sm"
-          className="w-10 h-10 zed-button rounded-xl"
-        >
-          <MessageSquare size={20} />
-        </Button>
-
-        {/* Mode Toggle - Collapsed */}
-        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-          <div className={`w-6 h-6 rounded flex items-center justify-center ${currentMode === 'chat' ? 'bg-cyan-500' : 'bg-purple-500'}`}>
-            {currentMode === 'chat' ? <MessageSquare size={12} className="text-white" /> : <Bot size={12} className="text-white" />}
-          </div>
-        </div>
-
-        {/* Collapsed Status */}
-        <div className="w-full">
-          <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={`${isMobile ? 'w-full h-screen-mobile' : 'w-80 h-full'} flex flex-col relative zed-glass ${isMobile ? '' : 'border-r'} border-purple-500/30 backdrop-blur-xl`}>
       {/* Cyberpunk Background Elements */}
@@ -128,67 +88,118 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
       <div className="p-2 sm:p-3 border-b border-white/10 relative z-10">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2">
-            {/* Logo Button - Compact and Clickable */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-10 h-10 p-1.5 rounded-lg hover:bg-gradient-to-r hover:from-pink-500/20 hover:via-purple-500/20 hover:to-blue-500/20 transition-all duration-300 hover:scale-105 border border-transparent hover:border-purple-500/50"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('ZED logo button clicked!', { isMobile, onClose, onMenuClick });
-                if (isMobile && onClose) {
-                  onClose();
-                } else if (onMenuClick) {
-                  onMenuClick();
-                }
-              }}
-            >
-              <img src={zLogoPath} alt="Z" className="w-6 h-6" />
-            </Button>
+            {/* User Profile Photo Button - Replaced ZED Logo */}
+            <div className="relative group">
+              <div
+                className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-transform"
+                onClick={() => document.getElementById('profile-upload')?.click()}
+              >
+                {user ? (
+                  <img
+                    src={`/api/auth/profile-picture/${user.id}`}
+                    alt={user.name || "User"}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to default user icon if image fails to load
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <User size={16} className={`text-white ${user ? 'hidden' : ''}`} />
+              </div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-purple-500 rounded-full flex items-center justify-center border border-black group-hover:bg-purple-400 transition-colors">
+                {isUploadingPicture ? (
+                  <div className="w-1.5 h-1.5 border border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Camera size={6} className="text-white" />
+                )}
+              </div>
+              {/* Hover tooltip */}
+              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                Click to upload photo
+              </div>
+              {/* Hidden file input */}
+              <input
+                id="profile-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={isUploadingPicture}
+                title="Upload profile picture"
+                placeholder="Choose a profile picture"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setIsUploadingPicture(true);
+                    try {
+                      const formData = new FormData();
+                      formData.append('profilePicture', file);
+
+                      const response = await fetch('/api/auth/profile-picture', {
+                        method: 'POST',
+                        body: formData,
+                      });
+
+                      if (response.ok) {
+                        await response.json();
+                        toast({
+                          title: "Profile picture updated",
+                          description: "Your profile picture has been successfully updated!",
+                        });
+                        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+                      } else {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Upload failed');
+                      }
+                    } catch (error) {
+                      console.error('Upload error:', error);
+                      toast({
+                        title: "Upload failed",
+                        description: error instanceof Error ? error.message : "Failed to upload profile picture. Please try again.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setIsUploadingPicture(false);
+                      // Reset the input so the same file can be selected again
+                      e.target.value = '';
+                    }
+                  }
+                }}
+              />
+            </div>
 
             <div className="text-left">
               <h1 className="text-sm font-bold">
                 <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">ZED</span>
               </h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">AI Assistant</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">
+                {user?.name || user?.email || "User"}
+              </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-1">
-            <LogoutButton />
-            {isMobile ? (
-              <Button
-                onClick={onClose}
-                variant="ghost"
-                size="sm"
-                className="w-8 h-8 zed-button rounded-lg p-0 text-muted-foreground hover:text-foreground"
-              >
-                <X size={14} />
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setIsCollapsed(true)}
-                variant="ghost"
-                size="sm"
-                className="w-8 h-8 zed-button rounded-lg p-0 text-muted-foreground hover:text-foreground"
-              >
-                <X size={14} />
-              </Button>
-            )}
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+              className="w-8 h-8 zed-button rounded-lg p-0 text-muted-foreground hover:text-foreground"
+            >
+              <X size={14} />
+            </Button>
           </div>
         </div>
 
-        {/* Chat/Agent Mode Toggle - Main Switch */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
-          <div className="flex items-center space-x-3">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentMode === 'chat' ? 'bg-cyan-500' : 'bg-purple-500'}`}>
-              {currentMode === 'chat' ? <MessageSquare size={16} className="text-white" /> : <Bot size={16} className="text-white" />}
+        {/* Chat/Agent Mode Toggle - Compact with cyberpunk gradient */}
+        <div className="flex items-center justify-between p-2 rounded-lg bg-gradient-to-r from-purple-500/10 via-cyan-500/10 to-pink-500/10 border border-purple-500/30 mt-2">
+          <div className="flex items-center space-x-2">
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center bg-gradient-to-r ${currentMode === 'chat' ? 'from-cyan-500 to-blue-500' : 'from-purple-500 to-pink-500'}`}>
+              {currentMode === 'chat' ? <MessageSquare size={12} className="text-white" /> : <Bot size={12} className="text-white" />}
             </div>
             <div>
-              <div className="text-sm font-medium">{currentMode === 'chat' ? 'Chat' : 'Agent'} Mode</div>
-              <div className="text-xs text-muted-foreground">
-                {currentMode === 'chat' ? 'Simple conversation' : 'Enhanced capabilities'}
+              <div className="text-xs font-medium bg-gradient-to-r from-purple-300 to-cyan-300 bg-clip-text text-transparent">
+                {currentMode === 'chat' ? 'Chat' : 'Agent'} Mode
               </div>
             </div>
           </div>
@@ -196,43 +207,10 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
             variant="ghost"
             size="sm"
             onClick={() => setCurrentMode(currentMode === 'chat' ? 'agent' : 'chat')}
-            className="h-8 w-14 p-0 rounded-full bg-white/10 relative border border-white/20"
+            className="h-6 w-12 p-0 rounded-full bg-gradient-to-r from-purple-500/20 to-cyan-500/20 relative border border-purple-400/30 hover:border-purple-300/50"
           >
-            <div className={`absolute w-6 h-6 bg-white rounded-full transition-transform shadow-md ${currentMode === 'agent' ? 'translate-x-3' : '-translate-x-3'}`} />
+            <div className={`absolute w-4 h-4 bg-gradient-to-r from-white to-purple-100 rounded-full transition-transform shadow-lg ${currentMode === 'agent' ? 'translate-x-2' : '-translate-x-2'}`} />
           </Button>
-        </div>
-
-        {/* Quick Settings Row */}
-        <div className="mt-2 space-y-1">
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setNotifications(!notifications)}
-              className={`flex-1 h-8 text-xs rounded-lg transition-colors ${notifications ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-muted-foreground'}`}
-            >
-              <Bell size={12} className="mr-1" />
-              Alerts
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDataSharing(!dataSharing)}
-              className={`flex-1 h-8 text-xs rounded-lg transition-colors ${dataSharing ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-muted-foreground'}`}
-            >
-              <Shield size={12} className="mr-1" />
-              Privacy
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAnalytics(!analytics)}
-              className={`flex-1 h-8 text-xs rounded-lg transition-colors ${analytics ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-muted-foreground'}`}
-            >
-              <Database size={12} className="mr-1" />
-              Data
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -318,90 +296,57 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
         </div>
       </div>
 
-      {/* Compact User Profile */}
-      <div className="p-1 border-t border-white/10">
-        <div className="flex items-center space-x-2">
-          <div className="relative group">
-            <div
-              className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-transform"
-              onClick={() => document.getElementById('profile-upload')?.click()}
+      {/* Quick Settings Row - Moved below Recent Chats */}
+      <div className="px-2 pb-2">
+        <div className="mt-2 space-y-1">
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setNotifications(!notifications)}
+              className={`flex-1 h-8 text-xs rounded-lg transition-colors ${notifications ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-muted-foreground'}`}
             >
-              {user?.profileImageUrl ? (
-                <img
-                  src={user.profileImageUrl}
-                  alt={user.firstName || "User"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={12} className="text-white" />
-              )}
-            </div>
-            <input
-              id="profile-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              disabled={isUploadingPicture}
-              title="Upload profile picture"
-              placeholder="Choose a profile picture"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  setIsUploadingPicture(true);
-                  try {
-                    const formData = new FormData();
-                    formData.append('profilePicture', file);
-
-                    const response = await fetch('/api/auth/profile-picture', {
-                      method: 'POST',
-                      body: formData,
-                    });
-
-                    if (response.ok) {
-                      await response.json();
-                      toast({
-                        title: "Profile picture updated",
-                        description: "Your profile picture has been successfully updated!",
-                      });
-                      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-                    } else {
-                      const error = await response.json();
-                      throw new Error(error.error || 'Upload failed');
-                    }
-                  } catch (error) {
-                    console.error('Upload error:', error);
-                    toast({
-                      title: "Upload failed",
-                      description: error instanceof Error ? error.message : "Failed to upload profile picture. Please try again.",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setIsUploadingPicture(false);
-                    // Reset the input so the same file can be selected again
-                    e.target.value = '';
-                  }
-                }
-              }}
-            />
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center border border-black group-hover:bg-purple-400 transition-colors">
-              {isUploadingPicture ? (
-                <div className="w-2 h-2 border border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Camera size={8} className="text-white" />
-              )}
-            </div>
-            {/* Hover tooltip */}
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-              Click to upload photo
-            </div>
+              <Bell size={12} className="mr-1" />
+              Alerts
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDataSharing(!dataSharing)}
+              className={`flex-1 h-8 text-xs rounded-lg transition-colors ${dataSharing ? 'bg-blue-500/20 text-blue-400' : 'bg-white/5 text-muted-foreground'}`}
+            >
+              <Shield size={12} className="mr-1" />
+              Privacy
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAnalytics(!analytics)}
+              className={`flex-1 h-8 text-xs rounded-lg transition-colors ${analytics ? 'bg-purple-500/20 text-purple-400' : 'bg-white/5 text-muted-foreground'}`}
+            >
+              <Database size={12} className="mr-1" />
+              Data
+            </Button>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-foreground truncate">
-              {user?.firstName || user?.email || "ZED Admin"}
-            </p>
-            <div className="flex items-center space-x-1">
-              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs text-muted-foreground">Online</span>
+
+          {/* Advanced Settings Button */}
+          <div className="flex justify-center mt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-xs rounded-lg transition-colors bg-gradient-to-r from-purple-600/20 to-cyan-600/20 border border-purple-500/30 hover:border-purple-400/50 text-purple-300 hover:text-purple-200"
+              title="Advanced Settings"
+            >
+              <Settings size={12} className="mr-2" />
+              Advanced Settings
+            </Button>
+          </div>
+
+          {/* Powered by Zebulon */}
+          <div className="flex items-center justify-center mt-2 p-2">
+            <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+              <Zap size={10} className="text-purple-400" />
+              <span>Powered by Zebulon</span>
             </div>
           </div>
         </div>
@@ -409,11 +354,33 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
 
       {/* Footer */}
       <div className="p-1 border-t border-white/10 relative z-10">
-        <div className="flex items-center justify-center space-x-1 text-xs text-muted-foreground">
-          <Zap size={10} className="text-purple-400" />
-          <span className="text-xs">Powered by OpenAI</span>
-          <div className="w-1 h-1 bg-purple-400 rounded-full"></div>
-          <span className="text-xs">Local Auth</span>
+        <div className="flex items-center justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              try {
+                await logout();
+                toast({
+                  title: "Logged out successfully",
+                  description: "You have been logged out of your account.",
+                });
+                // Redirect to login or home page
+                window.location.href = '/';
+              } catch (error) {
+                console.error('Logout error:', error);
+                toast({
+                  title: "Logout failed",
+                  description: "There was an error logging out. Please try again.",
+                  variant: "destructive",
+                });
+              }
+            }}
+            className="flex items-center space-x-1 text-xs text-muted-foreground hover:text-red-400 transition-colors"
+          >
+            <LogOut size={12} />
+            <span>Logout</span>
+          </Button>
         </div>
       </div>
     </div>
