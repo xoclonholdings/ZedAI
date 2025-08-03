@@ -1,132 +1,135 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Sparkles,
-  Zap,
-  Shield,
-  Users,
+import { 
+  Sparkles, 
+  Zap, 
+  Shield, 
   MessageSquare,
   FileText,
   Rss
 } from "lucide-react";
 const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iemVkR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYTg1NWY3O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZWI0ODk5O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0idXJsKCN6ZWRHcmFkaWVudCkiLz4KICA8cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4K";
 
-import React from 'react'
-import { useLocation } from 'wouter'
-import { useAuth } from '../hooks/useAuthProvider'
-import { Button } from '../components/ui/button'
-import { Bot, Zap, Shield, Cpu } from 'lucide-react'
-
-export default function LandingPage() {
-  const [, setLocation] = useLocation()
-  const { isAuthenticated } = useAuth()
-
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      setLocation('/chat')
-    }
-  }, [isAuthenticated, setLocation])
-
+export default function Landing() {
   return (
-    <div className="min-h-screen bg-black cyberpunk-bg overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-32 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl float-animation" />
-        <div className="absolute top-1/2 -left-32 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl float-animation" style={{ animationDelay: '2s' }} />
-        <div className="absolute -bottom-40 right-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl float-animation" style={{ animationDelay: '4s' }} />
+    <div className="min-h-screen bg-black text-white overflow-hidden relative">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-purple-600/20 to-cyan-500/20 rounded-full blur-3xl zed-float" />
+        <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-r from-pink-500/20 to-purple-600/20 rounded-full blur-2xl zed-float-delay" />
+        <div className="absolute bottom-32 left-1/3 w-40 h-40 bg-gradient-to-r from-cyan-500/15 to-blue-600/15 rounded-full blur-3xl zed-float" />
+        <div className="absolute bottom-20 right-10 w-28 h-28 bg-gradient-to-r from-purple-600/20 to-pink-500/20 rounded-full blur-2xl zed-float-delay" />
       </div>
 
-      <div className="relative z-10">
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="container mx-auto px-6 pt-8 pb-4">
-          <nav className="flex items-center justify-between">
+        <header className="p-8">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                <Bot className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 zed-avatar rounded-2xl flex items-center justify-center">
+                <Zap size={24} className="text-white" />
               </div>
-              <span className="text-2xl font-bold gradient-text">ZED</span>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                  ZED
+                </h1>
+                <p className="text-xs text-muted-foreground">Enhanced AI Assistant</p>
+              </div>
             </div>
-            <Button
-              onClick={() => setLocation('/login')}
-              variant="outline"
-              className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+
+            <Button 
+              onClick={() => window.location.href = '/api/login'}
+              className="zed-button rounded-xl px-6 py-2"
             >
+              <Shield size={16} className="mr-2" />
               Sign In
             </Button>
-          </nav>
+          </div>
         </header>
 
         {/* Hero Section */}
-        <main className="container mx-auto px-6 py-20">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-6xl md:text-8xl font-bold mb-8 gradient-text">
-              ZED AI
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-12 leading-relaxed">
-              Advanced AI Assistant with comprehensive file processing,
-              multi-tier memory system, and enterprise-grade security
-            </p>
+        <main className="flex-1 flex items-center justify-center px-8">
+          <div className="max-w-6xl mx-auto text-center">
+            <div className="mb-8">
+              <div className="inline-flex items-center space-x-2 bg-white/5 rounded-full px-4 py-2 mb-6 zed-glass">
+                <Sparkles size={16} className="text-purple-400" />
+                <span className="text-sm text-muted-foreground">Powered by Advanced AI</span>
+              </div>
+              
+              <h1 className="text-5xl md:text-7xl font-bold mb-6">
+                <span className="bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-transparent">
+                  ZED
+                </span>
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+                Enhanced AI assistant combining powerful conversations with document processing 
+                and social media integration in a cyberpunk-themed interface
+              </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-              <Button
-                onClick={() => setLocation('/login')}
+              <Button 
+                onClick={() => window.location.href = '/api/login'}
                 size="lg"
-                className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white font-semibold px-8 py-3 btn-hover"
+                className="zed-button rounded-xl px-8 py-4 text-lg"
               >
+                <img src={zLogoPath} alt="Z" className="w-5 h-5 mr-2" />
                 Get Started
-                <Zap className="ml-2 w-5 h-5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-gray-700 text-gray-300 hover:bg-gray-800"
-              >
-                Learn More
               </Button>
             </div>
 
             {/* Features Grid */}
-            <div className="grid md:grid-cols-3 gap-8 mt-20">
-              <div className="glass rounded-xl p-8 text-center hover:border-purple-500/30 transition-colors">
-                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Bot className="w-8 h-8 text-white" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
+              <Card className="zed-message p-6 hover:zed-glow transition-all duration-300">
+                <div className="w-12 h-12 zed-avatar rounded-2xl flex items-center justify-center mb-4">
+                  <MessageSquare size={20} className="text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-4">Advanced AI</h3>
-                <p className="text-gray-400">
-                  Powered by cutting-edge language models with real-time streaming responses
+                <h3 className="text-lg font-semibold mb-2 text-foreground">AI Conversations</h3>
+                <p className="text-sm text-muted-foreground">
+                  Intelligent chat powered by advanced language models with streaming responses
                 </p>
-              </div>
+              </Card>
 
-              <div className="glass rounded-xl p-8 text-center hover:border-cyan-500/30 transition-colors">
-                <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Cpu className="w-8 h-8 text-white" />
+              <Card className="zed-message p-6 hover:zed-glow transition-all duration-300">
+                <div className="w-12 h-12 zed-avatar rounded-2xl flex items-center justify-center mb-4">
+                  <FileText size={20} className="text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-4">Smart Memory</h3>
-                <p className="text-gray-400">
-                  Three-tier memory system for persistent context and intelligent recall
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Document Processing</h3>
+                <p className="text-sm text-muted-foreground">
+                  Upload and analyze documents, images, and files up to 32GB
                 </p>
-              </div>
+              </Card>
 
-              <div className="glass rounded-xl p-8 text-center hover:border-pink-500/30 transition-colors">
-                <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Shield className="w-8 h-8 text-white" />
+              <Card className="zed-message p-6 hover:zed-glow transition-all duration-300">
+                <div className="w-12 h-12 zed-avatar rounded-2xl flex items-center justify-center mb-4">
+                  <Rss size={20} className="text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-4">Enterprise Security</h3>
-                <p className="text-gray-400">
-                  Multi-factor authentication and secure file processing up to 32GB
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Social Integration</h3>
+                <p className="text-sm text-muted-foreground">
+                  Connect Instagram, X, Snapchat, and Flip.shop feeds
                 </p>
-              </div>
+              </Card>
+
+              <Card className="zed-message p-6 hover:zed-glow transition-all duration-300">
+                <div className="w-12 h-12 zed-avatar rounded-2xl flex items-center justify-center mb-4">
+                  <Shield size={20} className="text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Secure Access</h3>
+                <p className="text-sm text-muted-foreground">
+                  Protected by Replit authentication to keep your data safe
+                </p>
+              </Card>
             </div>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="container mx-auto px-6 py-8 mt-20">
-          <div className="border-t border-gray-800 pt-8 text-center text-gray-500">
-            <p>&copy; 2025 XOCLON HOLDINGS INC. All rights reserved.</p>
-          </div>
+        <footer className="p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Built with modern web technologies • Cyberpunk meets AI
+          </p>
         </footer>
       </div>
     </div>
-  )
+  );
 }

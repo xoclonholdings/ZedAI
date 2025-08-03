@@ -21,6 +21,7 @@
         "noUnusedLocals": true,
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
+        "forceConsistentCasingInFileNames": true,
         /* Path mapping */
         "baseUrl": ".",
         "paths": {
@@ -33,8 +34,8 @@
         }
     },
     "include": [
-        "client/src/**/*.ts",
-        "client/src/**/*.tsx"
+        "client/src",
+        "shared"
     ],
     "references": [
         {

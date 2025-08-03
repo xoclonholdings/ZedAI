@@ -3,12 +3,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { 
-  Upload, 
-  X, 
-  File, 
-  FileText, 
-  FileSpreadsheet, 
+import {
+  Upload,
+  X,
+  File,
+  FileText,
+  FileSpreadsheet,
   Image,
   CheckCircle,
   AlertCircle
@@ -58,12 +58,12 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
         title: "Upload successful",
         description: `${data.files.length} file(s) processed successfully`
       });
-      
+
       // Refresh files list
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/conversations", conversationId, "files"] 
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations", conversationId, "files"]
       });
-      
+
       onUpload(uploadingFiles.map(uf => uf.file));
       setUploadingFiles([]);
     },
@@ -91,7 +91,7 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFiles(Array.from(e.dataTransfer.files));
     }
@@ -154,11 +154,11 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
     setUploadingFiles(newUploadingFiles);
 
     // Simulate upload progress
-    newUploadingFiles.forEach((uploadingFile, index) => {
+    newUploadingFiles.forEach((_, index) => {
       const interval = setInterval(() => {
-        setUploadingFiles(prev => 
-          prev.map((uf, i) => 
-            i === index 
+        setUploadingFiles(prev =>
+          prev.map((uf, i) =>
+            i === index
               ? { ...uf, progress: Math.min(uf.progress + 10, 90) }
               : uf
           )
@@ -167,9 +167,9 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
 
       setTimeout(() => {
         clearInterval(interval);
-        setUploadingFiles(prev => 
-          prev.map((uf, i) => 
-            i === index 
+        setUploadingFiles(prev =>
+          prev.map((uf, i) =>
+            i === index
               ? { ...uf, progress: 100, status: "processing" }
               : uf
           )
@@ -208,11 +208,10 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
 
         {/* Upload Area */}
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            dragActive 
-              ? "border-primary bg-primary/5" 
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragActive
+              ? "border-primary bg-primary/5"
               : "border-gray-300 hover:border-gray-400"
-          }`}
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -226,7 +225,7 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
           <p className="text-sm text-gray-500">
             Supports CSV, Excel, PDF, images, text files up to 32GB
           </p>
-          
+
           <input
             ref={fileInputRef}
             type="file"
@@ -234,6 +233,8 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
             onChange={handleFileInput}
             className="hidden"
             accept=".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.json"
+            aria-label="Select files to upload"
+            title="Select files to upload"
           />
         </div>
 
@@ -267,13 +268,13 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
                     </span>
                   </div>
                 </div>
-                
+
                 {uploadingFile.status === "uploading" && (
                   <div className="mt-2">
                     <Progress value={uploadingFile.progress} className="h-1" />
                   </div>
                 )}
-                
+
                 {uploadingFile.error && (
                   <p className="mt-2 text-xs text-red-600">{uploadingFile.error}</p>
                 )}

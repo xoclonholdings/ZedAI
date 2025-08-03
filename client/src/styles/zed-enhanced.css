@@ -1,0 +1,293 @@
+/* ZED Enhanced Design System Styles */
+
+/* Animation Delays */
+.zed-delay-1s {
+    animation-delay: 1s;
+}
+
+.zed-delay-2s {
+    animation-delay: 2s;
+}
+
+.zed-delay-3s {
+    animation-delay: 3s;
+}
+
+.zed-delay-4s {
+    animation-delay: 4s;
+}
+
+/* Enhanced Floating Animation */
+@keyframes zed-float {
+
+    0%,
+    100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: translateY(-20px) rotate(180deg);
+        opacity: 1;
+    }
+}
+
+.zed-float {
+    animation: zed-float 6s ease-in-out infinite;
+}
+
+/* Enhanced Shimmer Effect */
+@keyframes zed-shimmer {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.zed-shimmer {
+    animation: zed-shimmer 8s ease-in-out infinite;
+}
+
+/* Active Shimmer for Streaming */
+@keyframes zed-active-shimmer {
+    0% {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.zed-active-shimmer {
+    animation: zed-active-shimmer 2s ease-in-out infinite;
+}
+
+/* Glow Pulse Animation */
+@keyframes zed-glow-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(168, 85, 247, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
+    }
+}
+
+.zed-glow {
+    animation: zed-glow-pulse 3s ease-in-out infinite;
+}
+
+/* Active Pulse for Streaming */
+@keyframes zed-active-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(168, 85, 247, 1), 0 0 60px rgba(59, 130, 246, 0.8);
+    }
+}
+
+.zed-active-pulse {
+    animation: zed-active-pulse 0.8s ease-in-out infinite alternate;
+}
+
+/* Typing Indicator */
+@keyframes zed-typing {
+
+    0%,
+    60%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.4;
+    }
+
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+.zed-typing {
+    animation: zed-typing 1.4s ease-in-out infinite;
+}
+
+/* Glass Morphism Base */
+.zed-glass {
+    background: rgba(0, 0, 0, 0.4);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced Glass for Panels */
+.zed-panel-glass {
+    background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+/* Message Glass Styling */
+.zed-message {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4));
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Gradient Backgrounds */
+.zed-gradient {
+    background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+}
+
+.zed-gradient-alt {
+    background: linear-gradient(135deg, #8B5CF6, #EC4899);
+}
+
+.zed-gradient-subtle {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
+}
+
+/* Button Hover Effects */
+.zed-button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.zed-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.zed-button:active {
+    transform: translateY(0);
+}
+
+/* Sidebar Glass */
+.zed-sidebar {
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+/* Enhanced Cyberpunk Background */
+.cyberpunk-bg {
+    background: radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+        #000000;
+    background-attachment: fixed;
+}
+
+/* Responsive Touch Targets */
+.btn-touch {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+@media (max-width: 768px) {
+    .btn-touch {
+        min-height: 48px;
+        min-width: 48px;
+    }
+}
+
+/* Mobile Height Helper */
+.h-screen-mobile {
+    height: 100vh;
+    height: 100dvh;
+    /* Dynamic viewport height for mobile */
+}
+
+/* No Flash Utility */
+.no-flash {
+    visibility: hidden;
+}
+
+.no-flash.loaded {
+    visibility: visible;
+}
+
+/* Gradient Text */
+.gradient-text {
+    background: linear-gradient(135deg, #EC4899, #8B5CF6, #06B6D4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* Status Indicators */
+.online-indicator {
+    background: #10B981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.offline-indicator {
+    background: #6B7280;
+}
+
+.connecting-indicator {
+    background: #F59E0B;
+    animation: pulse 2s infinite;
+}
+
+.error-indicator {
+    background: #EF4444;
+    animation: pulse 1s infinite;
+}
+
+/* Smooth Transitions */
+* {
+    transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(168, 85, 247, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(168, 85, 247, 0.5);
+}
+
+/* Focus States */
+.focus-ring:focus {
+    outline: 2px solid rgba(168, 85, 247, 0.6);
+    outline-offset: 2px;
+}

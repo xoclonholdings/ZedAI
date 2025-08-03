@@ -1,30 +1,60 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
+// https://vitejs.dev/config/
 export default defineConfig({
     plugins: [react()],
+    root: './client',
     resolve: {
         alias: {
-            "@": path.resolve(__dirname, "./client/src"),
-            "@shared": path.resolve(__dirname, "./shared"),
+            '@': path.resolve(__dirname, './client/src'),
+            '@shared': path.resolve(__dirname, './shared'),
         },
     },
-    root: "./client",
     server: {
         port: 5173,
+        strictPort: true, // Force port 5173, don't try others
         host: true,
         proxy: {
-            "/api": {
-                target: "http://localhost:5001",
+            // Simple mode (chat) endpoints to port 3001
+            '/api/chat': {
+                target: 'http://localhost:3001',
                 changeOrigin: true,
-                secure: false,
+            },
+            '/api/conversations': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+            },
+            '/api/messages': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+            },
+            '/api/auth': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+            },
+            '/api/files': {
+                target: 'http://localhost:3001',
+                changeOrigin: true,
+            },
+            // Agent mode endpoints to port 5001
+            '/api/agent': {
+                target: 'http://localhost:5001',
+                changeOrigin: true,
+            },
+            '/api/memory': {
+                target: 'http://localhost:5001',
+                changeOrigin: true,
+            },
+            '/api/zed-memory': {
+                target: 'http://localhost:5001',
+                changeOrigin: true,
+            },
+            '/api/analytics': {
+                target: 'http://localhost:5001',
+                changeOrigin: true,
             },
         },
     },
-    build: {
-        outDir: "../dist/client",
-        emptyOutDir: true,
-        sourcemap: false,
-    },
-});
+})

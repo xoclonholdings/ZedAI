@@ -1,0 +1,13 @@
+{
+    "css.validate": false,
+    "scss.validate": false,
+    "less.validate": false,
+    "css.lint.unknownAtRules": "ignore",
+    "scss.lint.unknownAtRules": "ignore",
+    "postcss.validate": false,
+    "stylelint.enable": true,
+    "stylelint.validate": [
+        "css",
+        "postcss"
+    ]
+}

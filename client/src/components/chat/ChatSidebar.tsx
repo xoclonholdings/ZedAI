@@ -2,35 +2,23 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 
-import { 
-  MessageSquare, 
-  Plus, 
-  Trash2, 
-  User, 
-  X, 
-  Sparkles,
+import {
+  MessageSquare,
+  Trash2,
+  User,
+  X,
   Zap,
   Camera,
-  Upload,
-  Settings,
   Bell,
   Shield,
-  Palette,
   Database,
-  Bot,
-  Users,
-  Eye,
-  Volume2,
-  Moon,
-  Sun,
-  Globe
+  Bot
 } from "lucide-react";
 const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iemVkR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYTg1NWY3O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZWI0ODk5O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0idXJsKCN6ZWRHcmFkaWVudCkiLz4KICA8cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4K";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useAuthProvider.tsx";
 import { apiRequest } from "@/lib/queryClient";
 import type { Conversation } from "@shared/schema";
 
@@ -56,27 +44,12 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [currentMode, setCurrentMode] = useState<"chat" | "agent">("chat");
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
   const [dataSharing, setDataSharing] = useState(false);
   const [analytics, setAnalytics] = useState(true);
   const { user } = useAuth() as { user?: LocalUser };
   const { toast } = useToast();
-
-  const createConversationMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("/api/conversations", "POST", { 
-        title: "New Conversation",
-        mode: "chat"
-      });
-    },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      window.history.pushState({}, '', `/chat/${data.id}`);
-    },
-  });
 
   const deleteConversationMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -89,11 +62,11 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
 
   const formatDate = (dateInput: string | Date | null): string => {
     if (!dateInput) return "";
-    
+
     const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 24) {
       return "Today";
     } else if (diffInHours < 168) {
@@ -106,9 +79,9 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
   const handleDeleteConversation = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     await deleteConversationMutation.mutateAsync(id);
-    
+
     if (location.includes(id)) {
       window.history.pushState({}, '', '/chat');
     }
@@ -125,14 +98,13 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
         >
           <MessageSquare size={20} />
         </Button>
-        
-        <Button 
-          onClick={() => createConversationMutation.mutate()}
-          className="w-10 h-10 zed-gradient rounded-xl zed-button p-0"
-          disabled={createConversationMutation.isPending}
-        >
-          <Plus size={20} />
-        </Button>
+
+        {/* Mode Toggle - Collapsed */}
+        <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+          <div className={`w-6 h-6 rounded flex items-center justify-center ${currentMode === 'chat' ? 'bg-cyan-500' : 'bg-purple-500'}`}>
+            {currentMode === 'chat' ? <MessageSquare size={12} className="text-white" /> : <Bot size={12} className="text-white" />}
+          </div>
+        </div>
 
         {/* Collapsed Status */}
         <div className="w-full">
@@ -149,7 +121,7 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
       {/* Cyberpunk Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-4 w-20 h-20 bg-purple-600/10 rounded-full blur-2xl zed-float" />
-        <div className="absolute bottom-20 right-4 w-16 h-16 bg-cyan-500/10 rounded-full blur-xl zed-float" style={{ animationDelay: '3s' }} />
+        <div className="absolute bottom-20 right-4 w-16 h-16 bg-cyan-500/10 rounded-full blur-xl zed-float" />
       </div>
 
       {/* Header */}
@@ -174,7 +146,7 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
             >
               <img src={zLogoPath} alt="Z" className="w-6 h-6" />
             </Button>
-            
+
             <div className="text-left">
               <h1 className="text-sm font-bold">
                 <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">ZED</span>
@@ -182,7 +154,7 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
               <p className="text-xs text-muted-foreground hidden sm:block">AI Assistant</p>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-1">
             <LogoutButton />
             {isMobile ? (
@@ -207,40 +179,31 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
           </div>
         </div>
 
-        {/* Compact New Chat Button */}
-        <Button
-          onClick={() => createConversationMutation.mutate()}
-          disabled={createConversationMutation.isPending}
-          className="w-full h-9 zed-gradient rounded-lg text-white font-medium transition-all duration-300 text-sm"
-        >
-          <div className="flex items-center justify-center space-x-1.5">
-            <Plus size={14} />
-            <span>New Chat</span>
-            <Sparkles size={12} className="text-cyan-300" />
-          </div>
-        </Button>
-
-        {/* Settings & Controls */}
-        <div className="mt-2 space-y-1">
-          {/* Chat/Agent Mode Toggle */}
-          <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/10">
-            <div className="flex items-center space-x-2">
-              <div className={`w-4 h-4 rounded flex items-center justify-center ${currentMode === 'chat' ? 'bg-cyan-500' : 'bg-purple-500'}`}>
-                {currentMode === 'chat' ? <MessageSquare size={10} className="text-white" /> : <Bot size={10} className="text-white" />}
-              </div>
-              <span className="text-xs font-medium">{currentMode === 'chat' ? 'Chat' : 'Agent'} Mode</span>
+        {/* Chat/Agent Mode Toggle - Main Switch */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+          <div className="flex items-center space-x-3">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${currentMode === 'chat' ? 'bg-cyan-500' : 'bg-purple-500'}`}>
+              {currentMode === 'chat' ? <MessageSquare size={16} className="text-white" /> : <Bot size={16} className="text-white" />}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentMode(currentMode === 'chat' ? 'agent' : 'chat')}
-              className="h-6 w-12 p-0 rounded-full bg-white/10 relative"
-            >
-              <div className={`absolute w-4 h-4 bg-white rounded-full transition-transform ${currentMode === 'agent' ? 'translate-x-2' : '-translate-x-2'}`} />
-            </Button>
+            <div>
+              <div className="text-sm font-medium">{currentMode === 'chat' ? 'Chat' : 'Agent'} Mode</div>
+              <div className="text-xs text-muted-foreground">
+                {currentMode === 'chat' ? 'Simple conversation' : 'Enhanced capabilities'}
+              </div>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentMode(currentMode === 'chat' ? 'agent' : 'chat')}
+            className="h-8 w-14 p-0 rounded-full bg-white/10 relative border border-white/20"
+          >
+            <div className={`absolute w-6 h-6 bg-white rounded-full transition-transform shadow-md ${currentMode === 'agent' ? 'translate-x-3' : '-translate-x-3'}`} />
+          </Button>
+        </div>
 
-          {/* Quick Settings Row */}
+        {/* Quick Settings Row */}
+        <div className="mt-2 space-y-1">
           <div className="flex items-center space-x-1">
             <Button
               variant="ghost"
@@ -282,28 +245,38 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
             <h3 className="text-xs font-semibold text-foreground">Recent Chats</h3>
           </div>
           <Badge variant="secondary" className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 border-purple-500/30">
-            {(conversations && conversations.length) || 0}
+            {Array.isArray(conversations)
+              ? conversations.filter(conversation => !conversation.title?.toLowerCase().includes('test')).length
+              : 0}
           </Badge>
         </div>
 
         <div className="space-y-1 pb-2">
-          {Array.isArray(conversations) && conversations.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">
-              <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
-              <p className="text-xs">Your conversations will appear here</p>
-            </div>
-          ) : (
-            Array.isArray(conversations) ? conversations.map((conversation) => {
+          {(() => {
+            const filteredConversations = Array.isArray(conversations)
+              ? conversations.filter(conversation => !conversation.title?.toLowerCase().includes('test'))
+              : [];
+
+            if (filteredConversations.length === 0) {
+              return (
+                <div className="text-center py-4 text-muted-foreground">
+                  <MessageSquare size={24} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Your conversations will appear here</p>
+                </div>
+              );
+            }
+
+            return filteredConversations.map((conversation) => {
               const isActive = location === `/chat/${conversation.id}` || location === `/chat/${conversation.id}/`;
               const date = conversation.updatedAt || conversation.createdAt;
-              
+
               return (
                 <div
                   key={conversation.id}
                   className={`
                     group relative p-2 rounded-lg cursor-pointer transition-all zed-button
-                    ${isActive 
-                      ? 'zed-glass border-purple-500/50 shadow-md shadow-purple-500/20' 
+                    ${isActive
+                      ? 'zed-glass border-purple-500/50 shadow-md shadow-purple-500/20'
                       : 'hover:bg-white/5'
                     }
                   `}
@@ -319,17 +292,16 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
                           {formatDate(date)}
                         </span>
                         {conversation.mode && (
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                            conversation.mode === 'agent' 
-                              ? 'bg-purple-500/20 text-purple-400'
-                              : 'bg-cyan-500/20 text-cyan-400'
-                          }`}>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${conversation.mode === 'agent'
+                            ? 'bg-purple-500/20 text-purple-400'
+                            : 'bg-cyan-500/20 text-cyan-400'
+                            }`}>
                             {conversation.mode}
                           </span>
                         )}
                       </div>
                     </div>
-                    
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -341,8 +313,8 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
                   </div>
                 </div>
               );
-            }) : null
-          )}
+            });
+          })()}
         </div>
       </div>
 
@@ -350,14 +322,14 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
       <div className="p-1 border-t border-white/10">
         <div className="flex items-center space-x-2">
           <div className="relative group">
-            <div 
+            <div
               className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-transform"
               onClick={() => document.getElementById('profile-upload')?.click()}
             >
               {user?.profileImageUrl ? (
-                <img 
-                  src={user.profileImageUrl} 
-                  alt={user.firstName || "User"} 
+                <img
+                  src={user.profileImageUrl}
+                  alt={user.firstName || "User"}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -370,6 +342,8 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
               accept="image/*"
               className="hidden"
               disabled={isUploadingPicture}
+              title="Upload profile picture"
+              placeholder="Choose a profile picture"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
@@ -377,14 +351,14 @@ export default function ChatSidebar({ conversations = [], onClose, isMobile = fa
                   try {
                     const formData = new FormData();
                     formData.append('profilePicture', file);
-                    
+
                     const response = await fetch('/api/auth/profile-picture', {
                       method: 'POST',
                       body: formData,
                     });
-                    
+
                     if (response.ok) {
-                      const result = await response.json();
+                      await response.json();
                       toast({
                         title: "Profile picture updated",
                         description: "Your profile picture has been successfully updated!",

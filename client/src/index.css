@@ -1,24 +1,17 @@
+/* Import ZED Enhanced Design System */
+@import url('./styles/zed-enhanced.css');
+
+/* Tailwind CSS directives - these are processed by PostCSS */
+/* csslint ignore:start */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* csslint ignore:end */
 
 @layer utilities {
   .h-screen-mobile {
     height: 100vh;
     height: 100dvh;
-  }
-
-  /* Font family utilities */
-  .font-inter {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-
-  .font-orbitron {
-    font-family: 'Orbitron', monospace;
-  }
-
-  .font-space-grotesk {
-    font-family: 'Space Grotesk', sans-serif;
   }
 }
 
@@ -71,8 +64,6 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-weight: 400;
-    font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04';
     background: #000000 !important;
     color: var(--foreground);
     min-height: 100vh;
@@ -84,7 +75,6 @@
     opacity: 1;
     transition: none;
     /* Mobile-specific optimizations */
-    -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
@@ -258,6 +248,7 @@
 
   /* Cyberpunk Glass Effect */
   .zed-glass {
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
     backdrop-filter: blur(10px) saturate(120%);
     background: rgba(0, 0, 0, 0.7);
     border: 1px solid rgba(139, 0, 255, 0.2);
@@ -421,6 +412,7 @@
 
   /* Message Bubble Enhancement */
   .zed-message {
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -465,6 +457,7 @@
   .zed-input {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
   }
@@ -478,6 +471,7 @@
   /* Sidebar Enhancement */
   .zed-sidebar {
     background: linear-gradient(180deg, hsl(240, 10%, 8%) 0%, hsl(240, 6%, 6%) 100%);
+    -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
@@ -637,13 +631,11 @@
 
 .scroll-smooth {
   scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
 }
 
 .overflow-auto {
   overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+  /* Cross-browser scrollbar styling using webkit selectors */
 }
 
 .overflow-auto::-webkit-scrollbar {
