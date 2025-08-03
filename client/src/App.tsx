@@ -6,6 +6,7 @@ import { Toaster } from './components/ui/toaster-simple'
 import LoginPage from './pages/login-simple'
 import ChatPage from './pages/chat-full'
 import LandingPage from './pages/landing-onboarding'
+import OnboardingPage from './pages/onboarding'
 import NotFoundPage from './pages/not-found'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Switch>
             {/* Public routes */}
             <Route path="/login" component={LoginPage} />
+            <Route path="/onboarding" component={OnboardingPage} />
             <Route path="/" component={LandingPage} />
 
             {/* Chat routes - accessible without authentication for demo */}
