@@ -1,5 +1,5 @@
-/* Import ZED Enhanced Design System */
-@import url('./styles/zed-enhanced.css');
+/* Import optimized ZED styles for better performance */
+@import url('./styles/zed-optimized.css');
 
 /* Tailwind CSS directives - these are processed by PostCSS */
 /* csslint ignore:start */
@@ -12,6 +12,232 @@
   .h-screen-mobile {
     height: 100vh;
     height: 100dvh;
+  }
+
+  /* 3D Perspective utilities */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .rotate-x-2 {
+    transform: rotateX(2deg);
+  }
+
+  .rotate-x-5 {
+    transform: rotateX(5deg);
+  }
+
+  /* Animation delays */
+  .animation-delay-500 {
+    animation-delay: 0.5s;
+  }
+
+  .animation-delay-1000 {
+    animation-delay: 1s;
+  }
+
+  .animation-delay-1500 {
+    animation-delay: 1.5s;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-2500 {
+    animation-delay: 2.5s;
+  }
+
+  .animation-delay-3000 {
+    animation-delay: 3s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  /* Enhanced blur effects */
+  .blur-xs {
+    filter: blur(2px);
+  }
+
+  .blur-2xl {
+    filter: blur(40px);
+  }
+
+  .blur-3xl {
+    filter: blur(64px);
+  }
+
+  /* Glassmorphism enhancements */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-effect-strong {
+    background: rgba(255, 255, 255, 0.15);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Grid overlay for depth */
+  .depth-grid {
+    background-image:
+      linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  /* Enhanced button shadows */
+  .btn-depth-shadow {
+    box-shadow:
+      0 0 30px rgba(139, 92, 246, 0.4),
+      0 10px 25px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Profile button 3D effects */
+  .profile-btn-3d {
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.3),
+      0 6px 20px rgba(139, 92, 246, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 5px 15px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Mode toggle 3D effects */
+  .mode-toggle-3d {
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.3),
+      0 6px 20px rgba(139, 92, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .mode-slider-3d {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      0 0 10px rgba(255, 255, 255, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Form input 3D effects */
+  .input-3d {
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 1px 2px rgba(255, 255, 255, 0.1);
+  }
+
+  .input-3d:focus {
+    box-shadow:
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 1px 2px rgba(255, 255, 255, 0.1),
+      0 0 0 2px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Enhanced onboarding effects */
+  .step-icon-3d {
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.3),
+      0 6px 20px rgba(139, 92, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .preference-card-3d {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 4px 8px rgba(139, 92, 246, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .preference-icon-3d {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 4px 8px rgba(139, 92, 246, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .preference-checkbox-3d {
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.2),
+      0 1px 2px rgba(255, 255, 255, 0.1);
+  }
+
+  .progress-step-3d {
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      0 4px 8px rgba(139, 92, 246, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .nav-button-3d {
+    box-shadow:
+      0 4px 8px rgba(0, 0, 0, 0.3),
+      0 6px 20px rgba(139, 92, 246, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .nav-button-3d:hover {
+    box-shadow:
+      0 6px 12px rgba(0, 0, 0, 0.4),
+      0 8px 25px rgba(139, 92, 246, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  /* Signal strength bar */
+  .signal-strength-87 {
+    width: 87%;
+  }
+
+  /* Satellite signal animation */
+  .satellite-signal {
+    animation: satellite-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes satellite-pulse {
+
+    0%,
+    100% {
+      opacity: 0.8;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .signal-bar-animate {
+    animation: signal-bar 1.5s ease-in-out infinite;
+  }
+
+  .signal-bar-delay-1 {
+    animation-delay: 0ms;
+  }
+
+  .signal-bar-delay-2 {
+    animation-delay: 150ms;
+  }
+
+  .signal-bar-delay-3 {
+    animation-delay: 300ms;
+  }
+
+  @keyframes signal-bar {
+
+    0%,
+    100% {
+      transform: scaleY(1);
+    }
+
+    50% {
+      transform: scaleY(1.2);
+    }
   }
 }
 

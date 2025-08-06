@@ -13,6 +13,7 @@ import { MemoryService } from "./services/memoryService";
 import { Router } from "express";
 import memoryRoutes from "./routes/memory";
 import zedMemoryRoutes from "./routes/zedMemory";
+import { memoryApiRoutes } from "./routes/memoryApi";
 
 // Helper for admin check
 function isAdminUser(sessionUser: any) {
@@ -208,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Skip authentication for development - return mock conversations
       console.log("📋 GET Conversations (dev mode)");
-      
+
       const mockConversations = [
         {
           id: "conv-1",
@@ -219,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
       console.log("📁 Returning mock conversations:", mockConversations.length);
-      
+
       return res.json(mockConversations);
     } catch (error) {
       console.error("❌ Error fetching conversations:", error);
@@ -232,7 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const conversationId = req.params.id;
       console.log("📄 GET Conversation:", conversationId);
-      
+
       // Skip authentication for development - return mock conversation
       const mockConversation = {
         id: conversationId,
@@ -241,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedAt: new Date().toISOString(),
         userId: "dev-user"
       };
-      
+
       return res.json(mockConversation);
     } catch (error) {
       console.error("❌ Error fetching conversation:", error);
@@ -255,17 +256,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.user?.id;
       const { title = "New Conversation", mode = "chat" } = req.body;
       console.log("➕ POST Create conversation for user:", userId, "title:", title);
-      
+
       const conversationData = insertConversationSchema.parse({
         userId,
         title,
         mode,
         preview: title.substring(0, 100)
       });
-      
+
       const conversation = await storage.createConversation(conversationData);
       console.log("✅ Created conversation:", conversation.id);
-      
+
       return res.json(conversation);
     } catch (error) {
       console.error("❌ Error creating conversation:", error);
@@ -279,13 +280,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const conversationId = req.params.id;
       const updates = req.body;
       console.log("🔄 PATCH Update conversation:", conversationId, "updates:", updates);
-      
+
       const conversation = await storage.updateConversation(conversationId, updates);
-      
+
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
-      
+
       return res.json(conversation);
     } catch (error) {
       console.error("❌ Error updating conversation:", error);
@@ -298,13 +299,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const conversationId = req.params.id;
       console.log("🗑️ DELETE Conversation:", conversationId);
-      
+
       const success = await storage.deleteConversation(conversationId);
-      
+
       if (!success) {
         return res.status(404).json({ error: "Conversation not found" });
       }
-      
+
       return res.json({ success: true });
     } catch (error) {
       console.error("❌ Error deleting conversation:", error);
@@ -317,10 +318,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const conversationId = req.params.id;
       console.log("📥 GET Messages request for conversation:", conversationId);
-      
+
       const messages = await storage.getMessagesByConversation(conversationId);
       console.log("📋 Found messages:", messages.length);
-      
+
       return res.json(messages);
     } catch (error) {
       console.error("❌ Error fetching messages:", error);
@@ -333,10 +334,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const conversationId = req.params.id;
       console.log("📁 GET Files for conversation:", conversationId);
-      
+
       const files = await storage.getFilesByConversation(conversationId);
       console.log("📄 Found files:", files.length);
-      
+
       return res.json(files);
     } catch (error) {
       console.error("❌ Error fetching files:", error);
@@ -402,12 +403,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-    // POST: /api/ask - AI question answering endpoint
+  // POST: /api/ask - AI question answering endpoint
   app.post("/api/ask", isAuthenticated, async (req, res) => {
     try {
       const { content, prompt, model, stream } = req.body;
       const userInput = content || prompt;
-      
+
       if (!userInput) {
         return res.status(400).json({ error: "Content or prompt is required" });
       }
@@ -418,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let modelUsed = 'unknown';
 
       // Fallback Chain: Local fallback -> OpenAI
-      
+
       try {
         // Use existing OpenAI service
         const openaiResponse = await generateChatResponse([
@@ -434,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (openaiError) {
         console.log("⚠️ ZED: OpenAI failed, using fallback...", openaiError instanceof Error ? openaiError.message : String(openaiError));
-        
+
         // Simple fallback response
         response = `I understand you're asking: "${userInput.substring(0, 100)}${userInput.length > 100 ? '...' : ''}". I'm currently running on backup systems and may have limited capabilities. Please try again for a more detailed response.`;
         modelUsed = 'fallback';
@@ -448,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             query: userInput,
             response: response,
             model: modelUsed,
-            metadata: { 
+            metadata: {
               source: 'zed-unified',
               fallback_used: modelUsed !== 'openai'
             }
@@ -468,7 +469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("❌ ZED: Critical error in ask endpoint:", error);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: "ZED is temporarily offline. Please try again.",
         assistant: "ZED"
       });
@@ -481,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ask", isAuthenticated, async (req: any, res: any) => {
     try {
       const { content } = req.body;
-      
+
       if (!content) {
         return res.status(400).json({ error: "Content is required" });
       }
@@ -492,7 +493,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let modelUsed = 'unknown';
 
       // Fallback Chain: Ollama -> OpenAI -> Julius
-      
+
       // 1. Try Ollama first (local model - fastest)
       try {
         console.log("🤖 ZED: Attempting Ollama (local model)...");
@@ -523,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } catch (ollamaError) {
         console.log("⚠️ ZED: Ollama failed, trying OpenAI...", ollamaError instanceof Error ? ollamaError.message : String(ollamaError));
-        
+
         // 2. Fallback to OpenAI
         try {
           // Use existing OpenAI service
@@ -540,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (openaiError) {
           console.log("⚠️ ZED: OpenAI failed, trying Julius...", openaiError instanceof Error ? openaiError.message : String(openaiError));
-          
+
           // 3. Final fallback to Julius (placeholder - implement your Julius integration)
           try {
             // TODO: Implement Julius API call
@@ -550,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log("✅ ZED: Julius responded successfully");
           } catch (juliusError) {
             console.error("❌ ZED: All models failed", juliusError instanceof Error ? juliusError.message : String(juliusError));
-            return res.status(503).json({ 
+            return res.status(503).json({
               error: "ZED is temporarily offline. Please try again.",
               assistant: "ZED"
             });
@@ -566,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             query: content,
             response: response,
             model: modelUsed,
-            metadata: { 
+            metadata: {
               source: 'zed-unified',
               fallback_used: modelUsed !== 'ollama'
             }
@@ -585,9 +586,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("❌ ZED: Critical error in ask endpoint:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "ZED is temporarily offline. Please try again.",
         assistant: "ZED"
+      });
+    }
+  });
+
+  // Simple chat endpoint that frontend expects
+  app.post("/api/chat", isAuthenticated, async (req, res) => {
+    try {
+      const { message, userId, timestamp } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      console.log("💬 Processing chat message:", message);
+
+      // Build user context for AI system
+      const userContext = {
+        userId: req.session.user?.id || userId || 'anonymous',
+        accessLevel: isAdminUser(req.session.user) ? 'admin' as const : 'user' as const,
+        personalityMode: req.session.user?.personalityMode || 'standard' as const,
+        preferences: req.session.user?.preferences || {}
+      };
+
+      try {
+        // Use the OpenAI service to generate a response
+        const aiResponse = await generateChatResponse([
+          { role: "user", content: message }
+        ], "chat", "gpt-4o", userContext);
+
+        console.log("✅ Chat response generated successfully");
+
+        return res.json({
+          id: Date.now().toString(),
+          content: aiResponse,
+          role: 'assistant',
+          timestamp: new Date().toISOString()
+        });
+
+      } catch (aiError) {
+        console.warn("⚠️ AI service unavailable, using fallback response:", aiError);
+
+        // Fallback response if AI service fails
+        return res.json({
+          id: Date.now().toString(),
+          content: `I understand you said: "${message}". I'm currently experiencing some technical difficulties but I'm here to help. Could you please try rephrasing your question or try again in a moment?`,
+          role: 'assistant',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+    } catch (error) {
+      console.error("❌ Error in chat endpoint:", error);
+      return res.status(500).json({
+        error: "Failed to process chat message",
+        id: Date.now().toString(),
+        content: "I'm sorry, I'm having trouble processing your message right now. Please try again.",
+        role: 'assistant',
+        timestamp: new Date().toISOString()
       });
     }
   });
@@ -597,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // TODO: Replace with actual Julius API integration
     // For now, return a fallback response
     console.log("🔄 ZED: Using Julius fallback...");
-    
+
     // Example Julius API call (replace with actual implementation)
     try {
       // const juliusResponse = await fetch('http://your-julius-api/generate', {
@@ -607,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // });
       // const data = await juliusResponse.json();
       // return data.response;
-      
+
       // Temporary fallback response
       return `I understand you're asking: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}". I'm currently running on backup systems and may have limited capabilities. Please try again for a more detailed response.`;
     } catch (error) {
@@ -617,9 +676,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Memory management routes (Admin only)
   app.use('/api/memory', memoryRoutes);
-  
+
   // ZED Core Memory System routes
   app.use('/api/zed/memory', zedMemoryRoutes);
+
+  // Memory API routes (for frontend Memory panel) - merged with /api/memory
+  app.use('/api/memory', memoryApiRoutes);
 
   // Only add API-specific 404 handling, not global
   app.use('/api/*', (req, res) => {

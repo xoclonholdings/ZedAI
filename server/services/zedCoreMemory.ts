@@ -40,14 +40,14 @@ export interface ZedCoreMemory {
   updatedAt: Date;
   authorizedEditors: string[];
   baseTemplate: string; // References admin template version
-  
+
   // Core Memory Components
   personality: {
     baseTraits: Record<string, any>;
     learnedBehaviors: Record<string, any>;
     customizations: Record<string, any>;
   };
-  
+
   conversations: ZedConversation[];
   uploads: Array<{
     id: string;
@@ -57,7 +57,7 @@ export interface ZedCoreMemory {
     uploadedAt: Date;
     metadata?: Record<string, any>;
   }>;
-  
+
   generations: Array<{
     id: string;
     type: 'document' | 'code' | 'image' | 'analysis';
@@ -67,7 +67,7 @@ export interface ZedCoreMemory {
     prompt: string;
     metadata?: Record<string, any>;
   }>;
-  
+
   preferences: ZedUserPreferences;
   bookmarks: Array<{
     id: string;
@@ -77,7 +77,7 @@ export interface ZedCoreMemory {
     tags: string[];
     createdAt: Date;
   }>;
-  
+
   roles: Array<{
     id: string;
     name: string;
@@ -85,7 +85,7 @@ export interface ZedCoreMemory {
     permissions: string[];
     assignedAt: Date;
   }>;
-  
+
   // Memory Management
   memoryEntries: ZedMemoryEntry[];
   compressionHistory: Array<{
@@ -103,14 +103,14 @@ export interface AdminZedCore {
   createdAt: Date;
   updatedAt: Date;
   isTemplate: true;
-  
+
   // Admin's core personality and knowledge
   basePersonality: Record<string, any>;
   adminKnowledge: Record<string, any>;
   systemPrompts: Record<string, string>;
   defaultModules: string[];
   defaultPreferences: ZedUserPreferences;
-  
+
   // Template settings for new users
   templateSettings: {
     copyPersonality: boolean;
@@ -238,19 +238,19 @@ class ZedCoreMemoryService {
       updatedAt: new Date(),
       authorizedEditors: [adminId, userId],
       baseTemplate: adminCore.version,
-      
+
       personality: {
-        baseTraits: adminCore.templateSettings.copyPersonality ? 
+        baseTraits: adminCore.templateSettings.copyPersonality ?
           { ...adminCore.basePersonality } : {},
         learnedBehaviors: {},
         customizations: {}
       },
-      
+
       conversations: [],
       uploads: [],
       generations: [],
-      
-      preferences: adminCore.templateSettings.copyPreferences ? 
+
+      preferences: adminCore.templateSettings.copyPreferences ?
         { ...adminCore.defaultPreferences } : {
           theme: 'light',
           language: 'en',
@@ -258,7 +258,7 @@ class ZedCoreMemoryService {
           enabledModules: ['chat'],
           customPrompts: {}
         },
-      
+
       bookmarks: [],
       roles: adminCore.templateSettings.defaultRoles.map(roleName => ({
         id: uuidv4(),
@@ -267,7 +267,7 @@ class ZedCoreMemoryService {
         permissions: roleName === 'admin' ? ['*'] : ['read', 'write'],
         assignedAt: new Date()
       })),
-      
+
       memoryEntries: [],
       compressionHistory: []
     };
@@ -317,7 +317,7 @@ class ZedCoreMemoryService {
 
     userCore.memoryEntries.push(memoryEntry);
     await this.saveUserCore(userCore);
-    
+
     return memoryEntry.id;
   }
 
@@ -336,7 +336,7 @@ class ZedCoreMemoryService {
 
     userCore.conversations.push(newConversation);
     await this.saveUserCore(userCore);
-    
+
     return newConversation.id;
   }
 
@@ -384,7 +384,7 @@ class ZedCoreMemoryService {
 
     userCore.uploads.push(upload);
     await this.saveUserCore(userCore);
-    
+
     return uploadId;
   }
 
@@ -401,13 +401,13 @@ class ZedCoreMemoryService {
     }
 
     const generationId = uuidv4();
-    const filename = `${generationId}.${generation.type === 'document' ? 'md' : 
-                     generation.type === 'code' ? 'txt' : 
-                     generation.type === 'image' ? 'png' : 'json'}`;
+    const filename = `${generationId}.${generation.type === 'document' ? 'md' :
+      generation.type === 'code' ? 'txt' :
+        generation.type === 'image' ? 'png' : 'json'}`;
     const generationPath = path.join(this.getUserOutputPath(userId), filename);
 
     // Save the generated content to file
-    await fs.writeFile(generationPath, 
+    await fs.writeFile(generationPath,
       typeof generation.content === 'string' ? generation.content : JSON.stringify(generation.content, null, 2),
       'utf-8'
     );
@@ -424,7 +424,7 @@ class ZedCoreMemoryService {
 
     userCore.generations.push(generationEntry);
     await this.saveUserCore(userCore);
-    
+
     return generationId;
   }
 
@@ -459,7 +459,7 @@ class ZedCoreMemoryService {
 
     userCore.bookmarks.push(bookmarkEntry);
     await this.saveUserCore(userCore);
-    
+
     return bookmarkEntry.id;
   }
 
@@ -505,7 +505,7 @@ class ZedCoreMemoryService {
     }
 
     const memorySize = JSON.stringify(userCore).length;
-    const lastCompression = userCore.compressionHistory.length > 0 ? 
+    const lastCompression = userCore.compressionHistory.length > 0 ?
       userCore.compressionHistory[userCore.compressionHistory.length - 1].compressedAt : undefined;
 
     return {
@@ -534,6 +534,141 @@ class ZedCoreMemoryService {
       });
     } catch {
       return [];
+    }
+  }
+
+  // Additional methods for frontend API integration
+  async getRecentConversations(userId: string, limit: number = 10) {
+    try {
+      const memory = await this.getMemory(userId);
+      const conversations = memory.conversations.slice(-limit).reverse();
+      return conversations;
+    } catch (error) {
+      console.error('Error getting recent conversations:', error);
+      return [];
+    }
+  }
+
+  async searchMemory(userId: string, query: string, limit: number = 50) {
+    try {
+      const memory = await this.getMemory(userId);
+      const results: any[] = [];
+
+      // Search in conversations
+      memory.conversations.forEach(conv => {
+        if (conv.title.toLowerCase().includes(query.toLowerCase()) ||
+          conv.messages.some(msg => msg.content.toLowerCase().includes(query.toLowerCase()))) {
+          results.push({
+            type: 'conversation',
+            id: conv.id,
+            title: conv.title,
+            snippet: conv.messages[0]?.content || '',
+            timestamp: conv.updatedAt
+          });
+        }
+      });
+
+      // Search in uploads and other content
+      memory.uploads.forEach(upload => {
+        if (upload.fileName.toLowerCase().includes(query.toLowerCase()) ||
+          upload.description?.toLowerCase().includes(query.toLowerCase())) {
+          results.push({
+            type: 'upload',
+            id: upload.id,
+            title: upload.fileName,
+            snippet: upload.description || '',
+            timestamp: upload.uploadedAt
+          });
+        }
+      });
+
+      return results.slice(0, limit);
+    } catch (error) {
+      console.error('Error searching memory:', error);
+      return [];
+    }
+  }
+
+  async syncWithZebulon(userId: string) {
+    try {
+      const memory = await this.getMemory(userId);
+
+      // Calculate stats
+      const totalMessages = memory.conversations.reduce((total, conv) => total + conv.messages.length, 0);
+      const totalSize = JSON.stringify(memory).length;
+      const formattedSize = totalSize > 1024 * 1024
+        ? `${(totalSize / (1024 * 1024)).toFixed(1)} MB`
+        : totalSize > 1024
+          ? `${(totalSize / 1024).toFixed(1)} KB`
+          : `${totalSize} B`;
+
+      // Update timestamp
+      memory.updatedAt = new Date();
+      await this.saveMemory(memory);
+
+      return {
+        totalSize: formattedSize,
+        messageCount: totalMessages,
+        lastSync: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error syncing with Zebulon:', error);
+      throw error;
+    }
+  }
+
+  async syncDatabase(userId: string) {
+    try {
+      const memory = await this.getMemory(userId);
+      const recordCount = memory.conversations.length + memory.uploads.length + memory.bookmarks.length;
+      const storageSize = JSON.stringify(memory).length;
+      const formattedSize = storageSize > 1024 * 1024
+        ? `${(storageSize / (1024 * 1024)).toFixed(1)} MB`
+        : storageSize > 1024
+          ? `${(storageSize / 1024).toFixed(1)} KB`
+          : `${storageSize} B`;
+
+      return {
+        recordCount,
+        storageUsed: formattedSize
+      };
+    } catch (error) {
+      console.error('Error syncing database:', error);
+      throw error;
+    }
+  }
+
+  async createBackup(userId: string) {
+    try {
+      const memory = await this.getMemory(userId);
+      return {
+        userId,
+        backupDate: new Date().toISOString(),
+        version: memory.version,
+        data: memory
+      };
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      throw error;
+    }
+  }
+
+  async restoreBackup(userId: string, backupData: any) {
+    try {
+      if (backupData.data) {
+        const memory = backupData.data;
+        memory.userId = userId;
+        memory.updatedAt = new Date();
+        await this.saveMemory(memory);
+
+        return {
+          restoredCount: memory.conversations.length + memory.uploads.length + memory.bookmarks.length
+        };
+      }
+      throw new Error('Invalid backup data');
+    } catch (error) {
+      console.error('Error restoring backup:', error);
+      throw error;
     }
   }
 }

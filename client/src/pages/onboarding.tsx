@@ -58,13 +58,13 @@ export default function Onboarding() {
     // Step 1: Welcome
     const WelcomeStep = () => (
         <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-r from-purple-600 to-cyan-600 rounded-full flex items-center justify-center mb-4">
-                <Sparkles size={32} className="text-white" />
+            <div className="w-16 h-16 mx-auto bg-gradient-to-r from-purple-600 to-cyan-600 rounded-full flex items-center justify-center mb-4 shadow-lg transform hover:scale-110 transition-transform duration-300 step-icon-3d">
+                <Sparkles size={32} className="text-white drop-shadow-lg" />
             </div>
-            <h3 className="text-xl font-black text-white font-space-grotesk tracking-wide">
+            <h3 className="text-xl font-black text-white font-space-grotesk tracking-wide transform hover:scale-105 transition-transform duration-300 cursor-default">
                 Welcome to ZED AI
             </h3>
-            <p className="text-sm text-gray-200 leading-relaxed font-inter font-bold">
+            <p className="text-sm text-gray-200 leading-relaxed font-inter font-bold drop-shadow-md">
                 Your journey into the future of artificial intelligence begins here.
                 Let's set up your account and customize your AI experience.
             </p>
@@ -75,77 +75,84 @@ export default function Onboarding() {
     const AccountStep = () => (
         <div className="space-y-3">
             <div className="text-center mb-3">
-                <User className="w-10 h-10 mx-auto text-purple-400 mb-1" />
-                <h3 className="text-lg font-black text-white font-space-grotesk tracking-wide">
+                <div className="relative mb-2">
+                    <div className="absolute inset-0 bg-purple-500 rounded-full blur-lg opacity-30 transform scale-150"></div>
+                    <User className="relative w-10 h-10 mx-auto text-purple-400 drop-shadow-lg" />
+                </div>
+                <h3 className="text-lg font-black text-white font-space-grotesk tracking-wide transform hover:scale-105 transition-transform duration-300 cursor-default">
                     Create Your Account
                 </h3>
-                <p className="text-xs text-gray-200 font-inter font-bold">
+                <p className="text-xs text-gray-200 font-inter font-bold drop-shadow-md">
                     Choose your username and secure your account
                 </p>
             </div>
 
             <div className="space-y-2">
-                <div>
+                <div className="relative">
                     <label className="block text-xs font-black text-gray-200 mb-1 font-space-grotesk tracking-wide">
                         Username
                     </label>
                     <div className="relative">
-                        <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                        <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 drop-shadow-sm" />
                         <input
                             type="text"
                             value={formData.username}
                             onChange={(e) => updateFormData('username', e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm"
+                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 backdrop-blur-sm border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm shadow-lg transform hover:scale-[1.02] input-3d"
                             placeholder="Enter your username"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-lg blur-xl -z-10 transform scale-110 opacity-0 focus-within:opacity-100 transition-opacity duration-300"></div>
                     </div>
                 </div>
 
-                <div>
+                <div className="relative">
                     <label className="block text-xs font-black text-gray-200 mb-1 font-space-grotesk tracking-wide">
-                        Email Address
+                        Email
                     </label>
                     <div className="relative">
-                        <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                        <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 drop-shadow-sm" />
                         <input
                             type="email"
                             value={formData.email}
                             onChange={(e) => updateFormData('email', e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm"
+                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 backdrop-blur-sm border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm shadow-lg transform hover:scale-[1.02] input-3d"
                             placeholder="Enter your email"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-lg blur-xl -z-10 transform scale-110 opacity-0 focus-within:opacity-100 transition-opacity duration-300"></div>
                     </div>
                 </div>
 
-                <div>
+                <div className="relative">
                     <label className="block text-xs font-black text-gray-200 mb-1 font-space-grotesk tracking-wide">
                         Password
                     </label>
                     <div className="relative">
-                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 drop-shadow-sm" />
                         <input
                             type="password"
                             value={formData.password}
                             onChange={(e) => updateFormData('password', e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm"
+                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 backdrop-blur-sm border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm shadow-lg transform hover:scale-[1.02] input-3d"
                             placeholder="Create a secure password"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-lg blur-xl -z-10 transform scale-110 opacity-0 focus-within:opacity-100 transition-opacity duration-300"></div>
                     </div>
                 </div>
 
-                <div>
+                <div className="relative">
                     <label className="block text-xs font-black text-gray-200 mb-1 font-space-grotesk tracking-wide">
                         Confirm Password
                     </label>
                     <div className="relative">
-                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                        <Lock className="absolute left-3 top-2.5 w-4 h-4 text-gray-400 drop-shadow-sm" />
                         <input
                             type="password"
                             value={formData.confirmPassword}
                             onChange={(e) => updateFormData('confirmPassword', e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm"
+                            className="w-full pl-10 pr-3 py-2 bg-gray-900/50 backdrop-blur-sm border border-purple-500/30 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all font-inter text-sm shadow-lg transform hover:scale-[1.02] input-3d"
                             placeholder="Confirm your password"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-lg blur-xl -z-10 transform scale-110 opacity-0 focus-within:opacity-100 transition-opacity duration-300"></div>
                     </div>
                 </div>
             </div>
@@ -156,11 +163,14 @@ export default function Onboarding() {
     const PreferencesStep = () => (
         <div className="space-y-3">
             <div className="text-center mb-3">
-                <Sparkles className="w-10 h-10 mx-auto text-cyan-400 mb-1" />
-                <h3 className="text-lg font-black text-white font-space-grotesk tracking-wide">
+                <div className="relative mb-2">
+                    <div className="absolute inset-0 bg-cyan-500 rounded-full blur-lg opacity-30 transform scale-150"></div>
+                    <Sparkles className="relative w-10 h-10 mx-auto text-cyan-400 drop-shadow-lg" />
+                </div>
+                <h3 className="text-lg font-black text-white font-space-grotesk tracking-wide transform hover:scale-105 transition-transform duration-300 cursor-default">
                     Customize Your Experience
                 </h3>
-                <p className="text-xs text-gray-200 font-inter font-bold">
+                <p className="text-xs text-gray-200 font-inter font-bold drop-shadow-md">
                     Choose which features you'd like to enable
                 </p>
             </div>
@@ -174,23 +184,26 @@ export default function Onboarding() {
                 ].map(({ key, icon: Icon, title, desc }) => (
                     <div
                         key={key}
-                        className="bg-gray-900/50 border border-purple-500/30 rounded-lg p-2.5 hover:border-purple-500/50 transition-all cursor-pointer"
+                        className="relative bg-gray-900/50 backdrop-blur-sm border border-purple-500/30 rounded-lg p-2.5 hover:border-purple-500/50 transition-all cursor-pointer transform hover:scale-[1.02] shadow-lg preference-card-3d"
                         onClick={() => updatePreferences(key, !formData.preferences[key as keyof typeof formData.preferences])}
                     >
-                        <div className="flex items-center space-x-3">
-                            <div className="w-7 h-7 bg-gradient-to-r from-purple-600/20 to-cyan-600/20 rounded-lg flex items-center justify-center">
-                                <Icon className="w-3.5 h-3.5 text-purple-400" />
+                        {/* Floating highlight effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-cyan-500/5 rounded-lg blur-sm opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
+
+                        <div className="relative flex items-center space-x-3">
+                            <div className="w-7 h-7 bg-gradient-to-r from-purple-600/20 to-cyan-600/20 rounded-lg flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform duration-300 preference-icon-3d">
+                                <Icon className="w-3.5 h-3.5 text-purple-400 drop-shadow-sm" />
                             </div>
                             <div className="flex-1">
-                                <h4 className="font-black text-white font-space-grotesk tracking-wide text-sm">{title}</h4>
-                                <p className="text-xs text-gray-300 font-inter">{desc}</p>
+                                <h4 className="font-black text-white font-space-grotesk tracking-wide text-sm drop-shadow-sm">{title}</h4>
+                                <p className="text-xs text-gray-300 font-inter drop-shadow-sm">{desc}</p>
                             </div>
-                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${formData.preferences[key as keyof typeof formData.preferences]
-                                ? 'border-purple-500 bg-purple-500'
-                                : 'border-gray-500'
-                                }`}>
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg ${formData.preferences[key as keyof typeof formData.preferences]
+                                ? 'border-purple-500 bg-purple-500 shadow-purple-500/50'
+                                : 'border-gray-500 shadow-gray-500/30'
+                                } preference-checkbox-3d`}>
                                 {formData.preferences[key as keyof typeof formData.preferences] && (
-                                    <Check className="w-2.5 h-2.5 text-white" />
+                                    <Check className="w-2.5 h-2.5 text-white drop-shadow-sm" />
                                 )}
                             </div>
                         </div>
@@ -200,51 +213,33 @@ export default function Onboarding() {
         </div>
     )
 
-    // Step 4: Complete
-    const CompleteStep = () => (
+    // Step 4: Completion
+    const CompletionStep = () => (
         <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto bg-gradient-to-r from-green-600 to-cyan-600 rounded-full flex items-center justify-center mb-4">
-                <Check size={32} className="text-white" />
+            <div className="w-16 h-16 mx-auto bg-gradient-to-r from-green-500 to-cyan-500 rounded-full flex items-center justify-center mb-4 shadow-lg transform hover:scale-110 transition-transform duration-300 step-icon-3d">
+                <Check size={32} className="text-white drop-shadow-lg" />
             </div>
-            <h3 className="text-xl font-black text-white font-space-grotesk tracking-wide">
-                Welcome Aboard, {formData.username || 'User'}!
+            <h3 className="text-xl font-black text-white font-space-grotesk tracking-wide transform hover:scale-105 transition-transform duration-300 cursor-default">
+                You're All Set!
             </h3>
-            <p className="text-sm text-gray-200 leading-relaxed font-inter font-bold">
-                Your ZED AI account has been successfully created.
-                You're now ready to experience the future of artificial intelligence.
+            <p className="text-sm text-gray-200 leading-relaxed font-inter font-bold drop-shadow-md">
+                Welcome to ZED AI! Your account has been configured and you're ready to experience
+                the future of artificial intelligence.
             </p>
-            <div className="bg-gradient-to-r from-purple-600/20 to-cyan-600/20 rounded-lg p-4 border border-purple-500/30">
-                <h4 className="font-black text-white mb-3 font-space-grotesk text-sm">What's Next?</h4>
-                <div className="grid grid-cols-1 gap-2 text-left">
-                    <div className="flex items-center space-x-2">
-                        <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
-                        <span className="text-gray-200 font-inter text-xs">Start your first AI conversation</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full"></div>
-                        <span className="text-gray-200 font-inter text-xs">Upload documents for analysis</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <div className="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
-                        <span className="text-gray-200 font-inter text-xs">Explore advanced AI features</span>
-                    </div>
-                </div>
-            </div>
         </div>
     )
 
     const steps: OnboardingStep[] = [
-        { id: 0, title: 'Welcome', description: 'Introduction to ZED AI', component: <WelcomeStep /> },
-        { id: 1, title: 'Account', description: 'Create your account', component: <AccountStep /> },
-        { id: 2, title: 'Preferences', description: 'Customize features', component: <PreferencesStep /> },
-        { id: 3, title: 'Complete', description: 'All set!', component: <CompleteStep /> }
+        { id: 1, title: 'Welcome', description: 'Welcome to ZED', component: <WelcomeStep /> },
+        { id: 2, title: 'Account', description: 'Create account', component: <AccountStep /> },
+        { id: 3, title: 'Preferences', description: 'Set preferences', component: <PreferencesStep /> },
+        { id: 4, title: 'Complete', description: 'Setup complete', component: <CompletionStep /> }
     ]
 
     const nextStep = () => {
         if (currentStep < steps.length - 1) {
             setCurrentStep(currentStep + 1)
         } else {
-            // Complete onboarding, redirect to chat
             setLocation('/chat')
         }
     }
@@ -263,7 +258,6 @@ export default function Onboarding() {
         return true
     }
 
-    // Calculate progress width for the progress bar
     const getProgressClass = () => {
         const progress = Math.round(((currentStep + 1) / steps.length) * 100)
         if (progress <= 25) return 'w-1/4'
@@ -274,104 +268,160 @@ export default function Onboarding() {
 
     return (
         <div className="h-screen bg-black flex flex-col relative overflow-hidden">
-            {/* Animated Background Orbs */}
+            {/* Enhanced Multi-layered Background */}
             <div className="absolute inset-0 overflow-hidden">
+                {/* Layer 1 - Main orbs */}
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
                 <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-cyan-600 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse animation-delay-2000"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-60 h-60 bg-pink-600 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse animation-delay-4000"></div>
+
+                {/* Layer 2 - Secondary orbs for depth */}
+                <div className="absolute top-20 right-1/4 w-40 h-40 bg-purple-400 rounded-full mix-blend-multiply filter blur-2xl opacity-15 animate-pulse animation-delay-1000"></div>
+                <div className="absolute bottom-20 left-1/4 w-32 h-32 bg-cyan-400 rounded-full mix-blend-multiply filter blur-2xl opacity-15 animate-pulse animation-delay-3000"></div>
+
+                {/* Layer 3 - Floating particles */}
+                <div className="absolute top-1/3 left-1/5 w-4 h-4 bg-purple-300 rounded-full opacity-30 animate-bounce animation-delay-500"></div>
+                <div className="absolute top-2/3 right-1/5 w-3 h-3 bg-cyan-300 rounded-full opacity-25 animate-bounce animation-delay-1500"></div>
+                <div className="absolute top-1/2 left-3/4 w-2 h-2 bg-pink-300 rounded-full opacity-20 animate-bounce animation-delay-2500"></div>
+
+                {/* Layer 4 - Grid overlay for depth */}
+                <div className="absolute inset-0 opacity-5">
+                    <div className="absolute inset-0 depth-grid"></div>
+                </div>
             </div>
 
             <div className="relative z-10 flex flex-col h-full">
-                {/* Header with Logo */}
-                <header className="p-2">
-                    <div className="flex items-center justify-center">
-                        <h1 className="text-2xl font-black bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-transparent font-space-grotesk tracking-widest drop-shadow-lg">
-                            ZED
-                        </h1>
+                {/* Enhanced Header with Glass Effect */}
+                <header className="p-2 relative">
+                    {/* Glass backdrop */}
+                    <div className="absolute inset-0 bg-white/5 backdrop-blur-md border-b border-white/10"></div>
+
+                    <div className="flex items-center justify-center relative z-10">
+                        {/* Logo with glow effect */}
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full blur-lg opacity-30 transform scale-150"></div>
+                            <h1 className="relative text-2xl font-black bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-transparent font-space-grotesk tracking-widest drop-shadow-lg transform hover:scale-105 transition-transform duration-300 cursor-default">
+                                ZED
+                            </h1>
+                        </div>
                         <div className="ml-0 -mt-1">
-                            <ZedLogo className="w-4 h-4" />
+                            <ZedLogo className="w-4 h-4 drop-shadow-lg transform hover:rotate-12 transition-transform duration-300" />
                         </div>
                     </div>
                 </header>
 
-                {/* Main Content */}
+                {/* Enhanced Main Content */}
                 <main className="flex-1 flex items-center justify-center px-4 py-2">
-                    <div className="w-full max-w-lg">
-                        {/* Progress Indicator */}
-                        <div className="mb-4">
-                            <div className="flex justify-between mb-2">
-                                {steps.map((step, index) => (
-                                    <div key={step.id} className="flex flex-col items-center">
-                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all ${index <= currentStep
-                                            ? 'border-purple-500 bg-purple-500 text-white'
-                                            : 'border-gray-600 text-gray-400'
-                                            }`}>
-                                            {index < currentStep ? (
-                                                <Check className="w-3 h-3" />
-                                            ) : (
-                                                <span className="text-xs font-black">{index + 1}</span>
-                                            )}
-                                        </div>
-                                        <span className="text-xs text-gray-400 mt-1 font-space-grotesk font-black">
-                                            {step.title}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="w-full bg-gray-800 rounded-full h-1.5">
-                                <div
-                                    className={`bg-gradient-to-r from-purple-500 to-cyan-500 h-1.5 rounded-full transition-all duration-500 ${getProgressClass()}`}
-                                ></div>
-                            </div>
-                        </div>
+                    <div className="w-full max-w-lg relative">
+                        {/* Background glass panel */}
+                        <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl -m-4 transform perspective-1000 rotate-x-2"></div>
 
-                        {/* Step Content */}
-                        <div className="bg-gray-900/30 backdrop-blur-sm border border-purple-500/30 rounded-xl p-4 mb-4">
-                            <div className="min-h-[240px] max-h-[280px] overflow-y-auto flex items-start">
-                                <div className="w-full">
-                                    {steps[currentStep].component}
+                        <div className="relative z-10 p-6">
+                            {/* Enhanced Progress Indicator with 3D Effects */}
+                            <div className="mb-4 relative">
+                                {/* Background glow for progress section */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 rounded-xl blur-xl -z-10 transform scale-110"></div>
+
+                                <div className="flex justify-between mb-2">
+                                    {steps.map((step, index) => (
+                                        <div key={step.id} className="flex flex-col items-center">
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all duration-300 transform hover:scale-110 shadow-lg ${index <= currentStep
+                                                ? 'border-purple-500 bg-purple-500 text-white shadow-purple-500/50'
+                                                : 'border-gray-600 text-gray-400 shadow-gray-600/30'
+                                                } progress-step-3d`}>
+                                                {index < currentStep ? (
+                                                    <Check className="w-3 h-3 drop-shadow-sm" />
+                                                ) : (
+                                                    <span className="text-xs font-black drop-shadow-sm">{index + 1}</span>
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-gray-400 mt-1 font-space-grotesk font-black tracking-wide">
+                                                {step.title}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Enhanced progress bar with glow */}
+                                <div className="relative">
+                                    <div className="w-full bg-gray-800/50 rounded-full h-1.5 backdrop-blur-sm border border-gray-700/50">
+                                        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-full blur-sm"></div>
+                                        <div
+                                            className={`relative bg-gradient-to-r from-purple-500 to-cyan-500 h-1.5 rounded-full transition-all duration-500 shadow-lg ${getProgressClass()} progress-step-3d`}
+                                        ></div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Navigation */}
-                        <div className="flex justify-between mb-3">
-                            <button
-                                onClick={prevStep}
-                                disabled={currentStep === 0}
-                                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-black font-space-grotesk tracking-wide transition-all text-sm ${currentStep === 0
-                                    ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                    : 'bg-gray-700 text-white hover:bg-gray-600 border border-gray-600 hover:border-gray-500'
-                                    }`}
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                                <span>Back</span>
-                            </button>
+                            {/* Enhanced Step Content Container */}
+                            <div className="relative mb-4">
+                                {/* Content glow background */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-cyan-500/10 rounded-xl blur-xl transform scale-105"></div>
 
-                            <button
-                                onClick={nextStep}
-                                disabled={!canProceed()}
-                                className={`flex items-center space-x-2 px-6 py-2 rounded-lg font-black font-space-grotesk tracking-wide transition-all text-sm ${canProceed()
-                                    ? 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white hover:from-purple-700 hover:to-cyan-700 border border-purple-500 hover:border-purple-400 shadow-lg hover:shadow-purple-500/25'
-                                    : 'bg-gray-700 text-gray-500 cursor-not-allowed border border-gray-600'
-                                    }`}
-                            >
-                                <span>{currentStep === steps.length - 1 ? 'Get Started' : 'Continue'}</span>
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
+                                <div className="relative bg-gray-900/40 backdrop-blur-md border border-purple-500/30 rounded-xl p-4 shadow-2xl preference-card-3d">
+                                    <div className="min-h-[240px] max-h-[280px] overflow-y-auto flex items-start">
+                                        <div className="w-full">
+                                            {steps[currentStep].component}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-                        {/* Bottom Link */}
-                        <div className="text-center">
-                            <p className="text-gray-400 font-inter text-sm">
-                                Already have an account?{' '}
-                                <button
-                                    onClick={() => setLocation('/')}
-                                    className="text-purple-400 hover:text-purple-300 font-black transition-colors"
-                                >
-                                    Sign In
-                                </button>
-                            </p>
+                            {/* Enhanced Navigation */}
+                            <div className="flex justify-between mb-3">
+                                {/* Back Button with 3D effect */}
+                                <div className="relative">
+                                    <div className={`absolute inset-0 rounded-lg blur-md ${currentStep === 0 ? 'bg-gray-700/30' : 'bg-gray-600/40'} transform scale-110`}></div>
+                                    <button
+                                        onClick={prevStep}
+                                        disabled={currentStep === 0}
+                                        className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg font-black font-space-grotesk tracking-wide transition-all text-sm transform hover:scale-105 shadow-lg ${currentStep === 0
+                                            ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed border border-gray-600/50'
+                                            : 'bg-gray-700/70 text-white hover:bg-gray-600/80 border border-gray-600/50 hover:border-gray-500/70 backdrop-blur-sm nav-button-3d'
+                                            }`}
+                                    >
+                                        <ChevronLeft className="w-4 h-4 drop-shadow-sm" />
+                                        <span>Back</span>
+                                    </button>
+                                </div>
+
+                                {/* Continue/Get Started Button with enhanced 3D effect */}
+                                <div className="relative">
+                                    {canProceed() && (
+                                        <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-lg blur-xl opacity-50 transform scale-110 animate-pulse"></div>
+                                    )}
+                                    <button
+                                        onClick={nextStep}
+                                        disabled={!canProceed()}
+                                        className={`relative flex items-center space-x-2 px-6 py-2 rounded-lg font-black font-space-grotesk tracking-wide transition-all text-sm transform hover:scale-105 hover:-translate-y-0.5 shadow-2xl ${canProceed()
+                                            ? 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white hover:from-purple-700 hover:to-cyan-700 border border-purple-500/50 hover:border-purple-400/70 shadow-purple-500/40 hover:shadow-purple-500/60 backdrop-blur-sm btn-depth-shadow'
+                                            : 'bg-gray-700/50 text-gray-500 cursor-not-allowed border border-gray-600/50'
+                                            }`}
+                                    >
+                                        <span>{currentStep === steps.length - 1 ? 'Get Started' : 'Continue'}</span>
+                                        <ChevronRight className="w-4 h-4 drop-shadow-sm" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Enhanced Bottom Link */}
+                            <div className="text-center">
+                                <p className="text-gray-400 font-inter text-sm drop-shadow-md">
+                                    Already have an account?{' '}
+                                    <button
+                                        onClick={() => setLocation('/login')}
+                                        className="text-purple-400 hover:text-purple-300 font-black transition-colors underline underline-offset-2 tracking-wide"
+                                    >
+                                        Sign In
+                                    </button>
+                                </p>
+                            </div>
+
+                            {/* Floating decorative elements around the main content */}
+                            <div className="absolute -top-4 -left-4 w-6 h-6 bg-purple-400 rounded-full opacity-60 animate-pulse blur-sm"></div>
+                            <div className="absolute -top-2 -right-8 w-4 h-4 bg-cyan-400 rounded-full opacity-50 animate-pulse blur-sm animation-delay-1000"></div>
+                            <div className="absolute -bottom-6 -left-8 w-5 h-5 bg-pink-400 rounded-full opacity-40 animate-pulse blur-sm animation-delay-2000"></div>
+                            <div className="absolute -bottom-4 -right-4 w-3 h-3 bg-purple-300 rounded-full opacity-70 animate-pulse blur-sm animation-delay-3000"></div>
                         </div>
                     </div>
                 </main>

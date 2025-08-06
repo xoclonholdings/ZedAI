@@ -2,13 +2,21 @@ import { Router, Route, Switch } from 'wouter'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './hooks/useAuthProvider.tsx'
 import { Toaster } from './components/ui/toaster-simple'
+import { Suspense, lazy } from 'react'
 
-// Pages
-import LoginPage from './pages/login-simple'
-import ComprehensiveChatPage from './pages/comprehensive-chat-simple'
-import ChatFullPage from './pages/chat-full'
-import LandingPage from './pages/landing-onboarding'
-import OnboardingPage from './pages/onboarding'
+// Lazy-loaded page components for better performance
+const LoginPage = lazy(() => import('./pages/login-simple'))
+const ComprehensiveChatPage = lazy(() => import('./pages/comprehensive-chat-simple'))
+const ChatFullPage = lazy(() => import('./pages/chat-full'))
+const LandingPage = lazy(() => import('./pages/landing-onboarding'))
+const OnboardingPage = lazy(() => import('./pages/onboarding'))
+
+// Loading component for lazy-loaded pages
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-black flex items-center justify-center">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400"></div>
+  </div>
+)
 
 // Create QueryClient instance
 const queryClient = new QueryClient({
@@ -39,19 +47,21 @@ function App() {
       <AuthProvider>
         <Router>
           <div className="min-h-screen bg-black cyberpunk-bg">
-            <Switch>
-              {/* Public routes */}
-              <Route path="/login" component={LoginPage} />
-              <Route path="/onboarding" component={OnboardingPage} />
-              <Route path="/" component={LandingPage} />
+            <Suspense fallback={<LoadingSpinner />}>
+              <Switch>
+                {/* Public routes */}
+                <Route path="/login" component={LoginPage} />
+                <Route path="/onboarding" component={OnboardingPage} />
+                <Route path="/" component={LandingPage} />
 
-              {/* Chat routes - accessible without authentication for demo */}
-              <Route path="/chat/comprehensive" component={ComprehensiveChatPage} />
-              <Route path="/chat" component={ChatFullPageWrapper} />
+                {/* Chat routes - accessible without authentication for demo */}
+                <Route path="/chat/comprehensive" component={ComprehensiveChatPage} />
+                <Route path="/chat" component={ChatFullPageWrapper} />
 
-              {/* 404 route */}
-              <Route component={NotFoundPage} />
-            </Switch>
+                {/* 404 route */}
+                <Route component={NotFoundPage} />
+              </Switch>
+            </Suspense>
 
             <Toaster />
           </div>

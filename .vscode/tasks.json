@@ -8,6 +8,22 @@
 			"group": "build",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "Start Agent Server (Port 5001)",
+			"type": "shell",
+			"command": "npx tsx server/index.ts",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Chat Server (Port 3001)",
+			"type": "shell",
+			"command": "node server/chat-server.cjs",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }

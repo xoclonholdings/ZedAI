@@ -1,0 +1,114 @@
+/* ZED Optimized Styles - Reduced for Performance */
+
+/* Essential animations only */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slide-up {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Signal bar animation for satellite */
+@keyframes signal-bar-animate {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Cyberpunk background - optimized */
+.cyberpunk-bg {
+    background:
+        radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+        #000000;
+    background-attachment: fixed;
+}
+
+/* Satellite signal animation */
+.satellite-signal {
+    animation: pulse 2s infinite;
+}
+
+.signal-bar-animate {
+    animation: signal-bar-animate 1.5s infinite;
+}
+
+.signal-bar-delay-1 {
+    animation-delay: 0.1s;
+}
+
+.signal-bar-delay-2 {
+    animation-delay: 0.2s;
+}
+
+.signal-bar-delay-3 {
+    animation-delay: 0.3s;
+}
+
+/* Loading states */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+}
+
+.animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+}
+
+/* Performance-optimized transitions */
+.transition-fast {
+    transition: all 0.15s ease;
+}
+
+.transition-colors {
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Remove unused complex animations to improve performance */

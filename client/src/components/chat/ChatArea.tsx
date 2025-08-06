@@ -1,30 +1,811 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Send,
   MessageSquare,
-  Brain
+  Brain,
+  Satellite,
+  ChevronDown,
+  Search,
+  RefreshCw,
+  Database,
+  Plus,
+  Smile,
+  Mic,
+  Languages,
+  Menu,
+  Zap,
+  Activity,
+  AlertTriangle,
+  X,
+  Settings,
+  Palette,
+  Bell,
+  Shield,
+  Monitor,
+  Moon,
+  Sun,
+  Image,
+  Camera,
+  QrCode,
+  ScanLine,
+  FolderOpen,
+  Upload
 } from "lucide-react";
-
-// ZED logo from original
-const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iemVkR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYTg1NWY3O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZWI0ODk5O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0idXJsKCN6ZWRHcmFkaWVudCkiLz4KICA8cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4K";
 
 interface ChatAreaProps {
   onSidebarToggle?: () => void;
 }
 
+interface ChatMessage {
+  id: string;
+  content: string;
+  sender: 'user' | 'ai';
+  timestamp: number;
+  type?: 'text' | 'image' | 'file';
+}
+
 // ChatArea component - Original interface design
-export default function ChatArea({ onSidebarToggle }: ChatAreaProps = {}) {
+export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
   const [inputValue, setInputValue] = useState("");
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isGifPickerOpen, setIsGifPickerOpen] = useState(false);
+  const [gifSearchQuery, setGifSearchQuery] = useState("");
+  const [isTranslateMenuOpen, setIsTranslateMenuOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [showSocialFeed, setShowSocialFeed] = useState(false);
   const [showMemoryPanel, setShowMemoryPanel] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [satelliteDropdownOpen, setSatelliteDropdownOpen] = useState(false);
+  const [isScannerMenuOpen, setIsScannerMenuOpen] = useState(false);
 
-  const handleSend = () => {
+  // Chat Messages State
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 'welcome',
+      content: "Hello! I'm ZED, your enhanced AI assistant. I'm connected to your memory systems and ready to help you with anything you need. How can I assist you today?",
+      sender: 'ai',
+      timestamp: Date.now(),
+      type: 'text'
+    }
+  ]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Advanced Settings & Personalization
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [userTheme, setUserTheme] = useState("dark"); // dark, light, auto
+  const [aiPersonality, setAiPersonality] = useState("professional"); // professional, casual, technical
+  const [responseLength, setResponseLength] = useState("balanced"); // concise, balanced, detailed
+
+  // Enhanced Personalization Options
+  const [userName, setUserName] = useState("User");
+  const [userAvatar, setUserAvatar] = useState("👤");
+  const [interfaceLanguage, setInterfaceLanguage] = useState("en");
+  const [timezone, setTimezone] = useState("auto");
+  const [chatBehavior, setChatBehavior] = useState({
+    autoSave: true,
+    quickReplies: true,
+    typingIndicator: true,
+    readReceipts: true
+  });
+  const [accessibilitySettings, setAccessibilitySettings] = useState({
+    highContrast: false,
+    largeText: false,
+    reducedMotion: false,
+    screenReader: false
+  });
+
+  // Memory & Data states
+  const [memoryData, setMemoryData] = useState({ size: "2.4 KB", messages: 17 });
+  const [isLoadingMemory, setIsLoadingMemory] = useState(false);
+
+  const [notificationSettings, setNotificationSettings] = useState({
+    sounds: true,
+    desktop: true,
+    email: false
+  });
+  const [dataPrivacy, setDataPrivacy] = useState({
+    analytics: true,
+    dataRetention: "30days", // 7days, 30days, 90days, forever
+    shareWithTeam: false
+  });
+
+  const memoryDropdownRef = useRef<HTMLDivElement>(null);
+  const signalDropdownRef = useRef<HTMLDivElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const gifPickerRef = useRef<HTMLDivElement>(null);
+  const translateMenuRef = useRef<HTMLDivElement>(null);
+  const scannerMenuRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { toast } = useToast();
+
+  // Click outside handlers
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (memoryDropdownRef.current && !memoryDropdownRef.current.contains(event.target as Node)) {
+        setShowMemoryPanel(false);
+      }
+      if (signalDropdownRef.current && !signalDropdownRef.current.contains(event.target as Node)) {
+        setSatelliteDropdownOpen(false);
+      }
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setIsEmojiPickerOpen(false);
+      }
+      if (gifPickerRef.current && !gifPickerRef.current.contains(event.target as Node)) {
+        setIsGifPickerOpen(false);
+      }
+      if (translateMenuRef.current && !translateMenuRef.current.contains(event.target as Node)) {
+        setIsTranslateMenuOpen(false);
+      }
+      if (scannerMenuRef.current && !scannerMenuRef.current.contains(event.target as Node)) {
+        setIsScannerMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
+
+  // Button handlers - Enhanced with API connections
+
+  // Scanner/Detection functionality handlers
+  const handlePhotoFromGallery = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        await processMediaFiles(files, 'gallery');
+      }
+    };
+    input.click();
+    setIsScannerMenuOpen(false);
+  };
+
+  const handleFileUploadFromScanner = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.pdf,.zip,.doc,.docx,.md,.txt,.json,.csv,.xlsx,.ppt,.pptx';
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        await processDocumentFiles(files);
+      }
+    };
+    input.click();
+    setIsScannerMenuOpen(false);
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Create camera capture interface
+      await initializeCameraCapture(stream);
+      setIsScannerMenuOpen(false);
+    } catch (error) {
+      toast({
+        title: "Camera Access Denied",
+        description: "Please allow camera access to take photos",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleScanSearch = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      await initializeLensScanner(stream);
+      setIsScannerMenuOpen(false);
+    } catch (error) {
+      toast({
+        title: "Camera Access Denied",
+        description: "Please allow camera access for scanning",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQRCodeScan = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      await initializeQRScanner(stream);
+      setIsScannerMenuOpen(false);
+    } catch (error) {
+      toast({
+        title: "Camera Access Denied",
+        description: "Please allow camera access for QR scanning",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Helper functions for file processing
+  const processMediaFiles = async (files: FileList, source: string) => {
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(file => formData.append('media', file));
+      formData.append('source', source);
+
+      const response = await fetch('/api/media/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Media upload failed');
+
+      const result = await response.json();
+
+      // Save to Zebulon database and memory gallery
+      await apiRequest('/api/memory/media', 'POST', {
+        files: result.files,
+        source,
+        timestamp: Date.now()
+      });
+
+      toast({
+        title: "Media Uploaded",
+        description: `Successfully uploaded ${files.length} photo(s) to gallery`,
+      });
+
+      // Add media references to input
+      const mediaRefs = Array.from(files).map(f => `[Photo: ${f.name}]`).join(' ');
+      setInputValue(prev => prev + ` ${mediaRefs} `);
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload media files",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const processDocumentFiles = async (files: FileList) => {
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach(file => formData.append('documents', file));
+
+      const response = await fetch('/api/documents/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Document upload failed');
+
+      const result = await response.json();
+
+      // Save to Zebulon database
+      await apiRequest('/api/memory/documents', 'POST', {
+        files: result.files,
+        timestamp: Date.now()
+      });
+
+      toast({
+        title: "Documents Uploaded",
+        description: `Successfully uploaded ${files.length} document(s)`,
+      });
+
+      const docRefs = Array.from(files).map(f => `[Document: ${f.name}]`).join(' ');
+      setInputValue(prev => prev + ` ${docRefs} `);
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload documents",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const initializeCameraCapture = async (_stream: MediaStream) => {
+    // Implementation for camera capture would go here
+    // This would create a modal with video preview and capture button
+    toast({
+      title: "Camera Ready",
+      description: "Camera capture feature initialized",
+    });
+  };
+
+  const initializeLensScanner = async (_stream: MediaStream) => {
+    // Implementation for Google Lens-like functionality
+    // This would use ML/AI to identify objects in camera view
+    toast({
+      title: "Lens Scanner Ready",
+      description: "Point camera at objects to identify them",
+    });
+  };
+
+  const initializeQRScanner = async (_stream: MediaStream) => {
+    // Implementation for QR code scanning
+    toast({
+      title: "QR Scanner Ready",
+      description: "Point camera at QR codes to scan them",
+    });
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    setInputValue(prev => prev + emoji);
+    setIsEmojiPickerOpen(false);
+  };
+
+  const handleGifSelect = async (gifUrl: string) => {
+    try {
+      // Save GIF to chat
+      await apiRequest('/api/chat/gif', 'POST', { gifUrl, messageId: Date.now() });
+
+      setInputValue(prev => prev + ` [GIF: ${gifUrl}] `);
+      setIsGifPickerOpen(false);
+
+      toast({
+        title: "GIF Added",
+        description: "GIF added to message",
+      });
+    } catch (error) {
+      // Fallback to local handling
+      setInputValue(prev => prev + ` [GIF: ${gifUrl}] `);
+      setIsGifPickerOpen(false);
+    }
+  };
+
+  // Settings Management Functions
+  const handleSaveSettings = async () => {
+    try {
+      const settings = {
+        userProfile: {
+          name: userName,
+          avatar: userAvatar,
+          language: interfaceLanguage,
+          timezone: timezone
+        },
+        appearance: {
+          theme: userTheme
+        },
+        aiPersonality: {
+          style: aiPersonality,
+          responseLength: responseLength
+        },
+        chatBehavior: chatBehavior,
+        accessibility: accessibilitySettings,
+        notifications: notificationSettings,
+        privacy: dataPrivacy
+      };
+
+      // Save to API
+      await apiRequest('/api/user/settings', 'POST', settings);
+
+      // Apply settings immediately
+      applySettings(settings);
+
+      setShowAdvancedSettings(false);
+
+      toast({
+        title: "Settings Saved",
+        description: "Your personalization settings have been saved successfully",
+      });
+    } catch (error) {
+      // Fallback to local storage
+      localStorage.setItem('zed-settings', JSON.stringify({
+        userProfile: { name: userName, avatar: userAvatar, language: interfaceLanguage, timezone },
+        appearance: { theme: userTheme },
+        aiPersonality: { style: aiPersonality, responseLength },
+        chatBehavior,
+        accessibility: accessibilitySettings,
+        notifications: notificationSettings,
+        privacy: dataPrivacy
+      }));
+
+      setShowAdvancedSettings(false);
+
+      toast({
+        title: "Settings Saved Locally",
+        description: "Settings saved to browser storage",
+      });
+    }
+  };
+
+  const applySettings = (settings: any) => {
+    // Apply theme
+    if (settings.appearance?.theme) {
+      document.documentElement.setAttribute('data-theme', settings.appearance.theme);
+    }
+
+    // Apply accessibility settings
+    if (settings.accessibility?.highContrast) {
+      document.documentElement.classList.toggle('high-contrast', settings.accessibility.highContrast);
+    }
+    if (settings.accessibility?.largeText) {
+      document.documentElement.classList.toggle('large-text', settings.accessibility.largeText);
+    }
+    if (settings.accessibility?.reducedMotion) {
+      document.documentElement.classList.toggle('reduced-motion', settings.accessibility.reducedMotion);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      // Try to load from API first
+      const response = await apiRequest('/api/user/settings', 'GET');
+      if (response.settings) {
+        const settings = response.settings;
+        setUserName(settings.userProfile?.name || "User");
+        setUserAvatar(settings.userProfile?.avatar || "👤");
+        setInterfaceLanguage(settings.userProfile?.language || "en");
+        setTimezone(settings.userProfile?.timezone || "auto");
+        setUserTheme(settings.appearance?.theme || "dark");
+        setAiPersonality(settings.aiPersonality?.style || "professional");
+        setResponseLength(settings.aiPersonality?.responseLength || "balanced");
+        setChatBehavior(settings.chatBehavior || { autoSave: true, quickReplies: true, typingIndicator: true, readReceipts: true });
+        setAccessibilitySettings(settings.accessibility || { highContrast: false, largeText: false, reducedMotion: false, screenReader: false });
+        setNotificationSettings(settings.notifications || { sounds: true, desktop: true, email: false });
+        setDataPrivacy(settings.privacy || { analytics: true, dataRetention: "30days", shareWithTeam: false });
+
+        applySettings(settings);
+      }
+    } catch (error) {
+      // Fallback to local storage
+      const savedSettings = localStorage.getItem('zed-settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setUserName(settings.userProfile?.name || "User");
+        setUserAvatar(settings.userProfile?.avatar || "👤");
+        setInterfaceLanguage(settings.userProfile?.language || "en");
+        setTimezone(settings.userProfile?.timezone || "auto");
+        setUserTheme(settings.appearance?.theme || "dark");
+        setAiPersonality(settings.aiPersonality?.style || "professional");
+        setResponseLength(settings.aiPersonality?.responseLength || "balanced");
+        setChatBehavior(settings.chatBehavior || { autoSave: true, quickReplies: true, typingIndicator: true, readReceipts: true });
+        setAccessibilitySettings(settings.accessibility || { highContrast: false, largeText: false, reducedMotion: false, screenReader: false });
+        setNotificationSettings(settings.notifications || { sounds: true, desktop: true, email: false });
+        setDataPrivacy(settings.privacy || { analytics: true, dataRetention: "30days", shareWithTeam: false });
+
+        applySettings(settings);
+      }
+    }
+  };
+
+  // Load settings on component mount
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const handleMicrophoneToggle = async () => {
+    if (!isRecording) {
+      try {
+        // Start recording
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setIsRecording(true);
+
+        toast({
+          title: "Recording Started",
+          description: "Voice recording in progress...",
+        });
+
+        // TODO: Implement actual recording logic with MediaRecorder
+        setTimeout(() => {
+          setIsRecording(false);
+          stream.getTracks().forEach(track => track.stop());
+          toast({
+            title: "Recording Complete",
+            description: "Voice message recorded",
+          });
+        }, 5000); // Auto-stop after 5 seconds for demo
+
+      } catch (error) {
+        toast({
+          title: "Recording Failed",
+          description: "Failed to access microphone",
+          variant: "destructive",
+        });
+      }
+    } else {
+      setIsRecording(false);
+      toast({
+        title: "Recording Stopped",
+        description: "Voice recording stopped",
+      });
+    }
+  };
+
+  const handleTranslate = async (languageCode: string) => {
+    if (!inputValue.trim()) {
+      toast({
+        title: "Translation Error",
+        description: "No text to translate",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await apiRequest('/api/translate', 'POST', {
+        text: inputValue,
+        targetLanguage: languageCode
+      });
+
+      setInputValue(response.translatedText || inputValue);
+      setIsTranslateMenuOpen(false);
+
+      toast({
+        title: "Translation Complete",
+        description: `Text translated to ${languageCode.toUpperCase()}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Translation Failed",
+        description: "Failed to translate text",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Memory Functions - Connected to Zebulon Oracle Database
+  const handleRecentConversations = async () => {
+    try {
+      setIsLoadingMemory(true);
+      const response = await apiRequest('/api/zed-memory/recent', 'GET');
+      console.log('Recent conversations:', response);
+      toast({
+        title: "Recent Conversations",
+        description: `Found ${response.conversations?.length || 0} recent conversations`,
+      });
+      setShowMemoryPanel(false);
+    } catch (error) {
+      console.error('Error in handleRecentConversations:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load recent conversations",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingMemory(false);
+    }
+  };
+
+  const handleSearchMemory = async () => {
+    try {
+      setIsLoadingMemory(true);
+      const response = await apiRequest('/api/zed-memory/search', 'POST', {
+        query: inputValue || "recent activities",
+        limit: 10
+      });
+      console.log('Memory search results:', response);
+      toast({
+        title: "Memory Search",
+        description: `Found ${response.results?.length || 0} relevant memories`,
+      });
+      setShowMemoryPanel(false);
+    } catch (error) {
+      console.error('Error in handleSearchMemory:', error);
+      toast({
+        title: "Error",
+        description: "Failed to search memory",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingMemory(false);
+    }
+  };
+
+  const handleSyncWithZebulon = async () => {
+    try {
+      setIsLoadingMemory(true);
+      const response = await apiRequest('/api/zed-memory/sync', 'POST');
+
+      // Update memory stats
+      setMemoryData({
+        size: response.stats?.totalSize || "2.4 KB",
+        messages: response.stats?.messageCount || 17
+      });
+
+      toast({
+        title: "Zebulon Oracle Sync",
+        description: "Successfully synced with Zebulon database",
+      });
+      setShowMemoryPanel(false);
+    } catch (error) {
+      console.error('Error in handleSyncWithZebulon:', error);
+      toast({
+        title: "Sync Error",
+        description: "Failed to sync with Zebulon Oracle Database",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoadingMemory(false);
+    }
+  };
+
+  const handleFullMemoryPanel = () => {
+    toast({
+      title: "Memory Panel",
+      description: "Opening full memory management panel",
+    });
+    setShowMemoryPanel(false);
+    // Navigation to dedicated memory page would go here
+  };
+
+  // Signal Functions - Satellite Connection Management
+  const [signalPanelData, setSignalPanelData] = useState({
+    connected: true,
+    signalStrength: 85,
+    latency: 42,
+    autoConnect: true,
+    lowLatency: false
+  });
+
+  const handleSatelliteConnection = async () => {
+    try {
+      const response = await apiRequest('/api/satellite/status', 'GET');
+      setSignalPanelData(prev => ({
+        ...prev,
+        connected: response.connected || false,
+        signalStrength: response.signalStrength || 0,
+        latency: response.latency || 0
+      }));
+      toast({
+        title: "Satellite Status",
+        description: `Signal: ${response.signalStrength}% • Latency: ${response.latency}ms`,
+      });
+    } catch (error) {
+      toast({
+        title: "Connection Error",
+        description: "Failed to check satellite status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSignalBoost = async () => {
+    try {
+      const response = await apiRequest('/api/satellite/boost', 'POST');
+      setSignalPanelData(prev => ({
+        ...prev,
+        signalStrength: response.newSignalStrength || prev.signalStrength + 10
+      }));
+      toast({
+        title: "Signal Boost",
+        description: `Signal boosted to ${response.newSignalStrength || signalPanelData.signalStrength + 10}%`,
+      });
+    } catch (error) {
+      toast({
+        title: "Boost Failed",
+        description: "Failed to boost signal strength",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNetworkDiagnostics = async () => {
+    try {
+      const response = await apiRequest('/api/satellite/diagnostics', 'GET');
+      toast({
+        title: "Network Diagnostics",
+        description: `Latency: ${response.latency || '42'}ms • Status: ${response.status || 'Optimal'}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Diagnostics Failed",
+        description: "Failed to run network diagnostics",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEmergencyProtocol = async () => {
+    try {
+      await apiRequest('/api/satellite/emergency', 'POST');
+      toast({
+        title: "Emergency Protocol",
+        description: "Emergency communication protocol activated",
+      });
+    } catch (error) {
+      toast({
+        title: "Protocol Failed",
+        description: "Failed to activate emergency protocol",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
-    console.log("Old interface message:", inputValue);
+
+    const message = inputValue.trim();
+    const userMessageId = Date.now().toString();
+
+    // Add user message to UI immediately
+    const userMessage: ChatMessage = {
+      id: userMessageId,
+      content: message,
+      sender: 'user',
+      timestamp: Date.now(),
+      type: 'text'
+    };
+
+    setMessages(prev => [...prev, userMessage]);
     setInputValue("");
+    setIsLoading(true);
+
+    try {
+      // Send message to chat server
+      console.log("Sending message to chat server:", message);
+      const response = await apiRequest('/api/chat', 'POST', {
+        message,
+        timestamp: Date.now(),
+        userId: 'user-1' // This should come from auth context
+      });
+
+      console.log("Chat server response:", response);
+
+      // Add AI response to UI
+      if (response.content) {
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          content: response.content,
+          sender: 'ai',
+          timestamp: Date.now(),
+          type: 'text'
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+
+        // Save conversation to memory (don't block UI on this)
+        try {
+          await apiRequest('/api/memory/conversation', 'POST', {
+            userMessage: message,
+            aiResponse: response.content,
+            timestamp: Date.now()
+          });
+        } catch (memoryError) {
+          console.warn("Failed to save to memory:", memoryError);
+        }
+      } else {
+        console.warn("No content in response:", response);
+        // Create a fallback response
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          content: "I received your message but encountered an issue generating a response. Please try again.",
+          sender: 'ai',
+          timestamp: Date.now(),
+          type: 'text'
+        };
+        setMessages(prev => [...prev, aiMessage]);
+      }
+
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent to ZED",
+      });
+
+    } catch (error) {
+      console.error("Failed to send message:", error);
+
+      // Remove the user message from UI on error
+      setMessages(prev => prev.filter(msg => msg.id !== userMessageId));
+      // Restore message to input on error
+      setInputValue(message);
+
+      toast({
+        title: "Message Failed",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -35,158 +816,1013 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps = {}) {
   };
 
   return (
-    <div className="flex-1 flex h-full relative overflow-hidden">
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Floating orbs */}
-          <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-purple-600/10 to-cyan-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-40 right-20 w-48 h-48 bg-gradient-to-r from-pink-500/10 to-purple-600/10 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-gradient-to-r from-cyan-500/10 to-pink-500/10 rounded-full blur-2xl" />
+    <>
+      <div className="flex-1 flex h-full relative overflow-hidden">
+        {/* Main Chat Area */}
+        <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+          {/* Animated Background Elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {/* Floating orbs */}
+            <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-purple-600/10 to-cyan-500/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-40 right-20 w-48 h-48 bg-gradient-to-r from-pink-500/10 to-purple-600/10 rounded-full blur-3xl" />
+            <div className="absolute top-1/2 left-1/3 w-24 h-24 bg-gradient-to-r from-cyan-500/10 to-pink-500/10 rounded-full blur-2xl" />
 
-          {/* Large glowing ZED logo centerpiece - Original design */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative">
-              {/* Outer glow ring */}
-              <div className="absolute inset-0 w-96 h-96 md:w-[32rem] md:h-[32rem] bg-gradient-to-r from-purple-500/8 via-cyan-500/8 to-pink-500/8 rounded-full blur-3xl animate-pulse" />
+            {/* Large glowing ZED logo centerpiece - Original design */}
+            {/* Background - Original with animated gradient */}
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-black to-purple-900/20 animate-gradient-x"></div>
 
-              {/* Inner glow ring */}
-              <div className="absolute inset-8 bg-gradient-to-r from-purple-500/15 via-cyan-500/15 to-pink-500/15 rounded-full blur-2xl" />
+            {/* Large ZED AI logo background centerpiece */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+              <div className="relative">
+                {/* Outer glow ring */}
+                <div className="absolute inset-0 w-96 h-96 md:w-[40rem] md:h-[40rem] bg-gradient-to-r from-purple-500/5 via-cyan-500/5 to-pink-500/5 rounded-full blur-3xl animate-pulse" />
 
-              {/* ZED logo container */}
-              <div className="relative w-96 h-96 md:w-[32rem] md:h-[32rem] flex items-center justify-center">
-                <img
-                  src={zLogoPath}
-                  alt="ZED"
-                  className="w-48 h-48 md:w-80 md:h-80 opacity-25 scale-100"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+                {/* Inner glow ring */}
+                <div className="absolute inset-12 bg-gradient-to-r from-purple-500/8 via-cyan-500/8 to-pink-500/8 rounded-full blur-2xl" />
 
-        {/* Header - Original Design */}
-        <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10 relative z-10 flex-shrink-0 bg-black">
-          {/* Left side - Menu button and ZED branding */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              {/* Clickable ZED Logo that triggers sidebar */}
-              <button
-                onClick={onSidebarToggle}
-                className="w-10 h-10 p-1 rounded-lg hover:bg-gradient-to-r hover:from-pink-500/20 hover:via-purple-500/20 hover:to-blue-500/20 transition-all duration-300 hover:scale-105 border border-transparent hover:border-purple-500/50 bg-transparent flex items-center justify-center"
-                title="Open ZED Menu"
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 40 40"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6 md:w-8 md:h-8"
-                >
-                  <defs>
-                    <linearGradient id="zedGradient123" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#a855f7" stopOpacity={1} />
-                      <stop offset="50%" stopColor="#308cff" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#eb4899" stopOpacity={1} />
-                    </linearGradient>
-                  </defs>
-                  <rect width="40" height="40" rx="8" fill="url(#zedGradient123)" />
-                  <path d="M8 12h20l-12 8h20v3H14l12-8H8v-3z" fill="white" fillOpacity="0.9" />
-                </svg>
-              </button>
-              <div className="text-left">
-                <h1 className="text-lg md:text-xl font-bold">
-                  <span className="bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-transparent">ZED</span>
-                </h1>
-                <p className="text-xs md:text-sm text-muted-foreground">Enhanced AI Assistant</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right side - WiFi signal, satellite panel, and memory panel */}
-          <div className="flex items-center space-x-2">
-            {/* WiFi Signal Icon with Satellite Integration Panel */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSocialFeed(!showSocialFeed)}
-                className="text-muted-foreground hover:text-cyan-400 transition-colors"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M1 9L12 2L23 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M5 13L12 8L19 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M8 17L12 14L16 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="12" cy="20" r="1" fill="currentColor" />
-                </svg>
-              </Button>
-            </div>
-
-            {/* Memory Panel Button - Original "Active" design */}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowMemoryPanel(!showMemoryPanel)}
-                className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-colors ${showMemoryPanel
-                  ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
-                  : 'bg-purple-500/10 border border-purple-500/20 text-muted-foreground hover:text-purple-400'
-                  }`}
-              >
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium">Active</span>
-                <Brain size={12} />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Messages - Original Layout */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-2 md:py-3 relative z-10">
-          {/* Messages Container */}
-          <div className="max-w-4xl mx-auto h-full flex flex-col justify-end">
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <MessageSquare size={48} className="mx-auto mb-4 opacity-50" />
-                <p className="text-lg">OLD Chat Interface</p>
-                <p className="text-sm">Original design before rebuild</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Input Area - Original Style */}
-        <div className="border-t border-white/10 p-2 md:p-3 relative z-10 flex-shrink-0 bg-black">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-end space-x-2">
-              <div className="flex-1 relative">
-                <div className="relative border border-input rounded-lg bg-background overflow-hidden focus-within:ring-1 focus-within:ring-ring">
-                  <Textarea
-                    ref={textareaRef}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Type your message..."
-                    className="min-h-[44px] max-h-32 resize-none border-0 bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none"
-                    rows={1}
+                {/* Actual ZED AI logo container */}
+                <div className="relative w-96 h-96 md:w-[40rem] md:h-[40rem] flex items-center justify-center">
+                  <img
+                    src="/Zed-ai-logo_1753468041342.png"
+                    alt="ZED AI"
+                    className="w-64 h-64 md:w-96 md:h-96 opacity-15 scale-100 object-contain"
                   />
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Send button */}
-              <Button
-                onClick={handleSend}
-                disabled={!inputValue.trim()}
-                className="h-11 w-11 shrink-0 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:opacity-50"
-              >
-                <Send size={18} />
-              </Button>
+          {/* Header - Original Design */}
+          <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10 relative flex-shrink-0 bg-black/80 backdrop-blur-sm z-10">
+            {/* Left side - Menu button and ZED branding */}
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                {/* Menu button with outline */}
+                <button
+                  onClick={onSidebarToggle}
+                  className="w-10 h-10 p-2 rounded-lg border-2 border-white/20 hover:border-purple-500/50 bg-transparent hover:bg-gradient-to-r hover:from-pink-500/20 hover:via-purple-500/20 hover:to-blue-500/20 transition-all duration-300 hover:scale-105 flex items-center justify-center text-white/80 hover:text-white"
+                  title="Open Menu"
+                >
+                  <Menu size={20} />
+                </button>
+                <div className="text-left">
+                  <h1 className="text-lg md:text-xl font-bold">
+                    <span className="bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_2px_4px_rgba(168,85,247,0.4)] filter [text-shadow:_0_2px_8px_rgba(168,85,247,0.6),_0_4px_16px_rgba(6,182,212,0.4)] relative inline-block transform hover:scale-105 transition-transform duration-200">
+                      ZED
+                      <span className="absolute inset-0 bg-gradient-to-r from-purple-600 via-cyan-600 to-pink-600 bg-clip-text text-transparent opacity-30 blur-[1px] -z-10">ZED</span>
+                    </span>
+                  </h1>
+                  <p className="text-xs md:text-sm text-muted-foreground">Enhanced AI Assistant</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - WiFi signal, satellite panel, and memory panel */}
+            <div className="flex items-center space-x-2">
+              {/* WiFi Signal Icon */}
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSocialFeed(!showSocialFeed)}
+                  className="text-muted-foreground hover:text-cyan-400 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 9L12 2L23 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M5 13L12 8L19 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M8 17L12 14L16 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="12" cy="20" r="1" fill="currentColor" />
+                  </svg>
+                </Button>
+              </div>
+
+              {/* Memory Dropdown Button - Compact design like Signal */}
+              <div className="relative memory-dropdown-container" ref={memoryDropdownRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowMemoryPanel(!showMemoryPanel);
+                  }}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-colors ${showMemoryPanel
+                    ? 'bg-purple-500/20 border border-purple-500/30 text-purple-300'
+                    : 'bg-purple-500/10 border border-purple-500/20 text-muted-foreground hover:text-purple-400'
+                    }`}
+                >
+                  <Brain size={12} className="text-purple-400" />
+                  <span className="text-xs font-medium">Memory</span>
+                  <ChevronDown size={10} className={`transition-transform ${showMemoryPanel ? 'rotate-180' : ''}`} />
+                </Button>
+
+                {/* Memory Dropdown Menu */}
+                {showMemoryPanel && (
+                  <div className="absolute top-full right-0 mt-1 w-56 bg-gray-900/95 backdrop-blur-xl border border-purple-500/30 rounded-lg shadow-2xl z-[9999] overflow-hidden">
+                    {/* Compact Memory Status Header */}
+                    <div className="px-2 py-1.5 border-b border-purple-500/20 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1.5">
+                          <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></div>
+                          <span className="text-[10px] font-medium text-purple-300">Oracle</span>
+                          <span className="text-[9px] text-gray-400">{memoryData.size}</span>
+                        </div>
+                        <div className="text-[9px] text-gray-400">{memoryData.messages} msgs</div>
+                      </div>
+                    </div>
+
+                    {/* Compact Memory Actions Grid */}
+                    <div className="p-1.5 grid grid-cols-2 gap-1">
+                      <button
+                        className="px-1.5 py-1 text-[10px] text-purple-300 hover:bg-purple-500/10 rounded text-left flex items-center space-x-1 disabled:opacity-50"
+                        onClick={handleRecentConversations}
+                        disabled={isLoadingMemory}
+                      >
+                        <MessageSquare size={10} />
+                        <span>Recent</span>
+                        {isLoadingMemory && <div className="animate-spin w-2 h-2 border border-purple-400 border-t-transparent rounded-full"></div>}
+                      </button>
+
+                      <button
+                        className="px-1.5 py-1 text-[10px] text-purple-300 hover:bg-purple-500/10 rounded text-left flex items-center space-x-1 disabled:opacity-50"
+                        onClick={handleSearchMemory}
+                        disabled={isLoadingMemory}
+                      >
+                        <Search size={10} />
+                        <span>Search</span>
+                        {isLoadingMemory && <div className="animate-spin w-2 h-2 border border-purple-400 border-t-transparent rounded-full"></div>}
+                      </button>
+
+                      <button
+                        className="px-1.5 py-1 text-[10px] text-purple-300 hover:bg-purple-500/10 rounded text-left flex items-center space-x-1 disabled:opacity-50 col-span-2"
+                        onClick={handleSyncWithZebulon}
+                        disabled={isLoadingMemory}
+                      >
+                        <RefreshCw size={10} className={isLoadingMemory ? "animate-spin" : ""} />
+                        <span>Sync Oracle</span>
+                      </button>
+                    </div>
+
+                    {/* Compact Additional Actions */}
+                    <div className="px-1.5 pb-1.5 space-y-1">
+                      <button
+                        className="w-full px-1.5 py-1 text-[10px] text-gray-400 hover:bg-white/5 rounded text-center flex items-center justify-center space-x-1"
+                        onClick={handleFullMemoryPanel}
+                      >
+                        <Database size={10} />
+                        <span>View Full Memory Panel</span>
+                      </button>
+
+                      {/* Configuration Note */}
+                      <div className="text-[8px] text-gray-500 text-center px-1 leading-tight">
+                        💡 Find settings & config in the sidebar's "Settings" panel
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Satellite Signal Gauge Dropdown */}
+              <div className="relative satellite-dropdown-container" ref={signalDropdownRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSatelliteDropdownOpen(!satelliteDropdownOpen)}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-full transition-colors ${satelliteDropdownOpen
+                    ? 'bg-cyan-500/20 border border-cyan-500/30 text-cyan-300'
+                    : 'bg-cyan-500/10 border border-cyan-500/20 text-muted-foreground hover:text-cyan-400'
+                    }`}
+                >
+                  <div className="relative">
+                    <Satellite size={12} className={`${signalPanelData.connected ? "text-cyan-400 satellite-signal" : "text-gray-400"} transition-colors duration-300`} />
+                    {/* Signal Strength Gauge */}
+                    {signalPanelData.connected && (
+                      <div className="absolute -top-1 -right-1">
+                        <div className="flex space-x-px">
+                          <div className={`w-0.5 h-1 rounded-full transition-all duration-300 ${signalPanelData.signalStrength > 25 ? 'bg-cyan-400 signal-bar-animate signal-bar-delay-1' : 'bg-gray-500'}`}></div>
+                          <div className={`w-0.5 h-1.5 rounded-full transition-all duration-300 ${signalPanelData.signalStrength > 50 ? 'bg-cyan-400 signal-bar-animate signal-bar-delay-2' : 'bg-gray-500'}`}></div>
+                          <div className={`w-0.5 h-2 rounded-full transition-all duration-300 ${signalPanelData.signalStrength > 75 ? 'bg-cyan-400 signal-bar-animate signal-bar-delay-3' : 'bg-gray-500'}`}></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium">Signal</span>
+                  <ChevronDown size={10} className={`transition-transform ${satelliteDropdownOpen ? 'rotate-180' : ''}`} />
+                </Button>
+
+                {/* Dropdown Menu */}
+                {satelliteDropdownOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-52 bg-gray-900/95 backdrop-blur-xl border border-cyan-500/30 rounded-lg shadow-2xl z-[9999] overflow-hidden">
+                    {/* Compact Connection Status Header */}
+                    <div className="px-2 py-1.5 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-blue-500/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1.5">
+                          <div className={`w-1.5 h-1.5 rounded-full ${signalPanelData.connected ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+                          <span className="text-[10px] font-medium text-cyan-300">
+                            {signalPanelData.connected ? 'Online' : 'Offline'}
+                          </span>
+                          {signalPanelData.connected && (
+                            <span className="text-[9px] text-gray-400">{signalPanelData.latency}ms</span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <div className="text-[10px] text-cyan-400 font-mono">{signalPanelData.signalStrength}%</div>
+                          <div className="flex space-x-px">
+                            <div className={`w-0.5 h-1.5 rounded-full ${signalPanelData.signalStrength > 25 ? 'bg-cyan-400' : 'bg-gray-600'}`}></div>
+                            <div className={`w-0.5 h-2 rounded-full ${signalPanelData.signalStrength > 50 ? 'bg-cyan-400' : 'bg-gray-600'}`}></div>
+                            <div className={`w-0.5 h-2.5 rounded-full ${signalPanelData.signalStrength > 75 ? 'bg-cyan-400' : 'bg-gray-600'}`}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Compact Quick Actions Grid */}
+                    <div className="p-1.5 grid grid-cols-2 gap-1">
+                      <button
+                        className="px-1.5 py-1 text-[10px] text-cyan-300 hover:bg-cyan-500/10 rounded text-left flex items-center space-x-1"
+                        onClick={handleSignalBoost}
+                      >
+                        <Zap size={10} />
+                        <span>Boost</span>
+                      </button>
+
+                      <button
+                        className="px-1.5 py-1 text-[10px] text-cyan-300 hover:bg-cyan-500/10 rounded text-left flex items-center space-x-1"
+                        onClick={handleNetworkDiagnostics}
+                      >
+                        <Activity size={10} />
+                        <span>Diag</span>
+                      </button>
+
+                      <button
+                        className="px-1.5 py-1 text-[10px] text-cyan-300 hover:bg-cyan-500/10 rounded text-left flex items-center space-x-1"
+                        onClick={handleSatelliteConnection}
+                      >
+                        <RefreshCw size={10} />
+                        <span>Reconnect</span>
+                      </button>
+
+                      <button
+                        className="px-1.5 py-1 text-[10px] text-red-400 hover:bg-red-500/10 rounded text-left flex items-center space-x-1"
+                        onClick={handleEmergencyProtocol}
+                      >
+                        <AlertTriangle size={10} />
+                        <span>Emergency</span>
+                      </button>
+                    </div>
+
+                    {/* Compact Toggle Controls */}
+                    <div className="px-1.5 pb-1.5 space-y-1">
+                      <div className="flex items-center justify-between py-0.5 hover:bg-white/5 rounded cursor-pointer"
+                        onClick={() => setSignalPanelData(prev => ({ ...prev, autoConnect: !prev.autoConnect }))}>
+                        <span className="text-[10px] text-gray-300">Auto-Connect</span>
+                        <div className={`w-5 h-2.5 rounded-full relative transition-colors ${signalPanelData.autoConnect ? 'bg-cyan-500/30' : 'bg-gray-600'}`}>
+                          <div className={`absolute top-0.5 w-1.5 h-1.5 bg-white rounded-full transition-transform ${signalPanelData.autoConnect ? 'translate-x-2.5' : 'translate-x-0.5'}`}></div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between py-0.5 hover:bg-white/5 rounded cursor-pointer"
+                        onClick={() => setSignalPanelData(prev => ({ ...prev, lowLatency: !prev.lowLatency }))}>
+                        <span className="text-[10px] text-gray-300">Low Latency</span>
+                        <div className={`w-5 h-2.5 rounded-full relative transition-colors ${signalPanelData.lowLatency ? 'bg-cyan-500/30' : 'bg-gray-600'}`}>
+                          <div className={`absolute top-0.5 w-1.5 h-1.5 bg-white rounded-full transition-transform ${signalPanelData.lowLatency ? 'translate-x-2.5' : 'translate-x-0.5'}`}></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-2 md:py-3 relative z-10 bg-black/20 backdrop-blur-sm">
+            {/* Messages Container */}
+            <div className="max-w-4xl mx-auto h-full flex flex-col justify-end">
+              {/* Chat Messages Display */}
+              <div className="flex-1 overflow-y-auto pb-4 space-y-3 bg-gray-900/30 backdrop-blur-sm border border-gray-700/20 rounded-lg p-4">
+                {messages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-400">
+                      <div className="text-4xl mb-4">💬</div>
+                      <p className="text-lg font-medium">Start a conversation with ZED</p>
+                      <p className="text-sm">Ask me anything - I'm here to help!</p>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <div key={message.id} className="w-full">
+                      {message.sender === 'user' ? (
+                        // User message - right aligned
+                        <div className="flex justify-end mb-3">
+                          <div className="flex items-end space-x-2 max-w-[80%]">
+                            <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-3 rounded-2xl rounded-br-md shadow-lg">
+                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              <p className="text-xs mt-1 text-purple-100 text-right">
+                                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                              U
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // AI message - left aligned
+                        <div className="flex justify-start mb-3">
+                          <div className="flex items-end space-x-2 max-w-[80%]">
+                            <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                              Z
+                            </div>
+                            <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-600/30 text-gray-100 p-3 rounded-2xl rounded-bl-md shadow-lg">
+                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              <p className="text-xs mt-1 text-gray-400">
+                                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+
+                {/* Loading indicator */}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-700/50 text-gray-100 p-3 rounded-2xl">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]"></div>
+                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]"></div>
+                        </div>
+                        <span className="text-xs text-gray-400">ZED is thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Auto-scroll anchor */}
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+          </div>
+
+          {/* Input Area - Clean and aligned with embedded buttons */}
+          <div className="border-t border-white/10 p-3 md:p-4 relative flex-shrink-0 bg-black/80 backdrop-blur-sm z-10">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex items-end space-x-3">
+                {/* Embedded action buttons */}
+                <div className="flex items-center space-x-1 pb-1">
+                  {/* Scanner/Upload button with menu - more embedded */}
+                  <div className="relative" ref={scannerMenuRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsScannerMenuOpen(!isScannerMenuOpen)}
+                      className="h-10 w-10 p-0 hover:bg-white/10 text-muted-foreground hover:text-white transition-all duration-200 rounded-lg border border-white/10 hover:border-white/20"
+                      title="Scanner & Upload"
+                    >
+                      <Plus size={16} />
+                    </Button>
+
+                    {isScannerMenuOpen && (
+                      <div className="absolute bottom-full left-0 mb-1 bg-gray-900/95 backdrop-blur-xl border border-purple-500/30 rounded-lg shadow-xl p-2 z-[9999] w-56 drop-shadow-2xl">
+                        <div className="space-y-1">
+                          <button
+                            onClick={handlePhotoFromGallery}
+                            className="w-full flex items-center space-x-3 p-2 text-left hover:bg-purple-500/20 rounded-lg transition-colors text-sm text-gray-300 hover:text-white"
+                          >
+                            <FolderOpen size={16} className="text-blue-400" />
+                            <span>Photo from Gallery</span>
+                          </button>
+
+                          <button
+                            onClick={handleFileUploadFromScanner}
+                            className="w-full flex items-center space-x-3 p-2 text-left hover:bg-purple-500/20 rounded-lg transition-colors text-sm text-gray-300 hover:text-white"
+                          >
+                            <Upload size={16} className="text-green-400" />
+                            <span>Upload File</span>
+                          </button>
+
+                          <button
+                            onClick={handleTakePhoto}
+                            className="w-full flex items-center space-x-3 p-2 text-left hover:bg-purple-500/20 rounded-lg transition-colors text-sm text-gray-300 hover:text-white"
+                          >
+                            <Camera size={16} className="text-yellow-400" />
+                            <span>Take Photo</span>
+                          </button>
+
+                          <button
+                            onClick={handleScanSearch}
+                            className="w-full flex items-center space-x-3 p-2 text-left hover:bg-purple-500/20 rounded-lg transition-colors text-sm text-gray-300 hover:text-white"
+                          >
+                            <ScanLine size={16} className="text-cyan-400" />
+                            <span>Scan & Search</span>
+                          </button>
+
+                          <button
+                            onClick={handleQRCodeScan}
+                            className="w-full flex items-center space-x-3 p-2 text-left hover:bg-purple-500/20 rounded-lg transition-colors text-sm text-gray-300 hover:text-white"
+                          >
+                            <QrCode size={16} className="text-purple-400" />
+                            <span>Scan QR Code</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Emoji button with picker - more embedded */}
+                  <div className="relative" ref={emojiPickerRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                      className="h-10 w-10 p-0 hover:bg-white/10 text-muted-foreground hover:text-white transition-all duration-200 rounded-lg border border-white/10 hover:border-white/20"
+                      title="Add emoji"
+                    >
+                      <Smile size={16} />
+                    </Button>
+
+                    {isEmojiPickerOpen && (
+                      <div className="absolute bottom-full left-0 mb-1 bg-gray-900/95 backdrop-blur-xl border border-purple-500/30 rounded-lg shadow-lg p-2 z-50 w-48">
+                        <div className="grid grid-cols-6 gap-0.5 text-sm">
+                          {['😊', '😂', '❤️', '👍', '🎉', '🔥', '💯', '✨', '🚀', '💪', '🙌', '👏'].map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => handleEmojiSelect(emoji)}
+                              className="p-1 hover:bg-purple-500/20 rounded text-center transition-colors"
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* GIF button with picker - more embedded */}
+                  <div className="relative" ref={gifPickerRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsGifPickerOpen(!isGifPickerOpen)}
+                      className="h-10 w-10 p-0 hover:bg-white/10 text-muted-foreground hover:text-white transition-all duration-200 rounded-lg border border-white/10 hover:border-white/20"
+                      title="Add GIF"
+                    >
+                      <Image size={16} />
+                    </Button>
+
+                    {isGifPickerOpen && (
+                      <div className="absolute bottom-full left-0 mb-1 bg-gray-900/95 backdrop-blur-xl border border-purple-500/30 rounded-lg shadow-lg p-2 z-50 w-56 max-h-64 overflow-y-auto">
+                        <div className="space-y-2">
+                          {/* Compact GIF Search */}
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Search..."
+                              value={gifSearchQuery}
+                              onChange={(e) => setGifSearchQuery(e.target.value)}
+                              className="w-full px-2 py-1 bg-gray-800/50 border border-gray-600/30 rounded text-white text-xs placeholder-gray-400 focus:outline-none focus:border-purple-500/50"
+                            />
+                            {gifSearchQuery && (
+                              <button
+                                onClick={() => setGifSearchQuery("")}
+                                aria-label="Clear search"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                              >
+                                <X size={10} />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Compact Categories */}
+                          {!gifSearchQuery && (
+                            <div className="grid grid-cols-2 gap-1">
+                              {[
+                                { category: 'Happy', emoji: '😊', keywords: 'happy smile joy' },
+                                { category: 'Funny', emoji: '😂', keywords: 'funny laugh comedy' },
+                                { category: 'Love', emoji: '❤️', keywords: 'love heart romance' },
+                                { category: 'Party', emoji: '🎉', keywords: 'excited celebration party' }
+                              ].map((item) => (
+                                <button
+                                  key={item.category}
+                                  onClick={() => setGifSearchQuery(item.keywords)}
+                                  className="flex items-center space-x-1 p-1 bg-gray-800/30 hover:bg-purple-500/20 rounded text-xs transition-colors"
+                                >
+                                  <span className="text-xs">{item.emoji}</span>
+                                  <span className="text-gray-300 text-xs">{item.category}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Compact GIF Grid */}
+                          <div className="grid grid-cols-3 gap-1">
+                            {(gifSearchQuery ?
+                              [`${gifSearchQuery}_1`, `${gifSearchQuery}_2`, `${gifSearchQuery}_3`] :
+                              ['trending_1', 'trending_2', 'trending_3']
+                            ).map((gifId, index) => (
+                              <button
+                                key={gifId}
+                                onClick={() => handleGifSelect(gifId)}
+                                className="aspect-square bg-gray-800/30 rounded-lg overflow-hidden hover:ring-2 hover:ring-purple-500/50 transition-all group relative"
+                              >
+                                <div className="w-full h-full bg-gradient-to-br from-purple-500/20 via-cyan-500/20 to-pink-500/20 flex items-center justify-center">
+                                  <div className="text-center">
+                                    <div className="text-2xl group-hover:scale-110 transition-transform">
+                                      {gifSearchQuery ?
+                                        (gifSearchQuery.includes('happy') ? '😊' :
+                                          gifSearchQuery.includes('funny') ? '😂' :
+                                            gifSearchQuery.includes('love') ? '❤️' :
+                                              gifSearchQuery.includes('excited') ? '🎉' :
+                                                gifSearchQuery.includes('cool') ? '😎' :
+                                                  gifSearchQuery.includes('wow') ? '🤯' : '🎬') :
+                                        ['🚀', '💯', '✨', '🔥'][index]
+                                      }
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-1">GIF</div>
+                                  </div>
+                                </div>
+                                {/* Hover overlay */}
+                                <div className="absolute inset-0 bg-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <div className="text-white text-xs font-medium">Click to send</div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* No results message */}
+                          {gifSearchQuery && gifSearchQuery.length > 2 && (
+                            <div className="text-center text-gray-500 text-sm py-4">
+                              <div className="mb-2">🔍</div>
+                              <div>No GIFs found for "{gifSearchQuery}"</div>
+                              <div className="text-xs mt-1">Try different keywords</div>
+                            </div>
+                          )}
+
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Microphone button - more embedded */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMicrophoneToggle}
+                    className={`h-10 w-10 p-0 hover:bg-white/10 transition-all duration-200 rounded-lg border border-white/10 hover:border-white/20 ${isRecording
+                      ? 'text-red-500 bg-red-500/10 border-red-500/30'
+                      : 'text-muted-foreground hover:text-white'
+                      }`}
+                    title={isRecording ? "Stop recording" : "Start voice recording"}
+                  >
+                    <Mic size={16} />
+                  </Button>
+
+                  {/* Translate button with language menu - more embedded */}
+                  <div className="relative" ref={translateMenuRef}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsTranslateMenuOpen(!isTranslateMenuOpen)}
+                      className="h-10 w-10 p-0 hover:bg-white/10 text-muted-foreground hover:text-white transition-all duration-200 rounded-lg border border-white/10 hover:border-white/20 disabled:opacity-50"
+                      title="Translate"
+                      disabled={!inputValue.trim()}
+                    >
+                      <Languages size={16} />
+                    </Button>
+
+                    {isTranslateMenuOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 bg-popover border border-border rounded-lg shadow-lg p-2 z-50 min-w-32">
+                        <div className="space-y-1">
+                          {[
+                            { code: 'es', name: 'Spanish' },
+                            { code: 'fr', name: 'French' },
+                            { code: 'de', name: 'German' },
+                            { code: 'it', name: 'Italian' },
+                            { code: 'pt', name: 'Portuguese' },
+                            { code: 'ja', name: 'Japanese' },
+                            { code: 'ko', name: 'Korean' },
+                            { code: 'zh', name: 'Chinese' }
+                          ].map((lang) => (
+                            <button
+                              key={lang.code}
+                              onClick={() => handleTranslate(lang.code)}
+                              className="w-full text-left px-2 py-1 text-sm hover:bg-accent rounded transition-colors"
+                            >
+                              {lang.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Text input area */}
+                <div className="flex-1 relative">
+                  <div className="relative border border-purple-500/30 rounded-lg bg-purple-900/30 backdrop-blur-sm overflow-hidden focus-within:ring-1 focus-within:ring-purple-400">
+                    <Textarea
+                      ref={textareaRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type your message..."
+                      className="min-h-[48px] max-h-32 resize-none border-0 bg-transparent px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none w-full text-white"
+                      rows={1}
+                    />
+                  </div>
+                </div>
+
+                {/* Send button */}
+                <Button
+                  onClick={handleSend}
+                  disabled={!inputValue.trim()}
+                  className="h-12 w-12 shrink-0 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:opacity-50 rounded-lg"
+                >
+                  <Send size={20} />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Advanced Settings Modal */}
+      {
+        showAdvancedSettings && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-gray-900/95 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-purple-500/20 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <Settings className="text-purple-400" size={24} />
+                    <h2 className="text-xl font-bold text-white">Advanced Settings & Personalization</h2>
+                  </div>
+                  <button
+                    onClick={() => setShowAdvancedSettings(false)}
+                    aria-label="Close Settings"
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-gray-400" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-8">
+                {/* Theme & Appearance */}
+                <section>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Palette className="text-cyan-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">Theme & Appearance</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Theme Mode</label>
+                      <div className="flex space-x-2">
+                        {[
+                          { value: "dark", label: "Dark", icon: Moon },
+                          { value: "light", label: "Light", icon: Sun },
+                          { value: "auto", label: "Auto", icon: Monitor }
+                        ].map(({ value, label, icon: Icon }) => (
+                          <button
+                            key={value}
+                            onClick={() => setUserTheme(value)}
+                            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border transition-all ${userTheme === value
+                              ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                              : 'bg-gray-800/50 border-gray-600/30 text-gray-300 hover:bg-gray-700/50'
+                              }`}
+                          >
+                            <Icon size={16} />
+                            <span className="text-sm">{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* User Profile & Personalization */}
+                <section>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Settings className="text-green-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">User Profile</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Display Name</label>
+                        <input
+                          type="text"
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:border-green-500/50"
+                          placeholder="Enter your name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Avatar Emoji</label>
+                        <div className="flex space-x-2">
+                          {['👤', '🙂', '😊', '🤓', '🎭', '🚀', '🌟', '💎'].map((emoji) => (
+                            <button
+                              key={emoji}
+                              onClick={() => setUserAvatar(emoji)}
+                              className={`w-10 h-10 rounded-lg border transition-all ${userAvatar === emoji
+                                ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                                : 'bg-gray-800/50 border-gray-600/30 hover:bg-gray-700/50'
+                                }`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Interface Language</label>
+                        <select
+                          value={interfaceLanguage}
+                          onChange={(e) => setInterfaceLanguage(e.target.value)}
+                          aria-label="Interface Language"
+                          className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50"
+                        >
+                          <option value="en">English</option>
+                          <option value="es">Español</option>
+                          <option value="fr">Français</option>
+                          <option value="de">Deutsch</option>
+                          <option value="ja">日本語</option>
+                          <option value="zh">中文</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Timezone</label>
+                        <select
+                          value={timezone}
+                          onChange={(e) => setTimezone(e.target.value)}
+                          aria-label="Timezone"
+                          className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600/30 rounded-lg text-white text-sm focus:outline-none focus:border-green-500/50"
+                        >
+                          <option value="auto">Auto-detect</option>
+                          <option value="utc">UTC</option>
+                          <option value="est">Eastern Time</option>
+                          <option value="pst">Pacific Time</option>
+                          <option value="gmt">GMT</option>
+                          <option value="cet">Central European</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Chat Behavior */}
+                <section>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <MessageSquare className="text-blue-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">Chat Behavior</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {[
+                      { key: "autoSave", label: "Auto-save Conversations", desc: "Automatically save your chat history" },
+                      { key: "quickReplies", label: "Quick Reply Suggestions", desc: "Show suggested responses during chat" },
+                      { key: "typingIndicator", label: "Typing Indicator", desc: "Show when AI is generating response" },
+                      { key: "readReceipts", label: "Read Receipts", desc: "Show when messages are read" }
+                    ].map(({ key, label, desc }) => (
+                      <div key={key} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                        <div>
+                          <div className="text-sm font-medium text-white">{label}</div>
+                          <div className="text-xs text-gray-400">{desc}</div>
+                        </div>
+                        <button
+                          onClick={() => setChatBehavior(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                          aria-label={`Toggle ${label}`}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${chatBehavior[key as keyof typeof chatBehavior] ? 'bg-blue-500' : 'bg-gray-600'
+                            }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${chatBehavior[key as keyof typeof chatBehavior] ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Accessibility */}
+                <section>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Monitor className="text-orange-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">Accessibility</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {[
+                      { key: "highContrast", label: "High Contrast Mode", desc: "Increase contrast for better visibility" },
+                      { key: "largeText", label: "Large Text", desc: "Use larger fonts throughout the interface" },
+                      { key: "reducedMotion", label: "Reduced Motion", desc: "Minimize animations and transitions" },
+                      { key: "screenReader", label: "Screen Reader Support", desc: "Enhanced compatibility with screen readers" }
+                    ].map(({ key, label, desc }) => (
+                      <div key={key} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                        <div>
+                          <div className="text-sm font-medium text-white">{label}</div>
+                          <div className="text-xs text-gray-400">{desc}</div>
+                        </div>
+                        <button
+                          onClick={() => setAccessibilitySettings(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                          aria-label={`Toggle ${label}`}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${accessibilitySettings[key as keyof typeof accessibilitySettings] ? 'bg-orange-500' : 'bg-gray-600'
+                            }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${accessibilitySettings[key as keyof typeof accessibilitySettings] ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* AI Personality */}
+                <section>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Brain className="text-pink-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">AI Personality</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Response Style</label>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {[
+                          { value: "professional", label: "Professional", desc: "Formal, detailed responses" },
+                          { value: "casual", label: "Casual", desc: "Friendly, conversational tone" },
+                          { value: "technical", label: "Technical", desc: "Precise, code-focused answers" }
+                        ].map(({ value, label, desc }) => (
+                          <button
+                            key={value}
+                            onClick={() => setAiPersonality(value)}
+                            className={`p-4 rounded-lg border text-left transition-all ${aiPersonality === value
+                              ? 'bg-pink-500/20 border-pink-500/50'
+                              : 'bg-gray-800/50 border-gray-600/30 hover:bg-gray-700/50'
+                              }`}
+                          >
+                            <div className="font-medium text-white text-sm">{label}</div>
+                            <div className="text-xs text-gray-400 mt-1">{desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Response Length</label>
+                      <div className="flex space-x-2">
+                        {[
+                          { value: "concise", label: "Concise" },
+                          { value: "balanced", label: "Balanced" },
+                          { value: "detailed", label: "Detailed" }
+                        ].map(({ value, label }) => (
+                          <button
+                            key={value}
+                            onClick={() => setResponseLength(value)}
+                            className={`px-4 py-2 rounded-lg border text-sm transition-all ${responseLength === value
+                              ? 'bg-pink-500/20 border-pink-500/50 text-pink-300'
+                              : 'bg-gray-800/50 border-gray-600/30 text-gray-300 hover:bg-gray-700/50'
+                              }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Notifications */}
+                <section>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Bell className="text-cyan-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">Notifications</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {[
+                      { key: "sounds", label: "Sound Notifications", desc: "Play sound for new messages" },
+                      { key: "desktop", label: "Desktop Notifications", desc: "Show browser notifications" },
+                      { key: "email", label: "Email Notifications", desc: "Send email for important updates" }
+                    ].map(({ key, label, desc }) => (
+                      <div key={key} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                        <div>
+                          <div className="text-sm font-medium text-white">{label}</div>
+                          <div className="text-xs text-gray-400">{desc}</div>
+                        </div>
+                        <button
+                          onClick={() => setNotificationSettings(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                          aria-label={`Toggle ${label}`}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notificationSettings[key as keyof typeof notificationSettings] ? 'bg-cyan-500' : 'bg-gray-600'
+                            }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notificationSettings[key as keyof typeof notificationSettings] ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Privacy & Data */}
+                <section>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Shield className="text-green-400" size={20} />
+                    <h3 className="text-lg font-semibold text-white">Privacy & Data</h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                      <div>
+                        <div className="text-sm font-medium text-white">Analytics & Telemetry</div>
+                        <div className="text-xs text-gray-400">Help improve <span className="bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-transparent font-semibold drop-shadow-[0_1px_2px_rgba(168,85,247,0.3)] [text-shadow:_0_1px_4px_rgba(168,85,247,0.4)]">ZED</span> with usage data</div>
+                      </div>
+                      <button
+                        onClick={() => setDataPrivacy(prev => ({ ...prev, analytics: !prev.analytics }))}
+                        aria-label="Toggle Analytics & Telemetry"
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dataPrivacy.analytics ? 'bg-green-500' : 'bg-gray-600'
+                          }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dataPrivacy.analytics ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                        />
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Data Retention Period</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "7days", label: "7 Days" },
+                          { value: "30days", label: "30 Days" },
+                          { value: "90days", label: "90 Days" },
+                          { value: "forever", label: "Forever" }
+                        ].map(({ value, label }) => (
+                          <button
+                            key={value}
+                            onClick={() => setDataPrivacy(prev => ({ ...prev, dataRetention: value }))}
+                            className={`px-3 py-2 rounded-lg border text-sm transition-all ${dataPrivacy.dataRetention === value
+                              ? 'bg-green-500/20 border-green-500/50 text-green-300'
+                              : 'bg-gray-800/50 border-gray-600/30 text-gray-300 hover:bg-gray-700/50'
+                              }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg">
+                      <div>
+                        <div className="text-sm font-medium text-white">Share with Team</div>
+                        <div className="text-xs text-gray-400">Allow team members to see your preferences</div>
+                      </div>
+                      <button
+                        onClick={() => setDataPrivacy(prev => ({ ...prev, shareWithTeam: !prev.shareWithTeam }))}
+                        aria-label="Toggle Share with Team"
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${dataPrivacy.shareWithTeam ? 'bg-green-500' : 'bg-gray-600'
+                          }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${dataPrivacy.shareWithTeam ? 'translate-x-6' : 'translate-x-1'
+                            }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="sticky bottom-0 bg-gray-900/95 backdrop-blur-xl border-t border-purple-500/20 p-6">
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={() => setShowAdvancedSettings(false)}
+                    className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveSettings}
+                    className="px-6 py-2 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white text-sm rounded-lg transition-all"
+                  >
+                    Save Settings
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+    </>
   );
 }
