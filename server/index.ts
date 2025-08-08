@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import cors from "cors";
+import corsMiddleware from "./middleware/cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection } from "./db";
@@ -13,11 +13,7 @@ import authMiddleware from "./middleware/auth";
 const app = express();
 
 // CORS FIRST!
-app.use(cors({
-  origin: "http://localhost:5001",
-  credentials: true,
-  exposedHeaders: ["Set-Cookie"],
-}));
+app.use(corsMiddleware);
 
 app.use(express.json());
 app.use(cookieParser());
