@@ -48,6 +48,7 @@ interface ChatMessage {
   sender: 'user' | 'ai';
   timestamp: number;
   type?: 'text' | 'image' | 'file';
+  status?: 'sending' | 'streaming' | 'done' | 'error'; // for streaming/error handling
 }
 
 // ChatArea component - Original interface design
@@ -70,7 +71,8 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
       content: "Hello! I'm ZED, your enhanced AI assistant. I'm connected to your memory systems and ready to help you with anything you need. How can I assist you today?",
       sender: 'ai',
       timestamp: Date.now(),
-      type: 'text'
+      type: 'text',
+      status: 'done'
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -722,69 +724,72 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
     }
   };
 
+  // Streaming-safe, robust message flow
   const handleSend = async () => {
     if (!inputValue.trim()) return;
 
     const message = inputValue.trim();
     const userMessageId = Date.now().toString();
+    const aiMessageId = (Date.now() + 1).toString();
 
-    // Add user message to UI immediately
+    // Optimistically add user message
     const userMessage: ChatMessage = {
       id: userMessageId,
       content: message,
       sender: 'user',
       timestamp: Date.now(),
-      type: 'text'
+      type: 'text',
+      status: 'done'
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    // Add pending assistant bubble
+    const pendingAI: ChatMessage = {
+      id: aiMessageId,
+      content: '',
+      sender: 'ai',
+      timestamp: Date.now(),
+      type: 'text',
+      status: 'streaming'
+    };
+
+    setMessages(prev => [...prev, userMessage, pendingAI]);
     setInputValue("");
     setIsLoading(true);
 
     try {
-      // Send message to chat server
-      console.log("Sending message to chat server:", message);
-      const response = await apiRequest('/api/chat', 'POST', {
+      // Simulate streaming: replace with real streaming API if available
+      let accumulated = '';
+      const streamResponse = await apiRequest('/api/chat', 'POST', {
         message,
         timestamp: Date.now(),
-        userId: 'user-1' // This should come from auth context
+        userId: 'user-1'
       });
 
-      console.log("Chat server response:", response);
-
-      // Add AI response to UI
-      if (response.content) {
-        const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          content: response.content,
-          sender: 'ai',
-          timestamp: Date.now(),
-          type: 'text'
-        };
-
-        setMessages(prev => [...prev, aiMessage]);
+      // If streaming, accumulate chunks here. For now, treat as one chunk.
+      if (streamResponse.content) {
+        accumulated += streamResponse.content;
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiMessageId
+            ? { ...msg, content: accumulated, status: 'done' }
+            : msg
+        ));
 
         // Save conversation to memory (don't block UI on this)
         try {
           await apiRequest('/api/memory/conversation', 'POST', {
             userMessage: message,
-            aiResponse: response.content,
+            aiResponse: streamResponse.content,
             timestamp: Date.now()
           });
         } catch (memoryError) {
           console.warn("Failed to save to memory:", memoryError);
         }
       } else {
-        console.warn("No content in response:", response);
-        // Create a fallback response
-        const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          content: "I received your message but encountered an issue generating a response. Please try again.",
-          sender: 'ai',
-          timestamp: Date.now(),
-          type: 'text'
-        };
-        setMessages(prev => [...prev, aiMessage]);
+        setMessages(prev => prev.map(msg =>
+          msg.id === aiMessageId
+            ? { ...msg, content: "I received your message but encountered an issue generating a response. Please try again.", status: 'error' }
+            : msg
+        ));
       }
 
       toast({
@@ -794,12 +799,13 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
 
     } catch (error) {
       console.error("Failed to send message:", error);
-
-      // Remove the user message from UI on error
-      setMessages(prev => prev.filter(msg => msg.id !== userMessageId));
-      // Restore message to input on error
-      setInputValue(message);
-
+      // Mark assistant bubble as error, keep user message
+      setMessages(prev => prev.map(msg =>
+        msg.id === aiMessageId
+          ? { ...msg, content: "Failed to get a response. Retry?", status: 'error' }
+          : msg
+      ));
+      setInputValue(message); // restore input for retry
       toast({
         title: "Message Failed",
         description: "Failed to send message. Please try again.",
@@ -1083,10 +1089,24 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
                               Z
                             </div>
                             <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-600/30 text-gray-100 p-3 rounded-2xl rounded-bl-md shadow-lg">
-                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              <p className="text-sm leading-relaxed">
+                                {message.content}
+                                {message.status === 'streaming' && <span className="animate-pulse text-gray-400 ml-1">▍</span>}
+                              </p>
                               <p className="text-xs mt-1 text-gray-400">
                                 {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </p>
+                              {message.status === 'error' && (
+                                <button
+                                  className="mt-2 text-xs text-red-400 underline hover:text-red-300"
+                                  onClick={() => {
+                                    setInputValue(messages.find(m => m.sender === 'user' && m.timestamp === message.timestamp - 1)?.content || '');
+                                    setMessages(prev => prev.filter(m => m.id !== message.id));
+                                  }}
+                                >
+                                  Retry
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
