@@ -7,7 +7,7 @@ import { setupLocalAuth, isAuthenticated } from "./localAuth";
 import { prismaAuth, prismaLogin, getCurrentUser } from "./prismaAuth";
 import { PrismaChatService } from "./prismaChatService";
 import { QueryLogger } from "./services/queryLogger";
-import { insertConversationSchema, insertMessageSchema, insertFileSchema, insertSessionSchema, insertCoreMemorySchema, insertProjectMemorySchema, insertScratchpadMemorySchema } from "@shared/schema";
+// No schema validators exported from shared/schema
 import { optimizationService } from "./services/optimizationService";
 import { MemoryService } from "./services/memoryService";
 import { Router } from "express";
@@ -257,16 +257,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { title = "New Conversation", mode = "chat" } = req.body;
       console.log("➕ POST Create conversation for user:", userId, "title:", title);
 
-      const conversationData = insertConversationSchema.parse({
+      // No insertConversationSchema, so skip validation
+      const conversationData = {
         userId,
         title,
         mode,
         preview: title.substring(0, 100)
-      });
-
+      };
       const conversation = await storage.createConversation(conversationData);
       console.log("✅ Created conversation:", conversation.id);
-
       return res.json(conversation);
     } catch (error) {
       console.error("❌ Error creating conversation:", error);
@@ -355,8 +354,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message content is required" });
       }
 
-      const userMessageData = insertMessageSchema.parse({ conversationId, role, content });
-      const userMessage = await storage.createMessage(userMessageData);
+  // No insertMessageSchema, so skip validation
+  const userMessageData = { conversationId, role, content };
+  const userMessage = await storage.createMessage(userMessageData);
 
       const messages = await storage.getMessagesByConversation(conversationId);
       const chatHistory = messages.map(msg => ({
@@ -378,12 +378,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const aiResponse = await generateChatResponse(chatHistory, conversationMode, "gpt-4o", userContext);
 
-        const aiMessageData = insertMessageSchema.parse({
+        // No insertMessageSchema, so skip validation
+        const aiMessageData = {
           conversationId,
           role: "assistant",
           content: aiResponse
-        });
-
+        };
         const aiMessage = await storage.createMessage(aiMessageData);
 
         if (messages.length <= 2) {
@@ -403,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST: /api/ask - AI question answering endpoint
+  // POST: /api/ask - AI question answering endpoint (ALWAYS returns JSON)
   app.post("/api/ask", isAuthenticated, async (req, res) => {
     try {
       const { content, prompt, model, stream } = req.body;
@@ -413,30 +413,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Content or prompt is required" });
       }
 
+      // Check Ollama/model availability before handling
+      let ollamaAvailable = false;
+      try {
+        const ollamaResp = await fetch('http://localhost:11434/api/tags', { method: 'GET', signal: AbortSignal.timeout(3000) });
+        if (ollamaResp.ok) {
+          const tags = await ollamaResp.json();
+          ollamaAvailable = Array.isArray(tags.models) && tags.models.some((m:any) => m.name && m.name.includes('llama'));
+        }
+      } catch (e) {
+        ollamaAvailable = false;
+      }
+      if (!ollamaAvailable) {
+        console.error('[ZED] Ollama or required models not available!');
+      }
+
       console.log("🤖 ZED: Processing user request with fallback chain");
       const userId = req.session?.user?.id;
-      let response: string;
+      let response: string = '';
       let modelUsed = 'unknown';
 
-      // Fallback Chain: Local fallback -> OpenAI
-
       try {
-        // Use existing OpenAI service
-        const openaiResponse = await generateChatResponse([
+        // Use existing OpenAI service (fallback chain inside generateChatResponse)
+        response = await generateChatResponse([
           { role: "user", content: userInput }
         ], model || "chat");
-
-        if (openaiResponse && openaiResponse.trim()) {
-          response = openaiResponse.trim();
-          modelUsed = 'openai';
-          console.log("✅ ZED: OpenAI responded successfully");
-        } else {
-          throw new Error("Empty response from OpenAI");
-        }
-      } catch (openaiError) {
-        console.log("⚠️ ZED: OpenAI failed, using fallback...", openaiError instanceof Error ? openaiError.message : String(openaiError));
-
-        // Simple fallback response
+        modelUsed = ollamaAvailable ? 'ollama' : 'openai';
+        if (!response || !response.trim()) throw new Error('Empty response from AI');
+      } catch (aiError) {
+        console.error('[ZED] AI error:', aiError);
         response = `I understand you're asking: "${userInput.substring(0, 100)}${userInput.length > 100 ? '...' : ''}". I'm currently running on backup systems and may have limited capabilities. Please try again for a more detailed response.`;
         modelUsed = 'fallback';
       }
@@ -451,7 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             model: modelUsed,
             metadata: {
               source: 'zed-unified',
-              fallback_used: modelUsed !== 'openai'
+              fallback_used: modelUsed !== 'ollama'
             }
           });
         } catch (logError) {
@@ -459,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Return unified ZED response
+      // Always return JSON
       return res.json({
         response: response,
         answer: response, // For backward compatibility

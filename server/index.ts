@@ -2,7 +2,7 @@ import "dotenv/config";
 import express, { type Request, type Response, type NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import session from "express-session";
-import corsMiddleware from "./middleware/cors";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection } from "./db";
@@ -12,8 +12,8 @@ import authMiddleware from "./middleware/auth";
 
 const app = express();
 
-// CORS FIRST!
-app.use(corsMiddleware);
+// CORS FIRST! (Allow all origins for dev)
+app.use(cors());
 
 app.use(express.json());
 app.use(cookieParser());
@@ -38,6 +38,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  // Log all /api/ask requests
+  if (path.startsWith('/api/ask')) {
+    log(`[ASK] Incoming: ${req.method} ${path} - body: ${JSON.stringify(req.body)}`);
+  }
 
   const originalResJson = res.json.bind(res);
   res.json = function (bodyJson, ...args) {
@@ -93,8 +98,8 @@ app.post("/api/conversations/:id/messages", authMiddleware, (req, res) => {
       serveStatic(app);
     }
 
-    const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5001;
 
+    const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
     app.set('port', PORT);
     httpServer.listen(PORT, () => {
       log(`🚀 Server listening on http://localhost:${PORT}`);
