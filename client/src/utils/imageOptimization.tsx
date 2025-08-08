@@ -42,18 +42,21 @@ export const optimizeImageLoading = () => {
 };
 
 // Image component with optimization
-export const OptimizedImage = ({
+import React from 'react';
+
+type OptimizedImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+    src: string;
+    alt: string;
+    className?: string;
+    lazy?: boolean;
+};
+
+export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     src,
     alt,
     className,
     lazy = true,
     ...props
-}: {
-    src: string;
-    alt: string;
-    className?: string;
-    lazy?: boolean;
-    [key: string]: any;
 }) => {
     if (lazy) {
         return (
