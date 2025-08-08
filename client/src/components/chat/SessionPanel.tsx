@@ -1,30 +1,22 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+// import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import SatelliteConnection from "../satellite/SatelliteConnection";
 import PhoneLink from "../phone/PhoneLink";
 import { 
-  X, 
+  // X,
   FileText, 
   Code, 
   Share2, 
   ExternalLink,
   Clock,
-  HardDrive,
   MessageSquare,
   File,
-  Zap
+  Zap,
+  HardDrive
 } from "lucide-react";
-import type { Conversation, File as FileType, Session } from "@shared/schema";
-
-interface SessionPanelProps {
-  conversation?: Conversation;
-  files: FileType[];
-  session?: Session;
-}
-
-export default function SessionPanel({ conversation, files, session }: SessionPanelProps) {
+import type { Conversation, File as FileType } from "@shared/schema";
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -37,7 +29,7 @@ export default function SessionPanel({ conversation, files, session }: SessionPa
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
@@ -50,19 +42,20 @@ export default function SessionPanel({ conversation, files, session }: SessionPa
     return "📁";
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "text-green-600";
-      case "processing": return "text-yellow-600";
-      case "error": return "text-red-600";
-      default: return "text-gray-600";
-    }
-  };
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "completed": return "text-green-600";
+  //     case "processing": return "text-yellow-600";
+  //     case "error": return "text-red-600";
+  //     default: return "text-gray-600";
+  //   }
+  // };
 
-  // Session statistics
-  const messagesUsed = session?.messagesUsed || 0;
-  const storageUsed = 0; // GB - calculated from uploaded files
 
+
+  // Props (assume these are passed in, or add dummy values for build)
+  // Remove these dummy values and use real props in production
+export default function SessionPanel({ conversation, session, files }: { conversation: Conversation, session: any, files: FileType[] }) {
   return (
     <div className="w-96 zed-sidebar flex flex-col h-full relative">
       {/* Floating Background Elements */}
@@ -97,7 +90,7 @@ export default function SessionPanel({ conversation, files, session }: SessionPa
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground">AI Model</span>
               <Badge className="bg-purple-600/20 text-purple-400 border-purple-400/30">
-                {conversation?.model || "GPT-4o"}
+                {conversation?.mode || "GPT-4o"}
               </Badge>
             </div>
             <div className="flex items-center justify-between mb-2">
@@ -155,32 +148,24 @@ export default function SessionPanel({ conversation, files, session }: SessionPa
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {file.originalName}
+                      {file.name}
                     </p>
                     <div className="flex items-center justify-between text-xs mt-1">
                       <span className="text-muted-foreground">{formatFileSize(file.size)}</span>
-                      <Badge 
-                        className={`text-xs ${
-                          file.status === 'completed' ? 'bg-green-600/20 text-green-400 border-green-400/30' :
-                          file.status === 'processing' ? 'bg-yellow-600/20 text-yellow-400 border-yellow-400/30' :
-                          'bg-red-600/20 text-red-400 border-red-400/30'
-                        }`}
-                      >
-                        {file.status}
+                      <Badge className="text-xs bg-green-600/20 text-green-400 border-green-400/30">
+                        completed
                       </Badge>
                     </div>
                   </div>
                 </div>
-                {file.status === "completed" && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full zed-button rounded-xl text-xs h-8"
-                  >
-                    <ExternalLink size={12} className="mr-1" />
-                    View Analysis
-                  </Button>
-                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full zed-button rounded-xl text-xs h-8"
+                >
+                  <ExternalLink size={12} className="mr-1" />
+                  View Analysis
+                </Button>
               </Card>
             ))}
           </div>

@@ -7,7 +7,6 @@ import {
   Image, 
   Languages, 
   Settings, 
-  Palette,
   Volume2,
   Globe,
   Moon,

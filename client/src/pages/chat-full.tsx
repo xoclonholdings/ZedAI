@@ -27,7 +27,6 @@ export default function ChatFullPage({ isMobile = false }: ChatFullPageProps) {
                     conversations={conversations || []}
                     isMobile={isMobile}
                     onClose={() => setIsSidebarOpen(false)}
-                    onMenuClick={() => setIsSidebarOpen(true)}
                 />
             </div>
 

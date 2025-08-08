@@ -1,6 +1,6 @@
 // ZED Core Memory System - Complete Integration
 export * from './components/chat/MemoryPanel';
-export * from './components/ZedCorePage';
+// export * from './components/ZedCorePage'; // Removed invalid export for ZedCorePage
 export * from './types/auth';
 
 // Hooks
@@ -8,7 +8,6 @@ export { useAuth } from './hooks/useAuth';
 
 // Memory System Components
 export { default as MemoryPanel } from './components/chat/MemoryPanel';
-export { default as ZedCorePage } from './components/ZedCorePage';
 
 // Chat Components with Memory Integration
 export { default as ChatArea } from './components/chat/ChatArea';

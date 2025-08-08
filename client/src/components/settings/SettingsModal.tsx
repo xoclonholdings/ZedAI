@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,24 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Settings, 
-  User, 
-  Bell, 
-  Shield, 
-  Archive, 
-  Lock, 
-  Cloud, 
-  Globe, 
-  Moon, 
-  Sun, 
-  Volume2, 
-  Palette,
-  CheckCircle,
-  AlertCircle,
-  ChevronRight,
-  ChevronLeft
-} from "lucide-react";
+import { Settings, User, Bell, Shield, Archive, Lock } from "lucide-react";
 
 export interface SettingsModalProps {
   open: boolean;

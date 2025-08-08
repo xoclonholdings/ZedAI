@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Satellite, 
-  Wifi, 
   WifiOff, 
   Radio, 
   Signal,

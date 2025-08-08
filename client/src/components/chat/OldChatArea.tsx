@@ -1,13 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+// import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import {
     Send,
-    Paperclip,
-    Mic,
-    Sparkles,
+    // Paperclip,
+    // Mic,
+    // Sparkles,
     MessageSquare,
     Brain
 } from "lucide-react";
@@ -20,7 +20,7 @@ export default function OldChatArea() {
     const [inputValue, setInputValue] = useState("");
     const [showSocialFeed, setShowSocialFeed] = useState(false);
     const [showMemoryPanel, setShowMemoryPanel] = useState(false);
-    const [isStreaming] = useState(false);
+    // const [isStreaming] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleSend = () => {

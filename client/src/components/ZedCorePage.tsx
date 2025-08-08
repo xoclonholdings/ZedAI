@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Badge } from '../ui/badge';
-import { Progress } from '../ui/progress';
-import { AlertCircle, Brain, Upload, Download, Archive, Eye, Settings, BookmarkPlus, MessageSquare } from 'lucide-react';
-import { Alert, AlertDescription } from '../ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
+import { AlertCircle, Brain, Upload, Download, Eye, Settings, BookmarkPlus, MessageSquare } from 'lucide-react';
+import { Alert, AlertDescription } from './ui/alert';
 
 interface ZedCorePageProps {
   userId: string;
@@ -46,7 +46,7 @@ interface UserCore {
   roles: any[];
 }
 
-export const ZedCorePage: React.FC<ZedCorePageProps> = ({ userId, isAdmin = false }) => {
+export const ZedCorePage: React.FC<ZedCorePageProps> = ({ userId }) => {
   const [userCore, setUserCore] = useState<UserCore | null>(null);
   const [adminCore, setAdminCore] = useState<AdminCore | null>(null);
   const [memoryStats, setMemoryStats] = useState<ZedMemoryStats | null>(null);
@@ -255,7 +255,7 @@ export const ZedCorePage: React.FC<ZedCorePageProps> = ({ userId, isAdmin = fals
             disabled={isCompressing}
             variant="outline"
           >
-            <Compress className="h-4 w-4 mr-2" />
+            {/* Compress icon removed: missing import */}
             {isCompressing ? 'Compressing...' : 'Compress Memory'}
           </Button>
         </div>
@@ -670,7 +670,7 @@ export const ZedCorePage: React.FC<ZedCorePageProps> = ({ userId, isAdmin = fals
                   id="customPrompts"
                   placeholder="Add custom instructions for your ZED..."
                   value={preferences.customPrompts?.system || ''}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPreferences((prev: any) => ({
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPreferences((prev: any) => ({
                     ...prev,
                     customPrompts: { ...prev.customPrompts, system: e.target.value }
                   }))}

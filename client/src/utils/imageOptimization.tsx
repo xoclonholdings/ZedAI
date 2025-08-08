@@ -51,31 +51,27 @@ type OptimizedImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
     lazy?: boolean;
 };
 
-export const OptimizedImage: React.FC<OptimizedImageProps> = ({
+export function OptimizedImage({
     src,
     alt,
     className,
     lazy = true,
     ...props
-}) => {
-    if (lazy) {
-        return (
-            <img
-                data-src={src}
-                alt={alt}
-                className={`lazy ${className || ''}`}
-                loading="lazy"
-                {...props}
-            />
-        );
-    } else {
-        return (
-            <img
-                src={src}
-                alt={alt}
-                className={className}
-                {...props}
-            />
-        );
-    }
-};
+}: OptimizedImageProps) {
+        if (lazy) {
+            return React.createElement('img', {
+                'data-src': src,
+                alt,
+                className: `lazy ${className || ''}`,
+                loading: 'lazy',
+                ...props
+            });
+        } else {
+            return React.createElement('img', {
+                src,
+                alt,
+                className,
+                ...props
+            });
+        }
+}

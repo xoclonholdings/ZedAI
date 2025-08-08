@@ -16,8 +16,7 @@ export default defineConfig({
         port: 5173,
         strictPort: true, // Force port 5173, don't try others
         host: true,
-        // Enable SPA fallback for React Router
-        historyApiFallback: true,
+    // Enable SPA fallback for React Router
     },
     // Performance optimizations
     build: {
@@ -28,7 +27,7 @@ export default defineConfig({
                     // Vendor chunk for large dependencies
                     vendor: ['react', 'react-dom', '@tanstack/react-query'],
                     // UI components chunk
-                    ui: ['lucide-react', '@radix-ui/react-button', '@radix-ui/react-textarea'],
+                    ui: ['lucide-react'],
                     // Router chunk
                     router: ['wouter'],
                 },

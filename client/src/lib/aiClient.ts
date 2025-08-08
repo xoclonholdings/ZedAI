@@ -28,7 +28,6 @@ export async function streamChatAPI({
   const reader = response.body.getReader();
   const decoder = new TextDecoder('utf-8');
   let buffer = '';
-  let lastYield = Date.now();
   let done = false;
 
   async function* gen() {
@@ -38,7 +37,6 @@ export async function streamChatAPI({
         if (streamDone) break;
         const chunk = decoder.decode(value, { stream: true });
         buffer += chunk;
-        lastYield = Date.now();
         // Parse SSE/NDJSON lines
         let lines = buffer.split(/\r?\n/);
         buffer = lines.pop() || '';

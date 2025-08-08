@@ -12,19 +12,15 @@ export async function* ollamaChatStream(message: string, abortSignal: AbortSigna
       stream: true,
       messages: [{ role: 'user', content: message }]
     }),
-    signal: abortSignal,
-    timeout: 60000
+    signal: abortSignal
   });
 
   if (!res.ok || !res.body) throw new Error('Ollama unreachable');
 
-  const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+  for await (const chunk of res.body as any as AsyncIterable<Buffer>) {
+    buffer += decoder.decode(chunk, { stream: true });
     let lines = buffer.split('\n');
     buffer = lines.pop() || '';
     for (const line of lines) {

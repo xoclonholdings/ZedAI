@@ -12,7 +12,12 @@ router.get('/healthz', (req, res) => {
 
 router.get('/readyz', async (req, res) => {
   try {
-    const r = await fetch(`${OLLAMA_HOST}/api/tags`, { method: 'POST', timeout: 5000 });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const r = await fetch(`${OLLAMA_HOST}/api/tags`, { method: 'POST', signal: controller.signal });
+    clearTimeout(timeout);
+
     if (r.ok) return res.json({ ready: true });
     throw new Error('Ollama not ready');
   } catch {
