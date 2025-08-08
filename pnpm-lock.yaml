@@ -89,6 +89,9 @@ importers:
       drizzle-orm:
         specifier: ^0.44.4
         version: 0.44.4(@neondatabase/serverless@1.0.1)(@prisma/client@6.13.0(typescript@5.9.2))(@types/pg@8.15.5)
+      esbuild:
+        specifier: ^0.25.8
+        version: 0.25.8
       express:
         specifier: ^5.1.0
         version: 5.1.0
