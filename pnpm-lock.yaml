@@ -121,7 +121,7 @@ importers:
         version: 3.3.2
       openai:
         specifier: ^5.11.0
-        version: 5.12.1
+        version: 5.12.1(ws@8.18.3)
       pino:
         specifier: ^9.8.0
         version: 9.8.0
@@ -143,6 +143,9 @@ importers:
       wouter:
         specifier: ^3.3.5
         version: 3.7.1(react@18.3.1)
+      ws:
+        specifier: ^8.18.3
+        version: 8.18.3
       yauzl:
         specifier: ^3.2.0
         version: 3.2.0
@@ -2951,6 +2954,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.18.3:
+    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xmlbuilder@10.1.1:
     resolution: {integrity: sha512-OyzrcFLL/nb6fMGHbiRDuPup9ljBycsdCypwuyg5AAHvyWzGfChJpCXMG88AGTIMFhGZ9RccFN1e6lhg3hkwKg==}
     engines: {node: '>=4.0'}
@@ -4940,7 +4955,9 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@5.12.1: {}
+  openai@5.12.1(ws@8.18.3):
+    optionalDependencies:
+      ws: 8.18.3
 
   option@0.2.4: {}
 
@@ -5569,6 +5586,8 @@ snapshots:
       strip-ansi: 7.1.0
 
   wrappy@1.0.2: {}
+
+  ws@8.18.3: {}
 
   xmlbuilder@10.1.1: {}
 

@@ -658,10 +658,11 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
     abortControllerRef.current = abortController;
     let accumulated = '';
     try {
+      // Use new streamChat signature (no token, no checkHealth)
+      console.log("[ChatArea] Sending message:", message);
       await streamChat(
         message,
-        "user-token-placeholder", // TODO: replace with real token logic
-        (chunk) => {
+        (chunk: string) => {
           accumulated += chunk;
           setMessages(prev => prev.map(msg =>
             msg.id === aiMessageId
@@ -669,14 +670,14 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
               : msg
           ));
         },
-        { signal: abortController.signal }
+        abortController.signal
       );
       setMessages(prev => prev.map(msg =>
         msg.id === aiMessageId
           ? { ...msg, content: accumulated, status: 'done' }
           : msg
       ));
-      // Optionally save conversation to memory here
+      console.log("[ChatArea] Message sent and streamed successfully.");
       toast({
         title: "Message Sent",
         description: "Your message has been sent to ZED",
@@ -688,6 +689,7 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
           : msg
       ));
       setInputValue(message); // restore input for retry
+      console.error("[ChatArea] Message failed:", err);
       toast({
         title: "Message Failed",
         description: err.message || "Failed to send message. Please try again.",
