@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useMemory } from '@/hooks/useMemory';
@@ -102,9 +103,17 @@ export default function MemoryPanel({ isOpen, onClose }: MemoryPanelProps) {
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-gray-900/95 border border-white/10 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) document.body.classList.add('overflow-hidden');
+        else document.body.classList.remove('overflow-hidden');
+        return () => document.body.classList.remove('overflow-hidden');
+    }, [isOpen]);
+
+    const modal = (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 pointer-events-none" aria-modal="true" role="dialog">
+            {/* Only the panel itself is interactive, not the background overlay */}
+            <div className="bg-gray-900/95 border border-white/10 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden pointer-events-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <div className="flex items-center space-x-3">
@@ -377,4 +386,6 @@ export default function MemoryPanel({ isOpen, onClose }: MemoryPanelProps) {
             </div>
         </div>
     );
+
+    return createPortal(modal, document.body);
 }

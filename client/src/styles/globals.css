@@ -1,0 +1,11 @@
+/* Force modal to top regardless of stacking contexts */
+.zed-modal { position: fixed; inset: 0; z-index: 2147483000; }
+html.modal-open, body.modal-open { overflow: hidden; }
+
+#app, .app-container, .main-wrapper, .chat-wrapper {
+  transform: none !important;
+  perspective: none !important;
+  filter: none !important;
+  overflow: visible !important;
+  z-index: auto !important;
+}

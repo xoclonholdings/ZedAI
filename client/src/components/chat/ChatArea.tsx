@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +36,7 @@ import {
   FolderOpen,
   Upload
 } from "lucide-react";
+import MemoryPanel from "./MemoryPanel";
 
 interface ChatAreaProps {
   onSidebarToggle?: () => void;
@@ -913,72 +915,17 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
                   <span className="text-xs font-medium">Memory</span>
                   <ChevronDown size={10} className={`transition-transform ${showMemoryPanel ? 'rotate-180' : ''}`} />
                 </Button>
-
-                {/* Memory Dropdown Menu */}
-                {showMemoryPanel && (
-                  <div className="absolute top-full right-0 mt-1 w-56 bg-gray-900/95 backdrop-blur-xl border border-purple-500/30 rounded-lg shadow-2xl z-[9999] overflow-hidden">
-                    {/* Compact Memory Status Header */}
-                    <div className="px-2 py-1.5 border-b border-purple-500/20 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1.5">
-                          <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse"></div>
-                          <span className="text-[10px] font-medium text-purple-300">Oracle</span>
-                          <span className="text-[9px] text-gray-400">{memoryData.size}</span>
-                        </div>
-                        <div className="text-[9px] text-gray-400">{memoryData.messages} msgs</div>
-                      </div>
-                    </div>
-
-                    {/* Compact Memory Actions Grid */}
-                    <div className="p-1.5 grid grid-cols-2 gap-1">
-                      <button
-                        className="px-1.5 py-1 text-[10px] text-purple-300 hover:bg-purple-500/10 rounded text-left flex items-center space-x-1 disabled:opacity-50"
-                        onClick={handleRecentConversations}
-                        disabled={isLoadingMemory}
-                      >
-                        <MessageSquare size={10} />
-                        <span>Recent</span>
-                        {isLoadingMemory && <div className="animate-spin w-2 h-2 border border-purple-400 border-t-transparent rounded-full"></div>}
-                      </button>
-
-                      <button
-                        className="px-1.5 py-1 text-[10px] text-purple-300 hover:bg-purple-500/10 rounded text-left flex items-center space-x-1 disabled:opacity-50"
-                        onClick={handleSearchMemory}
-                        disabled={isLoadingMemory}
-                      >
-                        <Search size={10} />
-                        <span>Search</span>
-                        {isLoadingMemory && <div className="animate-spin w-2 h-2 border border-purple-400 border-t-transparent rounded-full"></div>}
-                      </button>
-
-                      <button
-                        className="px-1.5 py-1 text-[10px] text-purple-300 hover:bg-purple-500/10 rounded text-left flex items-center space-x-1 disabled:opacity-50 col-span-2"
-                        onClick={handleSyncWithZebulon}
-                        disabled={isLoadingMemory}
-                      >
-                        <RefreshCw size={10} className={isLoadingMemory ? "animate-spin" : ""} />
-                        <span>Sync Oracle</span>
-                      </button>
-                    </div>
-
-                    {/* Compact Additional Actions */}
-                    <div className="px-1.5 pb-1.5 space-y-1">
-                      <button
-                        className="w-full px-1.5 py-1 text-[10px] text-gray-400 hover:bg-white/5 rounded text-center flex items-center justify-center space-x-1"
-                        onClick={handleFullMemoryPanel}
-                      >
-                        <Database size={10} />
-                        <span>View Full Memory Panel</span>
-                      </button>
-
-                      {/* Configuration Note */}
-                      <div className="text-[8px] text-gray-500 text-center px-1 leading-tight">
-                        💡 Find settings & config in the sidebar's "Settings" panel
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
+
+              {/* MemoryPanel Overlay (always on top) */}
+              {showMemoryPanel && createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-none">
+                  <div className="pointer-events-auto">
+                    <MemoryPanel isOpen={showMemoryPanel} onClose={() => setShowMemoryPanel(false)} />
+                  </div>
+                </div>,
+                document.body
+              )}
 
               {/* Satellite Signal Gauge Dropdown */}
               <div className="relative satellite-dropdown-container" ref={signalDropdownRef}>
@@ -1007,10 +954,12 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
                   <span className="text-xs font-medium">Signal</span>
                   <ChevronDown size={10} className={`transition-transform ${satelliteDropdownOpen ? 'rotate-180' : ''}`} />
                 </Button>
+              </div>
 
-                {/* Dropdown Menu */}
-                {satelliteDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-52 bg-gray-900/95 backdrop-blur-xl border border-cyan-500/30 rounded-lg shadow-2xl z-[9999] overflow-hidden">
+              {/* SatellitePanel Overlay (always on top) */}
+              {satelliteDropdownOpen && createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-start justify-end p-4 pointer-events-none">
+                  <div className="w-52 bg-gray-900/95 backdrop-blur-xl border border-cyan-500/30 rounded-lg shadow-2xl z-[99999] overflow-hidden pointer-events-auto mt-16 mr-4">
                     {/* Compact Connection Status Header */}
                     <div className="px-2 py-1.5 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-500/10 to-blue-500/10">
                       <div className="flex items-center justify-between">
@@ -1088,8 +1037,9 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>,
+                document.body
+              )}
             </div>
           </div>
 
