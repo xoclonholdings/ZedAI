@@ -4,15 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { streamChat } from "@/lib/chatClient";
 import {
   Send,
   MessageSquare,
   Brain,
   Satellite,
   ChevronDown,
-  Search,
-  RefreshCw,
-  Database,
   Plus,
   Smile,
   Mic,
@@ -37,6 +35,7 @@ import {
   Upload
 } from "lucide-react";
 import MemoryPanel from "./MemoryPanel";
+import { nanoid } from 'nanoid';
 
 interface ChatAreaProps {
   onSidebarToggle?: () => void;
@@ -76,6 +75,8 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Advanced Settings & Personalization
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -102,8 +103,7 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
   });
 
   // Memory & Data states
-  const [memoryData, setMemoryData] = useState({ size: "2.4 KB", messages: 17 });
-  const [isLoadingMemory, setIsLoadingMemory] = useState(false);
+  // ...existing code...
 
   const [notificationSettings, setNotificationSettings] = useState({
     sounds: true,
@@ -166,6 +166,7 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
   // Button handlers - Enhanced with API connections
 
   // Scanner/Detection functionality handlers
+
   const handlePhotoFromGallery = async () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -225,49 +226,27 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
     }
   };
 
-  const handleQRCodeScan = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      await initializeQRScanner(stream);
-      setIsScannerMenuOpen(false);
-    } catch (error) {
-      toast({
-        title: "Camera Access Denied",
-        description: "Please allow camera access for QR scanning",
-        variant: "destructive",
-      });
-    }
-  };
 
-  // Helper functions for file processing
+  // Media file upload handler (fixed)
   const processMediaFiles = async (files: FileList, source: string) => {
     try {
       const formData = new FormData();
       Array.from(files).forEach(file => formData.append('media', file));
-      formData.append('source', source);
-
       const response = await fetch('/api/media/upload', {
         method: 'POST',
         body: formData
       });
-
       if (!response.ok) throw new Error('Media upload failed');
-
       const result = await response.json();
-
-      // Save to Zebulon database and memory gallery
       await apiRequest('/api/memory/media', 'POST', {
         files: result.files,
-        source,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        source
       });
-
       toast({
         title: "Media Uploaded",
-        description: `Successfully uploaded ${files.length} photo(s) to gallery`,
+        description: `Successfully uploaded ${files.length} media file(s)`
       });
-
-      // Add media references to input
       const mediaRefs = Array.from(files).map(f => `[Photo: ${f.name}]`).join(' ');
       setInputValue(prev => prev + ` ${mediaRefs} `);
     } catch (error) {
@@ -557,52 +536,6 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
   };
 
   // Memory Functions - Connected to Zebulon Oracle Database
-  const handleRecentConversations = async () => {
-    try {
-      setIsLoadingMemory(true);
-      const response = await apiRequest('/api/zed-memory/recent', 'GET');
-      console.log('Recent conversations:', response);
-      toast({
-        title: "Recent Conversations",
-        description: `Found ${response.conversations?.length || 0} recent conversations`,
-      });
-      setShowMemoryPanel(false);
-    } catch (error) {
-      console.error('Error in handleRecentConversations:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load recent conversations",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoadingMemory(false);
-    }
-  };
-
-  const handleSearchMemory = async () => {
-    try {
-      setIsLoadingMemory(true);
-      const response = await apiRequest('/api/zed-memory/search', 'POST', {
-        query: inputValue || "recent activities",
-        limit: 10
-      });
-      console.log('Memory search results:', response);
-      toast({
-        title: "Memory Search",
-        description: `Found ${response.results?.length || 0} relevant memories`,
-      });
-      setShowMemoryPanel(false);
-    } catch (error) {
-      console.error('Error in handleSearchMemory:', error);
-      toast({
-        title: "Error",
-        description: "Failed to search memory",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoadingMemory(false);
-    }
-  };
 
   const handleSyncWithZebulon = async () => {
     try {
@@ -726,93 +659,82 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
 
   // Streaming-safe, robust message flow
   const handleSend = async () => {
-    if (!inputValue.trim()) return;
-
+    if (!inputValue.trim() || isStreaming) return;
     const message = inputValue.trim();
-    const userMessageId = Date.now().toString();
-    const aiMessageId = (Date.now() + 1).toString();
-
-    // Optimistically add user message
+    const clientMessageId = nanoid();
     const userMessage: ChatMessage = {
-      id: userMessageId,
+      id: clientMessageId,
       content: message,
       sender: 'user',
       timestamp: Date.now(),
       type: 'text',
-      status: 'done'
+      status: 'done',
     };
-
-    // Add pending assistant bubble
+    const aiMessageId = nanoid();
     const pendingAI: ChatMessage = {
       id: aiMessageId,
       content: '',
       sender: 'ai',
       timestamp: Date.now(),
       type: 'text',
-      status: 'streaming'
+      status: 'streaming',
     };
-
-    setMessages(prev => [...prev, userMessage, pendingAI]);
+    setMessages(prev => {
+      const filtered = prev.filter(msg => !(msg.sender === 'ai' && (msg.status === 'streaming' || msg.status === 'error')));
+      return [...filtered, userMessage, pendingAI];
+    });
     setInputValue("");
     setIsLoading(true);
-
+    setIsStreaming(true);
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    let accumulated = '';
     try {
-      // Simulate streaming: replace with real streaming API if available
-      let accumulated = '';
-      const streamResponse = await apiRequest('/api/chat', 'POST', {
+      await streamChat(
         message,
-        timestamp: Date.now(),
-        userId: 'user-1'
-      });
-
-      // If streaming, accumulate chunks here. For now, treat as one chunk.
-      if (streamResponse.content) {
-        accumulated += streamResponse.content;
-        setMessages(prev => prev.map(msg =>
-          msg.id === aiMessageId
-            ? { ...msg, content: accumulated, status: 'done' }
-            : msg
-        ));
-
-        // Save conversation to memory (don't block UI on this)
-        try {
-          await apiRequest('/api/memory/conversation', 'POST', {
-            userMessage: message,
-            aiResponse: streamResponse.content,
-            timestamp: Date.now()
-          });
-        } catch (memoryError) {
-          console.warn("Failed to save to memory:", memoryError);
-        }
-      } else {
-        setMessages(prev => prev.map(msg =>
-          msg.id === aiMessageId
-            ? { ...msg, content: "I received your message but encountered an issue generating a response. Please try again.", status: 'error' }
-            : msg
-        ));
-      }
-
+        "user-token-placeholder", // TODO: replace with real token logic
+        (chunk) => {
+          accumulated += chunk;
+          setMessages(prev => prev.map(msg =>
+            msg.id === aiMessageId
+              ? { ...msg, content: accumulated, status: 'streaming' }
+              : msg
+          ));
+        },
+        { signal: abortController.signal }
+      );
+      setMessages(prev => prev.map(msg =>
+        msg.id === aiMessageId
+          ? { ...msg, content: accumulated, status: 'done' }
+          : msg
+      ));
+      // Optionally save conversation to memory here
       toast({
         title: "Message Sent",
         description: "Your message has been sent to ZED",
       });
-
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      // Mark assistant bubble as error, keep user message
+    } catch (err: any) {
       setMessages(prev => prev.map(msg =>
         msg.id === aiMessageId
-          ? { ...msg, content: "Failed to get a response. Retry?", status: 'error' }
+          ? { ...msg, content: err.message || "Failed to get a response.", status: 'error' }
           : msg
       ));
       setInputValue(message); // restore input for retry
       toast({
         title: "Message Failed",
-        description: "Failed to send message. Please try again.",
+        description: err.message || "Failed to send message. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
   };
 
@@ -1406,13 +1328,22 @@ export default function ChatArea({ onSidebarToggle }: ChatAreaProps) {
                 </div>
 
                 {/* Send button */}
-                <Button
-                  onClick={handleSend}
-                  disabled={!inputValue.trim()}
-                  className="h-12 w-12 shrink-0 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:opacity-50 rounded-lg"
-                >
-                  <Send size={20} />
-                </Button>
+                {isStreaming ? (
+                  <Button
+                    onClick={handleStop}
+                    className="h-12 w-12 shrink-0 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 rounded-lg"
+                  >
+                    Stop
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSend}
+                    disabled={!inputValue.trim() || isStreaming}
+                    className="h-12 w-12 shrink-0 bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 disabled:opacity-50 rounded-lg"
+                  >
+                    <Send size={20} />
+                  </Button>
+                )}
               </div>
             </div>
           </div>

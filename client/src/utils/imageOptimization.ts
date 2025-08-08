@@ -58,22 +58,21 @@ export const OptimizedImage = ({
     if (lazy) {
         return (
             <img
-        data - src= { src }
-        alt = { alt }
-        className = {`lazy ${className || ''}`
+                data-src={src}
+                alt={alt}
+                className={`lazy ${className || ''}`}
+                loading="lazy"
+                {...props}
+            />
+        );
+    } else {
+        return (
+            <img
+                src={src}
+                alt={alt}
+                className={className}
+                {...props}
+            />
+        );
     }
-    loading = "lazy"
-    {...props }
-      />
-    );
-  }
-
-return (
-    <img
-      src= { src }
-alt = { alt }
-className = { className }
-{...props }
-    />
-  );
 };
