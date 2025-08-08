@@ -20,6 +20,7 @@ export default defineConfig({
     },
     // Performance optimizations
     build: {
+        outDir: '../dist',
         // Enable code splitting
         rollupOptions: {
             output: {
