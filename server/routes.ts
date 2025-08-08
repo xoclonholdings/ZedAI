@@ -479,7 +479,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const router = Router();
 
   // POST: Unified ZED AI endpoint with fallback chain
-  app.post("/api/ask", isAuthenticated, async (req: any, res: any) => {
+  app.post("/api/ask", async (req: any, res: any) => {
+    // Allow unauthenticated access only in chat mode (port 3001)
+    const port = req.app.get('port') || process.env.PORT || 5001;
+    const isChatMode = port == 3001 || port == '3001';
+    if (!isChatMode) {
+      // Require authentication for agent mode (memory, satellite, db)
+      if (!req.session || !req.session.user || !req.session.verified) {
+        return res.status(401).json({ error: "Authentication required for agent mode" });
+      }
+    }
     try {
       const { content } = req.body;
 

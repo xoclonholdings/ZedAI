@@ -95,6 +95,7 @@ app.post("/api/conversations/:id/messages", authMiddleware, (req, res) => {
 
     const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5001;
 
+    app.set('port', PORT);
     httpServer.listen(PORT, () => {
       log(`🚀 Server listening on http://localhost:${PORT}`);
     });
