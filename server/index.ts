@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express, { type Request, type Response, type NextFunction } from "express";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import cors from "cors";
@@ -11,11 +12,21 @@ import authRoutes from "./routes/auth";
 import authMiddleware from "./middleware/auth";
 
 const app = express();
+app.set('trust proxy', 1); // behind Railway/edge proxy
 
-// CORS FIRST! (Allow all origins for dev)
-app.use(cors());
+// Security headers
+app.use(helmet());
+app.use(helmet.hsts({ maxAge: 15552000, includeSubDomains: true, preload: false }));
+// CORS
+app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
 
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+// HTTPS redirect (works with Railway's X-Forwarded-Proto)
+app.use((req, res, next) => {
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') return next();
+  const host = req.headers.host;
+  return res.redirect(301, `https://${host}${req.originalUrl}`);
+});
 app.use(cookieParser());
 app.use(session({
   secret: "your_secret",
@@ -99,10 +110,10 @@ app.post("/api/conversations/:id/messages", authMiddleware, (req, res) => {
     }
 
 
-    const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5000;
+    const PORT = Number(process.env.PORT || 5001);
     app.set('port', PORT);
-    httpServer.listen(PORT, () => {
-      log(`🚀 Server listening on http://localhost:${PORT}`);
+    httpServer.listen(PORT, '0.0.0.0', () => {
+      console.log('[zed] listening', PORT);
     });
 
   } catch (error) {
