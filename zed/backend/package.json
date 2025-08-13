@@ -1,0 +1,14 @@
+{
+  "name": "zed-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "latest",
+    "dotenv": "latest",
+    "cors": "latest"
+  }
+}
