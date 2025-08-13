@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { MemoryService } from './memoryService';
+// import { MemoryService } from './memoryService';
 
 interface OpenAIExportData {
   conversations: Array<{
@@ -403,36 +403,38 @@ export class MemoryImporter {
       const prefix = isAdminMode ? 'admin_' : 'user_';
       
       // Save core personality
-      await MemoryService.setCoreMemory(`${prefix}zed_personality`, personalityData.corePersonality);
+  // await MemoryService.setCoreMemory(`${prefix}zed_personality`, personalityData.corePersonality);
       
       // Save communication style
-      await MemoryService.setCoreMemory(`${prefix}communication_style`, personalityData.communicationStyle);
+  // await MemoryService.setCoreMemory(`${prefix}communication_style`, personalityData.communicationStyle);
       
       // Save knowledge domains
-      await MemoryService.setCoreMemory(`${prefix}knowledge_domains`, JSON.stringify(personalityData.knowledgeDomains));
+  // await MemoryService.setCoreMemory(`${prefix}knowledge_domains`, JSON.stringify(personalityData.knowledgeDomains));
       
       // Save response patterns
-      await MemoryService.setCoreMemory(`${prefix}response_patterns`, JSON.stringify(personalityData.responsePatterns));
+  // await MemoryService.setCoreMemory(`${prefix}response_patterns`, JSON.stringify(personalityData.responsePatterns));
       
       // Save contextual memory (in chunks)
       for (let i = 0; i < personalityData.contextualMemory.length; i += 10) {
         const chunk = personalityData.contextualMemory.slice(i, i + 10);
-        await MemoryService.setCoreMemory(`${prefix}contextual_memory_${Math.floor(i / 10)}`, JSON.stringify(chunk));
+  // await MemoryService.setCoreMemory(`${prefix}contextual_memory_${Math.floor(i / 10)}`, JSON.stringify(chunk));
       }
       
       // Save interaction history (in chunks)
       for (let i = 0; i < personalityData.userInteractionHistory.length; i += 10) {
         const chunk = personalityData.userInteractionHistory.slice(i, i + 10);
-        await MemoryService.setCoreMemory(`${prefix}interaction_history_${Math.floor(i / 10)}`, JSON.stringify(chunk));
+  // await MemoryService.setCoreMemory(`${prefix}interaction_history_${Math.floor(i / 10)}`, JSON.stringify(chunk));
       }
       
-      // Save metadata
-      await MemoryService.setCoreMemory(`${prefix}import_metadata`, JSON.stringify({
-        importDate: new Date().toISOString(),
-        conversationCount: personalityData.contextualMemory.length,
-        knowledgeDomainCount: personalityData.knowledgeDomains.length,
-        interactionCount: personalityData.userInteractionHistory.length
-      }));
+        /*
+        // Save metadata
+        await MemoryService.setCoreMemory(`${prefix}import_metadata`, JSON.stringify({
+          importDate: new Date().toISOString(),
+          conversationCount: personalityData.contextualMemory.length,
+          knowledgeDomainCount: personalityData.knowledgeDomains.length,
+          interactionCount: personalityData.userInteractionHistory.length
+        }));
+        */
       
       console.log(`[MEMORY IMPORT] Successfully saved ${isAdminMode ? 'admin' : 'user'} personality to ZED memory`);
       

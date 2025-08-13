@@ -25,5 +25,22 @@
 			"isBackground": true,
 			"problemMatcher": []
 		}
-	]
+			,
+			{
+				"label": "Test and Open UI Preview",
+				"type": "shell",
+				"command": "npx playwright test zed-web/tests/ui-simple-browser.spec.ts --reporter=list && code --open-url http://localhost:5174",
+				"problemMatcher": [],
+				"detail": "Runs Playwright UI test, then opens the preview in the Simple Browser (requires VS Code)",
+				"group": "test"
+			}
+				,
+				{
+					"label": "Open UI Screenshot",
+					"type": "shell",
+					"command": "code ui-preview.png",
+					"problemMatcher": [],
+					"detail": "Opens the latest Playwright UI screenshot in VS Code for visual inspection."
+				}
+			]
 }

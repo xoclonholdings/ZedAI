@@ -1,4 +1,4 @@
-import { storage } from "../storage";
+// import { storage } from "../storage"; // Disabled for minimal backend
 import { db } from "../db";
 import { sql } from "drizzle-orm";
 
@@ -37,10 +37,10 @@ class OptimizationService {
       // Starting optimization cycle
 
       // 1. Clean expired data
-      await storage.cleanupExpiredData();
+  // await storage.cleanupExpiredData(); // Disabled for minimal backend
 
       // 2. Optimize storage
-      await storage.optimizeStorage();
+  // await storage.optimizeStorage(); // Disabled for minimal backend
 
       // 3. Update statistics
       await this.updateStatistics();
@@ -106,7 +106,7 @@ class OptimizationService {
     return {
       isRunning: this.isRunning,
       lastRun: new Date().toISOString(),
-      cache: storage.getCacheStats()
+  // cache: storage.getCacheStats() // Disabled for minimal backend
     };
   }
 

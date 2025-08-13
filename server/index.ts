@@ -22,11 +22,6 @@ app.use(cors({ origin: '*', methods: ['GET','POST','OPTIONS'], allowedHeaders: [
 
 app.use(express.json({ limit: '1mb' }));
 // HTTPS redirect (works with Railway's X-Forwarded-Proto)
-app.use((req, res, next) => {
-  if (req.secure || req.headers['x-forwarded-proto'] === 'https') return next();
-  const host = req.headers.host;
-  return res.redirect(301, `https://${host}${req.originalUrl}`);
-});
 app.use(cookieParser());
 app.use(session({
   secret: "your_secret",
