@@ -4,6 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url';
 
 // https://vitejs.dev/config/
+export default defineConfig({
     plugins: [react()],
     root: './client',
     resolve: {
@@ -16,7 +17,7 @@ import { fileURLToPath } from 'url';
         port: 5173,
         strictPort: true, // Force port 5173, don't try others
         host: true,
-    // Enable SPA fallback for React Router
+        // Enable SPA fallback for React Router
     },
     // Performance optimizations
     build: {
