@@ -151,8 +151,10 @@ export default function Login() {
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Username</label>
+                <label htmlFor="username" className="text-sm font-medium text-foreground">Username</label>
                 <Input
+                  id="username"
+                  name="username"
                   type="text"
                   placeholder="Enter username"
                   value={credentials.username}
@@ -163,9 +165,11 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Password</label>
+                <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
                 <div className="relative">
                   <Input
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter password"
                     value={credentials.password}
@@ -186,9 +190,12 @@ export default function Login() {
               {showSecondaryAuth && (
                 <div className="space-y-2 border-t border-gray-700 pt-4">
                   <div className="text-sm text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded-lg p-3">
-                    🔐 Admin verification required. Enter your secure phrase:
+                     Admin verification required. Enter your secure phrase:
                   </div>
+                  <label htmlFor="securePhrase" className="text-sm font-medium text-foreground">Secure Phrase</label>
                   <Input
+                    id="securePhrase"
+                    name="securePhrase"
                     type="password"
                     placeholder="Secure Phrase (XOCLON_SECURE_2025)"
                     value={securePhrase}

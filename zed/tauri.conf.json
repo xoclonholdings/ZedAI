@@ -1,0 +1,12 @@
+{
+  "identifier": "com.xoclonholdings.zedai",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev"
+  },
+  "bundle": {
+    "icon": [
+      "icons/icon.png"
+    ]
+  }
+}

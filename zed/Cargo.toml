@@ -1,0 +1,10 @@
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+[package]
+name = "zed"
+version = "0.1.0"
+edition = "2024"
+
+
+[dependencies]
+tauri = { version = "2", features = ["custom-protocol"] }

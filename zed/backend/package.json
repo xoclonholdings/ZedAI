@@ -7,8 +7,8 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "latest",
-    "dotenv": "latest",
-    "cors": "latest"
+    "express": "5.1.0",
+    "dotenv": "17.2.1",
+    "cors": "2.8.5"
   }
 }

@@ -121,7 +121,10 @@ export default function ComprehensiveChat() {
                     <div className="border-t border-gray-800 p-4 bg-gray-900/50 backdrop-blur-lg">
                         <div className="max-w-4xl mx-auto">
                             <div className="flex space-x-4">
+                                <label htmlFor="chatMessage" className="sr-only">Message</label>
                                 <input
+                                    id="chatMessage"
+                                    name="chatMessage"
                                     type="text"
                                     placeholder="Type your message..."
                                     className="flex-1 bg-gray-800 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-700"
