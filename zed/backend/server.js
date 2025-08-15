@@ -1,3 +1,17 @@
+// Secure Content-Security-Policy middleware
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self';" +
+    "script-src 'self' https://zedai-production.up.railway.app;" +
+    "style-src 'self' 'unsafe-inline';" +
+    "connect-src 'self' https://zedai-production.up.railway.app wss://zedai-production.up.railway.app;" +
+    "img-src 'self' data:;" +
+    "font-src 'self';" +
+    "object-src 'none';" +
+    "frame-src 'none';"
+  );
+  next();
+});
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -7,12 +21,7 @@ const PORT = process.env.PORT || 5001;
 
 app.use(cors({
   origin: [
-    'http://localhost:3000',
-    'http://localhost:5173',
-    'http://localhost:3001',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:3001'
+    'https://zed-ai-online.netlify.app'
   ],
   credentials: true
 }));

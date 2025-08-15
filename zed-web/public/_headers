@@ -1,0 +1,2 @@
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://zedai-production.up.railway.app; style-src 'self' 'unsafe-inline'; connect-src 'self' https://zedai-production.up.railway.app wss://zedai-production.up.railway.app; img-src 'self' data:; font-src 'self'; object-src 'none'; frame-src 'none';
