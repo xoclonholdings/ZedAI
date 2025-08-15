@@ -1,24 +1,24 @@
 
-# Stage 1: Build frontend
+
+# Stage 1: Build frontend (Vite)
 FROM node:22.17.0 AS frontend-builder
 WORKDIR /app/zed-web
 COPY zed-web/package.json zed-web/package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,id=zed-web-npm,target=/root/.npm \
 	npm ci || npm install
 COPY zed-web ./
 RUN npm run build
 
-# Stage 2: Install backend dependencies
+# Stage 2: Build backend (Node.js)
 FROM node:22.17.0 AS backend-builder
 WORKDIR /app/backend
 COPY backend/package.json ./
-# Copy lockfile only if present
 COPY backend/package-lock.json ./ || true
-RUN --mount=type=cache,target=/root/.npm \
-	npm ci || npm install || echo "Lockfile missing, installed without it"
+RUN --mount=type=cache,id=backend-npm,target=/root/.npm \
+	(npm ci || npm install || (echo 'Retrying npm install...' && sleep 5 && npm install)) || echo "Lockfile missing, installed without it"
 COPY backend ./
 
-# Stage 3: Final image with Caddy
+# Stage 3: Final Caddy image
 FROM caddy:2.7.6-alpine
 WORKDIR /srv
 COPY --from=frontend-builder /app/zed-web/dist ./frontend

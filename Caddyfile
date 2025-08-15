@@ -1,5 +1,6 @@
 :80
 
+:80
 
 # Serve frontend
 root * /srv/frontend
