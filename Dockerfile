@@ -7,9 +7,9 @@ WORKDIR /app
 COPY zed-web/package.json zed-web/package-lock.json ./zed-web/
 RUN cd zed-web && npm ci && npm run build
 
-# Install backend dependencies
-COPY backend/package.json backend/package-lock.json ./backend/
-RUN cd backend && npm ci
+# Install backend dependencies (skip package-lock.json if missing)
+COPY backend/package.json ./backend/
+RUN cd backend && (npm ci || npm install)
 
 # Copy backend and built frontend
 COPY backend ./backend
