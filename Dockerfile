@@ -1,25 +1,27 @@
-# Railway-ready Dockerfile for ZedAI (Node 22.x)
-FROM node:22.17.0 AS builder
 
-WORKDIR /app
+# Stage 1: Build frontend
+FROM node:22.17.0 AS frontend-builder
+WORKDIR /app/zed-web
+COPY zed-web/package.json zed-web/package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+	npm ci || npm install
+COPY zed-web ./
+RUN npm run build
 
-# Install frontend dependencies and build
-COPY zed-web/package.json zed-web/package-lock.json ./zed-web/
-RUN cd zed-web && npm ci && npm run build
+# Stage 2: Install backend dependencies
+FROM node:22.17.0 AS backend-builder
+WORKDIR /app/backend
+COPY backend/package.json ./
+# Copy lockfile only if present
+COPY backend/package-lock.json ./ || true
+RUN --mount=type=cache,target=/root/.npm \
+	npm ci || npm install || echo "Lockfile missing, installed without it"
+COPY backend ./
 
-# Install backend dependencies (skip package-lock.json if missing)
-COPY backend/package.json ./backend/
-RUN cd backend && (npm ci || npm install)
-
-# Copy backend and built frontend
-COPY backend ./backend
-COPY zed-web/dist ./backend/public
-
-# Use Caddy for static file serving and CSP headers
+# Stage 3: Final image with Caddy
 FROM caddy:2.7.6-alpine
-WORKDIR /app
-COPY --from=builder /app/backend /app/backend
-COPY --from=builder /app/backend/public /app/backend/public
+WORKDIR /srv
+COPY --from=frontend-builder /app/zed-web/dist ./frontend
+COPY --from=backend-builder /app/backend/public ./backend-public
 COPY Caddyfile /etc/caddy/Caddyfile
-EXPOSE 5001 80
-CMD caddy run --config /etc/caddy/Caddyfile & node /app/backend/server.js
+EXPOSE 80

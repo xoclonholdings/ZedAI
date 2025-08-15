@@ -1,5 +1,24 @@
 :80
 
+
+# Serve frontend
+root * /srv/frontend
+file_server
+
+# Serve backend public files if present
+handle_path /backend-public/* {
+  root * /srv/backend-public
+  file_server
+}
+
+# CSP headers
+header {
+  Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' wss:;"
+  X-Content-Type-Options "nosniff"
+  X-Frame-Options "DENY"
+  Referrer-Policy "strict-origin-when-cross-origin"
+}
+
 root * /app/backend/public
 file_server
 
