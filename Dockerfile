@@ -52,3 +52,5 @@ RUN --mount=type=cache,id=zed-web-node-modules,target=/app/zed-web/node_modules 
 	COPY Caddyfile /etc/caddy/Caddyfile
 
 	EXPOSE 80
+# --- Trivial comment to force Git change recognition ---
+# FORCE_BUILD: 2025-08-15
