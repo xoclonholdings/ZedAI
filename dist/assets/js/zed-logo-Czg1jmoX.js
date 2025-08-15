@@ -1,1 +1,0 @@
-import{j as s}from"./vendor-DS-ydokn.js";const a=({className:a="",size:h=40})=>{return s.jsx("img",{src:"/Zed-ai-logo_1753468041342.png",alt:"ZED AI",className:`inline-block ${w=h,w<=16?"w-4 h-4":w<=20?"w-5 h-5":w<=24?"w-6 h-6":w<=32?"w-8 h-8":w<=40?"w-10 h-10":w<=48?"w-12 h-12":w<=64?"w-16 h-16":w<=80?"w-20 h-20":"w-24 h-24"} ${a}`});var w};export{a as Z};

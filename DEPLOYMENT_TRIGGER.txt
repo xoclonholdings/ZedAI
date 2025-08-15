@@ -1,5 +1,0 @@
-# Deployment Trigger
-
-This file is used to force a new commit and redeploy on Railway/Netlify.
-
-Timestamp: August 13, 2025
