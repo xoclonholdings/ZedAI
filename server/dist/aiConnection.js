@@ -10,7 +10,7 @@ async function getAIResponse(input) {
     const context = (0, adaptiveLearning_1.getContext)();
     const history = (0, memory_1.getHistory)();
     // Simulate LLM response
-    let prompt = `Context:\n${context}\nHistory:\n${history.map(t => `User: ${t.user}\nZED: ${t.ai}`).join('\n')}\nUser: ${input}`;
+    let prompt = `Context:\n${context}\nHistory:\n${history.map(t => `User: ${t.user}\nAI: ${t.ai}`).join('\n')}\nUser: ${input}`;
     // Replace with real LLM API call here
     if (input.toLowerCase().includes('joke'))
         return 'Why did the AI cross the road? To optimize its neural net!';

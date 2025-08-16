@@ -9,7 +9,7 @@ const memory_1 = require("./memory");
 const adaptiveLearning_1 = require("./adaptiveLearning");
 const router = express_1.default.Router();
 function summarizeHistory(history) {
-    return history.map((t, i) => `Turn ${i + 1}: User: ${t.user} | ZED: ${t.ai}`).join("\n");
+    return history.map((t, i) => `Turn ${i + 1}: User: ${t.user} | AI: ${t.ai}`).join("\n");
 }
 function reasonOverHistory(prompt, history) {
     // Simple math/logic reasoning

@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vite --host --force --debug --host 0.0.0.0",
+    "build": "vite build --force --host 0.0.0.0 --debug",
+    "preview": "vite preview --host --force --debug --host 0.0.0.0"
   },
   "engines": {
     "node": ">=22.12.0"

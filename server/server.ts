@@ -53,9 +53,17 @@ router.post("/chat", (req, res) => {
       }
       // Log incoming message
       console.log("[ZedAI] Incoming message:", message);
-      // Import Zed AI engine
-  const { getAIResponse } = await import("./aiConnection.js");
-      const reply = await getAIResponse(message);
+      // Import Zed AI engine and admin memory
+      const { getAIResponse } = await import("./aiConnection.js");
+      const { getContext } = await import("./adaptiveLearning.js");
+      const { getHistory, saveTurn } = await import("./memory.js");
+      // Compose context for admin memory
+      const adminContext = getContext();
+      const history = getHistory();
+      // Pass message and admin context to AI engine
+      const reply = await getAIResponse(`${adminContext}\n${message}`);
+      // Save turn to memory
+      saveTurn(message, reply);
       // Log outgoing reply
       console.log("[ZedAI] AI reply:", reply);
       res.json({ reply });

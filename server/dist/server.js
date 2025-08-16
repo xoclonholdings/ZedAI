@@ -1,25 +1,25 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
+const helmet_1 = __importDefault(require("helmet"));
 const PORT = process.env.PORT || 5000;
 const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
-const app = express();
+const app = (0, express_1.default)();
 // CORS middleware at the top
-    app.use(cors({
-        origin: allowedOrigin,
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true,
-    }));
-
-    // Health check endpoint
-    app.get('/api/health', (req, res) => {
-        res.status(200).json({ status: 'ok', uptime: process.uptime() });
-    });
+app.use((0, cors_1.default)({
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+}));
 // Handle all OPTIONS preflight requests globally
-app.options("*", cors());
+app.options("*", (0, cors_1.default)());
 // Helmet middleware with CSP
-app.use(helmet({
+app.use((0, helmet_1.default)({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
@@ -33,9 +33,9 @@ app.use(helmet({
     },
 }));
 // Parse JSON bodies
-app.use(express.json());
+app.use(express_1.default.json());
 // Prefix all backend routes with /api
-const router = express.Router();
+const router = express_1.default.Router();
 router.post("/chat", (req, res) => {
     (async () => {
         try {
@@ -46,9 +46,17 @@ router.post("/chat", (req, res) => {
             }
             // Log incoming message
             console.log("[ZedAI] Incoming message:", message);
-            // Import Zed AI engine
+            // Import Zed AI engine and admin memory
             const { getAIResponse } = await import("./aiConnection.js");
-            const reply = await getAIResponse(message);
+            const { getContext } = await import("./adaptiveLearning.js");
+            const { getHistory, saveTurn } = await import("./memory.js");
+            // Compose context for admin memory
+            const adminContext = getContext();
+            const history = getHistory();
+            // Pass message and admin context to AI engine
+            const reply = await getAIResponse(`${adminContext}\n${message}`);
+            // Save turn to memory
+            saveTurn(message, reply);
             // Log outgoing reply
             console.log("[ZedAI] AI reply:", reply);
             res.json({ reply });
