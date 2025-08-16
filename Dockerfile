@@ -10,7 +10,7 @@ FROM node:22-alpine AS backend
 WORKDIR /app
 COPY server ./server
 WORKDIR /app/server
-RUN [ -f package-lock.json ] && npm ci || npm install && npm run build
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run build
 
 # ---- Final Stage ----
 FROM caddy:2-alpine

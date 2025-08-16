@@ -1,15 +1,10 @@
+
 :80
 
-root * /srv/client
+root * ./public
 file_server
+encode gzip
 
 handle_path /api/* {
-    reverse_proxy localhost:8080
-}
-
-header {
-    Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' ws://localhost:8080 http://localhost:8080; img-src 'self' data:; font-src 'self';"
-    X-Content-Type-Options "nosniff"
-    X-Frame-Options "DENY"
-    Referrer-Policy "strict-origin-when-cross-origin"
+    reverse_proxy localhost:5000
 }
