@@ -15,25 +15,26 @@ import { addMemoryTurn, getHistory } from './memory';
 //   ]
 // }
 
+
 function flattenChatGPTExport(json: any) {
-  const pairs: { user: string, zed: string }[] = [];
+  const pairs: { user: string, ai: string }[] = [];
   let lastUser = '';
   for (const msg of json.messages) {
     if (msg.role === 'user') {
       lastUser = msg.content;
     } else if (msg.role === 'assistant' && lastUser) {
-      pairs.push({ user: lastUser, zed: msg.content });
+      pairs.push({ user: lastUser, ai: msg.content });
       lastUser = '';
     }
   }
   return pairs;
 }
 
-function importToZEDMemory(pairs: { user: string, zed: string }[]) {
+function importToAIMemory(pairs: { user: string, ai: string }[]) {
   let turnNum = getHistory().length + 1;
   let imported = 0;
   for (const pair of pairs) {
-    const turn = { turn: turnNum++, user: pair.user, zed: pair.zed, context: {} };
+    const turn = { turn: turnNum++, user: pair.user, ai: pair.ai, context: {} };
     addMemoryTurn(turn);
     imported++;
   }
@@ -49,13 +50,13 @@ function main() {
   const raw = fs.readFileSync(path.resolve(file), 'utf-8');
   const json = JSON.parse(raw);
   const pairs = flattenChatGPTExport(json);
-  const imported = importToZEDMemory(pairs);
+  const imported = importToAIMemory(pairs);
   console.log(`Imported ${imported} turns from ChatGPT export.`);
   // Optionally run a 10-turn test after import
   const history = getHistory().slice(-10);
-  console.log('Last 10 turns in ZED memory:');
+  console.log('Last 10 turns in AI memory:');
   for (const turn of history) {
-    console.log(`Turn ${turn.turn}: User: ${turn.user}\nZED: ${turn.zed}\n---`);
+    console.log(`Turn ${turn.turn}: User: ${turn.user}\nAI: ${turn.ai}\n---`);
   }
 }
 

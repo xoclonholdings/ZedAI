@@ -8,7 +8,7 @@ export async function getAIResponse(input: string): Promise<string> {
   const context = getContext();
   const history = getHistory();
   // Simulate LLM response
-  let prompt = `Context:\n${context}\nHistory:\n${history.map(t => `User: ${t.user}\nZED: ${t.ai}`).join('\n')}\nUser: ${input}`;
+  let prompt = `Context:\n${context}\nHistory:\n${history.map(t => `User: ${t.user}\nAI: ${t.ai}`).join('\n')}\nUser: ${input}`;
   // Replace with real LLM API call here
   if (input.toLowerCase().includes('joke')) return 'Why did the AI cross the road? To optimize its neural net!';
   if (input.toLowerCase().includes('meaning of life')) return 'The meaning of life is to learn, grow, and help others.';

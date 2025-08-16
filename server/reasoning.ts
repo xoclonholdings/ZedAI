@@ -16,7 +16,7 @@ export function reasonOverHistory(prompt: string): string {
   }
   // Summarization
   if (/summarize|summary/i.test(prompt)) {
-    return history.map((t, i) => `Turn ${i+1}: User: ${t.user} | ZED: ${t.ai}`).join('\n');
+  return history.map((t, i) => `Turn ${i+1}: User: ${t.user} | AI: ${t.ai}`).join('\n');
   }
   // Context/multi-step
   if (/combine|context|multi-step/i.test(prompt)) {

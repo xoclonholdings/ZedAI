@@ -6,7 +6,7 @@ import { getAIResponse } from "./aiConnection";
 const router = express.Router();
 
 function summarizeHistory(history: {user: string, ai: string}[]): string {
-  return history.map((t, i) => `Turn ${i+1}: User: ${t.user} | ZED: ${t.ai}`).join("\n");
+  return history.map((t, i) => `Turn ${i+1}: User: ${t.user} | AI: ${t.ai}`).join("\n");
 }
 
 export function reasonOverHistory(prompt: string, history: {user: string, ai: string}[]): string {
