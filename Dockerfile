@@ -3,14 +3,14 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY client ./client
 WORKDIR /app/client
-RUN npm install && npm run build
+RUN npm install || npm install --force && npm run build
 
 # ---- Backend Stage ----
 FROM node:22-alpine AS backend
 WORKDIR /app
 COPY server ./server
 WORKDIR /app/server
-RUN npm install && npm run build
+RUN [ -f package-lock.json ] && npm ci || npm install && npm run build
 
 # ---- Final Stage ----
 FROM caddy:2-alpine
