@@ -10,16 +10,15 @@ const app = express();
 // ---- Middleware ----
 app.use(bodyParser.json());
 
-// Handle dynamic CORS: allow any origin
-app.use(cors({
-  origin: (origin, callback) => callback(null, true),
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-// Ensure OPTIONS requests always respond
-app.options('*', cors());
+// ---- FULL CORS FIX ----
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS,PUT,DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
 
 // Admin memory folder
 const memoryFolder = path.resolve('./ZedAI_data');
