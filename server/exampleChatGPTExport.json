@@ -1,0 +1,10 @@
+{
+  "messages": [
+    { "role": "user", "content": "Hello!" },
+    { "role": "assistant", "content": "Hi! How can I help?" },
+    { "role": "user", "content": "Tell me a joke." },
+    { "role": "assistant", "content": "Why did the AI cross the road? To optimize its neural net!" },
+    { "role": "user", "content": "What was the joke I asked for earlier?" },
+    { "role": "assistant", "content": "Why did the AI cross the road? To optimize its neural net!" }
+  ]
+}
