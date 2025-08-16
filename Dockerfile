@@ -1,6 +1,25 @@
-# ---- Build Stage ----
-FROM node:22-alpine AS builder
-WORKDIR /app
+# Dockerfile
+FROM node:22-alpine
+
+WORKDIR /app/server
+
+# Copy package files first for caching
+COPY package*.json ./
+
+# Install dependencies (including devDependencies)
+RUN npm install --legacy-peer-deps
+
+# Copy backend source code
+COPY . .
+
+# Build backend (if needed)
+RUN npm run build || echo "No build script, skipping"
+
+# Expose dynamic port
+EXPOSE 3000
+
+# Start backend
+CMD ["node", "server.js"]
 COPY client ./client
 WORKDIR /app/client
 RUN npm install || npm install --force && npm run build
