@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { sendMessage } from '../lib/api';
 
 export default function ComprehensiveChatSimple() {
 	const [message, setMessage] = useState("");
@@ -10,12 +11,7 @@ export default function ComprehensiveChatSimple() {
 		setLoading(true);
 		setReply("");
 		try {
-			const res = await fetch("/api/chat", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ message }),
-			});
-			const data = await res.json();
+			const data = await sendMessage(message);
 			if (data.reply) setReply(data.reply);
 			else setReply(data.error || "No reply received.");
 		} catch (err) {
