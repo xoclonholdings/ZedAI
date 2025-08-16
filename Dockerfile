@@ -1,25 +1,25 @@
-# Dockerfile
-FROM node:22-alpine
-
-WORKDIR /app/server
-
-# Copy package files first for caching
-COPY package*.json ./
-
-# Install dependencies (including devDependencies)
+# ---- Build Frontend ----
+FROM node:22-alpine AS builder
+WORKDIR /app/client
+COPY client/package*.json ./
 RUN npm install --legacy-peer-deps
+COPY client/ .
+RUN npm run build --force
 
-# Copy backend source code
-COPY . .
+# ---- Build Backend ----
 
-# Build backend (if needed)
-RUN npm run build || echo "No build script, skipping"
+# ---- Final Stage ----
+FROM caddy:2.8.3-alpine AS web
+WORKDIR /srv
+COPY --from=builder /app/client/dist ./client
+COPY --from=backend /app/server ./server
+COPY --from=backend /app/server/package.json ./server/package.json
 
-# Expose dynamic port
-EXPOSE 3000
+# Expose ports (dynamic for Railway)
+EXPOSE 80
+EXPOSE 443
 
-# Start backend
-CMD ["node", "server.js"]
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
 COPY client ./client
 WORKDIR /app/client
 RUN npm install || npm install --force && npm run build
