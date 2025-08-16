@@ -8,8 +8,7 @@ import bodyParser from 'body-parser';
 import { updateState, getContext } from './adaptiveLearning';
 import { saveTurn, getHistory } from './memory';
 import { getAIResponse } from './aiConnection';
-import reasonRouter, { reasonOverHistory } from './reason';
-
+import { reasonOverHistory } from './reasoning';
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -57,11 +56,10 @@ app.post('/ai', async (req, res) => {
     // Route reasoning queries to /reason
     if (/math|sum|calculate|logic|reason|summary|summarize|multi-step|context|combine/i.test(input)) {
       // Internal call to /reason
-      const history = getHistory();
-      const reasoned = reasonOverHistory(input, history);
-      saveTurn(input, reasoned);
-      updateState(input, reasoned);
-      return res.json({ success: true, response: reasoned });
+    const reasoned = reasonOverHistory(input);
+    saveTurn(input, reasoned);
+    updateState(input, reasoned);
+    return res.json({ success: true, response: reasoned });
     }
     // Otherwise standard AI response
     const aiResponse = await getAIResponse(input);
@@ -74,7 +72,19 @@ app.post('/ai', async (req, res) => {
   }
 });
 
-app.use('/reason', reasonRouter);
+// /reason endpoint: multi-step reasoning, math, summarization
+app.post('/reason', (req, res) => {
+  try {
+    const { prompt } = req.body;
+    const response = reasonOverHistory(prompt);
+    saveTurn(prompt, response);
+    updateState(prompt, response);
+    res.json({ response });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: errorMsg });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`ZedAI backend running on port ${PORT}`);
