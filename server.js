@@ -8,17 +8,14 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
+app.use(cors({
+  origin: (origin, callback) => callback(null, true), // allow all origins
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
-// Explicit CORS headers for all origins and preflight
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204);
-  }
-  next();
-});
+// Handle preflight OPTIONS for /api/chat
+app.options('/api/chat', cors());
 
 // Admin memory folder
 const memoryFolder = path.resolve('./ZedAI_data');
