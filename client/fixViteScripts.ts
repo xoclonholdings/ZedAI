@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+const fsVite = require('fs');
+const pathVite = require('path');
 
-const pkgPath = path.resolve(__dirname, 'package.json');
-const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+const pkgPath = pathVite.resolve(__dirname, 'package.json');
+const pkg = JSON.parse(fsVite.readFileSync(pkgPath, 'utf8'));
 
 const flags = ['--host 0.0.0.0', '--force', '--debug'];
 const viteScriptRegex = /^(vite|vite\s+preview)(.*)$/;
@@ -35,7 +35,7 @@ for (const [key, value] of Object.entries(pkg.scripts || {})) {
 }
 
 if (changed) {
-  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
+  fsVite.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
 }
 
 console.log('--- Vite Script Audit Report ---');

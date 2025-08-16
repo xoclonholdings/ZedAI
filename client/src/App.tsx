@@ -1,6 +1,6 @@
 // Minimal ZedAI frontend UI shell
 // Accessible form, connects to backend endpoints
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 
 
@@ -10,7 +10,7 @@ const API_URL = '/api'; // Caddyfile will proxy /api to backend
 function ErrorBoundary({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   if (error) return <div role="alert">Error: {error.message}</div>;
-  return <React.Fragment>{children}</React.Fragment>;
+  return <>{children}</>;
 }
 
 function Chat() {
@@ -18,7 +18,7 @@ function Chat() {
   const [conversation, setConversation] = useState<{user: string, ai: string}[]>([]);
   const [loading, setLoading] = useState(false);
 
-  async function sendMessage(e: React.FormEvent) {
+  async function sendMessage(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     try {
@@ -48,7 +48,7 @@ function Chat() {
           name="chat-input"
           type="text"
           value={input}
-          onChange={e => setInput(e.target.value)}
+    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
           placeholder="Type your message..."
           required
           aria-label="Message input"
@@ -74,7 +74,7 @@ function Reason() {
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
 
-  async function sendReason(e: React.FormEvent) {
+  async function sendReason(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     try {
@@ -104,7 +104,7 @@ function Reason() {
           name="reason-input"
           type="text"
           value={input}
-          onChange={e => setInput(e.target.value)}
+    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
           placeholder="Type your reasoning query..."
           required
           aria-label="Reason input"

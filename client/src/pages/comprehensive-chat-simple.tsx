@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { sendMessage } from '../lib/api';
+import { sendMessage } from '../lib/api.js';
 
 export default function ComprehensiveChatSimple() {
 	const [message, setMessage] = useState("");
