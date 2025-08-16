@@ -3,19 +3,23 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import cors from 'cors';
+import bodyParser from 'body-parser';
 
 const app = express();
-const port = process.env.PORT || 3000;
 
-// Middleware
+// ---- Middleware ----
+app.use(bodyParser.json());
+
+// Handle dynamic CORS: allow any origin
 app.use(cors({
-  origin: (origin, callback) => callback(null, true), // allow all origins
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: (origin, callback) => callback(null, true),
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
-app.use(express.json());
-// Handle preflight OPTIONS for /api/chat
-app.options('/api/chat', cors());
+
+// Ensure OPTIONS requests always respond
+app.options('*', cors());
 
 // Admin memory folder
 const memoryFolder = path.resolve('./ZedAI_data');
@@ -58,7 +62,8 @@ app.post('/api/chat', (req, res) => {
   }
 });
 
-// Start server
+// ---- Start server on dynamic port ----
+const port = process.env.PORT || 0; // 0 → OS picks free port
 app.listen(port, () => {
   console.log(`Zed backend listening on port ${port}`);
 });
