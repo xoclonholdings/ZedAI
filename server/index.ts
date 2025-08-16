@@ -8,6 +8,7 @@ import bodyParser from 'body-parser';
 import { updateState, getContext } from './adaptiveLearning';
 import { saveTurn, getHistory } from './memory';
 import { getAIResponse } from './aiConnection';
+import reasonRouter, { reasonOverHistory } from './reason';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -53,8 +54,16 @@ app.post('/ai', async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   try {
     const { input } = req.body;
-    const history = getHistory();
-    const context = getContext();
+    // Route reasoning queries to /reason
+    if (/math|sum|calculate|logic|reason|summary|summarize|multi-step|context|combine/i.test(input)) {
+      // Internal call to /reason
+      const history = getHistory();
+      const reasoned = reasonOverHistory(input, history);
+      saveTurn(input, reasoned);
+      updateState(input, reasoned);
+      return res.json({ success: true, response: reasoned });
+    }
+    // Otherwise standard AI response
     const aiResponse = await getAIResponse(input);
     saveTurn(input, aiResponse);
     updateState(input, aiResponse);
@@ -64,6 +73,8 @@ app.post('/ai', async (req, res) => {
     res.status(500).json({ success: false, error: errorMsg });
   }
 });
+
+app.use('/reason', reasonRouter);
 
 app.listen(PORT, () => {
   console.log(`ZedAI backend running on port ${PORT}`);
