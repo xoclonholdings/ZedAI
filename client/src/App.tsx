@@ -16,7 +16,7 @@ export default function App() {
     const res = await fetch(`${API_URL}/ai`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: input })
+      body: JSON.stringify({ input })
     });
     const data = await res.json();
     setConversation([...conversation, { user: input, ai: data.response }]);

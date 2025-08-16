@@ -1,11 +1,8 @@
-// Persistent memory module for ZedAI
-// Stores and retrieves conversation turns
+// Persistent memory for ZedAI
 let history: {user: string, ai: string}[] = [];
-
 export function saveTurn(user: string, ai: string) {
   history.push({ user, ai });
 }
-
 export function getHistory(): {user: string, ai: string}[] {
   return history;
 }
