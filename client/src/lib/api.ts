@@ -1,5 +1,12 @@
-// src/lib/api.ts
-const BACKEND_URL = typeof process !== 'undefined' && process.env.VITE_API_URL ? process.env.VITE_API_URL : '/api';
+// Vite: declare import.meta.env type for TS
+interface ImportMetaEnv {
+  VITE_API_URL?: string;
+}
+interface ImportMeta {
+  env: ImportMetaEnv;
+}
+
+const BACKEND_URL = process.env.VITE_API_URL || 'http://localhost:5000';
 
 export async function sendMessage(message: string) {
   const response = await fetch(`${BACKEND_URL}/chat`, {
