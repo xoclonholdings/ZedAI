@@ -47,29 +47,32 @@ router.post("/chat", (req, res) => {
   (async () => {
     try {
       const message = req.body.message;
-      if (!message) {
-        res.status(400).json({ error: "Missing 'message' field in request body." });
-        return;
-      }
-      // Log incoming message
       console.log("[ZedAI] Incoming message:", message);
-      // Import Zed AI engine and admin memory
+
       const { getAIResponse } = await import("./aiConnection.js");
+      console.log("[ZedAI] aiConnection.js loaded");
+
       const { getContext } = await import("./adaptiveLearning.js");
+      console.log("[ZedAI] adaptiveLearning.js loaded");
+
       const { getHistory, saveTurn } = await import("./memory.js");
-      // Compose context for admin memory
-      const adminContext = getContext();
+      console.log("[ZedAI] memory.js loaded");
+
+      const context = getContext();
       const history = getHistory();
-      // Pass message and admin context to AI engine
-      const reply = await getAIResponse(`${adminContext}\n${message}`);
-      // Save turn to memory
+      console.log("[ZedAI] Context + history pulled");
+
+      const reply = await getAIResponse(`${context}\n${message}`);
+      console.log("[ZedAI] AI reply generated:", reply);
+
       saveTurn(message, reply);
-      // Log outgoing reply
-      console.log("[ZedAI] AI reply:", reply);
+      console.log("[ZedAI] Reply saved to memory");
+
       res.json({ reply });
-    } catch (err: any) {
-      console.error("[ZedAI] Error in /api/chat:", err);
-      res.status(500).json({ error: err?.message || "Internal server error" });
+
+    } catch (err) {
+      console.error("[ZedAI] ERROR:", err);
+  res.status(500).json({ error: (err as any)?.message || "Internal server error" });
     }
   })();
 });
