@@ -9,7 +9,10 @@ const app = express();
 
 // CORS middleware at the top
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", process.env.ALLOWED_ORIGIN || "*");
+  const origin = req.headers.origin;
+  if (origin === process.env.ALLOWED_ORIGIN) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
   res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS,PUT,DELETE");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.header("Access-Control-Allow-Credentials", "true");
