@@ -57,7 +57,10 @@
 		"wasi_snapshot_preview1": "^0.0.0-dev",
 		"which-typed-array": "^1.1.19"
 	},
-	"devDependencies": {
+		"scripts": {
+			"build": "echo 'No build step for root package'"
+		},
+		"devDependencies": {
 		"@types/acorn": "^6.0.4",
 		"@types/body-parser": "^1.19.2",
 		"@types/chokidar": "^2.1.7",
