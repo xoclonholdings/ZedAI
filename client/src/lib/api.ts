@@ -7,7 +7,7 @@ interface ImportMeta {
 }
 
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = process.env.VITE_API_URL;
 
 export async function sendMessage(message: string) {
   const res = await fetch(`${API_URL}/api/chat`, {
