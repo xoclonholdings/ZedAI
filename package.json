@@ -58,7 +58,7 @@
 		"which-typed-array": "^1.1.19"
 	},
 		"scripts": {
-			"build": "echo 'No build step for root package'"
+			"build": "npm run build --prefix client"
 		},
 		"devDependencies": {
 		"@types/acorn": "^6.0.4",
