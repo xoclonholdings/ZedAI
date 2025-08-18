@@ -2,3 +2,4 @@
 command = "npm install && npm run build"
 publish = "dist"
 base = "client"
+ # Trigger redeploy
