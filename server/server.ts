@@ -21,8 +21,8 @@ app.use(
         defaultSrc: ["'self'"],
         connectSrc: [
           "'self'",
-          "http://localhost:5000",
-          "http://localhost",
+          "https://zed-ai.online",
+          "https://api.zed-ai.online",
           "http://yourdomain.com",
         ],
       },
