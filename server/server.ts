@@ -7,18 +7,11 @@ const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
 
 const app = express();
 
-// CORS middleware at the top
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin === process.env.ALLOWED_ORIGIN) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS,PUT,DELETE");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-  next();
-});
+// CORS middleware for cloud deployment
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN,
+  credentials: true
+}));
 
 // Helmet middleware with CSP
 app.use(
