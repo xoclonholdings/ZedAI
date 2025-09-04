@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "start": "./start.sh",
-    "dev": "./start-dev.sh",
+    "dev": "./dev.sh",
     "build": "cd client && npm run build",
     "server": "cd server && npm start",
     "client": "cd client && npm run dev"

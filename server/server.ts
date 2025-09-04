@@ -1,15 +1,54 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import path from "path";
+import { createServer } from "http";
+import net from "net";
 
-const PORT = process.env.PORT || 5000;
-const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
+// Function to find an available port
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.listen(startPort, () => {
+      const { port } = server.address() as net.AddressInfo;
+      server.close(() => resolve(port));
+    });
+    server.on('error', () => {
+      findAvailablePort(startPort + 1).then(resolve);
+    });
+  });
+}
+
+const DEFAULT_PORT = 5000;
+const FRONTEND_DIR = path.join(__dirname, "../client/dist");
+
+// Will be set after finding an available port
+let PORT: number;
 
 const app = express();
+const server = createServer(app);
 
-// CORS middleware for cloud deployment
+// Dynamic CORS configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGIN,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      process.env.ALLOWED_ORIGIN,
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5173'
+    ].filter(Boolean); // Remove undefined/null values
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -19,16 +58,41 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : "",
+          "https://zed-ai.online",
+          "https://api.zed-ai.online",
+        ].filter(Boolean),
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
         connectSrc: [
           "'self'",
           "https://zed-ai.online",
           "https://api.zed-ai.online",
-          "http://yourdomain.com",
-        ],
+          process.env.NODE_ENV === 'development' ? "http://localhost:*" : "",
+          process.env.NODE_ENV === 'development' ? "ws://localhost:*" : "",
+          process.env.NODE_ENV === 'development' ? "http://127.0.0.1:*" : "",
+          process.env.NODE_ENV === 'development' ? "ws://127.0.0.1:*" : "",
+        ].filter(Boolean),
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"]
       },
     },
   })
 );
+
+// Serve static files from the React/Vite frontend
+app.use(express.static(FRONTEND_DIR));
+
+// Always serve index.html for any unmatched routes (for client-side routing)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+});
 
 // Parse JSON bodies
 app.use(express.json());
@@ -73,6 +137,19 @@ router.post("/chat", (req, res) => {
 app.use("/api", router);
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`🔥 ZedAI backend live on port ${PORT}`);
-});
+// Initialize server with dynamic port
+async function startServer() {
+  try {
+    PORT = await findAvailablePort(DEFAULT_PORT);
+    
+    server.listen(PORT, () => {
+      console.log(`🔥 ZedAI backend live on port ${PORT}`);
+      console.log(`📁 Serving frontend from ${FRONTEND_DIR}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

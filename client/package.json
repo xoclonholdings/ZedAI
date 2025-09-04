@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite --force",
+    "dev": "vite --force --host --port 3000",
     "build": "vite build --force",
-    "preview": "vite preview --force"
+    "preview": "vite preview --force --host --port 3001"
   },
   "engines": {
     "node": ">=22.12.0"

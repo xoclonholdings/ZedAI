@@ -1,11 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config/api';
+import { API_CONFIG } from '../config/api';
 
-const API_URL = process.env.VITE_API_URL || '/api';
+const [apiUrl, setApiUrl] = useState<string>('/api');
 
 export default function LandingOnboarding() {
 	const [input, setInput] = useState('');
 	const [messages, setMessages] = useState<Array<{ type: 'user' | 'ai'; content: string }>>([]);
 	const [loading, setLoading] = useState(false);
+
+	useEffect(() => {
+		getApiUrl().then(setApiUrl);
+	}, []);
 
 	async function sendMessage(e: React.FormEvent<HTMLFormElement>) {
 		e.preventDefault();
@@ -16,9 +22,9 @@ export default function LandingOnboarding() {
 		setMessages(prev => [...prev, { type: 'user', content: input }]);
 		
 		try {
-			const res = await fetch(`${API_URL}/chat`, {
+			const res = await fetch(`${apiUrl}${API_CONFIG.endpoints.chat}`, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: API_CONFIG.headers,
 				body: JSON.stringify({ message: input })
 			});
 			const data = await res.json();
