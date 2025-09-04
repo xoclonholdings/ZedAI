@@ -1,7 +1,8 @@
 import { getServerPort } from './ports';
 
 export async function getApiUrl() {
-  const port = await getServerPort();
+  // Use fixed port 5000 for development
+  const port = process.env.NODE_ENV === 'development' ? 5000 : await getServerPort();
   return `http://localhost:${port}/api`;
 }
 
