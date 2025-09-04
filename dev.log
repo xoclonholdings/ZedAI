@@ -17,24 +17,14 @@ Press Ctrl+C to stop all services
 
 Forced re-optimization of dependencies
 
-  VITE v4.5.14  ready in 184 ms
+  VITE v4.5.14  ready in 177 ms
 
   ➜  Local:   http://localhost:3000/
   ➜  Network: http://10.0.6.1:3000/
-Error: ENOENT: no such file or directory, stat '/workspaces/zed-front-end/server/client/dist/index.html'
 [ZedAI] Incoming message: test
 [ZedAI] aiConnection.js loaded
 [ZedAI] adaptiveLearning.js loaded
 [ZedAI] memory.js loaded
 [ZedAI] Context + history pulled
 [ZedAI] AI reply generated: AI response with memory and context.
-[ZedAI] Reply saved to memory
-1:17:01 AM [vite] page reload src/config/api.ts
-1:17:13 AM [vite] page reload src/config/api.ts
-[ZedAI] Incoming message: Hello from frontend test
-[ZedAI] aiConnection.js loaded
-[ZedAI] adaptiveLearning.js loaded
-[ZedAI] memory.js loaded
-[ZedAI] Context + history pulled
-[ZedAI] AI reply generated: Hello! I am ZED, your AI assistant.
 [ZedAI] Reply saved to memory

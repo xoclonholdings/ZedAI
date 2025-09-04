@@ -86,19 +86,16 @@ app.use(
   })
 );
 
-// Serve static files from the React/Vite frontend
-app.use(express.static(FRONTEND_DIR));
-
-// Always serve index.html for any unmatched routes (for client-side routing)
-app.get("*", (req, res) => {
-  res.sendFile(path.join(FRONTEND_DIR, "index.html"));
-});
-
 // Parse JSON bodies
 app.use(express.json());
 
 // Prefix all backend routes with /api
 const router = express.Router();
+
+// Health check endpoint
+router.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
 router.post("/chat", (req, res) => {
   (async () => {
@@ -135,6 +132,30 @@ router.post("/chat", (req, res) => {
 });
 
 app.use("/api", router);
+
+// Serve static files only in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(FRONTEND_DIR));
+  
+  // Always serve index.html for any unmatched routes (for client-side routing)
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+  });
+} else {
+  // Development mode: provide simple health check at root
+  app.get("/", (req, res) => {
+    res.json({ 
+      status: "ZedAI Backend Development Server", 
+      mode: "development",
+      port: PORT || "detecting...",
+      endpoints: {
+        health: "/api/health",
+        chat: "/api/chat"
+      },
+      frontend: "http://localhost:3000"
+    });
+  });
+}
 
 // Start the server
 // Initialize server with dynamic port
