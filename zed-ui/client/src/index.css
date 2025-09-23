@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 215 28% 17%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 85% 97%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 262 83% 58%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ZED Cyberpunk Styles */
+@layer components {
+  .zed-glass {
+    @apply bg-black/40 backdrop-blur-sm border border-white/10;
+  }
+
+  .zed-button {
+    @apply bg-gradient-to-r from-purple-600/20 to-cyan-600/20 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-200;
+  }
+
+  .zed-sidebar {
+    @apply bg-black/80 backdrop-blur-sm border-r border-white/10;
+  }
+
+  .zed-message {
+    @apply bg-gradient-to-br from-purple-900/20 to-cyan-900/20 border border-purple-500/20 rounded-lg;
+  }
+
+  .zed-avatar {
+    @apply bg-gradient-to-br from-purple-600 to-cyan-600;
+  }
+
+  .zed-input {
+    @apply bg-black/40 border border-white/20 focus:border-purple-400/50 transition-colors;
+  }
+
+  .zed-glow {
+    @apply shadow-lg shadow-purple-500/20;
+  }
+
+  .zed-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .zed-float-delay {
+    animation: float 6s ease-in-out infinite 3s;
+  }
+
+  .zed-morph-border {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .zed-morph-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    background: linear-gradient(45deg, #8B00FF, #00BFFF, #FF1493, #8B00FF);
+    border-radius: inherit;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: morph 4s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes morph {
+  0%, 100% { background: linear-gradient(45deg, #8B00FF, #00BFFF, #FF1493, #8B00FF); }
+  25% { background: linear-gradient(45deg, #00BFFF, #FF1493, #8B00FF, #00BFFF); }
+  50% { background: linear-gradient(45deg, #FF1493, #8B00FF, #00BFFF, #FF1493); }
+  75% { background: linear-gradient(45deg, #8B00FF, #FF1493, #00BFFF, #8B00FF); }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .chat-area-mobile {
+    @apply flex-1;
+  }
+  
+  .sidebar-mobile {
+    @apply fixed left-0 top-0 h-full w-64 z-50 transform transition-transform duration-300;
+  }
+  
+  .sidebar-desktop {
+    @apply relative w-64 flex-shrink-0;
+  }
+}
