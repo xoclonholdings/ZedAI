@@ -1,0 +1,33 @@
+{
+  "name": "zed-ai-netlify",
+  "version": "1.0.0",
+  "description": "ZED AI Backend - Netlify Functions powered AI with persistent memory and upload system",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "npm run build:functions",
+    "build:functions": "echo 'Functions built for Netlify'",
+    "start": "netlify dev",
+    "test": "echo 'No tests specified'",
+    "deploy": "netlify deploy --prod"
+  },
+  "dependencies": {
+    "@netlify/functions": "^2.8.1",
+    "cors": "^2.8.5",
+    "helmet": "^8.1.0",
+    "multer": "^1.4.5-lts.1",
+    "mime-types": "^2.1.35",
+    "zlib": "^1.0.5",
+    "archiver": "^6.0.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.11",
+    "netlify-cli": "^17.33.6",
+    "typescript": "^5.6.2"
+  }
+}
