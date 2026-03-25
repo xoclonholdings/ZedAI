@@ -1,4 +1,5 @@
 import { AUTH_CONFIG } from "@shared/authConfig";
+import { clearLocalSession } from "./LocalSession";
 
 export type LoginInput = {
   username: string;
@@ -51,4 +52,17 @@ export async function loginRequest(input: LoginInput): Promise<LoginResult> {
       error: "Backend unavailable. Start the server to log in.",
     };
   }
+}
+
+export async function logoutRequest() {
+  try {
+    await fetch("/api/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // ignore errors, still clear local session
+  }
+
+  clearLocalSession();
 }
