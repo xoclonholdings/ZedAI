@@ -1,68 +1,41 @@
 import { useEffect, useState } from "react";
-import { getLocalSession, clearLocalSession } from "./localSession";
 
-type AuthState = {
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  user: any | null;
+type AuthUser = {
+  username: string;
 };
 
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({
-    isLoading: true,
-    isAuthenticated: false,
-    user: null,
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function bootstrap() {
-      const localUser = getLocalSession();
-
-      if (localUser && !cancelled) {
-        setState({
-          isLoading: false,
-          isAuthenticated: true,
-          user: localUser,
-        });
-        return;
-      }
-
-      try {
-        const response = await fetch("/api/auth/user", {
-          credentials: "include",
-        });
-
-        if (!response.ok) throw new Error();
-
-        const user = await response.json();
-
-        if (!cancelled) {
-          setState({
-            isLoading: false,
-            isAuthenticated: true,
-            user,
-          });
-        }
-      } catch {
-        if (!cancelled) {
-          clearLocalSession();
-          setState({
-            isLoading: false,
-            isAuthenticated: false,
-            user: null,
-          });
-        }
-      }
-    }
-
-    bootstrap();
-
-    return () => {
-      cancelled = true;
-    };
+    checkSession();
   }, []);
 
-  return state;
+  async function checkSession() {
+    try {
+      const res = await fetch("/api/me", {
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (data?.user) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    refresh: checkSession,
+  };
 }
