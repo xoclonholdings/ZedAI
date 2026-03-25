@@ -34,4 +34,4 @@ export function getLocalSession(): LocalSessionUser | null {
 
 export function clearLocalSession() {
   localStorage.removeItem(SESSION_KEY);
-}
+} 
