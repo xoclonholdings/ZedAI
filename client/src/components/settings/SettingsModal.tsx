@@ -1,13 +1,5 @@
 import { useState } from "react";
-import {
-  Archive,
-  Bell,
-  ChevronLeft,
-  Lock,
-  Settings,
-  Shield,
-  User,
-} from "lucide-react";
+import { Archive, ChevronLeft, Lock, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,12 +13,15 @@ import {
 } from "@/components/ui/dialog";
 
 import { UseAuth } from "@/components/auth/UseAuth";
-import UserManagement from "@/components/UserManagement";
 import AdminSecuritySettings from "./AdminSecuritySettings";
-import SettingsMainMenu from "./SettingsMainMenu";
+import DataControlsSettings from "./DataControlsSettings";
+import NotificationsSettings from "./NotificationsSettings";
+import PersonalizationSettings from "./PersonalizationSettings";
 import SettingsAppControls from "./SettingsAppControls";
-import SettingsVoiceControls from "./SettingsVoiceControls";
+import SettingsMainMenu from "./SettingsMainMenu";
 import SettingsSuggestions from "./SettingsSuggestions";
+import SettingsVoiceControls from "./SettingsVoiceControls";
+import UserManagement from "./UserManagement";
 
 import zLogoPath from "@assets/IMG_2227_1753477194826.png";
 
@@ -88,11 +83,7 @@ export default function SettingsModal() {
       }}
     >
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start zed-button"
-        >
+        <Button variant="ghost" size="sm" className="w-full justify-start zed-button">
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </Button>
@@ -118,10 +109,7 @@ export default function SettingsModal() {
         <div className="max-h-[70vh] space-y-6 overflow-y-auto">
           {activeSection === "main" && (
             <div className="space-y-6">
-              <SettingsMainMenu
-                isAdmin={isAdmin}
-                onNavigate={setActiveSection}
-              />
+              <SettingsMainMenu isAdmin={isAdmin} onNavigate={setActiveSection} />
 
               <SettingsAppControls
                 appSettings={appSettings}
@@ -150,60 +138,24 @@ export default function SettingsModal() {
           {activeSection === "personalization" && (
             <div>
               <BackButton />
-              <Card className="zed-glass border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Personalization
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Customize your ZED experience with personalized settings and
-                    preferences.
-                  </p>
-                </CardContent>
-              </Card>
+              <PersonalizationSettings />
             </div>
           )}
 
           {activeSection === "notifications" && (
             <div>
               <BackButton />
-              <Card className="zed-glass border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5" />
-                    Notifications
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-muted-foreground">
-                    <p>Notification controls are being rebuilt into the new settings system.</p>
-                    <p>Current default: notifications enabled.</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <NotificationsSettings
+                appSettings={appSettings}
+                setAppSettings={setAppSettings}
+              />
             </div>
           )}
 
           {activeSection === "data" && (
             <div>
               <BackButton />
-              <Card className="zed-glass border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Data Controls
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">
-                    Manage your data privacy and control how your information is
-                    used.
-                  </p>
-                </CardContent>
-              </Card>
+              <DataControlsSettings />
             </div>
           )}
 
