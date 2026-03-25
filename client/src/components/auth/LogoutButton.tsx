@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { logoutRequest } from "./AuthApi";
 
 export default function LogoutButton() {
-  const handleLogout = () => {
-    window.location.href = '/api/logout';
-  };
+  async function handleLogout() {
+    await logoutRequest();
+    window.location.href = "/";
+  }
 
   return (
     <Button
