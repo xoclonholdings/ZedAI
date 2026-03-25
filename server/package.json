@@ -8,8 +8,11 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.2",
+    "drizzle-orm": "^0.45.1",
     "express": "^4.21.2",
-    "express-session": "^1.18.1"
+    "express-session": "^1.18.1",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
