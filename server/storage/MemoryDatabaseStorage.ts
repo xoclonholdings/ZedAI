@@ -1,0 +1,243 @@
+import { eq, and, desc, asc, sql } from "drizzle-orm";
+
+import {
+  type CoreMemory,
+  type InsertCoreMemory,
+  type ProjectMemory,
+  type InsertProjectMemory,
+  type ScratchpadMemory,
+  type InsertScratchpadMemory,
+  coreMemory,
+  projectMemory,
+  scratchpadMemory,
+} from "../../shared/schema";
+
+import { db } from "../db.ts";
+import { fallbackStorage } from "./fallback";
+import { memoryCache } from "./cache";
+
+export class MemoryDatabaseStorage {
+  private generateCacheKey(...parts: Array<string | number | undefined>) {
+    return parts.filter(Boolean).join(":");
+  }
+
+  async getCoreMemoryByKey(key: string): Promise<CoreMemory | null> {
+    const cacheKey = this.generateCacheKey("core_memory", key);
+    const cached = memoryCache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const [memory] = await db
+        .select()
+        .from(coreMemory)
+        .where(eq(coreMemory.key, key));
+
+      if (memory) {
+        memoryCache.set(cacheKey, memory, 1800000);
+      }
+
+      return memory || null;
+    } catch (error) {
+      console.warn("[MEMORY STORAGE] getCoreMemoryByKey failed:", error);
+      return null;
+    }
+  }
+
+  async upsertCoreMemory(data: InsertCoreMemory): Promise<CoreMemory> {
+    const fallbackKey = `core_memory_${data.key}`;
+
+    const [memory] = await db
+      .insert(coreMemory)
+      .values(data)
+      .onConflictDoUpdate({
+        target: coreMemory.key,
+        set: {
+          ...data,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    memoryCache.delete(this.generateCacheKey("core_memory", data.key));
+
+    await fallbackStorage.store(fallbackKey, memory);
+
+    return memory;
+  }
+
+  async getAllCoreMemory(): Promise<CoreMemory[]> {
+    const cacheKey = this.generateCacheKey("all_core_memory");
+    const cached = memoryCache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const result = await db
+        .select()
+        .from(coreMemory)
+        .orderBy(asc(coreMemory.key));
+
+      memoryCache.set(cacheKey, result, 600000);
+
+      return result;
+    } catch (error) {
+      console.warn("[MEMORY STORAGE] getAllCoreMemory failed:", error);
+      return [];
+    }
+  }
+
+  async getProjectMemoryByUser(userId: string): Promise<ProjectMemory[]> {
+    const cacheKey = this.generateCacheKey("project_memory", userId);
+    const cached = memoryCache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const result = await db
+        .select()
+        .from(projectMemory)
+        .where(
+          and(
+            eq(projectMemory.userId, userId),
+            eq(projectMemory.isActive, true)
+          )
+        )
+        .orderBy(desc(projectMemory.updatedAt));
+
+      memoryCache.set(cacheKey, result, 300000);
+
+      return result;
+    } catch (error) {
+      console.warn("[MEMORY STORAGE] getProjectMemoryByUser failed:", error);
+      return [];
+    }
+  }
+
+  async createProjectMemory(
+    data: InsertProjectMemory
+  ): Promise<ProjectMemory> {
+    const fallbackKey = `project_memory_${data.userId}`;
+
+    const [memory] = await db
+      .insert(projectMemory)
+      .values(data)
+      .returning();
+
+    memoryCache.delete(
+      this.generateCacheKey("project_memory", data.userId)
+    );
+
+    await fallbackStorage.store(fallbackKey, memory);
+
+    return memory;
+  }
+
+  async updateProjectMemory(
+    id: string,
+    updates: Partial<InsertProjectMemory>
+  ): Promise<ProjectMemory> {
+    const [updated] = await db
+      .update(projectMemory)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(projectMemory.id, id))
+      .returning();
+
+    if (updated) {
+      memoryCache.delete(
+        this.generateCacheKey("project_memory", updated.userId)
+      );
+    }
+
+    return updated;
+  }
+
+  async deleteProjectMemory(id: string): Promise<boolean> {
+    try {
+      const [memory] = await db
+        .select()
+        .from(projectMemory)
+        .where(eq(projectMemory.id, id));
+
+      const result = await db
+        .delete(projectMemory)
+        .where(eq(projectMemory.id, id));
+
+      const success = (result.rowCount ?? 0) > 0;
+
+      if (success && memory) {
+        memoryCache.delete(
+          this.generateCacheKey("project_memory", memory.userId)
+        );
+      }
+
+      return success;
+    } catch (error) {
+      console.error("[MEMORY STORAGE] deleteProjectMemory failed:", error);
+      return false;
+    }
+  }
+
+  async getScratchpadMemoryByUser(
+    userId: string
+  ): Promise<ScratchpadMemory[]> {
+    const cacheKey = this.generateCacheKey("scratchpad_memory", userId);
+    const cached = memoryCache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+      const now = new Date();
+
+      const result = await db
+        .select()
+        .from(scratchpadMemory)
+        .where(
+          and(
+            eq(scratchpadMemory.userId, userId),
+            sql`${scratchpadMemory.expiresAt} > ${now}`
+          )
+        )
+        .orderBy(desc(scratchpadMemory.createdAt));
+
+      memoryCache.set(cacheKey, result, 60000);
+
+      return result;
+    } catch (error) {
+      console.warn("[MEMORY STORAGE] getScratchpadMemoryByUser failed:", error);
+      return [];
+    }
+  }
+
+  async createScratchpadMemory(
+    data: InsertScratchpadMemory
+  ): Promise<ScratchpadMemory> {
+    const fallbackKey = `scratchpad_memory_${data.userId}`;
+
+    const [memory] = await db
+      .insert(scratchpadMemory)
+      .values(data)
+      .returning();
+
+    memoryCache.delete(
+      this.generateCacheKey("scratchpad_memory", data.userId)
+    );
+
+    await fallbackStorage.store(fallbackKey, memory);
+
+    return memory;
+  }
+
+  async cleanupExpiredScratchpadMemory(): Promise<void> {
+    try {
+      const now = new Date();
+
+      await db
+        .delete(scratchpadMemory)
+        .where(sql`${scratchpadMemory.expiresAt} <= ${now}`);
+
+      memoryCache.clearPattern("scratchpad_memory:*");
+    } catch (error) {
+      console.error(
+        "[MEMORY STORAGE] cleanupExpiredScratchpadMemory failed:",
+        error
+      );
+    }
+  }
+}
