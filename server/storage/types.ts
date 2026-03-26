@@ -15,7 +15,7 @@ import type {
   InsertProjectMemory,
   ScratchpadMemory,
   InsertScratchpadMemory,
-} from "@shared/schema";
+} from "../../shared/schema";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
