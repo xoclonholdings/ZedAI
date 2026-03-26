@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Menu, X } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
-
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
+const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iemVkR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYTg1NWY3O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZWI0ODk5O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0idXJsKCN6ZWRHcmFkaWVudCkiLz4KICA8cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4K";
 import type { Conversation, Message, File as DBFile } from "@shared/schema";
 
 export default function Chat() {
@@ -14,106 +13,94 @@ export default function Chat() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Check if mobile on mount and resize
   useEffect(() => {
-    function checkMobile() {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-
-      if (!mobile) {
-        setIsSidebarOpen(true);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setIsSidebarOpen(true); // Always show sidebar on desktop
       }
-    }
-
+    };
+    
     checkMobile();
-    window.addEventListener("resize", checkMobile);
-
-    return () => window.removeEventListener("resize", checkMobile);
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Fetch conversations for sidebar
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
-    refetchInterval: 30000,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
+  // Fetch current conversation if ID provided
   const { data: currentConversation } = useQuery<Conversation>({
     queryKey: ["/api/conversations", conversationId],
     enabled: !!conversationId,
   });
 
-  const { data: messages = [] } = useQuery<Message[]>({
+  // Fetch messages for current conversation
+  const { data: messages = [], isLoading: messagesLoading, error: messagesError } = useQuery<Message[]>({
     queryKey: ["/api/conversations", conversationId, "messages"],
     enabled: !!conversationId,
-    refetchInterval: 5000,
+    refetchInterval: 5000, // Refresh every 5 seconds when active
   });
 
+  // Fetch files for current conversation
   const { data: files = [] } = useQuery<DBFile[]>({
     queryKey: ["/api/conversations", conversationId, "files"],
     enabled: !!conversationId,
   });
 
   return (
-    <div className="flex h-screen-mobile bg-black relative overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-10 pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(139, 0, 255, 0.3) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(139, 0, 255, 0.3) 1px, transparent 1px)
-          `,
-          backgroundSize: "40px 40px",
-        }}
-      />
+    <div className="flex h-screen-mobile bg-black overflow-hidden">
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <div className="w-80 flex-shrink-0">
+          <ChatSidebar 
+            conversations={conversations} 
+            onClose={() => setIsSidebarOpen(false)}
+            isMobile={false}
+            onMenuClick={() => setIsSidebarOpen(true)}
+          />
+        </div>
+      )}
 
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl zed-float" />
-        <div
-          className="absolute bottom-20 right-20 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl zed-float"
-          style={{ animationDelay: "4s" }}
-        />
-        <div
-          className="absolute top-1/2 left-1/3 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl zed-float"
-          style={{ animationDelay: "2s" }}
-        />
-      </div>
-
+      {/* Mobile Sidebar */}
       {isMobile && (
-        <Button
-          onClick={() => setIsSidebarOpen((prev) => !prev)}
-          className="fixed top-4 left-4 z-50 w-12 h-12 rounded-xl bg-black/80 backdrop-blur-sm border border-purple-500/30 hover:bg-purple-500/20 transition-all duration-200"
-          size="sm"
-        >
-          {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-        </Button>
+        <>
+          <div className={`
+            fixed inset-y-0 left-0 z-50 w-80
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            transition-transform duration-200 ease-in-out
+          `}>
+            <ChatSidebar 
+              conversations={conversations} 
+              onClose={() => setIsSidebarOpen(false)}
+              isMobile={true}
+              onMenuClick={() => setIsSidebarOpen(true)}
+            />
+          </div>
+          
+          {/* Mobile Backdrop */}
+          {isSidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black/50 z-40"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+          )}
+        </>
       )}
-
-      {isMobile && isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      <div
-        className={`
-          ${isMobile ? "sidebar-mobile" : "sidebar-desktop"}
-          ${isMobile && !isSidebarOpen ? "hidden" : ""}
-          ${isMobile ? "z-50" : "relative"}
-        `}
-      >
-        <ChatSidebar
-          conversations={conversations}
-          onClose={() => setIsSidebarOpen(false)}
-          isMobile={isMobile}
-        />
-      </div>
-
-      <div className={`chat-area-mobile ${isMobile ? "w-full" : "flex-1"}`}>
-        <ChatArea
+      
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <ChatArea 
           conversation={currentConversation}
           messages={messages}
           files={files}
           conversationId={conversationId}
           isMobile={isMobile}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
         />
       </div>
     </div>
