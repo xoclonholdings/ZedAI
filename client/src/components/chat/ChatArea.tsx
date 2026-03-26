@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/queryClient";
-import { useChat } from "@/hooks/use-chat";
 
 import ChatBackground from "./ChatBackground";
 import ChatControls from "./ChatControls";
@@ -45,7 +44,8 @@ export default function ChatArea({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const { isStreaming, streamingMessage } = useChat(conversationId);
+  const isStreaming = false;
+  const streamingMessage = "";
 
   const sendMessageMutation = useMutation({
     mutationFn: async (data: {
