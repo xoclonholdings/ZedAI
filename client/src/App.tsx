@@ -1,12 +1,13 @@
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
+
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/UseAuth";
+import LoginScreen from "@/components/auth/LoginScreen";
 import NotFound from "@/pages/not-found";
 import Chat from "@/pages/chat";
-import Login from "@/pages/login";
 
 function ErrorBoundary({ children }: { children: React.ReactNode }) {
   return children;
@@ -38,11 +39,11 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        {isAuthenticated ? <Chat /> : <Login />}
+        {isAuthenticated ? <Chat /> : <LoginScreen />}
       </Route>
 
       <Route path="/chat/:id?">
-        {isAuthenticated ? <Chat /> : <Login />}
+        {isAuthenticated ? <Chat /> : <LoginScreen />}
       </Route>
 
       <Route component={NotFound} />
