@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 
 import { useToast } from "@/hooks/use-toast";
-import zLogoPath from "@/attached_assets/Zed_logo.png";
+import zLogoPath from "../../../../attached_assets/Zed_logo.png";
 
 export default function LoginScreen() {
   const [credentials, setCredentials] = useState({
