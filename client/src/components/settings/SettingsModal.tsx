@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { UseAuth } from "@/components/auth/UseAuth";
+import { useAuth } from "@/components/auth/UseAuth";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
 import NotificationsSettings from "./NotificationsSettings";
