@@ -1,5 +1,3 @@
-client/src/pages/login.tsx
-
 import { useState } from "react";
 import { Eye, EyeOff, Sparkles } from "lucide-react";
 
