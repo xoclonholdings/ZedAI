@@ -5,7 +5,7 @@ import { MessageSquare, Zap } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { UseAuth } from "@/components/auth/UseAuth";
+import { useAuth } from "@/components/auth/UseAuth";
 import { apiRequest } from "@/lib/queryClient";
 
 import ChatSidebarHeader from "./ChatSidebarHeader";
