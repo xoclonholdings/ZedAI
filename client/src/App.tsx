@@ -29,7 +29,7 @@ function LoadingScreen() {
 }
 
 function Router() {
-  const { isAuthenticated, isLoading } = UseAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
