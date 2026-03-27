@@ -4,7 +4,7 @@ import {
   type User,
   type UpsertUser,
   users,
-} from "../../../shared/schema.ts";
+} from "../../shared/schema.ts";
 import { db } from "../db.ts";
 import { fallbackStorage } from "./fallback";
 import { memoryCache } from "./cache";
