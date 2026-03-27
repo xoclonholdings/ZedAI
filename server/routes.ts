@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage/databaseStorage.ts";
 import { upload, processFile, cleanupFile } from "./services/fileProcessor";
-import { generateFromOllama } from "./services/Ollama/OllamaService"; 
+import { generateFromOllama } from "./services/Ollama/OllamaService";
 import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
 import { setupLocalAuth, isAuthenticated } from "./localAuth";
 
@@ -84,7 +84,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message required" });
       }
 
-      // Save user message
       const userMessage = await storage.createMessage(
         insertMessageSchema.parse({
           conversationId,
@@ -93,23 +92,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // Get history
       const messages = await storage.getMessagesByConversation(conversationId);
 
-      const history = messages.map(m => ({
+      const history = messages.map((m: any) => ({
         role: m.role,
         content: m.content
       }));
 
-      // Build prompt (context-aware)
-      const prompt = buildOllamaPrompt(content, {
-        history
-      });
+      const prompt = buildOllamaPrompt(content, { history });
 
-      // Call Ollama
       const aiResponse = await generateFromOllama(prompt);
 
-      // Save AI response
       const aiMessage = await storage.createMessage(
         insertMessageSchema.parse({
           conversationId,
@@ -146,7 +139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         provider: "ollama"
       });
 
-    } catch {
+    } catch (error) {
+      console.error(error);
       res.status(500).json({
         error: "Chat failed",
         reply: "Error processing request"
@@ -158,12 +152,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // FILE UPLOAD
   // =========================
 
-  app.post("/api/conversations/:id/upload", isAuthenticated, upload.array('files'), async (req, res) => {
+  app.post("/api/conversations/:id/upload", isAuthenticated, upload.array("files"), async (req, res) => {
     try {
       const conversationId = req.params.id;
       const files = req.files as any[];
 
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: "No files uploaded" });
+      }
+
       const processedFiles = [];
 
       for (const file of files) {
-        const processed
+        try {
+          const processed = await processFile(file.path, file.mimetype);
+
+          const saved = await storage.createFile(
+            insertFileSchema.parse({
+              conversationId,
+              fileName: file.filename,
+              originalName: file.originalname,
+              mimeType: file.mimetype,
+              size: file.size,
+              status: processed.error ? "error" : "completed",
+              extractedContent: processed.extractedContent,
+              analysis: processed.analysis
+            })
+          );
+
+          processedFiles.push(saved);
+
+        } catch (err) {
+          console.error("File processing error:", err);
+        }
+
+        await cleanupFile(file.path);
+      }
+
+      res.json({ files: processedFiles });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Upload failed" });
+    }
+  });
+
+  // =========================
+  // SYSTEM CHECK
+  // =========================
+
+  app.get("/api/admin/system-test", async (_req, res) => {
+    let ollamaStatus = "unknown";
+
+    try {
+      const r = await fetch("http://localhost:11434/api/tags");
+      ollamaStatus = r.ok ? "connected" : "error";
+    } catch {
+      ollamaStatus = "offline";
+    }
+
+    res.json({
+      system: "ZED",
+      ai: "ollama-only",
+      ollama: ollamaStatus,
+      database: isDatabaseHealthy ? "connected" : "offline"
+    });
+  });
+
+  // =========================
+  // SERVER
+  // =========================
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
