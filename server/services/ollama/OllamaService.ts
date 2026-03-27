@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 const OLLAMA_URL = "http://localhost:11434/api/generate";
 
 export async function generateFromOllama(prompt: string) {
