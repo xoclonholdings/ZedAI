@@ -2,20 +2,16 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage/databaseStorage.ts";
 import { upload, processFile, cleanupFile } from "./services/fileProcessor";
-import { generateFromOllama } from "./services/OllamaService";
+import { generateFromOllama } from "./services/Ollama/OllamaService";
+import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
 import { setupLocalAuth, isAuthenticated } from "./localAuth";
+
 import {
   insertConversationSchema,
   insertMessageSchema,
   insertFileSchema,
-  insertSessionSchema,
-  insertCoreMemorySchema,
-  insertProjectMemorySchema,
-  insertScratchpadMemorySchema
+  insertSessionSchema
 } from "@shared/schema";
-
-import { optimizationService } from "./services/optimizationService";
-import { MemoryService } from "./services/memoryService";
 
 let isDatabaseHealthy = false;
 
@@ -34,17 +30,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupLocalAuth(app);
 
   // =========================
-  // BASIC AUTH
+  // AUTH
   // =========================
 
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch {
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+    const userId = req.user.claims.sub;
+    const user = await storage.getUser(userId);
+    res.json(user);
   });
 
   // =========================
@@ -60,21 +52,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/conversations", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
 
-    const conversationData = insertConversationSchema.parse({
-      userId,
-      title: req.body.title || "New Chat",
-      model: "ollama",
-      isActive: true
-    });
+    const conversation = await storage.createConversation(
+      insertConversationSchema.parse({
+        userId,
+        title: req.body.title || "New Chat",
+        model: "ollama",
+        isActive: true
+      })
+    );
 
-    const conversation = await storage.createConversation(conversationData);
-
-    const sessionData = insertSessionSchema.parse({
-      conversationId: conversation.id,
-      userId
-    });
-
-    await storage.createSession(sessionData);
+    await storage.createSession(
+      insertSessionSchema.parse({
+        conversationId: conversation.id,
+        userId
+      })
+    );
 
     res.json(conversation);
   });
@@ -92,6 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message required" });
       }
 
+      // Save user message
       const userMessage = await storage.createMessage(
         insertMessageSchema.parse({
           conversationId,
@@ -100,9 +93,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
-      // 🔥 OLLAMA CALL (single source of intelligence)
-      const aiResponse = await generateFromOllama(content);
+      // Get history
+      const messages = await storage.getMessagesByConversation(conversationId);
 
+      const history = messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      // Build prompt (context-aware)
+      const prompt = buildOllamaPrompt(content, {
+        history
+      });
+
+      // Call Ollama
+      const aiResponse = await generateFromOllama(prompt);
+
+      // Save AI response
       const aiMessage = await storage.createMessage(
         insertMessageSchema.parse({
           conversationId,
@@ -120,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =========================
-  // SIMPLE CHAT ENDPOINT
+  // SIMPLE CHAT
   // =========================
 
   app.post("/api/chat", async (req, res) => {
@@ -131,14 +138,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message required" });
       }
 
-      const reply = await generateFromOllama(message);
+      const prompt = buildOllamaPrompt(message);
+      const reply = await generateFromOllama(prompt);
 
       res.json({
         reply,
         provider: "ollama"
       });
 
-    } catch (error) {
+    } catch {
       res.status(500).json({
         error: "Chat failed",
         reply: "Error processing request"
@@ -147,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =========================
-  // FILE PROCESSING
+  // FILE UPLOAD
   // =========================
 
   app.post("/api/conversations/:id/upload", isAuthenticated, upload.array('files'), async (req, res) => {
@@ -158,83 +166,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const processedFiles = [];
 
       for (const file of files) {
-        const processed = await processFile(file.path, file.mimetype);
-
-        const saved = await storage.createFile(
-          insertFileSchema.parse({
-            conversationId,
-            fileName: file.filename,
-            originalName: file.originalname,
-            mimeType: file.mimetype,
-            size: file.size,
-            status: processed.error ? "error" : "completed",
-            extractedContent: processed.extractedContent,
-            analysis: processed.analysis
-          })
-        );
-
-        processedFiles.push(saved);
-        await cleanupFile(file.path);
-      }
-
-      res.json({ files: processedFiles });
-
-    } catch {
-      res.status(500).json({ error: "Upload failed" });
-    }
-  });
-
-  // =========================
-  // MEMORY SYSTEM
-  // =========================
-
-  app.get("/api/memory/core", isAuthenticated, async (_req, res) => {
-    const data = await MemoryService.getAllCoreMemory();
-    res.json(data);
-  });
-
-  app.get("/api/memory/project", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
-    const data = await MemoryService.getProjectMemory(userId);
-    res.json(data);
-  });
-
-  app.get("/api/memory/scratchpad", isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
-    const data = await MemoryService.getScratchpadMemory(userId);
-    res.json(data);
-  });
-
-  // =========================
-  // SYSTEM CHECK (OLLAMA ONLY)
-  // =========================
-
-  app.get("/api/admin/system-test", async (_req, res) => {
-    let ollamaStatus = "unknown";
-
-    try {
-      const r = await fetch("http://localhost:11434/api/tags");
-      ollamaStatus = r.ok ? "connected" : "error";
-    } catch {
-      ollamaStatus = "offline";
-    }
-
-    res.json({
-      system: "ZED",
-      ai: "ollama-only",
-      ollama: ollamaStatus,
-      database: isDatabaseHealthy ? "connected" : "offline"
-    });
-  });
-
-  // =========================
-  // OPTIMIZATION
-  // =========================
-
-  app.get("/api/admin/optimization/stats", async (_req, res) => {
-    res.json(optimizationService.getStats());
-  });
-
-  const httpServer = createServer(app);
-  return httpServer;
-}
+        const processed
