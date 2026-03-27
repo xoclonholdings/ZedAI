@@ -1,5 +1,4 @@
 export {
-  sessions,
   users,
   insertUserSchema,
 } from "./UsersSchema";
