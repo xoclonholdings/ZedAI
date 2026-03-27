@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+const log = console.log;
 import { checkDatabaseConnection, gracefulShutdown } from "./db";
 import { runMigrations } from "./migrations";
 import { fallbackStorage } from "./services/fallbackStorage";
