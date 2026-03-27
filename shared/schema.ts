@@ -2,56 +2,56 @@ export {
   sessions,
   users,
   insertUserSchema,
-} from "./schema/UsersSchema";
+} from "./UsersSchema";
 
 export type {
   User,
   UpsertUser,
   InsertUser,
   InsertUserSchema,
-} from "./schema/UsersSchema";
+} from "./UsersSchema";
 
 export {
   conversations,
   modeSchema,
   insertConversationSchema,
-} from "./schema/ConversationsSchema";
+} from "./ConversationsSchema";
 
 export type {
   Conversation,
   InsertConversation,
   ConversationMode,
-} from "./schema/ConversationsSchema";
+} from "./ConversationsSchema";
 
 export {
   messages,
   insertMessageSchema,
-} from "./schema/MessagesSchema";
+} from "./MessagesSchema";
 
 export type {
   Message,
   InsertMessage,
-} from "./schema/MessagesSchema";
+} from "./MessagesSchema";
 
 export {
   files,
   insertFileSchema,
-} from "./schema/FilesSchema";
+} from "./FilesSchema";
 
 export type {
   File,
   InsertFile,
-} from "./schema/FilesSchema";
+} from "./FilesSchema";
 
 export {
   chatSessions,
   insertSessionSchema,
-} from "./schema/SessionsSchema";
+} from "./SessionsSchema";
 
 export type {
   Session,
   InsertSession,
-} from "./schema/SessionsSchema";
+} from "./SessionsSchema";
 
 export {
   coreMemory,
@@ -60,7 +60,7 @@ export {
   insertCoreMemorySchema,
   insertProjectMemorySchema,
   insertScratchpadMemorySchema,
-} from "./schema/MemorySchema";
+} from "./MemorySchema";
 
 export type {
   CoreMemory,
@@ -69,7 +69,7 @@ export type {
   InsertProjectMemory,
   ScratchpadMemory,
   InsertScratchpadMemory,
-} from "./schema/MemorySchema";
+} from "./MemorySchema";
 
 export {
   fileStorage,
@@ -81,7 +81,7 @@ export {
   conversationRelations,
   messageRelations,
   fileRelations,
-} from "./schema/SystemSchema";
+} from "./SystemSchema";
 
 export type {
   FileStorage,
@@ -94,4 +94,4 @@ export type {
   InsertCacheStorage,
   Analytics,
   InsertAnalytics,
-} from "./schema/SystemSchema";
+} from "./SystemSchema";
