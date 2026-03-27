@@ -11,7 +11,7 @@ import {
   insertMessageSchema,
   insertFileSchema,
   insertSessionSchema
-} from "@shared/schema";
+} from "../shared/schema";
 
 let isDatabaseHealthy = false;
 
