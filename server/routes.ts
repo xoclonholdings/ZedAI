@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage/databaseStorage.ts";
 import { upload, processFile, cleanupFile } from "./services/fileProcessor";
-import { generateFromOllama } from "./services/Ollama/OllamaService";
+import { generateFromOllama } from "./services/Ollama/OllamaService"; 
 import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
 import { setupLocalAuth, isAuthenticated } from "./localAuth";
 
