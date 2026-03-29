@@ -12,7 +12,11 @@
     "drizzle-orm": "^0.45.1",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "ws": "^8.20.0"
+    "mammoth": "^1.12.0",
+    "multer": "^2.1.1",
+    "vite": "^8.0.3",
+    "ws": "^8.20.0",
+    "yauzl": "^3.2.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
