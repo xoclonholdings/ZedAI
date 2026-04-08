@@ -3,7 +3,6 @@ import { eq, asc } from "drizzle-orm";
 import {
   type User,
   type UpsertUser,
-  users,
 } from "../../shared/UsersSchema.ts";
 import { db } from "../db.ts";
 import { fallbackStorage } from "./fallback";
