@@ -240,3 +240,24 @@ in all contexts.
 - Log all uncertain decisions to `~/ai-workforce/logs/operations/`
 - When human overrides a decision, capture context for prompt refinement
 - Weekly self-review: Identify patterns in mistakes, propose SKILL.md updates
+
+
+~/ai-workforce/
+├── hub/
+│   ├── config/
+│   │   ├── personality.yaml          # Your voice, preferences, boundaries
+│   │   ├── security.yaml             # Permissions, gates, sensitive data rules
+│   │   ├── parameters.yaml           # Model selection, cost limits, timeout rules
+│   │   └── access.yaml               # API keys, tool credentials, system paths
+│   ├── shared-memory/                # Blackboard architecture [^43^]
+│   │   ├── working/                  # Immediate context (JSON/Markdown)
+│   │   ├── episodic/                 # Conversation histories, logs
+│   │   ├── semantic/                 # Domain knowledge, facts, procedures
+│   │   └── consensus/                # Verified team procedures [^47^]
+│   ├── templates/                    # Skill templates for new agents
+│   └── logs/                         # Error patterns, improvement cycles [^45^]
+└── agents/
+    ├── operations/                   # Executive + Social (Phase 1)
+    ├── intelligence/                 # R&D (Phase 2)
+    ├── audio-engineer/               # Music Production (Phase 3)
+    └── ide-operator/                 # Code/Local System (Phase 3)
