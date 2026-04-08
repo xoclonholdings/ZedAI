@@ -1,3 +1,24 @@
+Critical Success Factors
+1. Start with the Hub: Don't skip the central configuration. It's your source of truth for personality, security, and access control.
+2. Operations before Intelligence: Get the external touchpoint agent working first. Intelligence without action is just noise.
+3. Learning tunnel is mandatory: The error feedback loop between agents is what makes this a system rather than a collection of tools ​￼.
+4. Security gates are non-negotiable: Operations Agent can send emails. All need explicit ADMIN approval gates initially.
+5. Shared memory architecture: Use the blackboard pattern ​￼—all agents write to common stores, read what they need. No direct agent-to-agent messaging (too fragile).
+
+# Project: [Your AI Workforce Hub]
+
+## Architecture
+- Operations Agent: Handles exec + social (unified external presence)
+- Intelligence Agent: Background research (feeds Operations)
+- Future: Audio Engineer, IDE Operator
+
+## Critical Constraints
+- NEVER modify UI framework files without explicit ADMIN approval
+- ALL server changes must pass `npm run test` before suggesting
+- Import errors: Check `package.json` dependencies first, don't guess
+
+
+
 KNOWLEDGE TYPES
 
 Identity knowledge
