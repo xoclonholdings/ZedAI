@@ -14,6 +14,7 @@ import { setupLocalAuth, isAuthenticated } from "./localAuth";
 import { ManagerAgent } from "./orchestrator/ManagerAgent";
 import { checkTiers, filterOutputForTier3 } from "./middleware/TierEnforcement";
 import { logSecurityEvent, getRecentSecurityEvents } from "./services/SecurityAudit";
+import { injectMemory } from "./services/MemoryInjector";
 import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
@@ -161,12 +162,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .slice(-20)
         .map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-      // Load rules from core memory if present
+      // Load rules from core memory if present, then inject hub memory
       let systemPrompt: string | undefined;
       try {
         const mem = await storage.getCoreMemoryByKey("system_prompt");
         if (mem) systemPrompt = mem.value;
       } catch {}
+
+      try {
+        const memCtx = await injectMemory("ChatMode");
+        const memBlock = memCtx.formatted;
+        systemPrompt = systemPrompt
+          ? `${systemPrompt}\n\n${memBlock}`
+          : memBlock;
+      } catch (memErr) {
+        console.warn("[SSE] Memory injection failed (non-fatal):", memErr);
+      }
 
       if (stream) {
         // SSE streaming response
