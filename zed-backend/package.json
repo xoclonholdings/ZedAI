@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "@netlify/functions": "^4.2.5",
-    "cors": "^2.8.5",
-    "helmet": "^8.1.0"
-  }
-}
