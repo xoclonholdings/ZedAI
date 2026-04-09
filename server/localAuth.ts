@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
-import { storage } from "./storage";
 
 // Default credentials and security settings - changeable through settings
 let LOCAL_USERS = [
@@ -137,19 +136,9 @@ export async function setupLocalAuth(app: any) {
         }
       }
 
-      // Create/update user in database
-      await storage.upsertUser({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
-      });
-
       // Clear failed attempts on successful login
       VERIFICATION_ATTEMPTS.delete(attemptKey);
 
-      // Set enhanced session with device tracking
       (req.session as any).userId = user.id;
       (req.session as any).user = {
         id: user.id,
@@ -364,16 +353,6 @@ export const isLocalAuthenticated = async (req: Request, res: Response, next: Ne
   // Update last activity
   session.lastActivity = Date.now();
 
-  // Enhanced device verification for Admin
-  if (session.user?.username === 'Admin') {
-    const currentFingerprint = getDeviceFingerprint(req);
-    if (session.deviceFingerprint !== currentFingerprint) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ message: "Device verification failed" });
-    }
-  }
-
-  // Attach user to request
   (req as any).user = {
     claims: {
       sub: session.userId,
@@ -386,32 +365,18 @@ export const isLocalAuthenticated = async (req: Request, res: Response, next: Ne
 
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   const session = req.session as any;
-  
+
   if (!session?.userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  // Check session expiry (45 minutes for Admin)
-  if (session.lastActivity && Date.now() - session.lastActivity > 45 * 60 * 1000) {
+  if (session.lastActivity && Date.now() - session.lastActivity > ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes * 60 * 1000) {
     req.session.destroy(() => {});
     return res.status(401).json({ message: "Session expired" });
   }
 
-  // Update last activity
-  if (session.lastActivity) {
-    session.lastActivity = Date.now();
-  }
+  session.lastActivity = Date.now();
 
-  // Enhanced device verification for Admin
-  if (session.user?.isAdmin) {
-    const currentFingerprint = getDeviceFingerprint(req);
-    if (session.user.deviceFingerprint !== currentFingerprint) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ message: "Device verification failed" });
-    }
-  }
-
-  // Attach user to request
   (req as any).user = {
     claims: {
       sub: session.userId,
