@@ -16,6 +16,7 @@ export function useAuth() {
     try {
       const res = await fetch("/api/me", {
         credentials: "include",
+        cache: "no-store",
       });
 
       const data = await res.json();
