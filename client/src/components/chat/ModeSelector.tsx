@@ -51,7 +51,7 @@ export default function ModeSelector({ selectedMode, onModeChange, disabled }: M
   ];
 
   return (
-    <div className="space-y-4 max-h-[80vh] overflow-y-auto">
+    <div className="space-y-4">
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center space-x-2">
           <Bot className="text-cyan-400" size={20} />

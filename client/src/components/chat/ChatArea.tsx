@@ -25,6 +25,7 @@ interface ChatAreaProps {
   files: DBFile[];
   conversationId?: string;
   isMobile?: boolean;
+  onOpenSidebar?: () => void;
 }
 
 export default function ChatArea({
@@ -33,6 +34,7 @@ export default function ChatArea({
   files,
   conversationId,
   isMobile = false,
+  onOpenSidebar,
 }: ChatAreaProps) {
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showSocialFeed, setShowSocialFeed] = useState(false);
@@ -155,13 +157,15 @@ export default function ChatArea({
   }, [messages, streamingMessage]);
 
   return (
-    <div className="flex-1 flex h-screen-mobile relative overflow-hidden">
+    <div className="flex-1 flex h-screen relative overflow-hidden">
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         <ChatBackground />
 
         <ChatHeader
           showSocialFeed={showSocialFeed}
           onToggleSocialFeed={() => setShowSocialFeed((prev) => !prev)}
+          isMobile={isMobile}
+          onOpenSidebar={onOpenSidebar}
         />
 
         <ChatMessagesList
@@ -180,33 +184,38 @@ export default function ChatArea({
           />
         )}
 
-        {showModeSelector && (
-          <div className="border-t border-white/10 p-4 md:p-6 zed-glass relative z-20 max-h-[60vh] overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-              <ModeSelector
-                selectedMode={currentMode}
-                onModeChange={handleModeChange}
-                disabled={updateModeMutation.isPending}
+        {/* Input bar + mode selector slide-up */}
+        <div className="relative flex-shrink-0 z-10">
+          {showModeSelector && (
+            <div className="absolute bottom-full left-0 right-0 border-t border-white/10 zed-glass max-h-[55vh] overflow-y-auto">
+              <div className="p-4 md:p-6">
+                <div className="max-w-4xl mx-auto">
+                  <ModeSelector
+                    selectedMode={currentMode}
+                    onModeChange={handleModeChange}
+                    disabled={updateModeMutation.isPending}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-white/10 zed-glass p-4 md:p-6">
+            <div className="max-w-4xl mx-auto space-y-3">
+              <ChatControls
+                currentMode={currentMode}
+                filesCount={files.length}
+                onOpenFileUpload={() => setShowFileUpload(true)}
+                onToggleModeSelector={() =>
+                  setShowModeSelector((prev) => !prev)
+                }
+              />
+
+              <ChatInput
+                onSend={handleSend}
+                isLoading={sendMessageMutation.isPending || isStreaming}
               />
             </div>
-          </div>
-        )}
-
-        <div className="border-t border-white/10 zed-glass p-4 md:p-6 relative z-10 flex-shrink-0">
-          <div className="max-w-4xl mx-auto space-y-3">
-            <ChatControls
-              currentMode={currentMode}
-              filesCount={files.length}
-              onOpenFileUpload={() => setShowFileUpload(true)}
-              onToggleModeSelector={() =>
-                setShowModeSelector((prev) => !prev)
-              }
-            />
-
-            <ChatInput
-              onSend={handleSend}
-              isLoading={sendMessageMutation.isPending || isStreaming}
-            />
           </div>
         </div>
       </div>
