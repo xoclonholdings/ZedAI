@@ -1,62 +1,62 @@
-import { MessageSquare, Mic, Paperclip, Settings, Sparkles } from "lucide-react";
-
+import { Mic, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ConversationMode } from "@shared/schema";
 import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatControlsProps {
   currentMode: ConversationMode;
-  filesCount: number;
+  onModeToggle: (mode: ConversationMode) => void;
   onOpenFileUpload: () => void;
-  onToggleModeSelector: () => void;
 }
 
 export default function ChatControls({
   currentMode,
-  filesCount,
+  onModeToggle,
   onOpenFileUpload,
-  onToggleModeSelector,
 }: ChatControlsProps) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onOpenFileUpload}
-          className="zed-button text-muted-foreground hover:text-purple-400 h-auto p-2 rounded-xl btn-touch"
+    <div className="flex items-center space-x-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onOpenFileUpload}
+        className="zed-button text-muted-foreground hover:text-purple-400 h-auto p-2 rounded-xl btn-touch"
+      >
+        <Paperclip size={18} />
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        className="zed-button text-muted-foreground hover:text-cyan-400 h-auto p-2 rounded-xl btn-touch"
+      >
+        <Mic size={18} />
+      </Button>
+
+      {/* Mode flip pill */}
+      <div className="flex items-center rounded-xl border border-white/10 overflow-hidden zed-glass">
+        <button
+          onClick={() => onModeToggle("chat")}
+          className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center space-x-1 ${
+            currentMode === "chat"
+              ? "bg-white/10 text-white"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
-          <Paperclip size={18} />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="zed-button text-muted-foreground hover:text-cyan-400 h-auto p-2 rounded-xl btn-touch"
+          <span>Chat</span>
+        </button>
+        <div className="w-px h-4 bg-white/10" />
+        <button
+          onClick={() => onModeToggle("agent")}
+          className={`px-3 py-1.5 text-xs font-medium transition-colors flex items-center space-x-1.5 ${
+            currentMode === "agent"
+              ? "bg-white/10 text-white"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
-          <Mic size={18} />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleModeSelector}
-          className="zed-button text-muted-foreground hover:text-cyan-400 h-auto px-3 py-2 rounded-xl flex items-center space-x-1 btn-touch"
-        >
-          {currentMode === "chat" ? (
-            <MessageSquare size={14} />
-          ) : (
-            <img src={zLogoPath} alt="Z" className="w-3.5 h-3.5" />
-          )}
-
-          <span className="text-xs capitalize">{currentMode}</span>
-          <Settings size={10} />
-        </Button>
-      </div>
-
-      <div className="text-xs text-muted-foreground flex items-center">
-        <Sparkles size={12} className="mr-1 text-purple-400" />
-        {filesCount} file{filesCount === 1 ? "" : "s"} attached
+          <img src={zLogoPath} alt="" className="w-3 h-3" />
+          <span>Agent</span>
+        </button>
       </div>
     </div>
   );
