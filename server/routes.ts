@@ -425,6 +425,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ─── Approval Queue ────────────────────────────────────────────────────────
 
   const APPROVAL_QUEUE_PATH = path.resolve(process.cwd(), "hub/shared-memory/episodic/approval-queue.json");
+  const WORKING_MEMORY_PATH = path.resolve(process.cwd(), "hub/shared-memory/working/current-tasks.md");
+
+  async function executeApprovedEntry(entry: any): Promise<string> {
+    const timestamp = new Date().toISOString();
+    const summary = `\n## [${timestamp}] ✅ APPROVED & EXECUTED — User: ${entry.userId}\n**Request**: ${entry.message}\n**Draft executed**: ${entry.draft}\n`;
+    try {
+      await fs.appendFile(WORKING_MEMORY_PATH, summary);
+    } catch (err) {
+      console.warn("[ApprovalExecutor] Working memory write failed:", err);
+    }
+    if (entry.conversationId) {
+      try {
+        const execMessage = `✅ **Action Approved & Executed**\n\nYour request has been reviewed and approved by the admin.\n\n**Request**: ${entry.message}\n\n**Executed draft**:\n${entry.draft}`;
+        await storage.createMessage(
+          insertMessageSchema.parse({ conversationId: entry.conversationId, role: "assistant", content: execMessage })
+        );
+      } catch (err) {
+        console.warn("[ApprovalExecutor] Conversation message failed:", err);
+      }
+    }
+    return `Executed at ${timestamp}: wrote to working memory${entry.conversationId ? " and posted to conversation" : ""}.`;
+  }
 
   app.get("/api/admin/approval-queue", isAuthenticated, async (_req, res) => {
     try {
@@ -445,11 +467,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!entry) return res.status(404).json({ error: "Entry not found" });
       entry.status = "approved";
       entry.resolvedAt = new Date().toISOString();
+
+      // Execute: write to working memory and notify conversation
+      const execResult = await executeApprovedEntry(entry);
+      entry.executionResult = execResult;
+
       await fs.writeFile(APPROVAL_QUEUE_PATH, JSON.stringify(queue, null, 2));
       await logSecurityEvent({
         type: "approval.approved",
         userId: req.user?.claims?.sub,
-        detail: `Approved: ${entry.message?.slice(0, 80)}`,
+        detail: `Approved & executed: ${entry.message?.slice(0, 80)}`,
       });
       res.json({ success: true, entry });
     } catch (err: any) {

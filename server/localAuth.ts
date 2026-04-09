@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { logSecurityEvent } from "./services/SecurityAudit";
+import { FileSessionStore } from "./services/FileSessionStore";
 
 // Default credentials and security settings - changeable through settings
 let LOCAL_USERS = [
@@ -37,6 +38,7 @@ export function getLocalSession() {
   
   return session({
     secret: process.env.SESSION_SECRET || "zed-local-secret-key-change-in-production",
+    store: new FileSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {

@@ -159,17 +159,32 @@ export class ManagerAgent {
     const lower = message.toLowerCase();
     const params = config.parameters || {};
 
-    const researchKeywords: string[] = params.agent_routing?.research_keywords || [
-      "research", "find", "analyze", "trend", "market", "github", "news",
-      "what is", "how does", "who is", "explain", "summarize", "what are",
-      "latest", "current", "happening", "tell me about",
-    ];
-
-    const ideKeywords = ["code", "debug", "refactor", "pull request", "pr", "commit", "repository", "bug fix"];
-    const audioKeywords = ["mix", "master", "daw", "track", "stem", "production", "music", "audio", "beat"];
+    // IDE and Audio are unambiguous — check first
+    const ideKeywords = ["code", "debug", "refactor", "pull request", " pr ", "commit", "repository", "bug fix", "git "];
+    const audioKeywords = ["mix", "master", "daw", "stem", "music production", "audio engineer", "beat maker"];
 
     if (ideKeywords.some((k) => lower.includes(k))) return "IDEOperatorAgent";
     if (audioKeywords.some((k) => lower.includes(k))) return "AudioEngineerAgent";
+
+    // Operations keywords — explicitly task/action oriented.
+    // Check BEFORE research so "what is on my calendar" routes correctly.
+    const opsKeywords = [
+      "calendar", "schedule", "reschedule", "meeting", "appointment",
+      "email", "send email", "draft email", "reply to",
+      "task", "todo", "to-do", "to do", "remind me",
+      "post to", "post on", "publish", "tweet", "draft post",
+      "send invoice", "invoice", "cancel", "book ",
+    ];
+
+    if (opsKeywords.some((k) => lower.includes(k))) return "OperationsAgent";
+
+    // Research/intelligence keywords — open-ended queries about the world
+    const researchKeywords: string[] = params.agent_routing?.research_keywords || [
+      "research", "find information", "analyze", "trend", "market", "github", "news",
+      "what is", "how does", "who is", "explain", "summarize", "what are",
+      "latest", "current events", "happening in", "tell me about",
+    ];
+
     if (researchKeywords.some((k) => lower.includes(k))) return "IntelligenceAgent";
 
     return "OperationsAgent";

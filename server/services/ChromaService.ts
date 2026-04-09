@@ -109,11 +109,12 @@ async function fallbackWrite(key: CollectionKey, entry: VectorEntry): Promise<vo
 }
 
 async function fallbackRead(key: CollectionKey, limit: number): Promise<VectorEntry[]> {
+  const results: VectorEntry[] = [];
+  // Read from keyed subdirectory (current path)
   try {
     const dir = path.join(SEMANTIC_DIR, key);
     await fs.mkdir(dir, { recursive: true });
-    const files = (await fs.readdir(dir)).sort().slice(-limit);
-    const results: VectorEntry[] = [];
+    const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".json")).sort().slice(-limit);
     for (const f of files) {
       try {
         const raw = await fs.readFile(path.join(dir, f), "utf-8");
@@ -121,10 +122,30 @@ async function fallbackRead(key: CollectionKey, limit: number): Promise<VectorEn
         results.push({ id: data.id, document: data.document, metadata: data.metadata });
       } catch {}
     }
-    return results;
-  } catch {
-    return [];
+  } catch {}
+  // Also migrate any old-style files from the root semantic dir (legacy path)
+  if (key === "semantic" && results.length < limit) {
+    try {
+      const rootFiles = (await fs.readdir(SEMANTIC_DIR))
+        .filter((f) => f.endsWith(".json") && !f.startsWith("."))
+        .sort()
+        .slice(-(limit - results.length));
+      const subdir = path.join(SEMANTIC_DIR, key);
+      for (const f of rootFiles) {
+        const srcPath = path.join(SEMANTIC_DIR, f);
+        try {
+          const raw = await fs.readFile(srcPath, "utf-8");
+          const data = JSON.parse(raw);
+          if (data.id && data.document) {
+            results.push({ id: data.id, document: data.document, metadata: data.metadata || {} });
+            // Migrate to new location
+            await fs.rename(srcPath, path.join(subdir, f)).catch(() => {});
+          }
+        } catch {}
+      }
+    } catch {}
   }
+  return results.slice(-limit);
 }
 
 export async function storeResearchBrief(brief: {

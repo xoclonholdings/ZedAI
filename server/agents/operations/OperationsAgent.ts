@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
+import { logSecurityEvent } from "../../services/SecurityAudit";
 
 const CWD = process.cwd();
 const SKILL_PATH = path.resolve(CWD, "agents/operations/SKILL.md");
@@ -128,6 +129,11 @@ ConversationID: ${request.conversationId || "none"}`.trim();
         agent: "OperationsAgent",
       });
       await fs.writeFile(APPROVAL_QUEUE, JSON.stringify(queue, null, 2));
+      await logSecurityEvent({
+        type: "approval.queued",
+        userId: request.userId,
+        detail: `Queued for approval: ${request.message.slice(0, 80)}`,
+      });
     } catch (err) {
       console.warn("[OperationsAgent] Approval queue write failed:", err);
     }

@@ -10,7 +10,7 @@ ZED is a multi-agent AI workforce built on an Express + React stack. A central h
 - **Backend**: Express + TypeScript (serves frontend via Vite middleware in dev)
 - **AI**: Ollama (local — qwen2.5:7b primary, llama3.2 fallback)
 - **Database**: Neon PostgreSQL (drizzle-orm) with offline JSON fallback
-- **Auth**: Session-based passphrase auth (express-session) — default: `XOCLON-SECURE-2025`
+- **Auth**: Session-based passphrase auth (express-session + FileSessionStore) — sessions persisted to `server/hub/sessions/`, survive restarts — default: `XOCLON-SECURE-2025`
 - **Vector Store**: ChromaDB client (optional, falls back to filesystem JSON)
 
 ### Request Pipeline
@@ -27,7 +27,8 @@ MemoryInjector (loads hub/shared-memory)
     ├── episodic/email-decisions.json + approval-queue.json
     └── consensus/posting-guidelines.md
     ↓
-ManagerAgent.route() — keyword-based agent selection
+ManagerAgent.route() — priority-ordered agent routing
+    │   Order: IDE → Audio → Operations (calendar/email/task/meeting) → Intelligence (research/news)
     ├── IntelligenceAgent
     │   ├── WebSearchService (Brave → Serper → offline graceful)
     │   ├── ChromaService.querySimilarResearch (prior context)

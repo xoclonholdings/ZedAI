@@ -10,6 +10,7 @@ import {
   Database,
   Edit3,
   FileText,
+  Lock,
   RefreshCw,
   Save,
   Server,
@@ -26,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth/UseAuth";
 import zedLogo from "@assets/Zed_logo.png";
 
-type Section = "overview" | "ruleset" | "approvals" | "logs";
+type Section = "overview" | "ruleset" | "approvals" | "logs" | "security";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -47,6 +48,9 @@ export default function Admin() {
   const [logs, setLogs] = useState<string[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
+  const [securityEvents, setSecurityEvents] = useState<any[]>([]);
+  const [securityLoading, setSecurityLoading] = useState(false);
+
   useEffect(() => {
     fetchStatus();
   }, []);
@@ -55,6 +59,7 @@ export default function Admin() {
     if (section === "ruleset" && Object.keys(ruleset).length === 0) fetchRuleset();
     if (section === "logs") fetchLogs();
     if (section === "approvals") fetchApprovals();
+    if (section === "security") fetchSecurityLog();
   }, [section]);
 
   async function fetchStatus() {
@@ -95,6 +100,18 @@ export default function Admin() {
       }
     } catch {}
     setLogsLoading(false);
+  }
+
+  async function fetchSecurityLog() {
+    setSecurityLoading(true);
+    try {
+      const res = await fetch("/api/admin/security-log", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setSecurityEvents((data.events || []).reverse());
+      }
+    } catch {}
+    setSecurityLoading(false);
   }
 
   async function saveRulesetFile() {
@@ -156,6 +173,7 @@ export default function Admin() {
     { id: "ruleset", label: "Ruleset Editor" },
     { id: "approvals", label: "Approval Queue", badge: pendingCount },
     { id: "logs", label: "Agent Logs" },
+    { id: "security", label: "Security Log" },
   ];
 
   return (
@@ -567,6 +585,60 @@ export default function Admin() {
             )}
           </>
         )}
+        {/* ── Security Log ──────────────────────────────────── */}
+        {section === "security" && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Security Log</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Auth events, tier blocks, approvals, and audit trail.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={fetchSecurityLog} className="zed-button text-muted-foreground hover:text-foreground">
+                <RefreshCw size={14} className="mr-1" />
+                Refresh
+              </Button>
+            </div>
+
+            {securityLoading ? (
+              <div className="text-center text-muted-foreground py-12">Loading…</div>
+            ) : securityEvents.length === 0 ? (
+              <Card className="zed-glass border-white/10">
+                <CardContent className="py-12 text-center text-muted-foreground text-sm">
+                  <Lock size={32} className="mx-auto mb-3 text-purple-400/50" />
+                  No security events recorded yet.
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="zed-glass border-white/10">
+                <CardContent className="pt-4">
+                  <div className="space-y-1 max-h-[60vh] overflow-y-auto font-mono">
+                    {securityEvents.map((evt, i) => {
+                      const isWarn = evt.type?.includes("fail") || evt.type?.includes("block") || evt.type?.includes("reject");
+                      const isOk = evt.type?.includes("success") || evt.type?.includes("approved") || evt.type?.includes("approved");
+                      return (
+                        <div key={i} className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2">
+                          <span className="text-muted-foreground shrink-0 w-[70px]">
+                            {evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : ""}
+                          </span>
+                          <span className={`font-medium shrink-0 w-[160px] truncate ${isWarn ? "text-red-400" : isOk ? "text-green-400" : "text-purple-400"}`}>
+                            {evt.type || "unknown"}
+                          </span>
+                          <span className="text-foreground/70 truncate">{evt.detail || ""}</span>
+                          {evt.userId && (
+                            <span className="text-muted-foreground/50 shrink-0 ml-auto">{evt.userId}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
       </div>
     </div>
   );
