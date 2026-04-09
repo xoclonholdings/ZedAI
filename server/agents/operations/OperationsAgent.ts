@@ -15,6 +15,7 @@ export interface AgentRequest {
   message: string;
   conversationId?: string;
   context?: Record<string, any>;
+  memoryContext?: string;
 }
 
 export interface AgentResponse {
@@ -40,7 +41,7 @@ export class OperationsAgent {
     try {
       this.skill = await fs.readFile(SKILL_PATH, "utf-8");
     } catch {
-      this.skill = "Operations Agent: Handle executive and social media tasks.";
+      this.skill = "Operations Agent: Handle executive and social media tasks. Be direct, actionable, and brand-aligned.";
     }
     return this.skill;
   }
@@ -60,10 +61,14 @@ export class OperationsAgent {
     const guidelines = await this.loadGuidelines();
     const actions: AgentAction[] = [];
 
+    const memoryBlock = request.memoryContext
+      ? `\n\n${request.memoryContext}`
+      : "";
+
     const systemPrompt = `${skill}
 
 ## Brand Voice Guidelines
-${guidelines}
+${guidelines}${memoryBlock}
 
 ## Session Context
 User: ${request.userId}

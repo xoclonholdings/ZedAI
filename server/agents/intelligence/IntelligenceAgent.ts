@@ -1,10 +1,11 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
+import { webSearch, formatResultsForPrompt } from "../../services/WebSearchService";
+import { storeResearchBrief, querySimilarResearch } from "../../services/ChromaService";
 
 const CWD = process.cwd();
 const SKILL_PATH = path.resolve(CWD, "agents/intelligence/SKILL.md");
-const SEMANTIC_DIR = path.resolve(CWD, "hub/shared-memory/semantic");
 const LOG_DIR = path.resolve(CWD, "hub/logs/intelligence");
 
 export interface ResearchRequest {
@@ -13,6 +14,7 @@ export interface ResearchRequest {
   depth?: "shallow" | "deep";
   sources?: string[];
   conversationId?: string;
+  memoryContext?: string;
 }
 
 export interface ResearchBrief {
@@ -34,7 +36,7 @@ export class IntelligenceAgent {
     try {
       this.skill = await fs.readFile(SKILL_PATH, "utf-8");
     } catch {
-      this.skill = "Intelligence Agent: Research, analyze, and synthesize information.";
+      this.skill = "Intelligence Agent: Research, analyze, and synthesize information. Produce structured briefs with findings, confidence levels, and actionable recommendations.";
     }
     return this.skill;
   }
@@ -42,12 +44,26 @@ export class IntelligenceAgent {
   static async research(request: ResearchRequest): Promise<ResearchBrief> {
     const skill = await this.loadSkill();
 
-    const systemPrompt = `${skill}
+    const searchResponse = await webSearch(request.query);
+    const searchBlock = formatResultsForPrompt(searchResponse);
+
+    const priorResearch = await querySimilarResearch(request.query, 2);
+    const priorBlock = priorResearch
+      ? `\n\n## Prior Research (from semantic memory)\n${priorResearch}`
+      : "";
+
+    const memoryBlock = request.memoryContext
+      ? `\n\n${request.memoryContext}`
+      : "";
+
+    const systemPrompt = `${skill}${memoryBlock}${priorBlock}
 
 ## Current Research Task
 Query: ${request.query}
 Depth: ${request.depth || "shallow"}
 User: ${request.userId}
+
+${searchBlock}
 
 Always produce output in this exact format:
 BRIEF: [topic summary]
@@ -64,9 +80,9 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
       systemPrompt
     );
 
-    const brief = this.parseBrief(request.query, rawReply);
+    const brief = this.parseBrief(request.query, rawReply, searchResponse.source);
 
-    await this.storeToSemantic(brief);
+    await storeResearchBrief(brief);
     await this.log(request, brief);
 
     return brief;
@@ -82,7 +98,7 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
     );
   }
 
-  private static parseBrief(query: string, raw: string): ResearchBrief {
+  private static parseBrief(query: string, raw: string, searchSource: string): ResearchBrief {
     const lines = raw.split("\n");
     const keyFindings: string[] = [];
     let inFindings = false;
@@ -109,6 +125,10 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
       }
     }
 
+    const sources: string[] = [];
+    if (searchSource !== "none") sources.push(`Web search via ${searchSource}`);
+    sources.push("Ollama local model synthesis");
+
     return {
       topic: query,
       date: new Date().toISOString(),
@@ -116,22 +136,9 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
       keyFindings: keyFindings.length > 0 ? keyFindings : [raw.slice(0, 300)],
       implications: implications || "See full response for details.",
       recommendedAction: recommendedAction || "Review findings and determine next steps.",
-      sources: ["Ollama local model synthesis"],
+      sources,
       agent: "IntelligenceAgent",
     };
-  }
-
-  private static async storeToSemantic(brief: ResearchBrief): Promise<void> {
-    try {
-      await fs.mkdir(SEMANTIC_DIR, { recursive: true });
-      const filename = `research-${Date.now()}.json`;
-      await fs.writeFile(
-        path.join(SEMANTIC_DIR, filename),
-        JSON.stringify(brief, null, 2)
-      );
-    } catch (err) {
-      console.warn("[IntelligenceAgent] Semantic store write failed:", err);
-    }
   }
 
   private static async log(request: ResearchRequest, brief: ResearchBrief): Promise<void> {
@@ -145,6 +152,7 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
         query: request.query,
         confidence: brief.confidence,
         findingsCount: brief.keyFindings.length,
+        sources: brief.sources,
       }) + "\n";
       await fs.appendFile(logFile, entry);
     } catch {}

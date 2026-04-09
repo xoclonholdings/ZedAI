@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
+import { logSecurityEvent } from "./services/SecurityAudit";
 
 // Default credentials and security settings - changeable through settings
 let LOCAL_USERS = [
@@ -92,10 +93,23 @@ export async function setupLocalAuth(app: any) {
       }
 
       if (passphrase !== ADMIN_SECURITY_SETTINGS.securePhrase) {
+        const newCount = attempts.count + 1;
         VERIFICATION_ATTEMPTS.set(attemptKey, {
-          count: attempts.count + 1,
+          count: newCount,
           lastAttempt: Date.now(),
         });
+        await logSecurityEvent({
+          type: "auth.login.fail",
+          ip,
+          detail: `Failed attempt ${newCount}/${ADMIN_SECURITY_SETTINGS.maxFailedAttempts}`,
+        });
+        if (newCount >= ADMIN_SECURITY_SETTINGS.maxFailedAttempts) {
+          await logSecurityEvent({
+            type: "auth.lockout",
+            ip,
+            detail: `IP locked out for ${ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes} minutes`,
+          });
+        }
         return res.status(401).json({ error: "Invalid passphrase" });
       }
 
@@ -113,6 +127,13 @@ export async function setupLocalAuth(app: any) {
         lastName: user.lastName,
         profileImageUrl: user.profileImageUrl,
       };
+
+      await logSecurityEvent({
+        type: "auth.login.success",
+        ip,
+        userId: user.id,
+        detail: `Admin login successful`,
+      });
 
       res.json({
         success: true,
@@ -132,18 +153,15 @@ export async function setupLocalAuth(app: any) {
     }
   });
 
-  // Enhanced logout with device cleanup
-  app.post("/api/logout", (req: Request, res: Response) => {
-    const session = req.session as any;
-    if (session?.user?.deviceFingerprint) {
-      // Optionally remove device from trusted list on explicit logout
-      // TRUSTED_DEVICES.delete(session.user.deviceFingerprint);
-    }
-    
-    req.session.destroy((err) => {
+  app.post("/api/logout", async (req: Request, res: Response) => {
+    const sess = req.session as any;
+    const userId = sess?.userId;
+    const ip = req.ip || "";
+    req.session.destroy(async (err) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }
+      await logSecurityEvent({ type: "auth.logout", ip, userId, detail: "Session destroyed" });
       res.json({ success: true });
     });
   });
@@ -336,7 +354,9 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
   }
 
   if (session.lastActivity && Date.now() - session.lastActivity > ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes * 60 * 1000) {
+    const userId = session.userId;
     req.session.destroy(() => {});
+    await logSecurityEvent({ type: "auth.session_expired", userId, ip: req.ip || "", detail: "Session TTL exceeded" });
     return res.status(401).json({ message: "Session expired" });
   }
 

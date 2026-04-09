@@ -12,6 +12,8 @@ import {
 import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
 import { setupLocalAuth, isAuthenticated } from "./localAuth";
 import { ManagerAgent } from "./orchestrator/ManagerAgent";
+import { checkTiers, filterOutputForTier3 } from "./middleware/TierEnforcement";
+import { logSecurityEvent, getRecentSecurityEvents } from "./services/SecurityAudit";
 import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
@@ -130,6 +132,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { content, stream = true } = req.body;
 
       if (!content) return res.status(400).json({ error: "Message required" });
+
+      const tierCheck = await checkTiers(content, req.user?.claims?.sub || "unknown", req.ip || "");
+      if (tierCheck.blocked) {
+        const blockedMsg = await storage.createMessage(
+          insertMessageSchema.parse({ conversationId, role: "assistant", content: tierCheck.reply })
+        );
+        if (stream) {
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          res.write(`data: ${JSON.stringify({ type: "done", message: blockedMsg })}\n\n`);
+          res.end();
+        } else {
+          res.json({ aiMessage: blockedMsg });
+        }
+        return;
+      }
 
       // Save user message
       const userMessage = await storage.createMessage(
@@ -278,7 +297,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      const response = await ManagerAgent.route({ userId, message, conversationId });
+      const ip = req.ip || "";
+      const response = await ManagerAgent.route({ userId, message, conversationId, ip });
 
       // Save agent response
       if (conversationId) {
@@ -411,6 +431,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       entry.status = "approved";
       entry.resolvedAt = new Date().toISOString();
       await fs.writeFile(APPROVAL_QUEUE_PATH, JSON.stringify(queue, null, 2));
+      await logSecurityEvent({
+        type: "approval.approved",
+        userId: req.user?.claims?.sub,
+        detail: `Approved: ${entry.message?.slice(0, 80)}`,
+      });
       res.json({ success: true, entry });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -429,10 +454,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       entry.resolvedAt = new Date().toISOString();
       entry.rejectionReason = reason || "Rejected by admin";
       await fs.writeFile(APPROVAL_QUEUE_PATH, JSON.stringify(queue, null, 2));
+      await logSecurityEvent({
+        type: "approval.rejected",
+        userId: req.user?.claims?.sub,
+        detail: `Rejected: ${entry.message?.slice(0, 80)} — Reason: ${entry.rejectionReason}`,
+      });
       res.json({ success: true, entry });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
+  });
+
+  app.get("/api/admin/security-log", isAuthenticated, async (_req, res) => {
+    const events = await getRecentSecurityEvents(100);
+    res.json({ events });
   });
 
   // Legacy endpoint

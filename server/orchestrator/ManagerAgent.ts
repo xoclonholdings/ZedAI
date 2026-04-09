@@ -5,6 +5,8 @@ import { OperationsAgent, type AgentRequest, type AgentResponse } from "../agent
 import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/IntelligenceAgent";
 import { IDEOperatorAgent } from "../agents/ide-operator/IDEOperatorAgent";
 import { AudioEngineerAgent } from "../agents/audio-engineer/AudioEngineerAgent";
+import { injectMemory } from "../services/MemoryInjector";
+import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 
 const CONFIG_DIR = path.resolve(process.cwd(), "hub/config");
 const LOG_DIR = path.resolve(process.cwd(), "hub/logs");
@@ -21,6 +23,7 @@ interface OrchestratorRequest {
   message: string;
   conversationId?: string;
   context?: Record<string, any>;
+  ip?: string;
 }
 
 interface OrchestratorResponse {
@@ -28,6 +31,8 @@ interface OrchestratorResponse {
   agent: string;
   requiresApproval?: boolean;
   pendingApproval?: string;
+  blocked?: boolean;
+  tier?: number;
   metadata?: Record<string, any>;
 }
 
@@ -61,10 +66,29 @@ export class ManagerAgent {
 
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
     const config = await this.loadConfig();
-    const agent = this.selectAgent(request.message, config);
 
+    const tierCheck = await checkTiers(
+      request.message,
+      request.userId,
+      request.ip || "unknown"
+    );
+    if (tierCheck.blocked) {
+      return {
+        reply: tierCheck.reply,
+        agent: "ManagerAgent",
+        blocked: true,
+        tier: tierCheck.tier,
+      };
+    }
+
+    const memory = await injectMemory("ManagerAgent");
+
+    const agent = this.selectAgent(request.message, config);
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await this.logRouting(request, agent);
+
+    let reply: string;
+    let extra: Partial<OrchestratorResponse> = {};
 
     switch (agent) {
       case "IntelligenceAgent": {
@@ -73,40 +97,33 @@ export class ManagerAgent {
           query: request.message,
           depth: request.message.length > 100 ? "deep" : "shallow",
           conversationId: request.conversationId,
+          memoryContext: memory.formatted,
         };
         const brief = await IntelligenceAgent.research(researchReq);
-        return {
-          reply: this.formatBrief(brief),
-          agent: "IntelligenceAgent",
-          metadata: { brief },
-        };
+        reply = this.formatBrief(brief);
+        extra = { metadata: { brief } };
+        break;
       }
 
       case "IDEOperatorAgent": {
         if (!IDEOperatorAgent.isActive()) {
           return {
-            reply: "The IDE Operator Agent is not yet active. It requires ADMIN setup. Check agents/ide-operator/SKILL.md.",
+            reply: "The IDE Operator Agent is not yet active. It requires ADMIN setup.",
             agent: "IDEOperatorAgent",
           };
         }
-        const resp = await IDEOperatorAgent.process({
-          userId: request.userId,
-          task: request.message,
-        });
+        const resp = await IDEOperatorAgent.process({ userId: request.userId, task: request.message });
         return { reply: resp.message, agent: resp.agent };
       }
 
       case "AudioEngineerAgent": {
         if (!AudioEngineerAgent.isActive()) {
           return {
-            reply: "The Audio Engineer Agent is not yet active. It requires DAW setup. Check agents/audio-engineer/SKILL.md.",
+            reply: "The Audio Engineer Agent is not yet active. It requires DAW setup.",
             agent: "AudioEngineerAgent",
           };
         }
-        const resp = await AudioEngineerAgent.process({
-          userId: request.userId,
-          task: request.message,
-        });
+        const resp = await AudioEngineerAgent.process({ userId: request.userId, task: request.message });
         return { reply: resp.message, agent: resp.agent };
       }
 
@@ -117,16 +134,25 @@ export class ManagerAgent {
           message: request.message,
           conversationId: request.conversationId,
           context: request.context,
+          memoryContext: memory.formatted,
         };
         const opResp: AgentResponse = await OperationsAgent.process(opReq);
-        return {
-          reply: opResp.reply,
-          agent: "OperationsAgent",
+        reply = opResp.reply;
+        extra = {
           requiresApproval: opResp.requiresApproval,
           metadata: { actions: opResp.actions },
         };
+        break;
       }
     }
+
+    reply = filterOutputForTier3(reply);
+
+    return {
+      reply,
+      agent,
+      ...extra,
+    };
   }
 
   private static selectAgent(message: string, config: HubConfig): AgentName {
@@ -135,7 +161,8 @@ export class ManagerAgent {
 
     const researchKeywords: string[] = params.agent_routing?.research_keywords || [
       "research", "find", "analyze", "trend", "market", "github", "news",
-      "what is", "how does", "who is", "explain", "summarize",
+      "what is", "how does", "who is", "explain", "summarize", "what are",
+      "latest", "current", "happening", "tell me about",
     ];
 
     const ideKeywords = ["code", "debug", "refactor", "pull request", "pr", "commit", "repository", "bug fix"];

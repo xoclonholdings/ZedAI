@@ -1,0 +1,91 @@
+import fs from "fs/promises";
+import path from "path";
+
+const CWD = process.cwd();
+const WORKING_MEMORY = path.resolve(CWD, "hub/shared-memory/working/current-tasks.md");
+const EPISODIC_MEMORY = path.resolve(CWD, "hub/shared-memory/episodic/email-decisions.json");
+const APPROVAL_QUEUE = path.resolve(CWD, "hub/shared-memory/episodic/approval-queue.json");
+const CONSENSUS = path.resolve(CWD, "hub/shared-memory/consensus/posting-guidelines.md");
+
+const MAX_WORKING_CHARS = 1200;
+const MAX_EPISODIC_ENTRIES = 5;
+const MAX_CONSENSUS_CHARS = 800;
+
+export interface InjectedMemory {
+  working: string;
+  episodic: string;
+  consensus: string;
+  formatted: string;
+}
+
+async function loadWorking(): Promise<string> {
+  try {
+    const raw = await fs.readFile(WORKING_MEMORY, "utf-8");
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === "# Working Memory — Active Tasks\n*ZED Operations Agent — Working Context*\n\n<!-- This file is updated by OperationsAgent during each session -->\n<!-- Format: ## [ISO timestamp] User: [userId] -->\n\n## Session Initialized\nSystem ready. No active tasks.") {
+      return "No active tasks recorded yet.";
+    }
+    return trimmed.slice(-MAX_WORKING_CHARS);
+  } catch {
+    return "Working memory not yet initialized.";
+  }
+}
+
+async function loadEpisodic(): Promise<string> {
+  try {
+    const lines: string[] = [];
+
+    try {
+      const raw = await fs.readFile(EPISODIC_MEMORY, "utf-8");
+      const data = JSON.parse(raw);
+      const entries = (data.entries || []).slice(-MAX_EPISODIC_ENTRIES);
+      for (const e of entries) {
+        lines.push(`[${e.timestamp?.slice(0, 10) ?? "?"}] ${e.message} → ${e.outcome ?? "unknown"}`);
+      }
+    } catch {}
+
+    try {
+      const raw = await fs.readFile(APPROVAL_QUEUE, "utf-8");
+      const data = JSON.parse(raw);
+      const pending = (data.entries || []).filter((e: any) => e.status === "pending");
+      if (pending.length > 0) {
+        lines.push(`PENDING APPROVALS (${pending.length}): ${pending.slice(0, 3).map((e: any) => e.message?.slice(0, 60)).join(" | ")}`);
+      }
+    } catch {}
+
+    return lines.length > 0 ? lines.join("\n") : "No recent decisions or pending approvals.";
+  } catch {
+    return "Episodic memory not yet initialized.";
+  }
+}
+
+async function loadConsensus(): Promise<string> {
+  try {
+    const raw = await fs.readFile(CONSENSUS, "utf-8");
+    return raw.trim().slice(0, MAX_CONSENSUS_CHARS);
+  } catch {
+    return "Be professional, direct, and brand-aligned.";
+  }
+}
+
+export async function injectMemory(agentName: string): Promise<InjectedMemory> {
+  const [working, episodic, consensus] = await Promise.all([
+    loadWorking(),
+    loadEpisodic(),
+    loadConsensus(),
+  ]);
+
+  const formatted = `## ZED Hub Memory Context
+**Agent**: ${agentName}
+
+### Active Priorities (Working Memory)
+${working}
+
+### Recent Decisions & Pending Approvals (Episodic)
+${episodic}
+
+### Brand Voice & Guidelines (Consensus)
+${consensus}`;
+
+  return { working, episodic, consensus, formatted };
+}

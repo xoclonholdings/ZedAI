@@ -1,8 +1,0 @@
-import { Express } from "express";
-import chatRoutes from "./chatRoutes";
-
-export async function registerRoutes(app: Express) {
-  app.use("/api", chatRoutes);
-
-  return app;
-}
