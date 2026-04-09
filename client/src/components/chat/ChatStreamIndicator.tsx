@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Sparkles } from "lucide-react";
-import zLogoPath from "@assets/IMG_2227_1753477194826.png";
+import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatStreamIndicatorProps {
   streamingMessage?: string;

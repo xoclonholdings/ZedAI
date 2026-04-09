@@ -2,7 +2,7 @@ import { MessageSquare, Mic, Paperclip, Settings, Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button";
 import type { ConversationMode } from "@shared/schema";
-import zLogoPath from "@assets/IMG_2227_1753477194826.png";
+import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatControlsProps {
   currentMode: ConversationMode;

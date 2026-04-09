@@ -9,7 +9,7 @@ import {
   Info,
   Bot
 } from "lucide-react";
-import zLogoPath from "@assets/IMG_2227_1753477194826.png";
+import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 import type { ConversationMode } from "@shared/schema";
 
 interface ModeSelectorProps {
