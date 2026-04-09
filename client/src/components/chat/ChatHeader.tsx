@@ -1,19 +1,13 @@
-import { Menu, Rss, Sparkles } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatHeaderProps {
-  showSocialFeed: boolean;
-  onToggleSocialFeed: () => void;
   isMobile?: boolean;
   onOpenSidebar?: () => void;
 }
 
 export default function ChatHeader({
-  showSocialFeed,
-  onToggleSocialFeed,
   isMobile = false,
   onOpenSidebar,
 }: ChatHeaderProps) {
@@ -41,27 +35,6 @@ export default function ChatHeader({
             Enhanced AI Assistant
           </p>
         </div>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onToggleSocialFeed}
-          className={`zed-button rounded-xl btn-touch ${
-            showSocialFeed ? "text-purple-400" : "text-muted-foreground"
-          }`}
-        >
-          <Rss size={16} />
-        </Button>
-
-        <Badge
-          variant="secondary"
-          className="zed-glass border-purple-500/20 text-purple-300"
-        >
-          <Sparkles size={12} className="mr-1" />
-          Active
-        </Badge>
       </div>
     </div>
   );

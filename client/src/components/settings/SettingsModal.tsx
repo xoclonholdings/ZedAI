@@ -11,12 +11,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 
 import { useAuth } from "@/components/auth/UseAuth";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
 import NotificationsSettings from "./NotificationsSettings";
 import PersonalizationSettings from "./PersonalizationSettings";
+import RulesSettings from "./RulesSettings";
 import SettingsAppControls from "./SettingsAppControls";
 import SettingsMainMenu from "./SettingsMainMenu";
 import SettingsSuggestions from "./SettingsSuggestions";
@@ -57,7 +59,7 @@ export default function SettingsModal() {
   });
 
   const { user } = useAuth() as { user?: any };
-  const isAdmin = user?.username === "Admin";
+  const isAdmin = true; // Always admin in single-admin mode
 
   function BackButton() {
     return (
@@ -89,8 +91,8 @@ export default function SettingsModal() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="zed-glass max-h-[90vh] max-w-4xl overflow-y-auto border-white/10">
-        <DialogHeader>
+      <DialogContent className="zed-glass max-h-[90vh] max-w-2xl overflow-hidden border-white/10 flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <img src={zLogoPath} alt="Z" className="h-4 w-4" />
             <span>
@@ -102,11 +104,11 @@ export default function SettingsModal() {
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">
-            Manage your account, preferences, and controls.
+            Manage your preferences, rules, and security.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[70vh] space-y-6 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {activeSection === "main" && (
             <div className="space-y-6">
               <SettingsMainMenu isAdmin={isAdmin} onNavigate={setActiveSection} />
@@ -128,10 +130,10 @@ export default function SettingsModal() {
             </div>
           )}
 
-          {activeSection === "admin" && isAdmin && (
+          {activeSection === "rules" && (
             <div>
               <BackButton />
-              <UserManagement />
+              <RulesSettings />
             </div>
           )}
 
@@ -170,8 +172,8 @@ export default function SettingsModal() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">
-                    View and manage your archived conversations.
+                  <p className="text-sm text-muted-foreground">
+                    No archived conversations yet. Conversations you archive will appear here.
                   </p>
                 </CardContent>
               </Card>
@@ -181,32 +183,14 @@ export default function SettingsModal() {
           {activeSection === "security" && (
             <div>
               <BackButton />
+              <AdminSecuritySettings />
+            </div>
+          )}
 
-              {isAdmin ? (
-                <AdminSecuritySettings />
-              ) : (
-                <Card className="zed-glass border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Lock className="h-5 w-5" />
-                      Security
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <p>• Session expires after inactivity</p>
-                      <p>• Enhanced security with device verification</p>
-                      <p>• Multi-factor authentication enabled</p>
-                      <p>
-                        • Username:{" "}
-                        <span className="font-medium text-foreground">
-                          {user?.username || "user"}
-                        </span>
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+          {activeSection === "admin" && isAdmin && (
+            <div>
+              <BackButton />
+              <UserManagement />
             </div>
           )}
         </div>

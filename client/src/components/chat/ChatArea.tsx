@@ -9,8 +9,6 @@ import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
-import ModeSelector from "./ModeSelector";
-import SocialFeed from "../social/SocialFeed";
 
 import type {
   Conversation,
@@ -37,8 +35,6 @@ export default function ChatArea({
   onOpenSidebar,
 }: ChatAreaProps) {
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [showSocialFeed, setShowSocialFeed] = useState(false);
-  const [showModeSelector, setShowModeSelector] = useState(false);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const [currentMode, setCurrentMode] = useState<ConversationMode>(
     (conversation?.mode as ConversationMode) || "chat",
@@ -128,7 +124,7 @@ export default function ChatArea({
     }
   }
 
-  async function handleModeChange(mode: ConversationMode) {
+  async function handleModeToggle(mode: ConversationMode) {
     setCurrentMode(mode);
 
     if (conversationId) {
@@ -138,8 +134,6 @@ export default function ChatArea({
         console.error("Failed to update mode:", error);
       }
     }
-
-    setShowModeSelector(false);
   }
 
   function handleFileUpload() {
@@ -162,8 +156,6 @@ export default function ChatArea({
         <ChatBackground />
 
         <ChatHeader
-          showSocialFeed={showSocialFeed}
-          onToggleSocialFeed={() => setShowSocialFeed((prev) => !prev)}
           isMobile={isMobile}
           onOpenSidebar={onOpenSidebar}
         />
@@ -184,47 +176,21 @@ export default function ChatArea({
           />
         )}
 
-        {/* Input bar + mode selector slide-up */}
-        <div className="relative flex-shrink-0 z-10">
-          {showModeSelector && (
-            <div className="absolute bottom-full left-0 right-0 border-t border-white/10 zed-glass max-h-[55vh] overflow-y-auto">
-              <div className="p-4 md:p-6">
-                <div className="max-w-4xl mx-auto">
-                  <ModeSelector
-                    selectedMode={currentMode}
-                    onModeChange={handleModeChange}
-                    disabled={updateModeMutation.isPending}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="border-t border-white/10 zed-glass p-4 md:p-6 flex-shrink-0 z-10">
+          <div className="max-w-4xl mx-auto space-y-3">
+            <ChatControls
+              currentMode={currentMode}
+              onModeToggle={handleModeToggle}
+              onOpenFileUpload={() => setShowFileUpload(true)}
+            />
 
-          <div className="border-t border-white/10 zed-glass p-4 md:p-6">
-            <div className="max-w-4xl mx-auto space-y-3">
-              <ChatControls
-                currentMode={currentMode}
-                filesCount={files.length}
-                onOpenFileUpload={() => setShowFileUpload(true)}
-                onToggleModeSelector={() =>
-                  setShowModeSelector((prev) => !prev)
-                }
-              />
-
-              <ChatInput
-                onSend={handleSend}
-                isLoading={sendMessageMutation.isPending || isStreaming}
-              />
-            </div>
+            <ChatInput
+              onSend={handleSend}
+              isLoading={sendMessageMutation.isPending || isStreaming}
+            />
           </div>
         </div>
       </div>
-
-      {showSocialFeed && !isMobile && (
-        <div className="w-96 border-l border-white/10 zed-sidebar">
-          <SocialFeed />
-        </div>
-      )}
     </div>
   );
 }
