@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, ChevronLeft, Lock, Settings } from "lucide-react";
+import { Archive, ChevronLeft, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +11,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 
-import { useAuth } from "@/components/auth/UseAuth";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
 import NotificationsSettings from "./NotificationsSettings";
@@ -27,38 +26,11 @@ import UserManagement from "./UserManagement";
 
 const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhODU1Zjc7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ViNDg5OTtzdG9wLW9wYWNpdHk6MSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjgiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPjwvc3ZnPg==";
 
-interface AppSettings {
-  notifications: boolean;
-  hapticFeedback: boolean;
-  autoSpellCorrect: boolean;
-  autoSendDictation: boolean;
-  backgroundConversations: boolean;
-  autocomplete: boolean;
-  trendingSearches: boolean;
-  followUpSuggestions: boolean;
-  colorScheme: "dark" | "light" | "auto";
-  language: string;
-  voiceType: string;
-}
-
 export default function SettingsModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("main");
-  const [appSettings, setAppSettings] = useState<AppSettings>({
-    notifications: true,
-    hapticFeedback: true,
-    autoSpellCorrect: true,
-    autoSendDictation: false,
-    backgroundConversations: true,
-    autocomplete: false,
-    trendingSearches: true,
-    followUpSuggestions: false,
-    colorScheme: "dark",
-    language: "English",
-    voiceType: "Ember",
-  });
+  const { appSettings, setAppSettings } = useAppSettings();
 
-  const { user } = useAuth() as { user?: any };
   const isAdmin = true; // Always admin in single-admin mode
 
   function BackButton() {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { notifyMessage } from "@/lib/notify";
 
 import ChatBackground from "./ChatBackground";
 import ChatControls from "./ChatControls";
@@ -149,6 +150,10 @@ export default function ChatArea({
                   aiMessage,
                 ];
               });
+              // Browser notification when tab is in background
+              if (data.type === "done" && aiMessage?.content) {
+                notifyMessage("ZED", aiMessage.content);
+              }
               // Refresh in background
               queryClient.invalidateQueries({
                 queryKey: ["/api/conversations", convId, "messages"],

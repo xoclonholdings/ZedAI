@@ -114,6 +114,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/conversations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub || "user_001";
+      const all = await storage.getConversationsByUser(userId);
+      let deleted = 0;
+      for (const conv of all) {
+        try { await storage.deleteConversation(conv.id); deleted++; } catch {}
+      }
+      await logSecurityEvent({ type: "data.clear_all", userId, detail: `Cleared ${deleted} conversations` });
+      res.json({ success: true, deleted });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // ─── Messages ─────────────────────────────────────────────────────────────
 
   app.get("/api/conversations/:id/messages", isAuthenticated, async (req: any, res) => {
