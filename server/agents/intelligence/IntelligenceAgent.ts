@@ -1,7 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { generateFromOllama } from "../../services/Ollama/OllamaService";
-import { buildOllamaPrompt } from "../../services/Ollama/OllamaContextBuilder";
+import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 
 const CWD = process.cwd();
 const SKILL_PATH = path.resolve(CWD, "agents/intelligence/SKILL.md");
@@ -43,29 +42,28 @@ export class IntelligenceAgent {
   static async research(request: ResearchRequest): Promise<ResearchBrief> {
     const skill = await this.loadSkill();
 
-    const systemContext = `
-${skill}
+    const systemPrompt = `${skill}
 
-## Research Task
+## Current Research Task
 Query: ${request.query}
 Depth: ${request.depth || "shallow"}
 User: ${request.userId}
 
 Always produce output in this exact format:
-BRIEF: [topic]
+BRIEF: [topic summary]
 CONFIDENCE: [high|medium|low]
 KEY_FINDINGS:
 - finding 1
 - finding 2
-IMPLICATIONS: [what this means]
-RECOMMENDED_ACTION: [what to do with this]
-    `.trim();
+- finding 3
+IMPLICATIONS: [what this means for the user]
+RECOMMENDED_ACTION: [what to do next]`.trim();
 
-    const prompt = buildOllamaPrompt(request.query, {
-      systemPrompt: systemContext,
-    });
+    const rawReply = await generateChatFromOllama(
+      [{ role: "user", content: request.query }],
+      systemPrompt
+    );
 
-    const rawReply = await generateFromOllama(prompt);
     const brief = this.parseBrief(request.query, rawReply);
 
     await this.storeToSemantic(brief);
@@ -75,13 +73,13 @@ RECOMMENDED_ACTION: [what to do with this]
   }
 
   static async synthesize(documents: string[], topic: string): Promise<string> {
-    const prompt = buildOllamaPrompt(
-      `Synthesize the following documents about "${topic}" into a concise research brief:\n\n${documents.join("\n\n---\n\n")}`,
-      {
-        systemPrompt: "You are a research synthesis expert. Be analytical, cite sources, flag speculation.",
-      }
+    return generateChatFromOllama(
+      [{
+        role: "user",
+        content: `Synthesize the following documents about "${topic}" into a concise research brief:\n\n${documents.join("\n\n---\n\n")}`,
+      }],
+      "You are a research synthesis expert. Be analytical, cite sources, flag speculation. Lead with the most important finding."
     );
-    return generateFromOllama(prompt);
   }
 
   private static parseBrief(query: string, raw: string): ResearchBrief {

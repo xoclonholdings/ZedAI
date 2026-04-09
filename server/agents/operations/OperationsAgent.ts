@@ -1,12 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
-import { generateFromOllama } from "../../services/Ollama/OllamaService";
-import { buildOllamaPrompt } from "../../services/Ollama/OllamaContextBuilder";
+import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 
 const CWD = process.cwd();
 const SKILL_PATH = path.resolve(CWD, "agents/operations/SKILL.md");
 const WORKING_MEMORY = path.resolve(CWD, "hub/shared-memory/working/current-tasks.md");
 const EPISODIC_MEMORY = path.resolve(CWD, "hub/shared-memory/episodic/email-decisions.json");
+const APPROVAL_QUEUE = path.resolve(CWD, "hub/shared-memory/episodic/approval-queue.json");
 const GUIDELINES = path.resolve(CWD, "hub/shared-memory/consensus/posting-guidelines.md");
 const LOG_DIR = path.resolve(CWD, "hub/logs/operations");
 
@@ -60,22 +60,19 @@ export class OperationsAgent {
     const guidelines = await this.loadGuidelines();
     const actions: AgentAction[] = [];
 
-    const systemContext = `
-${skill}
+    const systemPrompt = `${skill}
 
 ## Brand Voice Guidelines
 ${guidelines}
 
-## Current Request
+## Session Context
 User: ${request.userId}
-ConversationID: ${request.conversationId || "none"}
-    `.trim();
+ConversationID: ${request.conversationId || "none"}`.trim();
 
-    const prompt = buildOllamaPrompt(request.message, {
-      systemPrompt: systemContext,
-    });
-
-    const reply = await generateFromOllama(prompt);
+    const reply = await generateChatFromOllama(
+      [{ role: "user", content: request.message }],
+      systemPrompt
+    );
 
     const requiresApproval = this.checkApprovalRequired(request.message, reply);
 
@@ -85,6 +82,7 @@ ConversationID: ${request.conversationId || "none"}
         description: "This action requires ADMIN approval before execution",
         data: { message: request.message, draft: reply },
       });
+      await this.queueForApproval(request, reply);
     }
 
     await this.writeToMemory(request, reply, actions);
@@ -105,6 +103,29 @@ ConversationID: ${request.conversationId || "none"}
     ];
     const lower = message.toLowerCase();
     return approvalTriggers.some((t) => lower.includes(t));
+  }
+
+  private static async queueForApproval(request: AgentRequest, draft: string): Promise<void> {
+    try {
+      let queue: any = { version: "1.0", entries: [] };
+      try {
+        const raw = await fs.readFile(APPROVAL_QUEUE, "utf-8");
+        queue = JSON.parse(raw);
+      } catch {}
+      queue.entries.push({
+        id: `approval-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        status: "pending",
+        userId: request.userId,
+        conversationId: request.conversationId || null,
+        message: request.message,
+        draft: draft.slice(0, 500),
+        agent: "OperationsAgent",
+      });
+      await fs.writeFile(APPROVAL_QUEUE, JSON.stringify(queue, null, 2));
+    } catch (err) {
+      console.warn("[OperationsAgent] Approval queue write failed:", err);
+    }
   }
 
   private static async writeToMemory(

@@ -362,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       yaml.load(content); // validate YAML
       await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
       await fs.writeFile(path.join(HUB_CONFIG_DIR, filename), content, "utf-8");
-      ManagerAgent["config"] = null as any; // reset cached config
+      ManagerAgent.flushConfig();
       res.json({ success: true });
     } catch (err: any) {
       res.status(400).json({ error: err.message });
@@ -384,6 +384,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ entries: entries.slice(-100) });
     } catch {
       res.json({ entries: [] });
+    }
+  });
+
+  // ─── Approval Queue ────────────────────────────────────────────────────────
+
+  const APPROVAL_QUEUE_PATH = path.resolve(process.cwd(), "hub/shared-memory/episodic/approval-queue.json");
+
+  app.get("/api/admin/approval-queue", isAuthenticated, async (_req, res) => {
+    try {
+      const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
+      const queue = JSON.parse(raw);
+      res.json(queue);
+    } catch {
+      res.json({ version: "1.0", entries: [] });
+    }
+  });
+
+  app.post("/api/admin/approve/:id", isAuthenticated, async (req: any, res) => {
+    const { id } = req.params;
+    try {
+      const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
+      const queue = JSON.parse(raw);
+      const entry = queue.entries.find((e: any) => e.id === id);
+      if (!entry) return res.status(404).json({ error: "Entry not found" });
+      entry.status = "approved";
+      entry.resolvedAt = new Date().toISOString();
+      await fs.writeFile(APPROVAL_QUEUE_PATH, JSON.stringify(queue, null, 2));
+      res.json({ success: true, entry });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/reject/:id", isAuthenticated, async (req: any, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    try {
+      const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
+      const queue = JSON.parse(raw);
+      const entry = queue.entries.find((e: any) => e.id === id);
+      if (!entry) return res.status(404).json({ error: "Entry not found" });
+      entry.status = "rejected";
+      entry.resolvedAt = new Date().toISOString();
+      entry.rejectionReason = reason || "Rejected by admin";
+      await fs.writeFile(APPROVAL_QUEUE_PATH, JSON.stringify(queue, null, 2));
+      res.json({ success: true, entry });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
     }
   });
 

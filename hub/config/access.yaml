@@ -1,0 +1,47 @@
+ollama:
+  host: "http://localhost:11434"
+  shared_with_zeta_core: true
+  timeout_ms: 60000
+
+local_services:
+  database: "postgresql (Replit managed)"
+  vector_store: "filesystem-based (hub/shared-memory/semantic)"
+  log_store: "filesystem (hub/logs)"
+
+external_apis:
+  policy: "no_paid_apis"
+  approved_free_tier:
+    search:
+      - name: "brave_search"
+        env_key: "BRAVE_SEARCH_API_KEY"
+        status: "optional_not_configured"
+      - name: "serper"
+        env_key: "SERPER_API_KEY"
+        status: "optional_not_configured"
+    github:
+      - name: "github_readonly"
+        env_key: "GITHUB_TOKEN"
+        status: "optional_not_configured"
+        permissions: "read_only"
+    firewall:
+      - name: "fantasma_soc_webhook"
+        env_key: "FANTASMA_WEBHOOK_URL"
+        status: "optional_not_configured"
+      - name: "zeta_core_sse"
+        env_key: "ZETA_CORE_SSE_URL"
+        status: "optional_not_configured"
+
+paths:
+  hub_root: "hub/"
+  config: "hub/config/"
+  memory_working: "hub/shared-memory/working/"
+  memory_episodic: "hub/shared-memory/episodic/"
+  memory_semantic: "hub/shared-memory/semantic/"
+  memory_consensus: "hub/shared-memory/consensus/"
+  templates: "hub/templates/"
+  logs: "hub/logs/"
+
+trust_model:
+  current_mode: "single_admin"
+  multi_user_ready: false
+  multi_user_stub: "Trust/family multi-user support is stubbed. Enable with ADMIN approval."

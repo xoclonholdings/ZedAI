@@ -1,0 +1,49 @@
+model_selection:
+  primary: "qwen2.5:7b"
+  fallback: "llama3.2"
+  vision: "llava-phi3"
+  embedding: "nomic-embed-text"
+  selection_strategy: "try_primary_then_fallback"
+
+generation_defaults:
+  temperature: 0.7
+  top_p: 0.9
+  max_tokens: 2048
+  stream: true
+  context_window: 8192
+
+agent_parameters:
+  operations:
+    temperature: 0.6
+    max_tokens: 1500
+    tool_timeout_ms: 10000
+  intelligence:
+    temperature: 0.3
+    max_tokens: 2000
+    research_depth_default: "shallow"
+    deep_research_threshold: "User explicitly requests deep dive or research brief"
+  ide_operator:
+    status: "STUBBED"
+    temperature: 0.2
+    max_tokens: 4000
+  audio_engineer:
+    status: "STUBBED"
+    temperature: 0.5
+    max_tokens: 1000
+
+routing:
+  orchestrator_timeout_ms: 30000
+  parallel_agents: false
+  log_routing_decisions: true
+  routing_log_path: "hub/logs/routing/decisions.jsonl"
+
+memory:
+  working_memory_max_entries: 50
+  episodic_max_entries: 500
+  semantic_store_max_mb: 100
+  context_injection_max_chars: 3000
+
+costs:
+  ollama_is_free: true
+  external_api_budget_usd: 0
+  alert_on_external_calls: true
