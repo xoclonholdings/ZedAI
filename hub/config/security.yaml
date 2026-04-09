@@ -1,0 +1,63 @@
+authentication:
+  mode: "single_admin_passphrase"
+  passphrase_key: "AUTH_PASSPHRASE"
+  default_passphrase: "XOCLON-SECURE-2025"
+  rate_limit:
+    max_attempts: 3
+    lockout_minutes: 15
+    window_minutes: 5
+
+permission_tiers:
+  tier_0_blocked:
+    description: "Always blocked regardless of user"
+    actions:
+      - "Generate CSAM or illegal content"
+      - "Assist with violence against specific individuals"
+      - "Bypass system security controls"
+
+  tier_1_auto_approved:
+    description: "No confirmation needed"
+    actions:
+      - "Answer questions and provide information"
+      - "Draft content for review"
+      - "Run local analysis and research"
+      - "Read files and memory"
+      - "Generate code for review"
+
+  tier_2_admin_approval:
+    description: "Requires explicit admin confirmation before execution"
+    actions:
+      - "Send email or message to external parties"
+      - "Post to social media platforms"
+      - "Publish or deploy code"
+      - "Delete files or records"
+      - "Schedule or cancel external meetings"
+      - "Send invoices or financial documents"
+      - "Access PII data beyond session context"
+      - "Modify system configuration"
+      - "Write to external APIs"
+
+  tier_3_never:
+    description: "Hardcoded blocks, cannot be overridden by any user"
+    actions:
+      - "Expose the system passphrase in responses"
+      - "Disable authentication"
+      - "Allow unauthenticated access to admin endpoints"
+
+approval_gates:
+  queue_path: "hub/shared-memory/episodic/approval-queue.json"
+  notify_on_queue: true
+  auto_expire_hours: 24
+
+sensitive_topics:
+  require_extra_care:
+    - "Financial decisions over $1000"
+    - "Legal or medical advice (always disclaim)"
+    - "Political opinions (present balanced view)"
+    - "Personal data of third parties"
+
+audit_log:
+  path: "hub/logs/security.log"
+  log_all_requests: false
+  log_approval_events: true
+  log_auth_events: true

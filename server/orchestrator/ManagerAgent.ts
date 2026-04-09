@@ -162,6 +162,11 @@ ${findings}
 **Recommended Action**: ${brief.recommendedAction}`;
   }
 
+  static flushConfig(): void {
+    this.config = null;
+    console.log("[ManagerAgent] Config cache flushed — will reload from disk on next request");
+  }
+
   private static async logRouting(request: OrchestratorRequest, agent: AgentName): Promise<void> {
     try {
       await fs.mkdir(LOG_DIR, { recursive: true });

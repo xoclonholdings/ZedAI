@@ -6,6 +6,7 @@ import {
   Bot,
   CheckCircle,
   ChevronLeft,
+  Clock,
   Database,
   Edit3,
   FileText,
@@ -13,6 +14,8 @@ import {
   Save,
   Server,
   Shield,
+  ThumbsDown,
+  ThumbsUp,
   Zap,
 } from "lucide-react";
 
@@ -23,24 +26,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth/UseAuth";
 import zedLogo from "@assets/Zed_logo.png";
 
-type Section = "overview" | "ruleset" | "logs";
+type Section = "overview" | "ruleset" | "approvals" | "logs";
 
 export default function Admin() {
   const [, navigate] = useLocation();
   const { user } = useAuth() as { user?: any };
   const [section, setSection] = useState<Section>("overview");
 
-  // System status
   const [status, setStatus] = useState<any>(null);
   const [statusLoading, setStatusLoading] = useState(true);
 
-  // Ruleset
   const [ruleset, setRuleset] = useState<Record<string, string>>({});
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  // Logs
+  const [approvals, setApprovals] = useState<any[]>([]);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
+
   const [logs, setLogs] = useState<string[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
@@ -51,6 +54,7 @@ export default function Admin() {
   useEffect(() => {
     if (section === "ruleset" && Object.keys(ruleset).length === 0) fetchRuleset();
     if (section === "logs") fetchLogs();
+    if (section === "approvals") fetchApprovals();
   }, [section]);
 
   async function fetchStatus() {
@@ -67,6 +71,18 @@ export default function Admin() {
       const res = await fetch("/api/admin/ruleset", { credentials: "include" });
       if (res.ok) setRuleset(await res.json());
     } catch {}
+  }
+
+  async function fetchApprovals() {
+    setApprovalsLoading(true);
+    try {
+      const res = await fetch("/api/admin/approval-queue", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setApprovals((data.entries || []).reverse());
+      }
+    } catch {}
+    setApprovalsLoading(false);
   }
 
   async function fetchLogs() {
@@ -103,6 +119,26 @@ export default function Admin() {
     }
   }
 
+  async function resolveApproval(id: string, action: "approve" | "reject") {
+    try {
+      const res = await fetch(`/api/admin/${action === "approve" ? "approve" : "reject"}/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        setApprovals((prev) =>
+          prev.map((e) =>
+            e.id === id
+              ? { ...e, status: action === "approve" ? "approved" : "rejected", resolvedAt: new Date().toISOString() }
+              : e
+          )
+        );
+      }
+    } catch {}
+  }
+
   function startEdit(filename: string) {
     setEditingFile(filename);
     setEditContent(ruleset[filename] || "");
@@ -110,10 +146,17 @@ export default function Admin() {
   }
 
   const StatusDot = ({ online }: { online: boolean }) => (
-    <span
-      className={`inline-block w-2 h-2 rounded-full ${online ? "bg-green-400" : "bg-red-400"}`}
-    />
+    <span className={`inline-block w-2 h-2 rounded-full ${online ? "bg-green-400" : "bg-red-400"}`} />
   );
+
+  const pendingCount = approvals.filter((e) => e.status === "pending").length;
+
+  const NAV_TABS: { id: Section; label: string; badge?: number }[] = [
+    { id: "overview", label: "System Overview" },
+    { id: "ruleset", label: "Ruleset Editor" },
+    { id: "approvals", label: "Approval Queue", badge: pendingCount },
+    { id: "logs", label: "Agent Logs" },
+  ];
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -136,43 +179,42 @@ export default function Admin() {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className="zed-glass border-purple-500/30 text-purple-300 text-xs">
-            <Shield size={10} className="mr-1" />
-            {user?.username || "Admin"}
-          </Badge>
-        </div>
+        <Badge className="zed-glass border-purple-500/30 text-purple-300 text-xs">
+          <Shield size={10} className="mr-1" />
+          {user?.username || "Admin"}
+        </Badge>
       </div>
 
       {/* Nav tabs */}
       <div className="border-b border-white/10 px-4 flex gap-1 bg-black/60">
-        {(["overview", "ruleset", "logs"] as Section[]).map((s) => (
+        {NAV_TABS.map(({ id, label, badge }) => (
           <button
-            key={s}
-            onClick={() => setSection(s)}
-            className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${
-              section === s
+            key={id}
+            onClick={() => setSection(id)}
+            className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+              section === id
                 ? "text-white border-b-2 border-purple-500"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {s === "overview" ? "System Overview" : s === "ruleset" ? "Ruleset Editor" : "Agent Logs"}
+            {label}
+            {badge != null && badge > 0 && (
+              <span className="bg-pink-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+
         {/* ── Overview ─────────────────────────────────────── */}
         {section === "overview" && (
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">System Status</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={fetchStatus}
-                className="zed-button text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="ghost" size="sm" onClick={fetchStatus} className="zed-button text-muted-foreground hover:text-foreground">
                 <RefreshCw size={14} className="mr-1" />
                 Refresh
               </Button>
@@ -182,7 +224,6 @@ export default function Admin() {
               <div className="text-center text-muted-foreground py-12">Loading…</div>
             ) : status ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Ollama */}
                 <Card className="zed-glass border-white/10">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
@@ -199,11 +240,7 @@ export default function Admin() {
                       <div className="space-y-1">
                         <p className="text-xs text-muted-foreground">Available models:</p>
                         {status.ollama.models.map((m: string) => (
-                          <Badge
-                            key={m}
-                            variant="secondary"
-                            className="zed-glass border-white/10 text-xs mr-1"
-                          >
+                          <Badge key={m} variant="secondary" className="zed-glass border-white/10 text-xs mr-1">
                             {m}
                           </Badge>
                         ))}
@@ -211,15 +248,12 @@ export default function Admin() {
                     ) : (
                       <p className="text-xs text-muted-foreground">
                         No models loaded. Run{" "}
-                        <code className="bg-white/10 px-1 rounded">
-                          ollama pull qwen2.5:7b
-                        </code>
+                        <code className="bg-white/10 px-1 rounded">ollama pull qwen2.5:7b</code>
                       </p>
                     )}
                   </CardContent>
                 </Card>
 
-                {/* Database */}
                 <Card className="zed-glass border-white/10">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
@@ -232,13 +266,10 @@ export default function Admin() {
                       <StatusDot online={status.database === "connected"} />
                       <span className="text-sm capitalize">{status.database}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Neon PostgreSQL via Drizzle ORM
-                    </p>
+                    <p className="text-xs text-muted-foreground">PostgreSQL via Drizzle ORM</p>
                   </CardContent>
                 </Card>
 
-                {/* Orchestrator */}
                 <Card className="zed-glass border-white/10 md:col-span-2">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
@@ -271,7 +302,6 @@ export default function Admin() {
                   </CardContent>
                 </Card>
 
-                {/* Quick actions */}
                 <Card className="zed-glass border-white/10 md:col-span-2">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
@@ -281,30 +311,20 @@ export default function Admin() {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="zed-glass border-white/10"
-                        onClick={() => setSection("ruleset")}
-                      >
+                      <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => setSection("ruleset")}>
                         <Edit3 size={14} className="mr-1" />
                         Edit Ruleset
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="zed-glass border-white/10"
-                        onClick={() => setSection("logs")}
-                      >
+                      <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => setSection("approvals")}>
+                        <Clock size={14} className="mr-1" />
+                        Approval Queue
+                        {pendingCount > 0 && <span className="ml-1 text-pink-400">({pendingCount})</span>}
+                      </Button>
+                      <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => setSection("logs")}>
                         <FileText size={14} className="mr-1" />
                         View Logs
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="zed-glass border-white/10"
-                        onClick={() => navigate("/chat")}
-                      >
+                      <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => navigate("/chat")}>
                         <Server size={14} className="mr-1" />
                         Open Chat
                       </Button>
@@ -313,9 +333,7 @@ export default function Admin() {
                 </Card>
               </div>
             ) : (
-              <div className="text-center text-muted-foreground py-12">
-                Could not fetch system status.
-              </div>
+              <div className="text-center text-muted-foreground py-12">Could not fetch system status.</div>
             )}
           </>
         )}
@@ -325,20 +343,14 @@ export default function Admin() {
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Hub Config Ruleset</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={fetchRuleset}
-                className="zed-button text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="ghost" size="sm" onClick={fetchRuleset} className="zed-button text-muted-foreground hover:text-foreground">
                 <RefreshCw size={14} className="mr-1" />
                 Reload
               </Button>
             </div>
 
             <p className="text-sm text-muted-foreground">
-              YAML configuration files loaded by the ManagerAgent orchestrator. Changes take
-              effect immediately after saving.
+              YAML configuration files loaded by the ManagerAgent orchestrator. Changes take effect immediately after saving.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -398,22 +410,112 @@ export default function Admin() {
                       className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                     >
                       <Save size={14} className="mr-1" />
-                      {saveStatus === "saving"
-                        ? "Saving…"
-                        : saveStatus === "saved"
-                        ? "Saved!"
-                        : saveStatus === "error"
-                        ? "Error — retry"
-                        : "Save Changes"}
+                      {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved!" : saveStatus === "error" ? "Error — retry" : "Save Changes"}
                     </Button>
-                    {saveStatus === "error" && (
-                      <span className="text-xs text-red-400">
-                        Invalid YAML or save failed.
-                      </span>
-                    )}
+                    {saveStatus === "error" && <span className="text-xs text-red-400">Invalid YAML or save failed.</span>}
                   </div>
                 </CardContent>
               </Card>
+            )}
+          </>
+        )}
+
+        {/* ── Approval Queue ────────────────────────────────── */}
+        {section === "approvals" && (
+          <>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Approval Queue</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Actions flagged by agents that require your sign-off before execution.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={fetchApprovals} className="zed-button text-muted-foreground hover:text-foreground">
+                <RefreshCw size={14} className="mr-1" />
+                Refresh
+              </Button>
+            </div>
+
+            {approvalsLoading ? (
+              <div className="text-center text-muted-foreground py-12">Loading…</div>
+            ) : approvals.length === 0 ? (
+              <Card className="zed-glass border-white/10">
+                <CardContent className="py-12 text-center text-muted-foreground text-sm">
+                  <CheckCircle size={32} className="mx-auto mb-3 text-green-400/50" />
+                  No items in the approval queue.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {approvals.map((entry) => (
+                  <Card
+                    key={entry.id}
+                    className={`zed-glass border-white/10 ${
+                      entry.status === "approved"
+                        ? "border-green-500/30"
+                        : entry.status === "rejected"
+                        ? "border-red-500/20 opacity-60"
+                        : "border-yellow-500/30"
+                    }`}
+                  >
+                    <CardContent className="pt-4 pb-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge
+                              className={`text-[10px] ${
+                                entry.status === "pending"
+                                  ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+                                  : entry.status === "approved"
+                                  ? "bg-green-500/20 text-green-300 border-green-500/30"
+                                  : "bg-red-500/20 text-red-300 border-red-500/30"
+                              }`}
+                            >
+                              {entry.status}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {entry.agent} · {new Date(entry.timestamp).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium text-foreground/90 truncate">
+                            {entry.message}
+                          </p>
+                          {entry.draft && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              Draft: {entry.draft}
+                            </p>
+                          )}
+                          {entry.rejectionReason && (
+                            <p className="text-xs text-red-400 mt-1">Reason: {entry.rejectionReason}</p>
+                          )}
+                        </div>
+                        {entry.status === "pending" && (
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <Button
+                              size="sm"
+                              onClick={() => resolveApproval(entry.id, "approve")}
+                              className="h-8 px-3 bg-green-600/20 hover:bg-green-600/40 text-green-300 border border-green-500/30"
+                              variant="outline"
+                            >
+                              <ThumbsUp size={12} className="mr-1" />
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => resolveApproval(entry.id, "reject")}
+                              className="h-8 px-3 bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/30"
+                              variant="outline"
+                            >
+                              <ThumbsDown size={12} className="mr-1" />
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </>
         )}
@@ -423,12 +525,7 @@ export default function Admin() {
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Agent Routing Logs</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={fetchLogs}
-                className="zed-button text-muted-foreground hover:text-foreground"
-              >
+              <Button variant="ghost" size="sm" onClick={fetchLogs} className="zed-button text-muted-foreground hover:text-foreground">
                 <RefreshCw size={14} className="mr-1" />
                 Refresh
               </Button>
@@ -439,7 +536,7 @@ export default function Admin() {
             ) : logs.length === 0 ? (
               <Card className="zed-glass border-white/10">
                 <CardContent className="py-12 text-center text-muted-foreground text-sm">
-                  No routing logs yet. Send a message to generate log entries.
+                  No routing logs yet. Send a message in Agent mode to generate entries.
                 </CardContent>
               </Card>
             ) : (
@@ -450,27 +547,16 @@ export default function Admin() {
                       let parsed: any = {};
                       try { parsed = JSON.parse(entry); } catch {}
                       return (
-                        <div
-                          key={i}
-                          className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/5"
-                        >
+                        <div key={i} className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/5">
                           <span className="text-muted-foreground">
-                            {parsed.timestamp
-                              ? new Date(parsed.timestamp).toLocaleTimeString()
-                              : ""}
+                            {parsed.timestamp ? new Date(parsed.timestamp).toLocaleTimeString() : ""}
                           </span>
-                          <span className="mx-2 text-purple-400 font-medium">
-                            {parsed.agent || "—"}
-                          </span>
+                          <span className="mx-2 text-purple-400 font-medium">{parsed.agent || "—"}</span>
                           <span className="text-foreground/70">
-                            {parsed.conversationId
-                              ? `conv:${parsed.conversationId.slice(0, 8)}`
-                              : ""}
+                            {parsed.conversationId ? `conv:${String(parsed.conversationId).slice(0, 8)}` : ""}
                           </span>
                           {parsed.messageLength && (
-                            <span className="ml-2 text-muted-foreground">
-                              {parsed.messageLength} chars
-                            </span>
+                            <span className="ml-2 text-muted-foreground">{parsed.messageLength} chars</span>
                           )}
                         </div>
                       );
