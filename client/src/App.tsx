@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/UseAuth";
 import NotFound from "@/pages/not-found";
 import Chat from "@/pages/chat";
 import Login from "@/pages/login";
+import Admin from "@/pages/admin";
 
 function ErrorBoundary({ children }: { children: React.ReactNode }) {
   return children;
@@ -44,6 +45,10 @@ function Router() {
 
       <Route path="/chat/:id?">
         {isAuthenticated ? <Chat /> : <Login />}
+      </Route>
+
+      <Route path="/admin">
+        {isAuthenticated ? <Admin /> : <Login />}
       </Route>
 
       <Route component={NotFound} />

@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { Send } from "lucide-react";
-
+import { useState, useRef, useEffect } from "react";
+import { Mic, MicOff, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -11,10 +10,27 @@ interface ChatInputProps {
 
 export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setSpeechSupported(!!SpeechRecognition);
+  }, []);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
+  }, [input]);
 
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
-
     onSend(input.trim());
     setInput("");
   };
@@ -26,25 +42,87 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
     }
   };
 
+  const toggleRecording = () => {
+    if (!speechSupported) return;
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((r: any) => r[0].transcript)
+        .join("");
+      setInput(transcript);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.onerror = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
+
   return (
-    <div className="border-t border-white/10 bg-black/60 backdrop-blur-sm p-3 md:p-4">
-      <div className="flex items-end gap-2">
+    <div className="flex items-end gap-2">
+      <div className="flex-1 relative">
         <Textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
-          className="resize-none min-h-[40px] max-h-[120px] bg-black/40 border-white/10 text-white"
+          placeholder={isRecording ? "Listening…" : "Type a message…"}
+          rows={1}
+          className="resize-none bg-black/40 border-white/10 text-white pr-3 rounded-2xl min-h-[44px] max-h-[120px] overflow-y-auto leading-relaxed"
+          disabled={isLoading}
         />
-
-        <Button
-          onClick={handleSend}
-          disabled={!input.trim() || isLoading}
-          className="h-10 w-10 p-0 flex items-center justify-center"
-        >
-          <Send size={18} />
-        </Button>
       </div>
+
+      {speechSupported && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={toggleRecording}
+          disabled={isLoading}
+          className={`h-11 w-11 p-0 rounded-xl flex-shrink-0 transition-colors ${
+            isRecording
+              ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
+              : "text-muted-foreground hover:text-cyan-400 zed-button"
+          }`}
+          title={isRecording ? "Stop recording" : "Voice input"}
+        >
+          {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+        </Button>
+      )}
+
+      <Button
+        onClick={handleSend}
+        disabled={!input.trim() || !!isLoading}
+        className="h-11 w-11 p-0 rounded-xl flex-shrink-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
+      >
+        {isLoading ? (
+          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        ) : (
+          <Send size={16} />
+        )}
+      </Button>
     </div>
   );
 }
