@@ -37,7 +37,7 @@ export default function ChatSidebar({
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
-  const { user } = UseAuth() as { user?: LocalUser };
+  const { user } = useAuth() as { user?: LocalUser };
   const { toast } = useToast();
 
   const createConversationMutation = useMutation({
