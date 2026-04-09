@@ -10,8 +10,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/UseAuth";
 
 const zLogoPath =
@@ -21,19 +19,16 @@ export default function Login() {
   const [passphrase, setPassphrase] = useState("");
   const [showPassphrase, setShowPassphrase] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const { toast } = useToast();
-  const { refresh } = useAuth() as { refresh: () => Promise<unknown> };
+  const { refresh } = useAuth() as { refresh: () => Promise<void> };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
     if (!passphrase) {
-      toast({
-        title: "Passphrase required",
-        description: "Please enter your secure passphrase",
-        variant: "destructive",
-      });
+      setError("Please enter your passphrase.");
       return;
     }
 
@@ -50,27 +45,13 @@ export default function Login() {
       const data = await response.json();
 
       if (data.success) {
-        toast({
-          title: "Welcome to ZED",
-          description: "Access granted",
-        });
-        setTimeout(async () => {
-          await refresh();
-        }, 200);
+        await refresh();
         return;
       }
 
-      toast({
-        title: "Access denied",
-        description: data.error || "Invalid passphrase",
-        variant: "destructive",
-      });
+      setError(data.error || "Access denied.");
     } catch {
-      toast({
-        title: "Login failed",
-        description: "Network error. Please try again.",
-        variant: "destructive",
-      });
+      setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -89,11 +70,7 @@ export default function Login() {
       <div className="relative z-10 w-full max-w-md">
         <div className="text-center mb-8">
           <div className="mb-4">
-            <img
-              src={zLogoPath}
-              alt="ZED"
-              className="w-16 h-16 mx-auto opacity-70"
-            />
+            <img src={zLogoPath} alt="ZED" className="w-16 h-16 mx-auto opacity-70" />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
             ZED
@@ -122,7 +99,10 @@ export default function Login() {
                     type={showPassphrase ? "text" : "password"}
                     placeholder="Enter your secure passphrase"
                     value={passphrase}
-                    onChange={(e) => setPassphrase(e.target.value)}
+                    onChange={(e) => {
+                      setPassphrase(e.target.value);
+                      if (error) setError("");
+                    }}
                     className="zed-input pr-10"
                     disabled={isLoading}
                     autoFocus
@@ -136,6 +116,10 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+
+              {error && (
+                <p className="text-sm text-red-400">{error}</p>
+              )}
 
               <Button
                 type="submit"

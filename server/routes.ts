@@ -29,6 +29,15 @@ export function setDatabaseStatus(status: boolean) {
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupLocalAuth(app);
 
+  // Session check — used by the frontend to determine if the user is logged in
+  app.get("/api/me", (req, res) => {
+    const session = (req as any).session;
+    if (session?.userId && session?.user) {
+      return res.json({ user: session.user });
+    }
+    return res.json({ user: null });
+  });
+
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     const user = await storage.getUser(userId);
