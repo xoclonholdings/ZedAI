@@ -1,0 +1,9 @@
+{
+  "id": 19,
+  "key": "access",
+  "value": "{\"access_control\":{\"roles\":{\"admin\":[\"read\",\"write\",\"approve\",\"configure\",\"activate_agents\"],\"operations_agent\":[\"read_memory\",\"write_drafts\",\"create_tasks\",\"log_decisions\"],\"intelligence_agent\":[\"read_web\",\"read_github\",\"write_semantic_memory\",\"log_research\"],\"ide_operator\":[\"read_code\",\"terminal_sandboxed\",\"github_pr\"],\"audio_engineer\":[\"read_daw\",\"write_project_files\",\"mastering_pipeline\"]},\"override\":{\"enabled\":false,\"_notes\":\"Admin override requires explicit flag in security.yaml\"}},\"tool_policy\":{\"actions\":[\"read\",\"draft\",\"schedule\",\"research\",\"summarize\",\"log\",\"alert\"],\"enforcement_order\":[\"check_permissions\",\"check_security_tier\",\"check_approval_gate\",\"execute\",\"log\"],\"_notes\":\"All tool calls pass through security.yaml permission tiers\"},\"non_admin_behavior\":{\"mode\":\"restricted\",\"capabilities\":[\"chat\",\"research_queries\",\"task_creation\",\"content_drafting\"],\"restrictions\":[\"Cannot approve pending actions\",\"Cannot modify hub config files\",\"Cannot activate stubbed agents\",\"Cannot access tier-3 tools\"]}}",
+  "description": "Backward-compatible ZED access composite",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.737Z",
+  "updatedAt": "2026-04-09T02:08:47.607Z"
+}

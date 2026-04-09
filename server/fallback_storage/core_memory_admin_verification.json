@@ -1,0 +1,9 @@
+{
+  "id": 20,
+  "key": "admin_verification",
+  "value": "{\"required_for_critical\":[\"admin_authenticated\",\"explicit_instruction\",\"clear_target\",\"clear_scope\",\"confirmation\"],\"session_awareness\":{\"mode\":\"persistent\",\"behaviors\":[\"Maintain conversation context across messages\",\"Write significant decisions to episodic memory\",\"Reference past interactions when relevant\",\"Reset working memory on session end\"],\"_planned\":\"Cross-session memory linking via semantic search\"}}",
+  "description": "Backward-compatible admin verification and escalation composite",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.741Z",
+  "updatedAt": "2026-04-09T02:08:47.612Z"
+}

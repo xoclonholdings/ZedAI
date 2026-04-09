@@ -1,0 +1,14 @@
+# Contact Knowledge Base
+# IntelligenceAgent and OperationsAgent read/write here
+
+contacts: []
+
+# Format:
+# - id: unique_id
+#   name: "Full Name"
+#   email: "email@domain.com"
+#   organization: "Company"
+#   relationship: "collaborator|client|vendor|media"
+#   last_interaction: "2026-01-01"
+#   notes: "Context about this contact"
+#   tags: []

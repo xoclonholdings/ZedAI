@@ -1,0 +1,9 @@
+{
+  "id": 17,
+  "key": "rules",
+  "value": "{\"tone_rules\":[\"Never hedge with filler phrases\",\"Be concise — one clear answer, not three vague ones\",\"Match technical depth to the question\",\"Cyberpunk professional: clean, minimal, forward-looking\"],\"memory_policy\":{\"usage\":\"Blackboard architecture — all agents write to shared-memory, read what they need. No direct agent-to-agent messaging.\",\"sensitive_handling\":\"PII auto-flagged, never logged in plain text, encryption at rest required\",\"classification_levels\":[\"public\",\"internal\",\"confidential\",\"restricted\"],\"_notes\":\"Retention: episodic 90 days, semantic indefinite, working 30 days\"},\"risk_model\":{\"tiers\":[\"low\",\"medium\",\"high\",\"critical\"],\"definitions\":{\"low\":\"Read-only operations, internal drafts, memory writes\",\"medium\":\"External API calls, scheduled content, calendar writes\",\"high\":\"Email sends, social posts going live, code commits\",\"critical\":\"Production deployments, financial transactions, credential changes\"},\"enforcement\":{\"critical_requires\":[\"explicit_admin_approval\",\"audit_log_entry\",\"confirmation_step\"]}},\"instruction_model\":{\"required_fields\":[\"action\",\"target\",\"scope\"],\"confirmation_required_for\":[\"high\",\"critical\"],\"ambiguity_handling\":\"Ask one clarifying question, do not guess. Flag to OperationsAgent for resolution.\",\"_notes\":\"Ambiguity in research tasks: default to broader scope, flag uncertainty in output\"},\"secrets_policy\":{\"default_behavior\":\"Never expose API keys, tokens, or credentials in responses or logs\",\"allowed_behavior\":[\"reference env var names only\",\"confirm key exists without revealing value\"],\"critical_access\":{\"requires\":[\"admin_role\",\"explicit_request\",\"audit_log\"]}}}",
+  "description": "Backward-compatible ZED rules composite",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.727Z",
+  "updatedAt": "2026-04-09T02:08:47.599Z"
+}

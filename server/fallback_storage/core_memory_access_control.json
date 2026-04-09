@@ -1,0 +1,9 @@
+{
+  "id": 9,
+  "key": "access_control",
+  "value": "{\"roles\":{\"admin\":[\"read\",\"write\",\"approve\",\"configure\",\"activate_agents\"],\"operations_agent\":[\"read_memory\",\"write_drafts\",\"create_tasks\",\"log_decisions\"],\"intelligence_agent\":[\"read_web\",\"read_github\",\"write_semantic_memory\",\"log_research\"],\"ide_operator\":[\"read_code\",\"terminal_sandboxed\",\"github_pr\"],\"audio_engineer\":[\"read_daw\",\"write_project_files\",\"mastering_pipeline\"]},\"override\":{\"enabled\":false,\"_notes\":\"Admin override requires explicit flag in security.yaml\"}}",
+  "description": "ZED access control policy from core.memory.json",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.690Z",
+  "updatedAt": "2026-04-09T02:08:47.559Z"
+}

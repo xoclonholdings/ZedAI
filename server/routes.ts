@@ -5,6 +5,7 @@ import { upload, processFile, cleanupFile } from "./services/fileProcessor";
 import { generateFromOllama } from "./services/Ollama/OllamaService";
 import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
 import { setupLocalAuth, isAuthenticated } from "./localAuth";
+import { ManagerAgent } from "./orchestrator/ManagerAgent";
 
 import {
   insertConversationSchema,
@@ -169,6 +170,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error(error);
       res.status(500).json({ error: "Upload failed" });
     }
+  });
+
+  app.post("/api/orchestrate", async (req, res) => {
+    try {
+      const { message, conversationId } = req.body;
+      const userId = (req as any).user?.claims?.sub || "anonymous";
+
+      if (!message) {
+        return res.status(400).json({ error: "Message required" });
+      }
+
+      const response = await ManagerAgent.route({
+        userId,
+        message,
+        conversationId,
+      });
+
+      res.json(response);
+    } catch (error) {
+      console.error("[Orchestrator] Error:", error);
+      res.status(500).json({
+        error: "Orchestration failed",
+        reply: "An error occurred while processing your request.",
+        agent: "ManagerAgent",
+      });
+    }
+  });
+
+  app.get("/api/orchestrate/status", async (_req, res) => {
+    res.json({
+      orchestrator: "ManagerAgent",
+      active_agents: ["OperationsAgent", "IntelligenceAgent"],
+      stubbed_agents: ["IDEOperatorAgent", "AudioEngineerAgent"],
+      hub_config: "server/hub/config/",
+      shared_memory: "server/hub/shared-memory/",
+      status: "operational",
+    });
   });
 
   app.get("/api/admin/system-test", async (_req, res) => {

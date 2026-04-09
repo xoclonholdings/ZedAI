@@ -18,9 +18,20 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON sessions ("expire");
     `);
 
+    await db!.execute(sql`
+      CREATE TABLE IF NOT EXISTS core_memory (
+        id serial PRIMARY KEY,
+        key varchar UNIQUE NOT NULL,
+        value text NOT NULL,
+        description text,
+        admin_only boolean DEFAULT true,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+
     console.log('[MIGRATIONS] Database setup completed successfully');
   } catch (error) {
     console.error('[MIGRATIONS] Failed to run migrations:', error);
-    // Don't fail the app startup for migration issues
   }
 }
