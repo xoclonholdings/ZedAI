@@ -40,7 +40,8 @@ export function getLocalSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
+      secure: true,
+      sameSite: "none" as const,
       maxAge: sessionTtl,
     },
   });
