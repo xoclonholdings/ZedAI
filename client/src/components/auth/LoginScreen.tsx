@@ -26,7 +26,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
-  const auth = useAuth() as { refetch?: () => Promise<unknown> };
+  const { refresh } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,19 +62,7 @@ export default function LoginScreen() {
       const data = await response.json();
 
       if (data.success) {
-        toast({
-          title: "Welcome to ZED",
-          description: "Successfully logged in!",
-        });
-
-        if (typeof auth?.refetch === "function") {
-          setTimeout(async () => {
-            await auth.refetch?.();
-          }, 200);
-        } else {
-          window.location.reload();
-        }
-
+        await refresh();
         return;
       }
 
