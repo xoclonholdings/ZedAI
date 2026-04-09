@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, FileText, Image, BarChart, Sparkles } from "lucide-react";
-import zLogoPath from "@assets/IMG_2227_1753477194826.png";
+import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 import type { Message } from "@shared/schema";
 
 interface ChatMessageProps {

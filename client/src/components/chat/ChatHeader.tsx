@@ -2,7 +2,7 @@ import { Rss, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import zLogoPath from "@assets/IMG_2227_1753477194826.png";
+import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatHeaderProps {
   showSocialFeed: boolean;

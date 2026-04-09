@@ -28,7 +28,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
-  const { refetch } = useAuth() as { refetch: () => Promise<unknown> };
+  const { refresh } = useAuth() as { refresh: () => Promise<unknown> };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +70,7 @@ export default function Login() {
         });
 
         setTimeout(async () => {
-          await refetch();
+          await refresh();
         }, 200);
 
         return;
@@ -192,7 +192,7 @@ export default function Login() {
                   </div>
                   <Input
                     type="password"
-                    placeholder="Secure Phrase (XOCLON_SECURE_2025)"
+                    placeholder="Enter your secure phrase"
                     value={securePhrase}
                     onChange={(e) => setSecurePhrase(e.target.value)}
                     className="zed-input"
