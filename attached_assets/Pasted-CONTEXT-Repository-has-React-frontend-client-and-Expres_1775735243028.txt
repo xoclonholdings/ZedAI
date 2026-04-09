@@ -1,0 +1,115 @@
+CONTEXT:
+- Repository has React frontend (client/) and Express backend (server/) that have NEVER CONNECTED
+- Frontend built by Emergent, backend by Replit, same repo, zero integration
+- Primary LLM: Qwen2.5:7b via Ollama (localhost:11434), llama3.2 as fallback
+- Zero paywalls: All services local, no cloud APIs, no external costs
+- Database: Neon PostgreSQL via Drizzle ORM (already configured)
+
+OBJECTIVE:
+Implement complete frontend-to-backend wiring, file structure consolidation, and new features.
+
+FILE STRUCTURE CHANGES:
+1. Consolidate chat variants (chat.tsx, chat-full.tsx, chat-mock.tsx, etc.) into single production component
+2. Remove dead/duplicate pages from client/src/pages/ (keep: chat.tsx, login.tsx, landing.tsx, onboarding.tsx, admin.tsx NEW)
+3. Standardize on one auth flow (LocalSession-based, already exists)
+4. Create unified API client in client/src/lib/api.ts with typed endpoints
+
+FRONTEND-TO-BACKEND WIRING:
+1. Replace all mock data with live API calls to Express server (port 5000)
+2. Implement SSE (Server-Sent Events) for real-time updates (memory updates, file processing status, approval requests)
+3. Connect chat interface to /api/chat endpoint (already exists in chatRoutes.ts)
+4. Wire file upload (FileUpload.tsx) to /api/files endpoint
+5. Connect conversation history to /api/conversations endpoints
+
+NEW FEATURES TO IMPLEMENT:
+
+ADMIN SETTINGS PANEL (client/src/pages/admin.tsx):
+- Ruleset editor: YAML viewer/editor for hub/config/ files (read from /api/admin/ruleset)
+- Parameter controls: Sliders/inputs for model selection, temperature, thresholds
+- API key management: GitHub token input (encrypted storage), Ollama endpoint config
+- Approval queue: UI for pending actions requiring admin pre-approval
+- Voice enrollment: Record 5 samples, visualize waveform, test recognition
+- AI detection thresholds: Sensitivity sliders per modality (image/video/audio/text)
+- Firewall status: Connection health to Fantasma SOC (via /api/admin/firewall-status)
+
+VOICE CHAT INTEGRATION:
+- Add microphone button to ChatInput.tsx
+- Implement Web Audio API for recording
+- Send audio to /api/voice/transcribe endpoint (Whisper via Ollama)
+- Speaker verification: Compare against enrolled voice embedding, reject non-matches
+- Display voice auth status in UI (verified/unverified)
+
+AI DETECTION DASHBOARD (client/src/components/ai-detection/):
+- Drag-drop file upload for analysis
+- Display 4-modal scan results (image/video/audio/text)
+- Show confidence scores, forensic markers, heatmaps for manipulated regions
+- Integration with Ollama vision (llava-phi3 or qwen2.5-vl if available)
+- Report generation: Structured output for SOC integration
+
+GITHUB INTEGRATION (client/src/components/github/):
+- Repository browser (read-only)
+- Issue/PR viewer with AI summary
+- Code review assistant (Qwen2.5:7b analyzes diffs)
+- Connect to /api/github/* endpoints
+
+ZIP FILE HANDLING:
+- Extend FileUpload.tsx to accept .zip
+- Extract on backend (adm-zip or similar), analyze contents
+- Display file tree, allow selective processing
+- Security: Scan for malicious patterns before extraction
+
+SECURITY & APPROVAL GATES:
+- Implement middleware requiring explicit admin approval for:
+  - Any file write outside ~/ai-workforce/
+  - Any external API call (except GitHub read-only)
+  - Any system setting change
+  - Any PII-related operation
+- Approval queue stored in database, surfaced in admin UI
+- Audit log: All actions logged with admin decision trail
+
+BACKEND ENDPOINTS TO CREATE (server/src/routes/):
+
+/api/admin/* (adminRoutes.ts expansion):
+- GET /ruleset - Load hub/config/ files
+- POST /ruleset - Save config changes (requires approval)
+- GET /approval-queue - Pending actions
+- POST /approve/:id - Approve action
+- POST /reject/:id - Reject action
+- GET /firewall-status - Fantasma connection health
+
+/api/voice/* (voiceRoutes.ts NEW):
+- POST /transcribe - Audio to text via Whisper/Ollama
+- POST /enroll - Save voice embedding
+- POST /verify - Compare sample against enrollment
+
+/api/ai-detection/* (detectionRoutes.ts NEW):
+- POST /analyze - File upload, route to appropriate detector
+- GET /status/:jobId - Poll for results
+- POST /report - Generate structured report for SOC
+
+/api/github/* (githubRoutes.ts NEW):
+- GET /repos - List accessible repos
+- GET /repo/:owner/:name/issues - Read issues
+- GET /repo/:owner/:name/pulls - Read PRs
+- POST /analyze-code - Send diff to Qwen for review
+
+/api/sse/* (sseRoutes.ts NEW):
+- GET /events - SSE stream for real-time updates
+
+SYSTEM ARCHITECTURE REQUIREMENTS:
+- All AI calls route through OllamaService.ts (existing)
+- Use memoryService.ts for conversation context
+- Implement queryLogger.ts for audit trail
+- Maintain offlineStorage.ts fallback for all operations
+- Error handling: Graceful degradation when Ollama unavailable
+- Skill updating: Log errors to ~/ai-workforce/logs/, auto-suggest SKILL.md improvements
+
+CONSTRAINTS:
+- No external APIs with paywalls (OpenAI, Anthropic, Google Cloud, etc.)
+- All processing local via Ollama
+- GitHub token stored encrypted, never client-side
+- Voice data never leaves server
+- AI detection heuristics first, deep analysis on demand
+
+DELIVERABLE:
+Single integrated application where frontend communicates with backend, all new features functional, file structure cleaned, ready for R&D agent implementation.

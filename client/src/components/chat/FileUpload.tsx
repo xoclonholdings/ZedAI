@@ -44,6 +44,7 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
 
       const response = await fetch(`/api/conversations/${conversationId}/upload`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
