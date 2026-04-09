@@ -1,6 +1,8 @@
-const OLLAMA_BASE = "http://localhost:11434";
-const PRIMARY_MODEL = "qwen2.5:7b";
+const OLLAMA_BASE = process.env.OLLAMA_URL || "http://localhost:11434";
+const PRIMARY_MODEL = process.env.OLLAMA_MODEL || "qwen2.5:7b";
 const FALLBACK_MODEL = "llama3.2";
+
+console.log(`[OllamaService] Targeting Ollama at: ${OLLAMA_BASE}`);
 
 export interface OllamaMessage {
   role: "system" | "user" | "assistant";

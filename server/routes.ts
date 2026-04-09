@@ -200,7 +200,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           async (err) => {
             console.error("[SSE] stream error:", err);
-            const fallback = "I'm having trouble connecting to the AI model right now. Please check that Ollama is running.";
+            const isConnRefused = err.message?.includes("ECONNREFUSED") || err.message?.includes("fetch failed");
+            const ollamaUrl = process.env.OLLAMA_URL || "localhost:11434";
+            const fallback = isConnRefused
+              ? `Ollama is not reachable at ${ollamaUrl}. Start Ollama on your local machine and ensure this server can reach it. If using Tailscale, set the OLLAMA_URL environment variable to your Tailscale IP (e.g., http://100.x.x.x:11434).`
+              : `AI model error: ${err.message}`;
             const aiMessage = await storage.createMessage(
               insertMessageSchema.parse({ conversationId, role: "assistant", content: fallback })
             );
