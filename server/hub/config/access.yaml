@@ -1,0 +1,78 @@
+apis:
+  ollama:
+    endpoint: "${OLLAMA_ENDPOINT:-http://localhost:11434}"
+    api_key: null
+    local: true
+
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    enabled: false
+    notes: "Optional - system runs fully local without this"
+
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    enabled: false
+    notes: "Optional - system runs fully local without this"
+
+  github:
+    token: "${GITHUB_TOKEN}"
+    username: "${GITHUB_USERNAME}"
+    enabled: false
+    permissions:
+      - read_repos
+      - read_issues
+      - read_prs
+    auto_pr_review: true
+    suggest_bug_fixes: true
+
+  google_workspace:
+    oauth_token: "${GOOGLE_OAUTH_TOKEN}"
+    enabled: false
+    scopes:
+      - calendar_read
+      - calendar_write
+      - gmail_read
+      - gmail_compose
+
+  social_media:
+    buffer_api_key: "${BUFFER_API_KEY}"
+    twitter_api_key: "${TWITTER_API_KEY}"
+    instagram_api_key: "${INSTAGRAM_API_KEY}"
+    linkedin_api_key: "${LINKEDIN_API_KEY}"
+    enabled: false
+
+  search:
+    serper_api_key: "${SERPER_API_KEY}"
+    brave_api_key: "${BRAVE_API_KEY}"
+    enabled: false
+    fallback: "local_web_scrape"
+
+local_system:
+  allowed_paths:
+    - "./hub/"
+    - "./agents/"
+    - "./orchestrator/"
+    - "../shared/"
+  forbidden_paths:
+    - "./.ssh/"
+    - "./secrets/"
+    - "../.env"
+  shell_access: "sandboxed"
+
+database:
+  primary: "${DATABASE_URL}"
+  offline_fallback: "json_file_storage"
+  offline_data_path: "./offline-data.json"
+
+session:
+  secret: "${SESSION_SECRET:-zed-local-secret}"
+  timeout_minutes: 45
+
+feature_flags:
+  voice_authentication: false
+  ai_detection: false
+  firewall_integration: false
+  github_browser: false
+  social_scheduling: false
+  email_integration: false
+  calendar_integration: false

@@ -1,0 +1,63 @@
+Complete Zed architecture by fixing critical gaps. Priority order:
+
+PRIORITY 0 - AGENTS MUST REMEMBER:
+
+1. Memory Injection into Prompts
+   - Before any agent responds, load:
+     - hub/shared-memory/working/current-tasks.md (active priorities)
+     - hub/shared-memory/episodic/email-decisions.json (recent decisions)
+     - hub/shared-memory/consensus/posting-guidelines.md (voice/tone)
+   - Inject as system prompt context: "You are {agent}. Current priorities: {working}. Recent context: {episodic}. Guidelines: {consensus}."
+   - File: server/src/agents/manager/ManagerAgent.ts - modify route() to load memory before delegateToAgent()
+
+2. Web Search for IntelligenceAgent
+   - Add Brave API or Serper API integration
+   - File: server/src/services/WebSearch.ts - new service
+   - File: server/src/agents/intelligence/IntelligenceAgent.ts - research() method calls web search before LLM synthesis
+   - Store search results in hub/shared-memory/semantic/ with embeddings (prep for ChromaDB)
+
+PRIORITY 1 - VECTOR MEMORY:
+
+3. ChromaDB Integration
+   - Add chromadb client to dependencies
+   - File: server/src/services/ChromaService.ts - wrapper for 4 collections: working, episodic, semantic, consensus
+   - Replace flat JSON in semantic/ with vector embeddings + metadata
+   - Update ManagerAgent to query ChromaDB for similarity search, not just file read
+
+4. Memory System Bridge (if time permits)
+   - Create adapter: DB memory ↔ filesystem ↔ ChromaDB
+   - Single source of truth: ChromaDB for semantic, keep filesystem for human-readable logs
+
+PRIORITY 2 - SECURITY HARDENING:
+
+5. Security Audit Log
+   - File: server/src/services/SecurityAudit.ts - write to hub/logs/security.log
+   - Log: auth events (login/logout/fail), approval events (queue/action/result), tier violations
+
+6. Tier Enforcement
+   - File: server/src/middleware/TierEnforcement.ts
+   - Tier-0: Content filter on LLM output before returning to user
+   - Tier-3: Explicit intercept, require passphrase re-auth for system access
+
+PRIORITY 3 - ARCHITECTURE COMPLETION:
+
+7. Blackboard Pattern (if time permits)
+   - Real-time shared scratchpad: agents write status updates, read others' updates
+   - Use Redis or simple in-memory store with SSE broadcast
+
+8. Learning Tunnel (if time permits)
+   - Error events write to hub/logs/learning/
+   - Weekly batch process suggests SKILL.md updates
+
+DO NOT BUILD:
+- IDE Operator activation (keep stubbed)
+- Audio Engineer activation (keep stubbed)
+- Multi-user trust model (keep single admin)
+
+TEST EACH FIX:
+- Memory injection: Start chat, ask "What were my priorities from last session?" Should recall working memory.
+- Web search: Ask IntelligenceAgent "What's trending in AI agents?" Should return real results, not hallucination.
+- Security: Attempt tier-0 content, verify blocked. Check security.log written.
+
+DELIVERABLE:
+All P0 and P1 items functional. P2/P3 as time permits. Ollama offline expected (local only).

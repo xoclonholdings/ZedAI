@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, ChevronLeft, Lock, Settings } from "lucide-react";
+import { Archive, ChevronLeft, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,52 +12,26 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { useAuth } from "@/components/auth/UseAuth";
+import { useAppSettings } from "@/hooks/useAppSettings";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
 import NotificationsSettings from "./NotificationsSettings";
 import PersonalizationSettings from "./PersonalizationSettings";
+import RulesSettings from "./RulesSettings";
 import SettingsAppControls from "./SettingsAppControls";
 import SettingsMainMenu from "./SettingsMainMenu";
 import SettingsSuggestions from "./SettingsSuggestions";
 import SettingsVoiceControls from "./SettingsVoiceControls";
 import UserManagement from "./UserManagement";
 
-import zLogoPath from "@assets/IMG_2227_1753477194826.png";
-
-interface AppSettings {
-  notifications: boolean;
-  hapticFeedback: boolean;
-  autoSpellCorrect: boolean;
-  autoSendDictation: boolean;
-  backgroundConversations: boolean;
-  autocomplete: boolean;
-  trendingSearches: boolean;
-  followUpSuggestions: boolean;
-  colorScheme: "dark" | "light" | "auto";
-  language: string;
-  voiceType: string;
-}
+const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhODU1Zjc7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ViNDg5OTtzdG9wLW9wYWNpdHk6MSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjgiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPjwvc3ZnPg==";
 
 export default function SettingsModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("main");
-  const [appSettings, setAppSettings] = useState<AppSettings>({
-    notifications: true,
-    hapticFeedback: true,
-    autoSpellCorrect: true,
-    autoSendDictation: false,
-    backgroundConversations: true,
-    autocomplete: false,
-    trendingSearches: true,
-    followUpSuggestions: false,
-    colorScheme: "dark",
-    language: "English",
-    voiceType: "Ember",
-  });
+  const { appSettings, setAppSettings } = useAppSettings();
 
-  const { user } = UseAuth() as { user?: any };
-  const isAdmin = user?.username === "Admin";
+  const isAdmin = true; // Always admin in single-admin mode
 
   function BackButton() {
     return (
@@ -89,8 +63,8 @@ export default function SettingsModal() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="zed-glass max-h-[90vh] max-w-4xl overflow-y-auto border-white/10">
-        <DialogHeader>
+      <DialogContent className="zed-glass max-h-[90vh] max-w-2xl overflow-hidden border-white/10 flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <img src={zLogoPath} alt="Z" className="h-4 w-4" />
             <span>
@@ -102,11 +76,11 @@ export default function SettingsModal() {
           </DialogTitle>
 
           <DialogDescription className="text-muted-foreground">
-            Manage your account, preferences, and controls.
+            Manage your preferences, rules, and security.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[70vh] space-y-6 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
           {activeSection === "main" && (
             <div className="space-y-6">
               <SettingsMainMenu isAdmin={isAdmin} onNavigate={setActiveSection} />
@@ -128,10 +102,10 @@ export default function SettingsModal() {
             </div>
           )}
 
-          {activeSection === "admin" && isAdmin && (
+          {activeSection === "rules" && (
             <div>
               <BackButton />
-              <UserManagement />
+              <RulesSettings />
             </div>
           )}
 
@@ -170,8 +144,8 @@ export default function SettingsModal() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">
-                    View and manage your archived conversations.
+                  <p className="text-sm text-muted-foreground">
+                    No archived conversations yet. Conversations you archive will appear here.
                   </p>
                 </CardContent>
               </Card>
@@ -181,32 +155,14 @@ export default function SettingsModal() {
           {activeSection === "security" && (
             <div>
               <BackButton />
+              <AdminSecuritySettings />
+            </div>
+          )}
 
-              {isAdmin ? (
-                <AdminSecuritySettings />
-              ) : (
-                <Card className="zed-glass border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Lock className="h-5 w-5" />
-                      Security
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <p>• Session expires after inactivity</p>
-                      <p>• Enhanced security with device verification</p>
-                      <p>• Multi-factor authentication enabled</p>
-                      <p>
-                        • Username:{" "}
-                        <span className="font-medium text-foreground">
-                          {user?.username || "user"}
-                        </span>
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+          {activeSection === "admin" && isAdmin && (
+            <div>
+              <BackButton />
+              <UserManagement />
             </div>
           )}
         </div>

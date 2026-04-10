@@ -1,10 +1,9 @@
-// Simple migration runner for database setup
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 
 export async function runMigrations(): Promise<void> {
   try {
-    // Check if sessions table exists (required for authentication)
+    // Session store (express-session / connect-pg-simple)
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS sessions (
         sid varchar NOT NULL COLLATE "default" PRIMARY KEY,
@@ -12,15 +11,103 @@ export async function runMigrations(): Promise<void> {
         expire timestamp(6) NOT NULL
       );
     `);
-
-    // Create index on sessions expire column if not exists
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON sessions ("expire");
+    `);
+
+    // Users (single Admin row; seeded below)
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id varchar PRIMARY KEY,
+        email varchar UNIQUE,
+        first_name varchar,
+        last_name varchar,
+        profile_image_url varchar,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+
+    // Seed the single Admin user so FK constraints are satisfied
+    await db.execute(sql`
+      INSERT INTO users (id, email, first_name, last_name)
+      VALUES ('user_001', 'admin@zed-ai.online', 'ZED', 'Admin')
+      ON CONFLICT (id) DO NOTHING;
+    `);
+
+    // Conversations
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        user_id varchar NOT NULL REFERENCES users(id),
+        title text NOT NULL,
+        preview text,
+        model text NOT NULL DEFAULT 'ollama',
+        mode text NOT NULL DEFAULT 'chat',
+        is_active boolean DEFAULT false,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+
+    // Messages
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS messages (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        conversation_id varchar NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        role text NOT NULL,
+        content text NOT NULL,
+        metadata jsonb,
+        created_at timestamp DEFAULT now()
+      );
+    `);
+
+    // Files
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS files (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        conversation_id varchar NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        file_name text NOT NULL,
+        original_name text NOT NULL,
+        mime_type text NOT NULL,
+        size integer NOT NULL,
+        status text NOT NULL DEFAULT 'processing',
+        extracted_content text,
+        analysis jsonb,
+        created_at timestamp DEFAULT now()
+      );
+    `);
+
+    // Chat sessions (analytics)
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS chat_sessions (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        conversation_id varchar NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        user_id varchar NOT NULL REFERENCES users(id),
+        duration integer DEFAULT 0,
+        messages_used integer DEFAULT 0,
+        memory_usage integer DEFAULT 0,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+
+    // Core memory
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS core_memory (
+        id serial PRIMARY KEY,
+        key varchar UNIQUE NOT NULL,
+        value text NOT NULL,
+        description text,
+        admin_only boolean DEFAULT true,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
     `);
 
     console.log('[MIGRATIONS] Database setup completed successfully');
   } catch (error) {
     console.error('[MIGRATIONS] Failed to run migrations:', error);
-    // Don't fail the app startup for migration issues
+    throw error;
   }
 }

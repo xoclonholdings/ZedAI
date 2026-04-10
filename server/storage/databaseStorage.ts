@@ -19,7 +19,6 @@ import type {
   InsertScratchpadMemory,
 } from "../../shared/schema";
 
-import { BaseStorage } from "./base";
 import type { IStorage } from "./types";
 
 import { UserDatabaseStorage } from "./UserDatabaseStorage";
@@ -30,7 +29,7 @@ import { SessionDatabaseStorage } from "./SessionDatabaseStorage";
 import { MemoryDatabaseStorage } from "./MemoryDatabaseStorage";
 import { AnalyticsDatabaseStorage } from "./AnalyticsDatabaseStorage";
 
-class DatabaseStorage extends BaseStorage implements IStorage {
+class DatabaseStorage implements IStorage {
   private users = new UserDatabaseStorage();
   private conversations = new ConversationDatabaseStorage();
   private messages = new MessageDatabaseStorage();

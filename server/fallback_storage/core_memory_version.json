@@ -1,0 +1,9 @@
+{
+  "id": 2,
+  "key": "version",
+  "value": "1.0.0",
+  "description": "ZED core memory schema version",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.645Z",
+  "updatedAt": "2026-04-09T02:14:28.626Z"
+}

@@ -1,0 +1,74 @@
+Complete Zed architecture ONE ITEM AT A TIME. Do not proceed to next until current item is verified working.
+
+RULE: After each item, test it, confirm it works, then say "ITEM N COMPLETE" before moving on.
+
+ITEM 1: OLLAMA CONNECTION
+- Verify Ollama is reachable at localhost:11434 from server environment
+- If not reachable, document why and implement health check fallback
+- Test: Send chat message, confirm response received (not ECONNREFUSED)
+- VERIFICATION: Screenshot or log showing successful chat response
+- SAY: "ITEM 1 COMPLETE"
+
+ITEM 2: WEB SEARCH API KEY
+- Add BRAVE_SEARCH_API_KEY or SERPER_API_KEY to environment
+- Test: Ask IntelligenceAgent "What happened in AI today?" - must return real news, not hallucination
+- VERIFICATION: Response includes actual recent events with source URLs
+- SAY: "ITEM 2 COMPLETE"
+
+ITEM 3: CHAT MODE MEMORY INJECTION
+- Modify POST /api/conversations/:id/messages to inject hub memory (working, episodic, consensus) into system prompt
+- Currently only uses DB system_prompt; must add hub memory context
+- Test: Ask "What were my priorities?" after setting one in previous session - must recall
+- VERIFICATION: Response references specific prior task from working memory
+- SAY: "ITEM 3 COMPLETE"
+
+ITEM 4: APPROVAL QUEUE EXECUTION
+- When admin approves item in queue, actually execute the action (API call, email, post)
+- Currently only flips status to "approved"
+- Test: Create tier-2 action, approve it, verify external effect occurred
+- VERIFICATION: Log showing external API call or action completion
+- SAY: "ITEM 4 COMPLETE"
+
+ITEM 5: APPROVAL QUEUE AUDIT LOG
+- Log approval.queued event to security.log when item added to queue
+- Currently only logs approve/reject, not queue write
+- Test: Add item to queue, check security.log has queued entry
+- VERIFICATION: security.log contains {"event": "approval.queued", ...}
+- SAY: "ITEM 5 COMPLETE"
+
+ITEM 6: SEMANTIC MEMORY CONSOLIDATION
+- Move all semantic/ files to single directory (fix research-TIMESTAMP.json vs semantic/ENTRY_ID.json split)
+- Update querySimilarResearch() to read from unified location
+- Test: Query old and new research, both returned
+- VERIFICATION: Both old and new research files visible in query results
+- SAY: "ITEM 6 COMPLETE"
+
+ITEM 7: SESSION PERSISTENCE
+- Add session persistence (Redis, PostgreSQL, or file store) so sessions survive server restart
+- Currently in-memory only, lost on restart
+- Test: Login, restart server, verify still logged in
+- VERIFICATION: Session cookie valid after server restart
+- SAY: "ITEM 7 COMPLETE"
+
+ITEM 8: DEAD CODE REMOVAL
+- Delete LoginScreen.tsx (never rendered)
+- Clean empty server/routes/ directory if still exists
+- Test: App builds and runs without these files
+- VERIFICATION: No build errors, app functions normally
+- SAY: "ITEM 8 COMPLETE"
+
+ITEM 9: ADMIN SECURITY LOG UI
+- Add Security Log tab to Admin panel displaying GET /api/admin/security-log
+- Currently API exists but no UI
+- Test: Open Admin, click Security Log tab, see audit entries
+- VERIFICATION: UI shows security.log contents in readable format
+- SAY: "ITEM 9 COMPLETE"
+
+ITEM 10: VOICE TRANSCRIPTION WIRING
+- Wire server-side Whisper or improve client-side Web Speech API handling
+- Currently /api/voice/transcribe returns empty
+- Test: Send voice message, receive transcription
+- VERIFICATION: Audio input produces text output
+- SAY: "ITEM 10 COMPLETE"
+
+STOP. Do not proceed to ITEM N+1 until "ITEM N COMPLETE" declared and verified.

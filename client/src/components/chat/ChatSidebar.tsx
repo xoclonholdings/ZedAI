@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Zap } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Zap } from "lucide-react";
 
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
-import { apiRequest } from "@/lib/queryClient";
+import SettingsModal from "@/components/settings/SettingsModal";
 
 import ChatSidebarHeader from "./ChatSidebarHeader";
 import ConversationList from "./ConversationList";
@@ -18,6 +17,7 @@ interface ChatSidebarProps {
   conversations: Conversation[];
   onClose?: () => void;
   isMobile?: boolean;
+  onMenuClick?: () => void;
 }
 
 interface LocalUser {
@@ -33,29 +33,37 @@ export default function ChatSidebar({
   onClose,
   isMobile = false,
 }: ChatSidebarProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
-  const { user } = UseAuth() as { user?: LocalUser };
-  const { toast } = useToast();
+  const { user } = useAuth() as { user?: LocalUser };
 
   const createConversationMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/conversations", "POST", {
-        title: "New Conversation",
-        mode: "chat",
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: "New Chat", mode: "chat" }),
       });
+      if (!res.ok) throw new Error("Failed to create conversation");
+      return res.json();
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       window.history.pushState({}, "", `/chat/${data.id}`);
+      if (isMobile && onClose) onClose();
     },
   });
 
   const deleteConversationMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/conversations/${id}`, "DELETE");
+      const res = await fetch(`/api/conversations/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
@@ -64,52 +72,8 @@ export default function ChatSidebar({
 
   async function handleDeleteConversation(id: string) {
     await deleteConversationMutation.mutateAsync(id);
-
     if (location.includes(id)) {
       window.history.pushState({}, "", "/chat");
-    }
-  }
-
-  async function handleProfileUpload(
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploadingPicture(true);
-
-    try {
-      const formData = new FormData();
-      formData.append("profilePicture", file);
-
-      const response = await fetch("/api/auth/profile-picture", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Upload failed");
-      }
-
-      toast({
-        title: "Profile picture updated",
-        description: "Your profile picture has been successfully updated!",
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    } catch (error) {
-      toast({
-        title: "Upload failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to upload profile picture. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploadingPicture(false);
-      e.target.value = "";
     }
   }
 
@@ -124,7 +88,6 @@ export default function ChatSidebar({
         >
           <MessageSquare size={20} />
         </Button>
-
         <Button
           onClick={() => createConversationMutation.mutate()}
           className="w-10 h-10 zed-gradient rounded-xl zed-button p-0"
@@ -132,12 +95,6 @@ export default function ChatSidebar({
         >
           +
         </Button>
-
-        <div className="w-full flex justify-center">
-          <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          </div>
-        </div>
       </div>
     );
   }
@@ -145,11 +102,12 @@ export default function ChatSidebar({
   return (
     <div
       className={`${
-        isMobile ? "w-full h-screen-mobile" : "w-80 h-full"
+        isMobile ? "w-full h-screen" : "w-80 h-full"
       } flex flex-col relative zed-glass ${
         isMobile ? "" : "border-r"
       } border-purple-500/30 backdrop-blur-xl`}
     >
+      {/* Ambient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-4 w-20 h-20 bg-purple-600/10 rounded-full blur-2xl zed-float" />
         <div
@@ -170,23 +128,35 @@ export default function ChatSidebar({
         <ConversationList
           conversations={conversations}
           currentPath={location}
-          onSelect={(id) => window.history.pushState({}, "", `/chat/${id}`)}
+          onSelect={(id) => {
+            window.history.pushState({}, "", `/chat/${id}`);
+            if (isMobile && onClose) onClose();
+          }}
           onDelete={handleDeleteConversation}
         />
       </div>
 
-      <ChatSidebarUserCard
-        user={user}
-        isUploadingPicture={isUploadingPicture}
-        onUpload={handleProfileUpload}
-      />
+      <ChatSidebarUserCard user={user} isUploadingPicture={false} onUpload={() => {}} />
 
-      <div className="p-4 border-t border-white/10 relative z-10">
-        <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
+      {/* Bottom controls */}
+      <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
+        <SettingsModal />
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/admin")}
+          className="w-full justify-start zed-button text-muted-foreground hover:text-purple-400"
+        >
+          <LayoutDashboard className="mr-2 h-4 w-4" />
+          Admin Panel
+        </Button>
+
+        <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground pt-1">
           <Zap size={12} className="text-purple-400" />
-          <span>Powered by OpenAI</span>
+          <span>Qwen2.5 via Ollama</span>
           <div className="w-1 h-1 bg-purple-400 rounded-full" />
-          <span>Local Auth</span>
+          <span>Local</span>
         </div>
       </div>
     </div>

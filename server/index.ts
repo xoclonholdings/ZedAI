@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-const log = console.log;
+import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection, gracefulShutdown } from "./db";
 import { runMigrations } from "./migrations";
 import { fallbackStorage } from "./services/fallbackStorage";
@@ -9,6 +9,7 @@ const app = express();
 
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
 
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -153,7 +154,7 @@ app.use((req, res, next) => {
   server.listen(
     {
       port,
-      host: "localhost",
+      host: "0.0.0.0",
     },
     () => {
       log(`serving on port ${port}`);

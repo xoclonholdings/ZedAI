@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-
-import { apiRequest } from "@/lib/queryClient";
+import { notifyMessage } from "@/lib/notify";
 
 import ChatBackground from "./ChatBackground";
 import ChatControls from "./ChatControls";
@@ -9,8 +8,6 @@ import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
-import ModeSelector from "./ModeSelector";
-import SocialFeed from "../social/SocialFeed";
 
 import type {
   Conversation,
@@ -25,6 +22,7 @@ interface ChatAreaProps {
   files: DBFile[];
   conversationId?: string;
   isMobile?: boolean;
+  onOpenSidebar?: () => void;
 }
 
 export default function ChatArea({
@@ -33,111 +31,262 @@ export default function ChatArea({
   files,
   conversationId,
   isMobile = false,
+  onOpenSidebar,
 }: ChatAreaProps) {
   const [showFileUpload, setShowFileUpload] = useState(false);
-  const [showSocialFeed, setShowSocialFeed] = useState(false);
-  const [showModeSelector, setShowModeSelector] = useState(false);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const [currentMode, setCurrentMode] = useState<ConversationMode>(
     (conversation?.mode as ConversationMode) || "chat",
   );
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState("");
+  const [localMessages, setLocalMessages] = useState<Message[]>(messages);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const isStreaming = false;
-  const streamingMessage = "";
+  const abortRef = useRef<AbortController | null>(null);
 
-  const sendMessageMutation = useMutation({
-    mutationFn: async (data: {
-      message: string;
-      conversationId?: string;
-      mode?: ConversationMode;
-    }) => {
-      if (!data.conversationId) {
-        throw new Error("No conversation ID provided");
-      }
+  // Keep localMessages in sync with prop (except when streaming)
+  useEffect(() => {
+    if (!isStreaming) {
+      setLocalMessages(messages);
+    }
+  }, [messages, isStreaming]);
 
-      return await apiRequest(
-        `/api/conversations/${data.conversationId}/messages`,
-        "POST",
-        {
-          content: data.message,
-          role: "user",
-        },
-      );
-    },
-    onSuccess: () => {
-      if (conversationId) {
-        queryClient.invalidateQueries({
-          queryKey: ["/api/conversations", conversationId, "messages"],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["/api/conversations"],
-        });
-      }
-    },
-  });
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [localMessages, streamingMessage]);
 
   const updateModeMutation = useMutation({
     mutationFn: async (mode: ConversationMode) => {
       if (!conversationId) return null;
-
-      return await apiRequest(`/api/conversations/${conversationId}`, "PATCH", {
-        mode,
+      const res = await fetch(`/api/conversations/${conversationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ mode }),
       });
+      if (!res.ok) throw new Error("Failed to update mode");
+      return res.json();
     },
     onSuccess: () => {
       if (conversationId) {
-        queryClient.invalidateQueries({
-          queryKey: ["/api/conversations", conversationId],
-        });
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId] });
       }
     },
   });
 
-  async function handleSend(message: string) {
-    if (!message.trim()) return;
+  // ─── SSE streaming chat (Chat mode) ──────────────────────────────────────
 
-    setHasStartedTyping(true);
+  async function sendChatMessage(message: string, convId: string) {
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
 
-    if (!conversationId) {
-      try {
-        const newConversation = await apiRequest("/api/conversations", "POST", {
-          title: message.slice(0, 50),
-          mode: currentMode,
-        });
+    setIsStreaming(true);
+    setStreamingMessage("");
 
-        window.history.pushState({}, "", `/chat/${newConversation.id}`);
-        return;
-      } catch (error) {
-        console.error("Failed to create conversation:", error);
-        return;
-      }
-    }
+    // Optimistically add user message to local state
+    const tempUser: Message = {
+      id: `temp-user-${Date.now()}`,
+      conversationId: convId,
+      role: "user",
+      content: message,
+      metadata: null,
+      createdAt: new Date(),
+    };
+    setLocalMessages((prev) => [...prev, tempUser]);
 
     try {
-      await sendMessageMutation.mutateAsync({
-        message,
-        conversationId,
-        mode: currentMode,
+      const res = await fetch(`/api/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: message, stream: true }),
+        signal: abortRef.current.signal,
       });
-    } catch (error) {
-      console.error("Failed to send message:", error);
+
+      if (!res.ok || !res.body) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let aiContent = "";
+      let userMessageFromServer: Message | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+
+            if (data.type === "user_message") {
+              userMessageFromServer = data.message;
+            } else if (data.type === "token") {
+              aiContent += data.token;
+              setStreamingMessage(aiContent);
+            } else if (data.type === "done" || data.type === "error") {
+              const aiMessage: Message = data.message;
+              setStreamingMessage("");
+              setIsStreaming(false);
+              // Replace temp user message with real one, add AI message
+              setLocalMessages((prev) => {
+                const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
+                return [
+                  ...withoutTemp,
+                  userMessageFromServer || tempUser,
+                  aiMessage,
+                ];
+              });
+              // Browser notification when tab is in background
+              if (data.type === "done" && aiMessage?.content) {
+                notifyMessage("ZED", aiMessage.content);
+              }
+              // Refresh in background
+              queryClient.invalidateQueries({
+                queryKey: ["/api/conversations", convId, "messages"],
+              });
+              queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+            }
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      console.error("[Chat] SSE error:", err);
+      setStreamingMessage("");
+      setIsStreaming(false);
+      setLocalMessages((prev) => [
+        ...prev,
+        {
+          id: `err-${Date.now()}`,
+          conversationId: convId,
+          role: "assistant",
+          content: "Connection error. Make sure Ollama is running locally.",
+          metadata: null,
+          createdAt: new Date(),
+        },
+      ]);
     }
   }
 
-  async function handleModeChange(mode: ConversationMode) {
-    setCurrentMode(mode);
+  // ─── Agent mode orchestration ─────────────────────────────────────────────
 
-    if (conversationId) {
+  async function sendAgentMessage(message: string, convId: string) {
+    setIsStreaming(true);
+
+    const tempUser: Message = {
+      id: `temp-user-${Date.now()}`,
+      conversationId: convId,
+      role: "user",
+      content: message,
+      metadata: null,
+      createdAt: new Date(),
+    };
+    setLocalMessages((prev) => [...prev, tempUser]);
+
+    const tempThinking: Message = {
+      id: `temp-thinking-${Date.now()}`,
+      conversationId: convId,
+      role: "assistant",
+      content: "⚡ Agent is working...",
+      metadata: null,
+      createdAt: new Date(),
+    };
+    setLocalMessages((prev) => [...prev, tempThinking]);
+
+    try {
+      const res = await fetch("/api/orchestrate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ message, conversationId: convId }),
+      });
+
+      const data = await res.json();
+
+      setLocalMessages((prev) => {
+        const withoutTemp = prev.filter(
+          (m) => m.id !== tempUser.id && m.id !== tempThinking.id
+        );
+        return [
+          ...withoutTemp,
+          { ...tempUser, id: `user-${Date.now()}` },
+          {
+            id: `agent-${Date.now()}`,
+            conversationId: convId,
+            role: "assistant" as const,
+            content: data.reply || data.error || "No response",
+            metadata: { agent: data.agent },
+            createdAt: new Date(),
+          },
+        ];
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations", convId, "messages"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    } catch (err) {
+      console.error("[Agent] Error:", err);
+      setLocalMessages((prev) =>
+        prev.filter((m) => m.id !== tempThinking.id)
+      );
+    } finally {
+      setIsStreaming(false);
+    }
+  }
+
+  // ─── Main send handler ────────────────────────────────────────────────────
+
+  async function handleSend(message: string) {
+    if (!message.trim() || isStreaming) return;
+    setHasStartedTyping(true);
+
+    let convId = conversationId;
+
+    if (!convId) {
       try {
-        await updateModeMutation.mutateAsync(mode);
-      } catch (error) {
-        console.error("Failed to update mode:", error);
+        const res = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ title: message.slice(0, 50), mode: currentMode }),
+        });
+        const newConv = await res.json();
+        convId = newConv.id;
+        window.history.pushState({}, "", `/chat/${newConv.id}`);
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      } catch (err) {
+        console.error("Failed to create conversation:", err);
+        return;
       }
     }
 
-    setShowModeSelector(false);
+    if (currentMode === "agent") {
+      await sendAgentMessage(message, convId!);
+    } else {
+      await sendChatMessage(message, convId!);
+    }
+  }
+
+  async function handleModeToggle(mode: ConversationMode) {
+    setCurrentMode(mode);
+    if (conversationId) {
+      updateModeMutation.mutate(mode);
+    }
   }
 
   function handleFileUpload() {
@@ -146,26 +295,18 @@ export default function ChatArea({
         queryKey: ["/api/conversations", conversationId, "files"],
       });
     }
-
     setShowFileUpload(false);
   }
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingMessage]);
-
   return (
-    <div className="flex-1 flex h-screen-mobile relative overflow-hidden">
+    <div className="flex-1 flex h-screen relative overflow-hidden">
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         <ChatBackground />
 
-        <ChatHeader
-          showSocialFeed={showSocialFeed}
-          onToggleSocialFeed={() => setShowSocialFeed((prev) => !prev)}
-        />
+        <ChatHeader isMobile={isMobile} onOpenSidebar={onOpenSidebar} />
 
         <ChatMessagesList
-          messages={messages}
+          messages={localMessages}
           isStreaming={isStreaming}
           streamingMessage={streamingMessage}
           hasStartedTyping={hasStartedTyping}
@@ -180,42 +321,20 @@ export default function ChatArea({
           />
         )}
 
-        {showModeSelector && (
-          <div className="border-t border-white/10 p-4 md:p-6 zed-glass relative z-20 max-h-[60vh] overflow-y-auto">
-            <div className="max-w-4xl mx-auto">
-              <ModeSelector
-                selectedMode={currentMode}
-                onModeChange={handleModeChange}
-                disabled={updateModeMutation.isPending}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="border-t border-white/10 zed-glass p-4 md:p-6 relative z-10 flex-shrink-0">
+        <div className="border-t border-white/10 zed-glass p-4 md:p-6 flex-shrink-0 z-10">
           <div className="max-w-4xl mx-auto space-y-3">
             <ChatControls
               currentMode={currentMode}
-              filesCount={files.length}
+              onModeToggle={handleModeToggle}
               onOpenFileUpload={() => setShowFileUpload(true)}
-              onToggleModeSelector={() =>
-                setShowModeSelector((prev) => !prev)
-              }
             />
-
             <ChatInput
               onSend={handleSend}
-              isLoading={sendMessageMutation.isPending || isStreaming}
+              isLoading={isStreaming}
             />
           </div>
         </div>
       </div>
-
-      {showSocialFeed && !isMobile && (
-        <div className="w-96 border-l border-white/10 zed-sidebar">
-          <SocialFeed />
-        </div>
-      )}
     </div>
   );
 }

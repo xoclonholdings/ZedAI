@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
-import { storage } from "./storage";
+import { logSecurityEvent } from "./services/SecurityAudit";
+import { FileSessionStore } from "./services/FileSessionStore";
 
 // Default credentials and security settings - changeable through settings
 let LOCAL_USERS = [
@@ -37,11 +38,13 @@ export function getLocalSession() {
   
   return session({
     secret: process.env.SESSION_SECRET || "zed-local-secret-key-change-in-production",
+    store: new FileSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
+      secure: false,
+      sameSite: "lax" as const,
       maxAge: sessionTtl,
     },
   });
@@ -68,88 +71,55 @@ function isDeviceTrusted(deviceFingerprint: string, userId: string): boolean {
 export async function setupLocalAuth(app: any) {
   app.use(getLocalSession());
 
-  // Enhanced login endpoint with multi-factor verification
+  // Passphrase-only login
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
-      const { username, password, securePhrase, requiresVerification } = req.body;
-      const deviceFingerprint = getDeviceFingerprint(req);
+      const { passphrase } = req.body;
+      const ip = req.ip || '';
 
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required" });
+      if (!passphrase) {
+        return res.status(400).json({ error: "Passphrase required" });
       }
 
-      // Track verification attempts
-      const attemptKey = `${username}:${req.ip}`;
+      // Rate-limit by IP
+      const attemptKey = `login:${ip}`;
       const attempts = VERIFICATION_ATTEMPTS.get(attemptKey) || { count: 0, lastAttempt: 0 };
-      
-      // Check for repeated failed attempts
-      if (attempts.count >= ADMIN_SECURITY_SETTINGS.maxFailedAttempts && Date.now() - attempts.lastAttempt < ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes * 60 * 1000) {
-        return res.status(429).json({ 
-          error: "Too many failed attempts", 
-          requiresChallenge: true,
-          message: `Please wait ${ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes} minutes or provide your secure phrase to bypass`
+
+      if (
+        attempts.count >= ADMIN_SECURITY_SETTINGS.maxFailedAttempts &&
+        Date.now() - attempts.lastAttempt < ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes * 60 * 1000
+      ) {
+        return res.status(429).json({
+          error: `Too many failed attempts. Please wait ${ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes} minutes.`,
         });
       }
 
-      // Find user in local users
-      const user = LOCAL_USERS.find(u => u.username === username && u.password === password);
-      
-      if (!user) {
-        // Increment failed attempts
+      if (passphrase !== ADMIN_SECURITY_SETTINGS.securePhrase) {
+        const newCount = attempts.count + 1;
         VERIFICATION_ATTEMPTS.set(attemptKey, {
-          count: attempts.count + 1,
+          count: newCount,
           lastAttempt: Date.now(),
-          deviceFingerprint
         });
-        return res.status(401).json({ error: "Invalid credentials" });
+        await logSecurityEvent({
+          type: "auth.login.fail",
+          ip,
+          detail: `Failed attempt ${newCount}/${ADMIN_SECURITY_SETTINGS.maxFailedAttempts}`,
+        });
+        if (newCount >= ADMIN_SECURITY_SETTINGS.maxFailedAttempts) {
+          await logSecurityEvent({
+            type: "auth.lockout",
+            ip,
+            detail: `IP locked out for ${ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes} minutes`,
+          });
+        }
+        return res.status(401).json({ error: "Invalid passphrase" });
       }
 
-      // For Admin user, check additional verification requirements
-      if (user.username === 'Admin') {
-        const deviceTrusted = isDeviceTrusted(deviceFingerprint, user.id);
-        
-        // Check if secondary verification is needed
-        if (!deviceTrusted && !securePhrase && !requiresVerification) {
-          return res.status(200).json({
-            requiresSecondaryAuth: true,
-            methods: ['secure_phrase', 'device_verification'],
-            message: "Admin login from new device requires additional verification"
-          });
-        }
-        
-        // Verify secure phrase if provided
-        if (securePhrase && securePhrase !== ADMIN_SECURITY_SETTINGS.securePhrase) {
-          VERIFICATION_ATTEMPTS.set(attemptKey, {
-            count: attempts.count + 1,
-            lastAttempt: Date.now(),
-            deviceFingerprint
-          });
-          return res.status(401).json({ error: "Invalid secure phrase" });
-        }
-        
-        // If verification passed, mark device as trusted
-        if (securePhrase === ADMIN_SECURITY_SETTINGS.securePhrase || deviceTrusted) {
-          TRUSTED_DEVICES.set(deviceFingerprint, {
-            userId: user.id,
-            verified: true,
-            lastSeen: Date.now()
-          });
-        }
-      }
-
-      // Create/update user in database
-      await storage.upsertUser({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
-      });
-
-      // Clear failed attempts on successful login
+      // Correct passphrase — clear rate-limit and open session as Admin
       VERIFICATION_ATTEMPTS.delete(attemptKey);
 
-      // Set enhanced session with device tracking
+      const user = LOCAL_USERS[0];
+
       (req.session as any).userId = user.id;
       (req.session as any).user = {
         id: user.id,
@@ -160,6 +130,13 @@ export async function setupLocalAuth(app: any) {
         profileImageUrl: user.profileImageUrl,
       };
 
+      await logSecurityEvent({
+        type: "auth.login.success",
+        ip,
+        userId: user.id,
+        detail: `Admin login successful`,
+      });
+
       res.json({
         success: true,
         user: {
@@ -168,9 +145,9 @@ export async function setupLocalAuth(app: any) {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          isAdmin: user.username === 'Admin',
-          sessionExpiry: ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes
-        }
+          isAdmin: true,
+          sessionExpiry: ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes,
+        },
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -178,18 +155,15 @@ export async function setupLocalAuth(app: any) {
     }
   });
 
-  // Enhanced logout with device cleanup
-  app.post("/api/logout", (req: Request, res: Response) => {
-    const session = req.session as any;
-    if (session?.user?.deviceFingerprint) {
-      // Optionally remove device from trusted list on explicit logout
-      // TRUSTED_DEVICES.delete(session.user.deviceFingerprint);
-    }
-    
-    req.session.destroy((err) => {
+  app.post("/api/logout", async (req: Request, res: Response) => {
+    const sess = req.session as any;
+    const userId = sess?.userId;
+    const ip = req.ip || "";
+    req.session.destroy(async (err) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }
+      await logSecurityEvent({ type: "auth.logout", ip, userId, detail: "Session destroyed" });
       res.json({ success: true });
     });
   });
@@ -364,16 +338,6 @@ export const isLocalAuthenticated = async (req: Request, res: Response, next: Ne
   // Update last activity
   session.lastActivity = Date.now();
 
-  // Enhanced device verification for Admin
-  if (session.user?.username === 'Admin') {
-    const currentFingerprint = getDeviceFingerprint(req);
-    if (session.deviceFingerprint !== currentFingerprint) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ message: "Device verification failed" });
-    }
-  }
-
-  // Attach user to request
   (req as any).user = {
     claims: {
       sub: session.userId,
@@ -386,32 +350,20 @@ export const isLocalAuthenticated = async (req: Request, res: Response, next: Ne
 
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   const session = req.session as any;
-  
+
   if (!session?.userId) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  // Check session expiry (45 minutes for Admin)
-  if (session.lastActivity && Date.now() - session.lastActivity > 45 * 60 * 1000) {
+  if (session.lastActivity && Date.now() - session.lastActivity > ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes * 60 * 1000) {
+    const userId = session.userId;
     req.session.destroy(() => {});
+    await logSecurityEvent({ type: "auth.session_expired", userId, ip: req.ip || "", detail: "Session TTL exceeded" });
     return res.status(401).json({ message: "Session expired" });
   }
 
-  // Update last activity
-  if (session.lastActivity) {
-    session.lastActivity = Date.now();
-  }
+  session.lastActivity = Date.now();
 
-  // Enhanced device verification for Admin
-  if (session.user?.isAdmin) {
-    const currentFingerprint = getDeviceFingerprint(req);
-    if (session.user.deviceFingerprint !== currentFingerprint) {
-      req.session.destroy(() => {});
-      return res.status(401).json({ message: "Device verification failed" });
-    }
-  }
-
-  // Attach user to request
   (req as any).user = {
     claims: {
       sub: session.userId,

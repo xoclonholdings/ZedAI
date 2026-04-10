@@ -1,0 +1,9 @@
+{
+  "id": 14,
+  "key": "session_awareness",
+  "value": "{\"mode\":\"persistent\",\"behaviors\":[\"Maintain conversation context across messages\",\"Write significant decisions to episodic memory\",\"Reference past interactions when relevant\",\"Reset working memory on session end\"],\"_planned\":\"Cross-session memory linking via semantic search\"}",
+  "description": "ZED adaptive session awareness policy from core.memory.json",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.714Z",
+  "updatedAt": "2026-04-09T02:14:28.699Z"
+}

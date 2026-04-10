@@ -9,7 +9,7 @@ import {
   Info,
   Bot
 } from "lucide-react";
-import zLogoPath from "@assets/IMG_2227_1753477194826.png";
+import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 import type { ConversationMode } from "@shared/schema";
 
 interface ModeSelectorProps {
@@ -51,7 +51,7 @@ export default function ModeSelector({ selectedMode, onModeChange, disabled }: M
   ];
 
   return (
-    <div className="space-y-4 max-h-[80vh] overflow-y-auto">
+    <div className="space-y-4">
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center space-x-2">
           <Bot className="text-cyan-400" size={20} />

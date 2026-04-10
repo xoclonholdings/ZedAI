@@ -1,0 +1,9 @@
+{
+  "id": 8,
+  "key": "memory_policy",
+  "value": "{\"usage\":\"Blackboard architecture — all agents write to shared-memory, read what they need. No direct agent-to-agent messaging.\",\"sensitive_handling\":\"PII auto-flagged, never logged in plain text, encryption at rest required\",\"classification_levels\":[\"public\",\"internal\",\"confidential\",\"restricted\"],\"_notes\":\"Retention: episodic 90 days, semantic indefinite, working 30 days\"}",
+  "description": "ZED memory usage policy from core.memory.json",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.685Z",
+  "updatedAt": "2026-04-09T02:14:28.666Z"
+}

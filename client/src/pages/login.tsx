@@ -10,53 +10,32 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/UseAuth";
-
-const zLogoPath =
-  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iemVkR3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojYTg1NWY3O3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZWI0ODk5O3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0idXJsKCN6ZWRHcmFkaWVudCkiLz4KICA8cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPgo8L3N2Zz4K";
+import zedLogo from "@assets/Zed_logo.png";
 
 export default function Login() {
-  const [credentials, setCredentials] = useState({
-    username: "",
-    password: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [securePhrase, setSecurePhrase] = useState("");
-  const [showSecondaryAuth, setShowSecondaryAuth] = useState(false);
+  const [passphrase, setPassphrase] = useState("");
+  const [showPassphrase, setShowPassphrase] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const { toast } = useToast();
-  const { refetch } = useAuth() as { refetch: () => Promise<unknown> };
+  const { refresh } = useAuth() as { refresh: () => Promise<void> };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
-    if (!credentials.username || !credentials.password) {
-      toast({
-        title: "Missing credentials",
-        description: "Please enter both username and password",
-        variant: "destructive",
-      });
+    if (!passphrase) {
+      setError("Please enter your passphrase.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const loginData: Record<string, string> = {
-        username: credentials.username,
-        password: credentials.password,
-      };
-
-      if (securePhrase) {
-        loginData.securePhrase = securePhrase;
-      }
-
       const response = await fetch("/api/login", {
         method: "POST",
-        body: JSON.stringify(loginData),
+        body: JSON.stringify({ passphrase }),
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
@@ -64,38 +43,13 @@ export default function Login() {
       const data = await response.json();
 
       if (data.success) {
-        toast({
-          title: "Welcome to ZED",
-          description: "Successfully logged in!",
-        });
-
-        setTimeout(async () => {
-          await refetch();
-        }, 200);
-
+        await refresh();
         return;
       }
 
-      if (data.requiresSecondaryAuth) {
-        setShowSecondaryAuth(true);
-        toast({
-          title: "Additional verification required",
-          description: "Please enter your secure phrase to continue",
-        });
-        return;
-      }
-
-      toast({
-        title: "Login failed",
-        description: data.error || "Invalid credentials",
-        variant: "destructive",
-      });
+      setError(data.error || "Access denied.");
     } catch {
-      toast({
-        title: "Login failed",
-        description: "Network error. Please try again.",
-        variant: "destructive",
-      });
+      setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +57,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Ambient glow orbs */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl zed-float" />
         <div className="absolute bottom-20 right-20 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl zed-float zed-delay-4s" />
@@ -112,12 +67,13 @@ export default function Login() {
       <div className="absolute inset-0 opacity-5 pointer-events-none zed-grid-overlay" />
 
       <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="mb-4">
+          <div className="mb-4 flex justify-center">
             <img
-              src={zLogoPath}
-              alt="Z"
-              className="w-16 h-16 mx-auto opacity-70"
+              src={zedLogo}
+              alt="ZED"
+              className="w-28 h-28 object-contain drop-shadow-[0_0_32px_rgba(168,85,247,0.45)]"
             />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
@@ -126,13 +82,14 @@ export default function Login() {
           <p className="text-muted-foreground mt-2">Enhanced AI Assistant</p>
         </div>
 
+        {/* Login card */}
         <Card className="zed-glass border-white/10">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center text-foreground">
-              Sign In
+              Access ZED
             </CardTitle>
             <CardDescription className="text-center text-muted-foreground">
-              Enter your credentials to access ZED
+              Enter your secure passphrase to continue
             </CardDescription>
           </CardHeader>
 
@@ -140,65 +97,33 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">
-                  Username
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter username"
-                  value={credentials.username}
-                  onChange={(e) =>
-                    setCredentials({
-                      ...credentials,
-                      username: e.target.value,
-                    })
-                  }
-                  className="zed-input"
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Password
+                  Passphrase
                 </label>
                 <div className="relative">
                   <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter password"
-                    value={credentials.password}
-                    onChange={(e) =>
-                      setCredentials({
-                        ...credentials,
-                        password: e.target.value,
-                      })
-                    }
+                    type={showPassphrase ? "text" : "password"}
+                    placeholder="Enter your secure passphrase"
+                    value={passphrase}
+                    onChange={(e) => {
+                      setPassphrase(e.target.value);
+                      if (error) setError("");
+                    }}
                     className="zed-input pr-10"
                     disabled={isLoading}
+                    autoFocus
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={() => setShowPassphrase(!showPassphrase)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassphrase ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
-              {showSecondaryAuth && (
-                <div className="space-y-2 border-t border-gray-700 pt-4">
-                  <div className="text-sm text-yellow-400 bg-yellow-400/10 border border-yellow-400/20 rounded-lg p-3">
-                    🔐 Admin verification required. Enter your secure phrase:
-                  </div>
-                  <Input
-                    type="password"
-                    placeholder="Secure Phrase (XOCLON_SECURE_2025)"
-                    value={securePhrase}
-                    onChange={(e) => setSecurePhrase(e.target.value)}
-                    className="zed-input"
-                    disabled={isLoading}
-                  />
-                </div>
+              {error && (
+                <p className="text-sm text-red-400">{error}</p>
               )}
 
               <Button
@@ -209,12 +134,12 @@ export default function Login() {
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Signing in...</span>
+                    <span>Verifying...</span>
                   </div>
                 ) : (
                   <div className="flex items-center space-x-2">
                     <Sparkles size={16} />
-                    <span>{showSecondaryAuth ? "Verify Access" : "Sign In"}</span>
+                    <span>Enter</span>
                   </div>
                 )}
               </Button>

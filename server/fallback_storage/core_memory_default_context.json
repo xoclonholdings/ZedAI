@@ -1,0 +1,9 @@
+{
+  "id": 18,
+  "key": "default_context",
+  "value": "{\"default_mode\":\"chat\",\"supported_modes\":[\"operations\",\"intelligence\",\"ide-operator\",\"audio-engineer\"],\"session_mode\":\"persistent\"}",
+  "description": "Backward-compatible ZED default context composite",
+  "adminOnly": true,
+  "createdAt": "2026-04-09T02:08:22.732Z",
+  "updatedAt": "2026-04-09T02:14:28.720Z"
+}
