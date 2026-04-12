@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Eye, EyeOff, KeyRound, Sparkles, User } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/UseAuth";
-import zedLogo from "@assets/Zed_logo.png";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { zedLogoSrc } from "@/lib/zedLogo";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -63,40 +63,30 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl zed-float" />
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl zed-float zed-delay-4s" />
-        <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-pink-500/5 rounded-full blur-3xl zed-float zed-delay-2s" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black p-4">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-20 top-20 h-96 w-96 rounded-full bg-cyan-500/5 blur-3xl zed-float" />
+        <div className="absolute bottom-20 right-20 h-80 w-80 rounded-full bg-fuchsia-500/5 blur-3xl zed-float zed-delay-4s" />
+        <div className="absolute left-1/3 top-1/2 h-64 w-64 rounded-full bg-blue-500/5 blur-3xl zed-float zed-delay-2s" />
       </div>
 
       <div className="absolute inset-0 opacity-5 pointer-events-none zed-grid-overlay" />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="mb-4 flex justify-center">
+        <div className="mb-8 flex justify-center">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(0,240,255,0.3),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(255,61,154,0.28),_transparent_60%)] blur-2xl" />
             <img
-              src={zedLogo}
+              src={zedLogoSrc}
               alt="ZED"
-              className="w-28 h-28 object-contain drop-shadow-[0_0_32px_rgba(168,85,247,0.45)]"
+              className="relative z-10 h-24 w-24 object-contain drop-shadow-[0_0_28px_rgba(0,240,255,0.28)]"
             />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            ZED
-          </h1>
-          <p className="text-muted-foreground mt-2">Local-first AI workspace</p>
         </div>
 
         <Card className="zed-glass border-white/10">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center text-foreground">Access ZED</CardTitle>
-            <CardDescription className="text-center text-muted-foreground">
-              Use the admin secure phrase or sign in with a managed local user.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            <div className="flex rounded-xl border border-white/10 overflow-hidden">
+          <CardContent className="space-y-4 pt-6">
+            <div className="flex overflow-hidden rounded-xl border border-white/10">
               <button
                 type="button"
                 onClick={() => setUsePassphrase(true)}
@@ -149,7 +139,10 @@ export default function Login() {
                         disabled={isLoading}
                         autoFocus
                       />
-                      <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <User
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
                     </div>
                   </div>
 
@@ -164,7 +157,10 @@ export default function Login() {
                         className="zed-input pl-10 pr-10"
                         disabled={isLoading}
                       />
-                      <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <KeyRound
+                        size={16}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
@@ -181,12 +177,12 @@ export default function Login() {
 
               <Button
                 type="submit"
-                className="w-full zed-gradient hover:zed-gradient-hover text-white"
+                className="w-full zed-gradient text-white hover:zed-gradient-hover"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     <span>Verifying...</span>
                   </div>
                 ) : (
@@ -199,10 +195,6 @@ export default function Login() {
             </form>
           </CardContent>
         </Card>
-
-        <p className="text-center text-muted-foreground text-sm mt-6">
-          Local authentication • Admin-managed users
-        </p>
       </div>
     </div>
   );
