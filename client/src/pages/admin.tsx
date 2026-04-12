@@ -341,6 +341,31 @@ export default function Admin() {
                 <Card className="zed-glass border-white/10 md:col-span-2">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
+                      <Shield size={18} className="text-cyan-300" />
+                      Fantasma Firewall Link
+                    </CardTitle>
+                    <CardDescription>VPN-first status for the firewall control plane and its public domain exposure.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <StatusDot online={status.firewall?.status === "connected"} />
+                      <span className="text-sm">{status.firewall?.message || "Firewall integration not configured yet."}</span>
+                    </div>
+                    {status.firewall?.baseUrl && (
+                      <p className="text-xs text-muted-foreground">
+                        Route: {status.firewall.route} via {status.firewall.baseUrl}
+                      </p>
+                    )}
+                    <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => setSection("integrations")}>
+                      <Shield size={14} className="mr-1" />
+                      Configure Firewall
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="zed-glass border-white/10 md:col-span-2">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
                       <Zap size={18} className="text-yellow-400" />
                       Quick Actions
                     </CardTitle>

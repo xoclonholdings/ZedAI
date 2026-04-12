@@ -110,6 +110,21 @@ export interface TelephonyIntegrationSettings {
   notes: string;
 }
 
+export interface FirewallIntegrationSettings {
+  enabled: boolean;
+  status: "planned" | "configured" | "active";
+  publicBaseUrl: string;
+  vpnBaseUrl: string;
+  preferredRoute: "vpn" | "public";
+  vpnProvider: string;
+  authToken: string;
+  hasAuthToken?: boolean;
+  healthPath: string;
+  publicHealthPath: string;
+  zedAiWebhookBaseUrl: string;
+  notes: string;
+}
+
 export interface BusinessOperationsSettings {
   enabled: boolean;
   status: "planned" | "configured" | "active";
@@ -127,6 +142,7 @@ export interface IntegrationsSettings {
   github: GitHubIntegrationSettings;
   email: EmailIntegrationSettings;
   telephony: TelephonyIntegrationSettings;
+  firewall: FirewallIntegrationSettings;
   businessOperations: BusinessOperationsSettings;
   kalshi: {
     enabled: boolean;
@@ -263,6 +279,20 @@ export const defaultIntegrations: IntegrationsSettings = {
     apiKey: "",
     hasApiKey: false,
     notes: "Phone and voicemail lane for call routing, missed-call capture, voicemail summaries, and future voice assistant workflows.",
+  },
+  firewall: {
+    enabled: false,
+    status: "planned",
+    publicBaseUrl: "",
+    vpnBaseUrl: "",
+    preferredRoute: "vpn",
+    vpnProvider: "Tailscale",
+    authToken: "",
+    hasAuthToken: false,
+    healthPath: "/api/integration/firewall/status",
+    publicHealthPath: "/api/firewall/public-status",
+    zedAiWebhookBaseUrl: "",
+    notes: "Fantasma Firewall integration for private VPN polling, custom-domain operator access, and future security workflow handoffs into ZED.",
   },
   businessOperations: {
     enabled: true,

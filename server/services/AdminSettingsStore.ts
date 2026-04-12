@@ -167,6 +167,11 @@ function mergeSettings(raw: Partial<AdminSettings> | null | undefined): AdminSet
         ...(raw?.integrations?.telephony || {}),
         hasApiKey: !!(raw?.integrations?.telephony?.apiKey || raw?.integrations?.telephony?.hasApiKey),
       },
+      firewall: {
+        ...defaultIntegrations.firewall,
+        ...(raw?.integrations?.firewall || {}),
+        hasAuthToken: !!(raw?.integrations?.firewall?.authToken || raw?.integrations?.firewall?.hasAuthToken),
+      },
       businessOperations: {
         ...defaultIntegrations.businessOperations,
         ...(raw?.integrations?.businessOperations || {}),
@@ -280,6 +285,14 @@ export async function updateIntegrationSettings(nextIntegrations: Partial<Integr
           nextIntegrations.telephony && "apiKey" in nextIntegrations.telephony
             ? nextIntegrations.telephony.apiKey || current.integrations.telephony.apiKey
             : current.integrations.telephony.apiKey,
+      },
+      firewall: {
+        ...current.integrations.firewall,
+        ...(nextIntegrations.firewall || {}),
+        authToken:
+          nextIntegrations.firewall && "authToken" in nextIntegrations.firewall
+            ? nextIntegrations.firewall.authToken || current.integrations.firewall.authToken
+            : current.integrations.firewall.authToken,
       },
       businessOperations: {
         ...current.integrations.businessOperations,
@@ -501,6 +514,11 @@ export async function getPublicAdminSettings() {
         ...settings.integrations.telephony,
         apiKey: "",
         hasApiKey: !!settings.integrations.telephony.apiKey,
+      },
+      firewall: {
+        ...settings.integrations.firewall,
+        authToken: "",
+        hasAuthToken: !!settings.integrations.firewall.authToken,
       },
     },
     users: settings.users.map(sanitizeUser),

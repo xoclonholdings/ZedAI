@@ -15,6 +15,7 @@ import { ManagerAgent } from "./orchestrator/ManagerAgent";
 import { checkTiers, filterOutputForTier3 } from "./middleware/TierEnforcement";
 import { logSecurityEvent, getRecentSecurityEvents } from "./services/SecurityAudit";
 import { injectMemory } from "./services/MemoryInjector";
+import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationService";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
 import fs from "fs/promises";
@@ -416,6 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const ollama = await checkOllamaHealth();
     const settings = await getPublicAdminSettings();
     const github = await checkGitHubIntegrationStatus();
+    const firewall = await getFirewallIntegrationStatus();
     res.json({
       system: "ZED",
       ollama: { status: ollama.status, models: ollama.models },
@@ -429,6 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
       integrations: settings.integrations,
       github,
+      firewall,
       auth: {
         adminUsername: settings.auth.adminUsername,
         requireSecureCookies: settings.auth.requireSecureCookies,
@@ -486,6 +489,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/integrations/github/readout", isAdmin, async (_req, res) => {
     const readout = await getGitHubRepoReadout();
     res.json(readout);
+  });
+
+  app.get("/api/admin/integrations/firewall/status", isAdmin, async (_req, res) => {
+    const status = await getFirewallIntegrationStatus();
+    res.json(status);
   });
 
   app.get("/api/admin/users", isAdmin, async (_req, res) => {

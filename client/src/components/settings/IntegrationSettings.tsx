@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Briefcase, Github, Mail, Mic, Phone, RefreshCw, Save } from "lucide-react";
+import { Briefcase, Github, Mail, Mic, Phone, RefreshCw, Save, Shield } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,20 @@ type IntegrationState = {
     hasApiKey?: boolean;
     notes: string;
   };
+  firewall: {
+    enabled: boolean;
+    status: "planned" | "configured" | "active";
+    publicBaseUrl: string;
+    vpnBaseUrl: string;
+    preferredRoute: "vpn" | "public";
+    vpnProvider: string;
+    authToken: string;
+    hasAuthToken?: boolean;
+    healthPath: string;
+    publicHealthPath: string;
+    zedAiWebhookBaseUrl: string;
+    notes: string;
+  };
   businessOperations: {
     enabled: boolean;
     status: "planned" | "configured" | "active";
@@ -88,6 +102,20 @@ type GitHubReadout = {
   };
   pulls?: Array<{ number: number; title: string; url: string; draft: boolean }>;
   issues?: Array<{ number: number; title: string; url: string }>;
+};
+
+type FirewallStatus = {
+  status?: string;
+  message?: string;
+  route?: "vpn" | "public";
+  baseUrl?: string;
+  vpnProvider?: string;
+  failures?: string[];
+  firewall?: {
+    status?: string;
+    threatCounters?: Record<string, number>;
+    recentSecurityEvents?: Array<{ id?: number; severity?: string; description?: string }>;
+  };
 };
 
 const defaults: IntegrationState = {
@@ -137,6 +165,20 @@ const defaults: IntegrationState = {
     hasApiKey: false,
     notes: "",
   },
+  firewall: {
+    enabled: false,
+    status: "planned",
+    publicBaseUrl: "",
+    vpnBaseUrl: "",
+    preferredRoute: "vpn",
+    vpnProvider: "Tailscale",
+    authToken: "",
+    hasAuthToken: false,
+    healthPath: "/api/integration/firewall/status",
+    publicHealthPath: "/api/firewall/public-status",
+    zedAiWebhookBaseUrl: "",
+    notes: "Use the VPN URL for ZED server-to-server access and the public domain for operators.",
+  },
   businessOperations: {
     enabled: true,
     status: "configured",
@@ -169,6 +211,9 @@ export default function IntegrationSettings() {
   const [githubStatus, setGitHubStatus] = useState("");
   const [githubTesting, setGitHubTesting] = useState(false);
   const [githubReadout, setGitHubReadout] = useState<GitHubReadout | null>(null);
+  const [firewallStatus, setFirewallStatus] = useState("");
+  const [firewallTesting, setFirewallTesting] = useState(false);
+  const [firewallReadout, setFirewallReadout] = useState<FirewallStatus | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,6 +232,7 @@ export default function IntegrationSettings() {
             github: { ...defaults.github, ...(payload.integrations?.github || {}) },
             email: { ...defaults.email, ...(payload.integrations?.email || {}) },
             telephony: { ...defaults.telephony, ...(payload.integrations?.telephony || {}) },
+            firewall: { ...defaults.firewall, ...(payload.integrations?.firewall || {}) },
             businessOperations: {
               ...defaults.businessOperations,
               ...(payload.integrations?.businessOperations || {}),
@@ -224,6 +270,7 @@ export default function IntegrationSettings() {
           github: { ...defaults.github, ...(next.github || {}) },
           email: { ...defaults.email, ...(next.email || {}) },
           telephony: { ...defaults.telephony, ...(next.telephony || {}) },
+          firewall: { ...defaults.firewall, ...(next.firewall || {}) },
           businessOperations: { ...defaults.businessOperations, ...(next.businessOperations || {}) },
           kalshi: { ...defaults.kalshi, ...(next.kalshi || {}) },
           voiceTranscription: { ...defaults.voiceTranscription, ...(next.voiceTranscription || {}) },
@@ -264,6 +311,35 @@ export default function IntegrationSettings() {
     }
   }
 
+  async function testFirewallConnection() {
+    setFirewallTesting(true);
+    setFirewallStatus("");
+    try {
+      const response = await fetch("/api/admin/integrations/firewall/status", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      const payload = await response.json();
+      setFirewallReadout(payload);
+      setFirewallStatus(payload.message || "Firewall status checked.");
+
+      if (payload.status === "connected") {
+        setData((prev) => ({
+          ...prev,
+          firewall: {
+            ...prev.firewall,
+            status: "active",
+            enabled: true,
+          },
+        }));
+      }
+    } catch {
+      setFirewallStatus("Firewall status check failed.");
+    } finally {
+      setFirewallTesting(false);
+    }
+  }
+
   function toggleBusinessFlag(key: keyof IntegrationState["businessOperations"]) {
     setData((prev) => ({
       ...prev,
@@ -276,6 +352,122 @@ export default function IntegrationSettings() {
 
   return (
     <div className="space-y-4">
+      <Card className="zed-glass border-white/10">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-cyan-300" />
+            Fantasma Firewall + VPN
+          </CardTitle>
+          <CardDescription>
+            Private firewall reachability for ZED over VPN, with a separate public domain for operator access.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Badge className="bg-yellow-500/20 text-yellow-200">Status: {data.firewall.status}</Badge>
+            <Badge className={data.firewall.enabled ? "bg-green-500/20 text-green-200" : "bg-white/10 text-white/70"}>
+              {data.firewall.enabled ? "Enabled" : "Disabled"}
+            </Badge>
+            <Badge className={data.firewall.hasAuthToken ? "bg-cyan-500/20 text-cyan-200" : "bg-white/10 text-white/70"}>
+              {data.firewall.hasAuthToken ? "Token stored" : "No token"}
+            </Badge>
+            <Badge className="bg-white/10 text-white/70">Preferred route: {data.firewall.preferredRoute}</Badge>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Public Firewall Domain</Label>
+              <Input
+                value={data.firewall.publicBaseUrl}
+                placeholder="https://firewall.yourdomain.com"
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, publicBaseUrl: e.target.value } }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>VPN Firewall URL</Label>
+              <Input
+                value={data.firewall.vpnBaseUrl}
+                placeholder="http://100.x.x.x:5000"
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, vpnBaseUrl: e.target.value } }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>VPN Provider</Label>
+              <Input
+                value={data.firewall.vpnProvider}
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, vpnProvider: e.target.value } }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Preferred Route</Label>
+              <Input
+                value={data.firewall.preferredRoute}
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, preferredRoute: e.target.value === "public" ? "public" : "vpn" } }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Private Health Path</Label>
+              <Input
+                value={data.firewall.healthPath}
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, healthPath: e.target.value } }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Public Health Path</Label>
+              <Input
+                value={data.firewall.publicHealthPath}
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, publicHealthPath: e.target.value } }))}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Shared Auth Token</Label>
+              <Input
+                type="password"
+                value={data.firewall.authToken}
+                placeholder={data.firewall.hasAuthToken ? "Stored token preserved unless replaced" : "Paste shared firewall token"}
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, authToken: e.target.value } }))}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>ZED Webhook Base URL</Label>
+              <Input
+                value={data.firewall.zedAiWebhookBaseUrl}
+                placeholder="https://zed.yourdomain.com"
+                onChange={(e) => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, zedAiWebhookBaseUrl: e.target.value } }))}
+              />
+            </div>
+          </div>
+          {firewallStatus && <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-muted-foreground">{firewallStatus}</div>}
+          {firewallReadout && (
+            <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2 text-sm text-muted-foreground">
+              <p>Route used: {firewallReadout.route || "none"}</p>
+              <p>Endpoint: {firewallReadout.baseUrl || "not connected"}</p>
+              {firewallReadout.firewall?.threatCounters && (
+                <p>
+                  Threat counters:{" "}
+                  {Object.entries(firewallReadout.firewall.threatCounters)
+                    .map(([key, value]) => `${key}=${String(value)}`)
+                    .join(" | ")}
+                </p>
+              )}
+              {(firewallReadout.failures || []).length > 0 && <p>Failures: {firewallReadout.failures!.join(", ")}</p>}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="border-white/10"
+              onClick={() => setData((prev) => ({ ...prev, firewall: { ...prev.firewall, enabled: !prev.firewall.enabled, status: prev.firewall.enabled ? "planned" : "configured" } }))}
+            >
+              {data.firewall.enabled ? "Disable Firewall" : "Enable Firewall"}
+            </Button>
+            <Button variant="outline" className="border-white/10" onClick={testFirewallConnection} disabled={firewallTesting}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${firewallTesting ? "animate-spin" : ""}`} />
+              {firewallTesting ? "Checking..." : "Test Firewall"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="zed-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
