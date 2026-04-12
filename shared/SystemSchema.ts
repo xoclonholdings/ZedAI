@@ -12,7 +12,7 @@ import {
   real,
 } from "drizzle-orm/pg-core";
 import { users } from "./UsersSchema";
-import { Conversation } from '../../shared/types';
+import { conversations } from "./ConversationsSchema";
 import { messages } from "./MessagesSchema";
 import { files } from "./FilesSchema";
 import { chatSessions } from "./SessionsSchema";

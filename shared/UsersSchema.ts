@@ -17,7 +17,7 @@ export type User = typeof users.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = typeof users.$inferInsert;
 
-export const insertUserSchema = createInsertSchema(users).omit({
+export const insertUserSchema = (createInsertSchema(users) as any).omit({
   id: true,
   createdAt: true,
 });

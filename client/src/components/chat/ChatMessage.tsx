@@ -8,8 +8,17 @@ interface ChatMessageProps {
   message: Message;
 }
 
+type MessageAttachment = {
+  mimeType: string;
+  name: string;
+  size: number;
+};
+
 export default function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const attachments = Array.isArray((message.metadata as { attachments?: MessageAttachment[] } | null)?.attachments)
+    ? ((message.metadata as { attachments?: MessageAttachment[] }).attachments ?? [])
+    : [];
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith('image/')) return <Image size={14} />;
@@ -29,10 +38,10 @@ export default function ChatMessage({ message }: ChatMessageProps) {
               <p className="whitespace-pre-wrap text-foreground leading-relaxed">{message.content}</p>
             </div>
             
-            {message.attachments && message.attachments.length > 0 && (
+            {attachments.length > 0 && (
               <div className="mt-4 pt-4 border-t border-white/10">
                 <div className="space-y-2">
-                  {message.attachments.map((file, index) => (
+                  {attachments.map((file, index) => (
                     <div key={index} className="flex items-center space-x-3 p-2 rounded-xl bg-white/5">
                       <div className="text-cyan-400">
                         {getFileIcon(file.mimeType)}

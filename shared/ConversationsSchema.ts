@@ -19,7 +19,7 @@ export const conversations = pgTable("conversations", {
 export const modeSchema = z.enum(["chat", "agent"]);
 export type ConversationMode = z.infer<typeof modeSchema>;
 
-export const insertConversationSchema = createInsertSchema(conversations).omit({
+export const insertConversationSchema = (createInsertSchema(conversations) as any).omit({
   id: true,
   createdAt: true,
   updatedAt: true,

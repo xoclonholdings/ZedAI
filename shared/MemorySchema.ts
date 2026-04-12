@@ -37,19 +37,19 @@ export const scratchpadMemory = pgTable("scratchpad_memory", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertCoreMemorySchema = createInsertSchema(coreMemory).omit({
+export const insertCoreMemorySchema = (createInsertSchema(coreMemory) as any).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertProjectMemorySchema = createInsertSchema(projectMemory).omit({
+export const insertProjectMemorySchema = (createInsertSchema(projectMemory) as any).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
 });
 
-export const insertScratchpadMemorySchema = createInsertSchema(scratchpadMemory).omit({
+export const insertScratchpadMemorySchema = (createInsertSchema(scratchpadMemory) as any).omit({
   id: true,
   createdAt: true,
 });

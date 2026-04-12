@@ -16,7 +16,7 @@ export const chatSessions = pgTable("chat_sessions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertSessionSchema = createInsertSchema(chatSessions).omit({
+export const insertSessionSchema = (createInsertSchema(chatSessions) as any).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
