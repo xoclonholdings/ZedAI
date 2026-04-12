@@ -1,9 +1,8 @@
-import { X, Plus, Sparkles } from "lucide-react";
+import { X, Plus, Shield, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import LogoutButton from "@/components/auth/LogoutButton";
 import SettingsModal from "@/components/settings/SettingsModal";
-import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatSidebarHeaderProps {
   isMobile?: boolean;
@@ -11,6 +10,8 @@ interface ChatSidebarHeaderProps {
   onCreateConversation: () => void;
   onClose?: () => void;
   onCollapse: () => void;
+  isAdmin?: boolean;
+  onOpenAdmin?: () => void;
 }
 
 export default function ChatSidebarHeader({
@@ -19,15 +20,16 @@ export default function ChatSidebarHeader({
   onCreateConversation,
   onClose,
   onCollapse,
+  isAdmin = false,
+  onOpenAdmin,
 }: ChatSidebarHeaderProps) {
   return (
     <div className="p-6 border-b border-white/10 relative z-10">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div>
-            <h2 className="text-xl font-bold flex items-center space-x-2">
-              <img src={zLogoPath} alt="Z" className="w-5 h-5" />
-              <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+            <h2 className="text-xl font-black uppercase tracking-[0.24em]">
+              <span className="bg-gradient-to-r from-pink-500 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
                 ZED
               </span>
             </h2>
@@ -65,6 +67,17 @@ export default function ChatSidebarHeader({
 
       <div className="mt-4 space-y-2">
         <SettingsModal />
+        {isAdmin && onOpenAdmin && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onOpenAdmin}
+            className="w-full justify-start zed-button"
+          >
+            <Shield className="mr-2 h-4 w-4" />
+            Admin Panel
+          </Button>
+        )}
       </div>
     </div>
   );

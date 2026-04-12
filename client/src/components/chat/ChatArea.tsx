@@ -24,6 +24,8 @@ interface ChatAreaProps {
   messages: Message[];
   files: DBFile[];
   conversationId?: string;
+  selectedProjectId?: string | null;
+  onAssignProject?: (conversationId: string, projectId: string | null) => Promise<void> | void;
   isMobile?: boolean;
   onOpenSidebar?: () => void;
 }
@@ -33,6 +35,8 @@ export default function ChatArea({
   messages,
   files,
   conversationId,
+  selectedProjectId,
+  onAssignProject,
   isMobile = false,
   onOpenSidebar,
 }: ChatAreaProps) {
@@ -45,16 +49,24 @@ export default function ChatArea({
   const [streamingMessage, setStreamingMessage] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
   const [agentTarget, setAgentTarget] = useState<AgentTarget>("auto");
+  const [stagedConversationId, setStagedConversationId] = useState<string | undefined>(conversationId);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const abortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+  const activeConversationId = conversationId || stagedConversationId;
+
+  useEffect(() => {
+    if (conversationId) {
+      setStagedConversationId(conversationId);
+    }
+  }, [conversationId]);
 
   // Keep localMessages in sync with prop (except when streaming)
   useEffect(() => {
-    if (!isStreaming) {
+    if (!isStreaming && messages.length > 0) {
       setLocalMessages(messages);
     }
   }, [messages, isStreaming]);
@@ -69,8 +81,8 @@ export default function ChatArea({
 
   const updateModeMutation = useMutation({
     mutationFn: async (mode: ConversationMode) => {
-      if (!conversationId) return null;
-      const res = await fetch(`/api/conversations/${conversationId}`, {
+      if (!activeConversationId) return null;
+      const res = await fetch(`/api/conversations/${activeConversationId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -80,8 +92,8 @@ export default function ChatArea({
       return res.json();
     },
     onSuccess: () => {
-      if (conversationId) {
-        queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId] });
+      if (activeConversationId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations", activeConversationId] });
       }
     },
   });
@@ -261,20 +273,16 @@ export default function ChatArea({
     if (!message.trim() || isStreaming) return;
     setHasStartedTyping(true);
 
-    let convId = conversationId;
+    let convId = activeConversationId;
+    let createdConversation = false;
 
     if (!convId) {
       try {
-        const res = await fetch("/api/conversations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ title: message.slice(0, 50), mode: currentMode }),
-        });
-        const newConv = await res.json();
-        convId = newConv.id;
-        navigate(`/chat/${newConv.id}`);
-        queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+        convId = await ensureConversation(currentMode, false);
+        if (selectedProjectId && onAssignProject) {
+          await onAssignProject(convId, selectedProjectId);
+        }
+        createdConversation = true;
       } catch (err) {
         console.error("Failed to create conversation:", err);
         return;
@@ -285,6 +293,10 @@ export default function ChatArea({
       await sendAgentMessage(message, convId!);
     } else {
       await sendChatMessage(message, convId!);
+    }
+
+    if (createdConversation && convId) {
+      navigate(`/chat/${convId}`);
     }
   }
 
@@ -309,14 +321,14 @@ export default function ChatArea({
 
   async function handleModeToggle(mode: ConversationMode) {
     setCurrentMode(mode);
-    if (conversationId) {
+    if (activeConversationId) {
       updateModeMutation.mutate(mode);
     }
   }
 
-  async function ensureConversation(mode: ConversationMode = currentMode) {
-    if (conversationId) {
-      return conversationId;
+  async function ensureConversation(mode: ConversationMode = currentMode, navigateAfterCreate = true) {
+    if (activeConversationId) {
+      return activeConversationId;
     }
 
     const res = await fetch("/api/conversations", {
@@ -331,21 +343,29 @@ export default function ChatArea({
     }
 
     const newConv = await res.json();
+    setStagedConversationId(newConv.id);
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-    navigate(`/chat/${newConv.id}`);
+    if (navigateAfterCreate) {
+      navigate(`/chat/${newConv.id}`);
+    }
     return newConv.id as string;
   }
 
   function handleFileUpload() {
-    if (conversationId) {
+    if (activeConversationId) {
       queryClient.invalidateQueries({
-        queryKey: ["/api/conversations", conversationId, "files"],
+        queryKey: ["/api/conversations", activeConversationId, "files"],
       });
     }
     setShowFileUpload(false);
   }
 
-  async function handleOpenFileUpload() {
+  async function handleToggleFileUpload() {
+    if (showFileUpload) {
+      setShowFileUpload(false);
+      return;
+    }
+
     try {
       await ensureConversation();
       setShowFileUpload(true);
@@ -373,20 +393,23 @@ export default function ChatArea({
           messagesEndRef={messagesEndRef}
         />
 
-        {showFileUpload && conversationId && (
-          <FileUpload
-            conversationId={conversationId}
-            onUpload={handleFileUpload}
-            onClose={() => setShowFileUpload(false)}
-          />
-        )}
-
         <div className="border-t border-white/10 zed-glass p-4 md:p-6 flex-shrink-0 z-10">
           <div className="max-w-4xl mx-auto space-y-3">
+        {showFileUpload && activeConversationId && (
+          <div className="pointer-events-none absolute inset-x-4 bottom-28 z-20 md:inset-x-6 md:bottom-32">
+            <div className="pointer-events-auto mx-auto max-w-4xl">
+              <FileUpload
+                conversationId={activeConversationId}
+                onUpload={handleFileUpload}
+                onClose={() => setShowFileUpload(false)}
+              />
+            </div>
+          </div>
+        )}
         <ChatControls
           currentMode={currentMode}
           onModeToggle={handleModeToggle}
-          onOpenFileUpload={handleOpenFileUpload}
+          onOpenFileUpload={handleToggleFileUpload}
           onOpenVoice={handleVoiceOpen}
           agentTarget={agentTarget}
           onAgentTargetChange={setAgentTarget}

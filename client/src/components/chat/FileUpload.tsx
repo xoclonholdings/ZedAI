@@ -198,11 +198,11 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
   };
 
   return (
-    <div className="p-4 bg-gray-50">
-      <Card className="p-6">
+    <div className="rounded-2xl border border-white/10 bg-black/90 p-4 shadow-2xl shadow-purple-900/20 backdrop-blur-xl">
+      <Card className="border-white/10 bg-transparent p-4 md:p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Upload Files</h3>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <h3 className="text-lg font-semibold text-white">Upload Files</h3>
+          <Button variant="ghost" size="sm" onClick={onClose} className="text-muted-foreground hover:text-white">
             <X size={16} />
           </Button>
         </div>
@@ -211,8 +211,8 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
             dragActive 
-              ? "border-primary bg-primary/5" 
-              : "border-gray-300 hover:border-gray-400"
+              ? "border-purple-400 bg-purple-500/10" 
+              : "border-white/15 hover:border-white/30"
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -220,11 +220,11 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="mx-auto mb-4 text-gray-400" size={48} />
-          <p className="text-lg font-medium text-gray-700 mb-2">
+          <Upload className="mx-auto mb-4 text-muted-foreground" size={40} />
+          <p className="text-lg font-medium text-white mb-2">
             Drop files here or click to browse
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Supports CSV, Excel, PDF, images, text files up to 32GB
           </p>
           
@@ -241,18 +241,18 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
         {/* Uploading Files */}
         {uploadingFiles.length > 0 && (
           <div className="mt-6 space-y-3">
-            <h4 className="text-sm font-medium text-gray-900">Uploading Files</h4>
+            <h4 className="text-sm font-medium text-white">Uploading Files</h4>
             {uploadingFiles.map((uploadingFile, index) => (
-              <div key={index} className="bg-white rounded-lg p-3 border border-gray-200">
+              <div key={index} className="rounded-lg border border-white/10 bg-white/5 p-3">
                 <div className="flex items-center space-x-3">
-                  <div className="text-gray-500">
+                  <div className="text-muted-foreground">
                     {getFileIcon(uploadingFile.file)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-white truncate">
                       {uploadingFile.file.name}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {formatFileSize(uploadingFile.file.size)}
                     </p>
                   </div>
@@ -263,7 +263,7 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
                     {uploadingFile.status === "error" && (
                       <AlertCircle className="text-red-500" size={16} />
                     )}
-                    <span className="text-xs text-gray-500 capitalize">
+                    <span className="text-xs text-muted-foreground capitalize">
                       {uploadingFile.status}
                     </span>
                   </div>

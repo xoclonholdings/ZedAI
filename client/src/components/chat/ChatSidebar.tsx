@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageSquare, Zap } from "lucide-react";
+import { FolderKanban, MessageSquare, Plus, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
@@ -12,9 +12,15 @@ import ConversationList from "./ConversationList";
 import ChatSidebarUserCard from "./ChatSidebarUserCard";
 
 import type { Conversation } from "@shared/schema";
+import type { FilingProject } from "@/pages/chat";
 
 interface ChatSidebarProps {
   conversations: Conversation[];
+  projects: FilingProject[];
+  selectedProjectId: string | null;
+  onSelectProject: (projectId: string | null) => void;
+  onCreateProject: () => void;
+  onAssignProject: (conversationId: string, projectId: string | null) => void;
   onClose?: () => void;
   isMobile?: boolean;
   onMenuClick?: () => void;
@@ -22,14 +28,21 @@ interface ChatSidebarProps {
 
 interface LocalUser {
   id: string;
+  username?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
+  isAdmin?: boolean;
 }
 
 export default function ChatSidebar({
   conversations,
+  projects,
+  selectedProjectId,
+  onSelectProject,
+  onCreateProject,
+  onAssignProject,
   onClose,
   isMobile = false,
 }: ChatSidebarProps) {
@@ -51,6 +64,9 @@ export default function ChatSidebar({
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      if (selectedProjectId) {
+        void onAssignProject(data.id, selectedProjectId);
+      }
       navigate(`/chat/${data.id}`);
       if (isMobile && onClose) onClose();
     },
@@ -122,17 +138,56 @@ export default function ChatSidebar({
         onCreateConversation={() => createConversationMutation.mutate()}
         onClose={onClose}
         onCollapse={() => setIsCollapsed(true)}
+        isAdmin={!!user?.isAdmin}
+        onOpenAdmin={() => navigate("/admin")}
       />
 
       <div className="flex-1 px-4 overflow-y-auto">
+        <div className="space-y-2 py-4 border-b border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <FolderKanban className="h-4 w-4 text-purple-400" />
+              Projects
+            </div>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 zed-button" onClick={onCreateProject}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <button
+            onClick={() => onSelectProject(null)}
+            className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
+              selectedProjectId === null ? "zed-glass border border-purple-500/30 text-white" : "text-muted-foreground hover:bg-white/5"
+            }`}
+          >
+            Inbox
+          </button>
+          {projects.map((project) => (
+            <button
+              key={project.id}
+              onClick={() => onSelectProject(project.id)}
+              className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
+                selectedProjectId === project.id ? "zed-glass border border-purple-500/30 text-white" : "text-muted-foreground hover:bg-white/5"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: project.color }} />
+                {project.name}
+                <span className="text-xs text-muted-foreground">({project.conversationIds.length})</span>
+              </span>
+            </button>
+          ))}
+        </div>
         <ConversationList
           conversations={conversations}
+          projects={projects}
           currentPath={location}
+          selectedProjectId={selectedProjectId}
           onSelect={(id) => {
             navigate(`/chat/${id}`);
             if (isMobile && onClose) onClose();
           }}
           onDelete={handleDeleteConversation}
+          onAssignProject={onAssignProject}
         />
       </div>
 

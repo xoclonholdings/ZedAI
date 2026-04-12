@@ -1,12 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import type { Conversation } from "@shared/schema";
+import type { FilingProject } from "@/pages/chat";
 
 interface ConversationListItemProps {
   conversation: Conversation;
+  currentProjectId: string | null;
+  projects: FilingProject[];
   isActive: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onAssignProject: (projectId: string | null) => void;
 }
 
 function formatDate(dateInput: string | Date | null | undefined): string {
@@ -30,9 +34,12 @@ function formatDate(dateInput: string | Date | null | undefined): string {
 
 export default function ConversationListItem({
   conversation,
+  currentProjectId,
+  projects,
   isActive,
   onSelect,
   onDelete,
+  onAssignProject,
 }: ConversationListItemProps) {
   const date = conversation.updatedAt || conversation.createdAt;
 
@@ -62,17 +69,40 @@ export default function ConversationListItem({
               {formatDate(date)}
             </span>
 
-            {conversation.mode && (
-              <span
-                className={`text-xs px-2 py-1 rounded-full ${
-                  conversation.mode === "agent"
-                    ? "bg-purple-500/20 text-purple-400"
-                    : "bg-cyan-500/20 text-cyan-400"
-                }`}
+            <div className="flex items-center gap-2">
+              <select
+                value={currentProjectId || ""}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onChange={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onAssignProject(e.target.value || null);
+                }}
+                className="rounded-md border border-white/10 bg-black/50 px-2 py-1 text-[11px] text-muted-foreground"
               >
-                {conversation.mode}
-              </span>
-            )}
+                <option value="">Inbox</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+
+              {conversation.mode && (
+                <span
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    conversation.mode === "agent"
+                      ? "bg-purple-500/20 text-purple-400"
+                      : "bg-cyan-500/20 text-cyan-400"
+                  }`}
+                >
+                  {conversation.mode}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

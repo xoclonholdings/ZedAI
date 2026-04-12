@@ -1,6 +1,5 @@
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatHeaderProps {
   isMobile?: boolean;
@@ -25,9 +24,8 @@ export default function ChatHeader({
           </Button>
         )}
         <div>
-          <h1 className="text-lg md:text-xl font-bold flex items-center space-x-2">
-            <img src={zLogoPath} alt="Z" className="w-4 h-4 md:w-5 md:h-5" />
-            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+          <h1 className="text-lg font-black uppercase tracking-[0.24em] md:text-2xl">
+            <span className="bg-gradient-to-r from-pink-500 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
               ZED
             </span>
           </h1>

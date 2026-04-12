@@ -31,6 +31,11 @@ import {
   updateManagedUser,
   updatePersonalizationSettings,
 } from "./services/AdminSettingsStore";
+import {
+  assignConversationToProject,
+  createProject,
+  listProjects,
+} from "./services/ProjectFilingStore";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repoPaths";
 
 import {
@@ -113,6 +118,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+
+  app.get("/api/projects", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const projects = await listProjects(userId);
+      res.json({ projects });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch projects" });
+    }
+  });
+
+  app.post("/api/projects", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const project = await createProject(userId, req.body?.name || "");
+      res.json({ project });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create project" });
+    }
+  });
+
+  app.put("/api/conversations/:id/project", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const projects = await assignConversationToProject(userId, req.params.id, req.body?.projectId ?? null);
+      res.json({ projects });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to assign conversation to project" });
     }
   });
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Archive, ChevronLeft, Settings } from "lucide-react";
+import { Archive, ChevronLeft, FolderKanban, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,7 @@ export default function SettingsModal() {
   const { appSettings, setAppSettings } = useAppSettings();
   const { user } = useAuth();
 
-  const isAdmin = user?.isAdmin !== false;
+  const isAdmin = !!user?.isAdmin;
 
   function BackButton() {
     return (
@@ -88,70 +88,67 @@ export default function SettingsModal() {
             <div className="space-y-6">
               <SettingsMainMenu isAdmin={isAdmin} onNavigate={setActiveSection} />
 
-              <SettingsAppControls
-                appSettings={appSettings}
-                setAppSettings={setAppSettings}
-              />
-
-              <SettingsVoiceControls
-                appSettings={appSettings}
-                setAppSettings={setAppSettings}
-              />
-
-              <SettingsSuggestions
-                appSettings={appSettings}
-                setAppSettings={setAppSettings}
-              />
             </div>
           )}
 
-          {activeSection === "rules" && (
+          {activeSection === "preferences" && (
             <div>
               <BackButton />
-              <RulesSettings />
+              <div className="space-y-6">
+                <PersonalizationSettings />
+                <NotificationsSettings
+                  appSettings={appSettings}
+                  setAppSettings={setAppSettings}
+                />
+                <SettingsAppControls
+                  appSettings={appSettings}
+                  setAppSettings={setAppSettings}
+                />
+                <SettingsVoiceControls
+                  appSettings={appSettings}
+                  setAppSettings={setAppSettings}
+                />
+                <SettingsSuggestions
+                  appSettings={appSettings}
+                  setAppSettings={setAppSettings}
+                />
+              </div>
             </div>
           )}
 
-          {activeSection === "personalization" && (
+          {activeSection === "workspace" && (
             <div>
               <BackButton />
-              <PersonalizationSettings />
-            </div>
-          )}
-
-          {activeSection === "notifications" && (
-            <div>
-              <BackButton />
-              <NotificationsSettings
-                appSettings={appSettings}
-                setAppSettings={setAppSettings}
-              />
-            </div>
-          )}
-
-          {activeSection === "data" && (
-            <div>
-              <BackButton />
-              <DataControlsSettings />
-            </div>
-          )}
-
-          {activeSection === "archived" && (
-            <div>
-              <BackButton />
-              <Card className="zed-glass border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Archive className="h-5 w-5" />
-                    Archived Chats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    No archived conversations yet. Conversations you archive will appear here.
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                <RulesSettings />
+                <DataControlsSettings />
+                <Card className="zed-glass border-white/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FolderKanban className="h-5 w-5" />
+                      Projects & Filing
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Projects now live in the chat sidebar so conversations can be filed and filtered there.
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card className="zed-glass border-white/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Archive className="h-5 w-5" />
+                      Archived Chats
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      No archived conversations yet. Conversations you archive will appear here.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           )}
 
@@ -172,7 +169,10 @@ export default function SettingsModal() {
           {activeSection === "admin" && isAdmin && (
             <div>
               <BackButton />
-              <UserManagement />
+              <div className="space-y-6">
+                <UserManagement />
+                <AdminSecuritySettings />
+              </div>
             </div>
           )}
         </div>

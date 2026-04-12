@@ -2,6 +2,7 @@ import { Camera, User } from "lucide-react";
 
 interface LocalUser {
   id: string;
+  username?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
@@ -64,7 +65,7 @@ export default function ChatSidebarUserCard({
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-foreground truncate">
-            {user?.firstName || user?.email || "ZED Admin"}
+            {user?.firstName || user?.username || "ZED"}
           </p>
 
           <div className="flex items-center space-x-2">
