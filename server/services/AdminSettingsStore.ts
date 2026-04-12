@@ -20,20 +20,53 @@ import {
 import { HUB_CONFIG_DIR } from "../utils/repoPaths";
 
 const SETTINGS_PATH = path.join(HUB_CONFIG_DIR, "admin-settings.json");
+const REQUIRED_PRODUCTION_ENV_VARS = [
+  "ZED_ADMIN_USERNAME",
+  "ZED_ADMIN_SECURE_PHRASE",
+  "ZED_ADMIN_PASSWORD",
+  "SESSION_SECRET",
+] as const;
 
 function nowIso() {
   return new Date().toISOString();
 }
 
+function isProductionEnvironment() {
+  return process.env.NODE_ENV === "production";
+}
+
+function requireProductionEnv(name: (typeof REQUIRED_PRODUCTION_ENV_VARS)[number]) {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`${name} must be set in production`);
+  }
+  return value;
+}
+
+function getEnvOrDevelopmentDefault(name: string, developmentDefault: string) {
+  const value = process.env[name]?.trim();
+  if (value) {
+    return value;
+  }
+
+  if (isProductionEnvironment()) {
+    throw new Error(`${name} must be set in production`);
+  }
+
+  return developmentDefault;
+}
+
 function defaultAuthSettings(): AuthSettings {
   return {
-    adminUsername: process.env.ZED_ADMIN_USERNAME || "Admin",
-    securePhrase: process.env.ZED_ADMIN_SECURE_PHRASE || "XOCLON-SECURE-2025",
+    adminUsername: getEnvOrDevelopmentDefault("ZED_ADMIN_USERNAME", "LocalAdmin"),
+    securePhrase: getEnvOrDevelopmentDefault("ZED_ADMIN_SECURE_PHRASE", "LOCAL-DEV-SECURE-PHRASE"),
     sessionTimeoutMinutes: 45,
     maxFailedAttempts: 3,
     lockoutDurationMinutes: 15,
     requireSecureCookies: process.env.NODE_ENV === "production",
-    sessionSecret: process.env.SESSION_SECRET || randomBytes(24).toString("hex"),
+    sessionSecret: isProductionEnvironment()
+      ? requireProductionEnv("SESSION_SECRET")
+      : process.env.SESSION_SECRET || randomBytes(24).toString("hex"),
   };
 }
 
@@ -51,7 +84,7 @@ function verifyPassword(password: string, passwordHash?: string, passwordSalt?: 
 
 function createDefaultAdminUser(auth: AuthSettings): ManagedUser {
   const timestamp = nowIso();
-  const bootstrapPassword = process.env.ZED_ADMIN_PASSWORD || "Zed2025!";
+  const bootstrapPassword = getEnvOrDevelopmentDefault("ZED_ADMIN_PASSWORD", "LocalDevPassword!234");
   return {
     id: "user_admin",
     username: auth.adminUsername,
@@ -156,7 +189,18 @@ async function writeSettings(settings: AdminSettings) {
   await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), "utf-8");
 }
 
+function assertProductionEnvConfiguration() {
+  if (!isProductionEnvironment()) {
+    return;
+  }
+
+  for (const name of REQUIRED_PRODUCTION_ENV_VARS) {
+    requireProductionEnv(name);
+  }
+}
+
 export async function loadAdminSettings(): Promise<AdminSettings> {
+  assertProductionEnvConfiguration();
   try {
     const raw = await fs.readFile(SETTINGS_PATH, "utf-8");
     const settings = mergeSettings(JSON.parse(raw));
