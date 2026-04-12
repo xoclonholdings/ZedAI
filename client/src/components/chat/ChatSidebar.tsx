@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, MessageSquare, Zap } from "lucide-react";
+import { MessageSquare, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
@@ -51,7 +51,7 @@ export default function ChatSidebar({
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      window.history.pushState({}, "", `/chat/${data.id}`);
+      navigate(`/chat/${data.id}`);
       if (isMobile && onClose) onClose();
     },
   });
@@ -73,7 +73,7 @@ export default function ChatSidebar({
   async function handleDeleteConversation(id: string) {
     await deleteConversationMutation.mutateAsync(id);
     if (location.includes(id)) {
-      window.history.pushState({}, "", "/chat");
+      navigate("/chat");
     }
   }
 
@@ -129,7 +129,7 @@ export default function ChatSidebar({
           conversations={conversations}
           currentPath={location}
           onSelect={(id) => {
-            window.history.pushState({}, "", `/chat/${id}`);
+            navigate(`/chat/${id}`);
             if (isMobile && onClose) onClose();
           }}
           onDelete={handleDeleteConversation}
@@ -140,18 +140,6 @@ export default function ChatSidebar({
 
       {/* Bottom controls */}
       <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
-        <SettingsModal />
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/admin")}
-          className="w-full justify-start zed-button text-muted-foreground hover:text-purple-400"
-        >
-          <LayoutDashboard className="mr-2 h-4 w-4" />
-          Admin Panel
-        </Button>
-
         <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground pt-1">
           <Zap size={12} className="text-purple-400" />
           <span>Qwen2.5 via Ollama</span>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { notifyMessage } from "@/lib/notify";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,6 +48,7 @@ export default function ChatArea({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const abortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
 
@@ -271,7 +273,7 @@ export default function ChatArea({
         });
         const newConv = await res.json();
         convId = newConv.id;
-        window.history.pushState({}, "", `/chat/${newConv.id}`);
+        navigate(`/chat/${newConv.id}`);
         queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       } catch (err) {
         console.error("Failed to create conversation:", err);
@@ -312,6 +314,28 @@ export default function ChatArea({
     }
   }
 
+  async function ensureConversation(mode: ConversationMode = currentMode) {
+    if (conversationId) {
+      return conversationId;
+    }
+
+    const res = await fetch("/api/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ title: "New Conversation", mode }),
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to create conversation");
+    }
+
+    const newConv = await res.json();
+    queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    navigate(`/chat/${newConv.id}`);
+    return newConv.id as string;
+  }
+
   function handleFileUpload() {
     if (conversationId) {
       queryClient.invalidateQueries({
@@ -319,6 +343,19 @@ export default function ChatArea({
       });
     }
     setShowFileUpload(false);
+  }
+
+  async function handleOpenFileUpload() {
+    try {
+      await ensureConversation();
+      setShowFileUpload(true);
+    } catch (error) {
+      toast({
+        title: "Upload unavailable",
+        description: "Could not create a conversation for file upload. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -349,7 +386,7 @@ export default function ChatArea({
         <ChatControls
           currentMode={currentMode}
           onModeToggle={handleModeToggle}
-          onOpenFileUpload={() => setShowFileUpload(true)}
+          onOpenFileUpload={handleOpenFileUpload}
           onOpenVoice={handleVoiceOpen}
           agentTarget={agentTarget}
           onAgentTargetChange={setAgentTarget}
