@@ -1,3 +1,10 @@
 {
-  "type": "module"
+  "name": "zed-shared",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "drizzle-orm": "^0.45.1",
+    "drizzle-zod": "^0.7.0",
+    "zod": "^3.22.4"
+  }
 }
