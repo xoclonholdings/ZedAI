@@ -13,7 +13,7 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertMessageSchema = createInsertSchema(messages).omit({
+export const insertMessageSchema = (createInsertSchema(messages) as any).omit({
   id: true,
   createdAt: true,
 });

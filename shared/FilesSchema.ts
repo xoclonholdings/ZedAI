@@ -17,7 +17,7 @@ export const files = pgTable("files", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertFileSchema = createInsertSchema(files).omit({
+export const insertFileSchema = (createInsertSchema(files) as any).omit({
   id: true,
   createdAt: true,
 });
