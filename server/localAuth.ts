@@ -35,6 +35,8 @@ async function getSessionMiddleware() {
   const isHostedCrossOrigin = Boolean(frontendOrigin);
 
   return session({
+    name: "zed.sid",
+    proxy: isHostedCrossOrigin,
     secret: settings.auth.sessionSecret,
     store: new FileSessionStore(),
     resave: false,
@@ -120,18 +122,25 @@ export async function setupLocalAuth(app: any) {
         detail: `${user.isAdmin ? "Admin" : "User"} login successful`,
       });
 
-      res.json({
-        success: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          profileImageUrl: user.profileImageUrl,
-          isAdmin: user.isAdmin,
-          sessionExpiry: settings.auth.sessionTimeoutMinutes,
-        },
+      req.session.save((saveError) => {
+        if (saveError) {
+          console.error("Session save error:", saveError);
+          return res.status(500).json({ error: "Login failed" });
+        }
+
+        res.json({
+          success: true,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            profileImageUrl: user.profileImageUrl,
+            isAdmin: user.isAdmin,
+            sessionExpiry: settings.auth.sessionTimeoutMinutes,
+          },
+        });
       });
     } catch (error) {
       console.error("Login error:", error);

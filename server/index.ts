@@ -33,6 +33,14 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.get("/", (_req, res) => {
+  res.status(200).json({ ok: true, service: "zed-server" });
+});
+
+app.head("/", (_req, res) => {
+  res.sendStatus(200);
+});
+
 process.on("unhandledRejection", (reason) => {
   if (reason && typeof reason === "object" && "message" in reason) {
     const message = String((reason as { message: string }).message);
