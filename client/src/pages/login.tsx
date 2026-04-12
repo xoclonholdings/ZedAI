@@ -1,21 +1,19 @@
 import { useState } from "react";
-import { Eye, EyeOff, Sparkles } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Sparkles, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/UseAuth";
 import zedLogo from "@assets/Zed_logo.png";
 
 export default function Login() {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [passphrase, setPassphrase] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [showPassphrase, setShowPassphrase] = useState(false);
+  const [usePassphrase, setUsePassphrase] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -25,8 +23,13 @@ export default function Login() {
     e.preventDefault();
     setError("");
 
-    if (!passphrase) {
-      setError("Please enter your passphrase.");
+    if (usePassphrase && !passphrase.trim()) {
+      setError("Enter the admin secure phrase.");
+      return;
+    }
+
+    if (!usePassphrase && (!username.trim() || !password.trim())) {
+      setError("Enter a username and password.");
       return;
     }
 
@@ -35,7 +38,11 @@ export default function Login() {
     try {
       const response = await fetch("/api/login", {
         method: "POST",
-        body: JSON.stringify({ passphrase }),
+        body: JSON.stringify(
+          usePassphrase
+            ? { passphrase: passphrase.trim() }
+            : { username: username.trim(), password },
+        ),
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
@@ -57,7 +64,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Ambient glow orbs */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-20 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl zed-float" />
         <div className="absolute bottom-20 right-20 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl zed-float zed-delay-4s" />
@@ -67,7 +73,6 @@ export default function Login() {
       <div className="absolute inset-0 opacity-5 pointer-events-none zed-grid-overlay" />
 
       <div className="relative z-10 w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="mb-4 flex justify-center">
             <img
@@ -79,52 +84,100 @@ export default function Login() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
             ZED
           </h1>
-          <p className="text-muted-foreground mt-2">Enhanced AI Assistant</p>
+          <p className="text-muted-foreground mt-2">Local-first AI workspace</p>
         </div>
 
-        {/* Login card */}
         <Card className="zed-glass border-white/10">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center text-foreground">
-              Access ZED
-            </CardTitle>
+            <CardTitle className="text-2xl text-center text-foreground">Access ZED</CardTitle>
             <CardDescription className="text-center text-muted-foreground">
-              Enter your secure passphrase to continue
+              Use the admin secure phrase or sign in with a managed local user.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">
-                  Passphrase
-                </label>
-                <div className="relative">
-                  <Input
-                    type={showPassphrase ? "text" : "password"}
-                    placeholder="Enter your secure passphrase"
-                    value={passphrase}
-                    onChange={(e) => {
-                      setPassphrase(e.target.value);
-                      if (error) setError("");
-                    }}
-                    className="zed-input pr-10"
-                    disabled={isLoading}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassphrase(!showPassphrase)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassphrase ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
+            <div className="flex rounded-xl border border-white/10 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setUsePassphrase(true)}
+                className={`flex-1 px-4 py-2 text-sm ${usePassphrase ? "bg-white/10 text-white" : "text-muted-foreground"}`}
+              >
+                Admin Phrase
+              </button>
+              <button
+                type="button"
+                onClick={() => setUsePassphrase(false)}
+                className={`flex-1 px-4 py-2 text-sm ${!usePassphrase ? "bg-white/10 text-white" : "text-muted-foreground"}`}
+              >
+                User Login
+              </button>
+            </div>
 
-              {error && (
-                <p className="text-sm text-red-400">{error}</p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {usePassphrase ? (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">Secure Phrase</label>
+                  <div className="relative">
+                    <Input
+                      type={showPassphrase ? "text" : "password"}
+                      placeholder="Enter admin secure phrase"
+                      value={passphrase}
+                      onChange={(e) => setPassphrase(e.target.value)}
+                      className="zed-input pr-10"
+                      disabled={isLoading}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassphrase(!showPassphrase)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassphrase ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Username</label>
+                    <div className="relative">
+                      <Input
+                        placeholder="Enter username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="zed-input pl-10"
+                        disabled={isLoading}
+                        autoFocus
+                      />
+                      <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Password</label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="zed-input pl-10 pr-10"
+                        disabled={isLoading}
+                      />
+                      <KeyRound size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
+
+              {error && <p className="text-sm text-red-400">{error}</p>}
 
               <Button
                 type="submit"
@@ -139,7 +192,7 @@ export default function Login() {
                 ) : (
                   <div className="flex items-center space-x-2">
                     <Sparkles size={16} />
-                    <span>Enter</span>
+                    <span>{usePassphrase ? "Enter with Secure Phrase" : "Sign In"}</span>
                   </div>
                 )}
               </Button>
@@ -148,7 +201,7 @@ export default function Login() {
         </Card>
 
         <p className="text-center text-muted-foreground text-sm mt-6">
-          Local authentication • No external dependencies
+          Local authentication • Admin-managed users
         </p>
       </div>
     </div>

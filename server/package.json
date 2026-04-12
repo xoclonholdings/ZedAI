@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --ignore '../client/**' index.ts",
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "smoke": "tsx scripts/smokeCheck.ts",
+    "merge-memory": "tsx scripts/mergeMemorySources.ts",
+    "compact-memory": "tsx scripts/compactFoundationMemory.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

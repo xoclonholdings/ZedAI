@@ -1,0 +1,33 @@
+{
+  "importedAt": "2026-04-12T08:21:39.325Z",
+  "sourceCount": 2,
+  "conversationCount": 448,
+  "messageCount": 26047,
+  "importedDocCount": 3,
+  "sources": [
+    {
+      "name": "dragonfly",
+      "root": "dragonfly",
+      "conversationsPath": "dragonfly/conversations.json",
+      "strategicDocCount": 8
+    },
+    {
+      "name": "zed-memory",
+      "root": "zed-memory/storage/ZedAI_data/Zed_Memory_GPT/Zed_Memory_part2",
+      "conversationsPath": "zed-memory/storage/ZedAI_data/Zed_Memory_GPT/Zed_Memory_part2/conversations.json",
+      "strategicDocCount": 0
+    }
+  ],
+  "compactedAt": "2026-04-12T08:24:51.305Z",
+  "lightweightFiles": {
+    "index": "hub/shared-memory/semantic/foundation/conversation-index.json",
+    "recent": "hub/shared-memory/semantic/foundation/recent-conversations.json",
+    "shardsByYear": "hub/shared-memory/semantic/foundation/shards/by-year/",
+    "shardsBySource": "hub/shared-memory/semantic/foundation/shards/by-source/",
+    "fullArchive": "hub/shared-memory/semantic/foundation/merged-conversations.json"
+  },
+  "shardCounts": {
+    "years": 2,
+    "sources": 2
+  }
+}

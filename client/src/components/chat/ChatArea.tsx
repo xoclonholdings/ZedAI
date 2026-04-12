@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notifyMessage } from "@/lib/notify";
+import { useToast } from "@/hooks/use-toast";
 
 import ChatBackground from "./ChatBackground";
 import ChatControls from "./ChatControls";
@@ -10,6 +11,7 @@ import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
 
 import type {
+  AgentTarget,
   Conversation,
   Message,
   File as DBFile,
@@ -41,10 +43,12 @@ export default function ChatArea({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
+  const [agentTarget, setAgentTarget] = useState<AgentTarget>("auto");
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
+  const { toast } = useToast();
 
   // Keep localMessages in sync with prop (except when streaming)
   useEffect(() => {
@@ -212,7 +216,7 @@ export default function ChatArea({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message, conversationId: convId }),
+        body: JSON.stringify({ message, conversationId: convId, targetAgent: agentTarget }),
       });
 
       const data = await res.json();
@@ -229,7 +233,7 @@ export default function ChatArea({
             conversationId: convId,
             role: "assistant" as const,
             content: data.reply || data.error || "No response",
-            metadata: { agent: data.agent },
+            metadata: { agent: data.agent, targetAgent: agentTarget },
             createdAt: new Date(),
           },
         ];
@@ -282,6 +286,25 @@ export default function ChatArea({
     }
   }
 
+  async function handleVoiceOpen() {
+    try {
+      const response = await fetch("/api/voice/transcribe", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await response.json();
+      toast({
+        title: "Voice workflow",
+        description: data.note || "Voice controls are planned and currently browser-first.",
+      });
+    } catch {
+      toast({
+        title: "Voice workflow",
+        description: "Voice controls are planned and currently browser-first.",
+      });
+    }
+  }
+
   async function handleModeToggle(mode: ConversationMode) {
     setCurrentMode(mode);
     if (conversationId) {
@@ -323,11 +346,14 @@ export default function ChatArea({
 
         <div className="border-t border-white/10 zed-glass p-4 md:p-6 flex-shrink-0 z-10">
           <div className="max-w-4xl mx-auto space-y-3">
-            <ChatControls
-              currentMode={currentMode}
-              onModeToggle={handleModeToggle}
-              onOpenFileUpload={() => setShowFileUpload(true)}
-            />
+        <ChatControls
+          currentMode={currentMode}
+          onModeToggle={handleModeToggle}
+          onOpenFileUpload={() => setShowFileUpload(true)}
+          onOpenVoice={handleVoiceOpen}
+          agentTarget={agentTarget}
+          onAgentTargetChange={setAgentTarget}
+        />
             <ChatInput
               onSend={handleSend}
               isLoading={isStreaming}

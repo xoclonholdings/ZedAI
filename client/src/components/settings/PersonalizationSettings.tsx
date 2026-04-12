@@ -5,44 +5,43 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
-const STORAGE_KEY = "zed_personalization";
-
-interface PersonalizationData {
-  displayName: string;
-  preferredLanguage: string;
-  colorScheme: string;
-  compactMessages: boolean;
-  showTimestamps: boolean;
-  fontSize: string;
-}
-
-const defaults: PersonalizationData = {
-  displayName: "Admin",
-  preferredLanguage: "English",
-  colorScheme: "dark",
-  compactMessages: false,
-  showTimestamps: true,
-  fontSize: "medium",
-};
+import type { PersonalizationSettings as PersonalizationData } from "@shared/adminSettings";
+import { defaultPersonalizationSettings } from "@shared/adminSettings";
 
 export default function PersonalizationSettings() {
-  const [data, setData] = useState<PersonalizationData>(defaults);
+  const [data, setData] = useState<PersonalizationData>(defaultPersonalizationSettings);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) setData(JSON.parse(stored));
-    } catch {}
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const response = await fetch("/api/admin/settings", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (!cancelled) {
+          setData({
+            ...defaultPersonalizationSettings,
+            ...(payload.personalization || {}),
+          });
+        }
+      } catch {
+        // keep defaults
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function update<K extends keyof PersonalizationData>(key: K, value: PersonalizationData[K]) {
@@ -50,10 +49,28 @@ export default function PersonalizationSettings() {
     setSaved(false);
   }
 
-  function handleSave() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const response = await fetch("/api/admin/settings/personalization", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        const next = await response.json();
+        setData({
+          ...defaultPersonalizationSettings,
+          ...next,
+        });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -65,7 +82,7 @@ export default function PersonalizationSettings() {
             Personalization
           </CardTitle>
           <CardDescription>
-            Customize how ZED looks and identifies you.
+            Customize how ZED looks and identifies you across the current workspace.
           </CardDescription>
         </CardHeader>
 
@@ -78,17 +95,11 @@ export default function PersonalizationSettings() {
               placeholder="Your name"
               className="zed-glass border-white/10 text-sm"
             />
-            <p className="text-xs text-muted-foreground">
-              How ZED addresses you in conversation.
-            </p>
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Language</Label>
-            <Select
-              value={data.preferredLanguage}
-              onValueChange={(val) => update("preferredLanguage", val)}
-            >
+            <Select value={data.preferredLanguage} onValueChange={(val) => update("preferredLanguage", val)}>
               <SelectTrigger className="zed-glass border-white/10 text-sm">
                 <SelectValue />
               </SelectTrigger>
@@ -105,15 +116,12 @@ export default function PersonalizationSettings() {
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Color Theme</Label>
-            <Select
-              value={data.colorScheme}
-              onValueChange={(val) => update("colorScheme", val)}
-            >
+            <Select value={data.colorScheme} onValueChange={(val) => update("colorScheme", val)}>
               <SelectTrigger className="zed-glass border-white/10 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="zed-glass border-white/10">
-                <SelectItem value="dark">Dark (Default)</SelectItem>
+                <SelectItem value="dark">Dark</SelectItem>
                 <SelectItem value="midnight">Midnight Blue</SelectItem>
                 <SelectItem value="nebula">Nebula Purple</SelectItem>
               </SelectContent>
@@ -122,10 +130,7 @@ export default function PersonalizationSettings() {
 
           <div className="space-y-2">
             <Label className="text-sm font-medium">Font Size</Label>
-            <Select
-              value={data.fontSize}
-              onValueChange={(val) => update("fontSize", val)}
-            >
+            <Select value={data.fontSize} onValueChange={(val) => update("fontSize", val)}>
               <SelectTrigger className="zed-glass border-white/10 text-sm">
                 <SelectValue />
               </SelectTrigger>
@@ -143,10 +148,7 @@ export default function PersonalizationSettings() {
                 <p className="text-sm font-medium">Compact Messages</p>
                 <p className="text-xs text-muted-foreground">Tighter spacing between messages</p>
               </div>
-              <Switch
-                checked={data.compactMessages}
-                onCheckedChange={(v) => update("compactMessages", v)}
-              />
+              <Switch checked={data.compactMessages} onCheckedChange={(v) => update("compactMessages", v)} />
             </div>
 
             <div className="flex items-center justify-between">
@@ -154,19 +156,17 @@ export default function PersonalizationSettings() {
                 <p className="text-sm font-medium">Show Timestamps</p>
                 <p className="text-xs text-muted-foreground">Display time on each message</p>
               </div>
-              <Switch
-                checked={data.showTimestamps}
-                onCheckedChange={(v) => update("showTimestamps", v)}
-              />
+              <Switch checked={data.showTimestamps} onCheckedChange={(v) => update("showTimestamps", v)} />
             </div>
           </div>
 
           <Button
             onClick={handleSave}
+            disabled={saving}
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             <Save className="mr-2 h-4 w-4" />
-            {saved ? "Saved!" : "Save Preferences"}
+            {saving ? "Saving..." : saved ? "Saved!" : "Save Preferences"}
           </Button>
         </CardContent>
       </Card>

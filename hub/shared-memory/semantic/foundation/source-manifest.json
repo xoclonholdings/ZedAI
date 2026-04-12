@@ -1,0 +1,23 @@
+[
+  {
+    "name": "dragonfly",
+    "root": "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly",
+    "conversationsPath": "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\conversations.json",
+    "strategicDocPaths": [
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_000000000af871f5bd505142b5044d0a-ZWAP! Comprehensive Strategic Plan.md",
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_0000000027f071f5885f8c987df2f374-Zwap gameplan.txt",
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_00000000360c71f7aa98db415f78ac78-ZWAP! Comprehensive Strategic Plan.md",
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_0000000042d4722fb1fdec1b931e9f22-ZWAP! Comprehensive Strategic Plan.md",
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_000000006b1c722faa3a968f1232c41c-content agent build.md",
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_000000007f8471fd8ec9a512d14dcf3c-ZWAP! Comprehensive Strategic Plan.md",
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_00000000ac8471f5af3fa00b5b597084-Zwap gameplan.txt",
+      "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\dragonfly\\file_00000000e71871fd944757ec5fd23830-content agent build.md"
+    ]
+  },
+  {
+    "name": "zed-memory",
+    "root": "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\zed-memory\\storage\\ZedAI_data\\Zed_Memory_GPT\\Zed_Memory_part2",
+    "conversationsPath": "C:\\Users\\DGN\\Desktop\\Xoclon_Holdings\\Zed\\ZedAI\\zed-memory\\storage\\ZedAI_data\\Zed_Memory_GPT\\Zed_Memory_part2\\conversations.json",
+    "strategicDocPaths": []
+  }
+]

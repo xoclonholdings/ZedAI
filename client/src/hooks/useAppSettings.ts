@@ -1,73 +1,80 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export interface AppSettings {
-  notifications: boolean;
-  agentAlerts: boolean;
-  messageNotifications: boolean;
-  systemAlerts: boolean;
-  hapticFeedback: boolean;
-  autoSpellCorrect: boolean;
-  autoSendDictation: boolean;
-  backgroundConversations: boolean;
-  autocomplete: boolean;
-  trendingSearches: boolean;
-  followUpSuggestions: boolean;
-  colorScheme: "dark" | "light" | "auto";
-  language: string;
-  voiceType: string;
-}
+import type { AppSettings } from "@shared/adminSettings";
+import { defaultAppSettings } from "@shared/adminSettings";
 
-const STORAGE_KEY = "zed_app_settings";
-
-const DEFAULTS: AppSettings = {
-  notifications: true,
-  agentAlerts: true,
-  messageNotifications: true,
-  systemAlerts: true,
-  hapticFeedback: true,
-  autoSpellCorrect: true,
-  autoSendDictation: false,
-  backgroundConversations: true,
-  autocomplete: false,
-  trendingSearches: true,
-  followUpSuggestions: false,
-  colorScheme: "dark",
-  language: "English",
-  voiceType: "Ember",
-};
-
-function load(): AppSettings {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULTS };
-    return { ...DEFAULTS, ...JSON.parse(raw) };
-  } catch {
-    return { ...DEFAULTS };
-  }
-}
-
-function save(settings: AppSettings) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch {}
-}
+export type { AppSettings } from "@shared/adminSettings";
 
 export function useAppSettings() {
-  const [appSettings, setAppSettingsState] = useState<AppSettings>(load);
+  const [appSettings, setAppSettingsState] = useState<AppSettings>(defaultAppSettings);
+  const [isLoading, setIsLoading] = useState(true);
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSettings() {
+      try {
+        const response = await fetch("/api/admin/settings", {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load app settings");
+        }
+
+        const data = await response.json();
+        if (!cancelled) {
+          setAppSettingsState({ ...defaultAppSettings, ...(data.app || {}) });
+          hydratedRef.current = true;
+        }
+      } catch {
+        if (!cancelled) {
+          setAppSettingsState(defaultAppSettings);
+          hydratedRef.current = true;
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const setAppSettings: React.Dispatch<React.SetStateAction<AppSettings>> = (update) => {
     setAppSettingsState((prev) => {
-      const next = typeof update === "function" ? (update as any)(prev) : update;
-      save(next);
+      const next = typeof update === "function" ? (update as (value: AppSettings) => AppSettings)(prev) : update;
+
+      if (hydratedRef.current) {
+        void fetch("/api/admin/settings/app", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(next),
+        }).catch(() => {});
+      }
+
       return next;
     });
   };
 
-  return { appSettings, setAppSettings };
+  return { appSettings, setAppSettings, isLoading };
 }
 
-export function clearAppSettings() {
+export async function clearAppSettings() {
   try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+    await fetch("/api/admin/settings/app/reset", {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // ignore reset errors in destructive reset flow
+  }
 }

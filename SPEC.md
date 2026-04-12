@@ -24,7 +24,7 @@ ZedAI/
   shared/           Shared schemas and cross-app types/config
   hub/              Root shared-memory/config area
   zed-docs/         Legacy documentation archive
-  zed-memory/       Project memory/data area
+  zed-memory/       Legacy raw ChatGPT export backup
   zed-backend/      Legacy backend area
   attached_assets/  Static attached image assets
   netlify.toml      Netlify deploy configuration
@@ -91,11 +91,31 @@ ZedAI/
 - Orchestrator status endpoint:
   - `GET /api/orchestrate/status`
 - Manager agent routes work to specialist agents in `server/agents/`
+- Current active agents:
+  - `OperationsAgent`
+  - `IntelligenceAgent` (`R&D Agent` in the UI)
+- Current planned agents:
+  - `IDEOperatorAgent`
+  - `AudioEngineerAgent`
+  - `BusinessManagerAgent` with planned Gusto integration
+- Agent-mode UI supports explicit targeting for:
+  - `Auto`
+  - `Operations`
+  - `R&D`
+  - `Business`
+- Agents coordinate indirectly through shared hub memory, rules, approvals, and logs rather than direct agent-to-agent chat handoff
 
 ### Admin
 
 - Admin endpoints currently include:
   - `GET /api/admin/system-status`
+  - `GET /api/admin/settings`
+  - `PUT /api/admin/settings/app`
+  - `PUT /api/admin/settings/personalization`
+  - `PUT /api/admin/settings/integrations`
+  - `GET /api/admin/users`
+  - `POST /api/admin/users`
+  - `PATCH /api/admin/users/:id`
   - `GET/POST /api/admin/ruleset`
   - `GET /api/admin/logs`
   - `GET /api/admin/approval-queue`
@@ -108,6 +128,8 @@ ZedAI/
 
 - Session-based local auth is implemented in `server/localAuth.ts`
 - Session data uses server-side persistence via file-backed session storage
+- Admin/user settings are persisted in `hub/config/admin-settings.json` locally and are not part of source control
+- The app currently supports one admin account plus admin-managed local users
 
 ## Data and Service Dependencies
 
@@ -117,11 +139,33 @@ ZedAI/
 - Filesystem-backed fallback storage
 - Hub/shared-memory content used by agents
 
+## Memory Model
+
+- Live runtime memory is rooted at `hub/shared-memory/`
+- Current active memory areas include:
+  - `working/`
+  - `episodic/`
+  - `consensus/`
+  - `semantic/`
+- Legacy ChatGPT exports were reconciled into the canonical foundation under:
+  - `hub/shared-memory/semantic/foundation/`
+  - `hub/shared-memory/episodic/imported/`
+  - `hub/shared-memory/consensus/foundation/`
+- Lightweight lookup files now exist for normal reasoning:
+  - `hub/shared-memory/semantic/foundation/conversation-index.json`
+  - `hub/shared-memory/semantic/foundation/recent-conversations.json`
+  - `hub/shared-memory/semantic/foundation/shards/`
+- Full normalized cold storage remains at:
+  - `hub/shared-memory/semantic/foundation/merged-conversations.json`
+- `zed-memory/` is retained as a read-only raw backup archive and is not the active runtime memory source
+- The backup/archive role of `zed-memory/` is documented in `zed-memory/LEGACY_BACKUP_MANIFEST.md`
+
 ### Optional or Secondary Dependencies
 
 - Neon PostgreSQL via `@neondatabase/serverless`
 - ChromaDB
 - Brave or Serper-style web search integrations where configured
+- Planned Kalshi integration for event-market research and contract monitoring
 
 ## Current API Surface
 
@@ -208,7 +252,24 @@ Canonical config is in `netlify.toml`:
 
 - The current Netlify config is for the client app, not the old `zed-backend/netlify-functions` layout described in legacy docs.
 - Client TypeScript path alias resolution depends on `client/tsconfig.build.json`.
+- Client-side `@shared/*` aliases resolve to `client/src/shared/*` so the Netlify client build does not depend on backend-only schema packages.
 - Vite aliases are defined in `client/vite.config.ts`.
+
+## Research and Market Analysis
+
+- The `R&D Agent` is the current research lane and is backed by `IntelligenceAgent`
+- It supports:
+  - general research synthesis
+  - stock and crypto analysis prompts
+  - prediction-style reasoning prompts
+  - expansive keyword search fanout before synthesis
+- Expansive keyword search broadens market prompts into related terms such as:
+  - catalysts
+  - risks
+  - probabilities
+  - sentiment
+  - event contracts
+- Kalshi support is currently planned and configurable in Admin > Integrations, but not yet active for live contract execution or trading workflows
 
 ## Configuration Sources
 
@@ -247,6 +308,7 @@ and expects:
 
 - local port `5000`
 - external port `80`
+- all hub/config/log/session paths to resolve against the repo-root `hub/` directory
 
 ## Documentation Policy
 
@@ -254,6 +316,7 @@ and expects:
 
 - `SPEC.md`
 - `README.md`
+- `MEMORY_IMPORT_POLICY.md`
 
 ### Legacy Docs
 
@@ -287,3 +350,4 @@ When the project changes, update `SPEC.md` for any of the following:
 - The repo previously contained tracked local model artifacts under `models/`
 - Those model artifacts were removed from current reachable history and should not be added again
 - The repository was normalized to keep only `main` and `backup`
+- New raw memory exports should be staged under `memory-imports/` and only merged into `hub/shared-memory/` after verification

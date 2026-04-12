@@ -10,14 +10,27 @@ import {
   type OllamaMessage,
 } from "./services/Ollama/OllamaService";
 import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
-import { setupLocalAuth, isAuthenticated } from "./localAuth";
+import { setupLocalAuth, isAdmin, isAuthenticated } from "./localAuth";
 import { ManagerAgent } from "./orchestrator/ManagerAgent";
 import { checkTiers, filterOutputForTier3 } from "./middleware/TierEnforcement";
 import { logSecurityEvent, getRecentSecurityEvents } from "./services/SecurityAudit";
 import { injectMemory } from "./services/MemoryInjector";
+import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
+import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
 import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
+import {
+  createManagedUser,
+  getPublicAdminSettings,
+  listManagedUsers,
+  resetAppSettings,
+  updateAppSettings,
+  updateIntegrationSettings,
+  updateManagedUser,
+  updatePersonalizationSettings,
+} from "./services/AdminSettingsStore";
+import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repoPaths";
 
 import {
   insertConversationSchema,
@@ -32,11 +45,30 @@ export function setDatabaseStatus(status: boolean) {
   isDatabaseHealthy = status;
 }
 
-const HUB_CONFIG_DIR = path.resolve(process.cwd(), "hub/config");
-const HUB_LOG_DIR = path.resolve(process.cwd(), "hub/logs");
-
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupLocalAuth(app);
+
+  app.use(async (req, res, next) => {
+    const startedAt = Date.now();
+    res.on("finish", () => {
+      const status = res.statusCode;
+      if (status >= 400) {
+        void logRuntimeEvent({
+          level: status >= 500 ? "error" : "warn",
+          source: "server",
+          event: "http.response",
+          detail: `${req.method} ${req.originalUrl} -> ${status}`,
+          context: {
+            method: req.method,
+            url: req.originalUrl,
+            status,
+            durationMs: Date.now() - startedAt,
+          },
+        });
+      }
+    });
+    next();
+  });
 
   // ─── Auth ────────────────────────────────────────────────────────────────
 
@@ -315,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/orchestrate", isAuthenticated, async (req: any, res) => {
     try {
-      const { message, conversationId } = req.body;
+      const { message, conversationId, targetAgent = "auto" } = req.body;
       const userId = req.user.claims.sub;
 
       if (!message) return res.status(400).json({ error: "Message required" });
@@ -328,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const ip = req.ip || "";
-      const response = await ManagerAgent.route({ userId, message, conversationId, ip });
+      const response = await ManagerAgent.route({ userId, message, conversationId, ip, targetAgent });
 
       // Save agent response
       if (conversationId) {
@@ -354,10 +386,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/orchestrate/status", async (_req, res) => {
+    const settings = await getPublicAdminSettings();
+    const visiblePlannedAgents = settings.agents.filter(
+      (agent) => agent.status === "planned" && agent.key === "BusinessManagerAgent",
+    );
     res.json({
       orchestrator: "ManagerAgent",
-      active_agents: ["OperationsAgent", "IntelligenceAgent"],
-      stubbed_agents: ["IDEOperatorAgent", "AudioEngineerAgent"],
+      active_agents: settings.agents.filter((agent) => agent.status === "active"),
+      planned_agents: visiblePlannedAgents,
+      integrations: settings.integrations,
       status: "operational",
     });
   });
@@ -375,21 +412,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ─── Admin ────────────────────────────────────────────────────────────────
 
-  app.get("/api/admin/system-status", isAuthenticated, async (_req, res) => {
+  app.get("/api/admin/system-status", isAdmin, async (_req, res) => {
     const ollama = await checkOllamaHealth();
+    const settings = await getPublicAdminSettings();
+    const github = await checkGitHubIntegrationStatus();
     res.json({
       system: "ZED",
       ollama: { status: ollama.status, models: ollama.models },
       database: isDatabaseHealthy ? "connected" : "offline",
       orchestrator: {
         status: "operational",
-        active: ["OperationsAgent", "IntelligenceAgent"],
-        stubbed: ["IDEOperatorAgent", "AudioEngineerAgent"],
+        active: settings.agents.filter((agent) => agent.status === "active"),
+        planned: settings.agents.filter(
+          (agent) => agent.status === "planned" && agent.key === "BusinessManagerAgent",
+        ),
+      },
+      integrations: settings.integrations,
+      github,
+      auth: {
+        adminUsername: settings.auth.adminUsername,
+        requireSecureCookies: settings.auth.requireSecureCookies,
       },
     });
   });
 
-  app.get("/api/admin/ruleset", isAuthenticated, async (_req, res) => {
+  app.get("/api/admin/settings", isAdmin, async (_req, res) => {
+    const settings = await getPublicAdminSettings();
+    res.json(settings);
+  });
+
+  app.put("/api/admin/settings/app", isAdmin, async (req, res) => {
+    try {
+      const appSettings = await updateAppSettings(req.body || {});
+      res.json(appSettings);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update app settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/app/reset", isAdmin, async (_req, res) => {
+    try {
+      const settings = await resetAppSettings();
+      res.json(settings);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to reset app settings" });
+    }
+  });
+
+  app.put("/api/admin/settings/personalization", isAdmin, async (req, res) => {
+    try {
+      const personalization = await updatePersonalizationSettings(req.body || {});
+      res.json(personalization);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update personalization" });
+    }
+  });
+
+  app.put("/api/admin/settings/integrations", isAdmin, async (req, res) => {
+    try {
+      await updateIntegrationSettings(req.body || {});
+      const settings = await getPublicAdminSettings();
+      res.json(settings.integrations);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update integrations" });
+    }
+  });
+
+  app.get("/api/admin/integrations/github/status", isAdmin, async (_req, res) => {
+    const status = await checkGitHubIntegrationStatus();
+    res.json(status);
+  });
+
+  app.get("/api/admin/integrations/github/readout", isAdmin, async (_req, res) => {
+    const readout = await getGitHubRepoReadout();
+    res.json(readout);
+  });
+
+  app.get("/api/admin/users", isAdmin, async (_req, res) => {
+    const users = await listManagedUsers();
+    res.json({ users });
+  });
+
+  app.post("/api/admin/users", isAdmin, async (req, res) => {
+    try {
+      const users = await createManagedUser(req.body || {});
+      res.json({ users });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", isAdmin, async (req, res) => {
+    try {
+      const users = await updateManagedUser(req.params.id, req.body || {});
+      res.json({ users });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update user" });
+    }
+  });
+
+  app.get("/api/admin/ruleset", isAdmin, async (_req, res) => {
     const files = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
     const ruleset: Record<string, string> = {};
     for (const f of files) {
@@ -402,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(ruleset);
   });
 
-  app.post("/api/admin/ruleset", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/ruleset", isAdmin, async (req: any, res) => {
     const { filename, content } = req.body;
     const allowed = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
     if (!allowed.includes(filename)) {
@@ -419,7 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/logs", isAuthenticated, async (_req, res) => {
+  app.get("/api/admin/logs", isAdmin, async (_req, res) => {
     try {
       await fs.mkdir(HUB_LOG_DIR, { recursive: true });
       const files = await fs.readdir(HUB_LOG_DIR);
@@ -431,16 +553,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           entries.push(...content.trim().split("\n").filter(Boolean));
         } catch {}
       }
-      res.json({ entries: entries.slice(-100) });
+      const runtime = await getRecentRuntimeEvents(100);
+      res.json({ entries: entries.slice(-100), runtime });
     } catch {
-      res.json({ entries: [] });
+      res.json({ entries: [], runtime: [] });
+    }
+  });
+
+  app.post("/api/client-log", async (req, res) => {
+    try {
+      const { level = "error", event = "client.error", detail, context } = req.body || {};
+      await logRuntimeEvent({
+        level,
+        source: "client",
+        event,
+        detail,
+        context,
+      });
+      res.json({ ok: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to write client log" });
     }
   });
 
   // ─── Approval Queue ────────────────────────────────────────────────────────
 
-  const APPROVAL_QUEUE_PATH = path.resolve(process.cwd(), "hub/shared-memory/episodic/approval-queue.json");
-  const WORKING_MEMORY_PATH = path.resolve(process.cwd(), "hub/shared-memory/working/current-tasks.md");
+  const APPROVAL_QUEUE_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/approval-queue.json");
+  const WORKING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 
   async function executeApprovedEntry(entry: any): Promise<string> {
     const timestamp = new Date().toISOString();
@@ -463,7 +602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `Executed at ${timestamp}: wrote to working memory${entry.conversationId ? " and posted to conversation" : ""}.`;
   }
 
-  app.get("/api/admin/approval-queue", isAuthenticated, async (_req, res) => {
+  app.get("/api/admin/approval-queue", isAdmin, async (_req, res) => {
     try {
       const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
       const queue = JSON.parse(raw);
@@ -473,7 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/approve/:id", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/approve/:id", isAdmin, async (req: any, res) => {
     const { id } = req.params;
     try {
       const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
@@ -499,7 +638,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/reject/:id", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/reject/:id", isAdmin, async (req: any, res) => {
     const { id } = req.params;
     const { reason } = req.body;
     try {
@@ -522,7 +661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/security-log", isAuthenticated, async (_req, res) => {
+  app.get("/api/admin/security-log", isAdmin, async (_req, res) => {
     const events = await getRecentSecurityEvents(100);
     res.json({ events });
   });

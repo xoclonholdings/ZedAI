@@ -1,5 +1,6 @@
-import { Menu } from "lucide-react";
+import { Menu, Settings, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 
 interface ChatHeaderProps {
@@ -11,6 +12,8 @@ export default function ChatHeader({
   isMobile = false,
   onOpenSidebar,
 }: ChatHeaderProps) {
+  const [, navigate] = useLocation();
+
   return (
     <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/10 zed-glass relative z-10 flex-shrink-0">
       <div className="flex items-center space-x-3">
@@ -35,6 +38,28 @@ export default function ChatHeader({
             Enhanced AI Assistant
           </p>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/admin")}
+          className="zed-button rounded-xl text-muted-foreground hover:text-foreground"
+        >
+          <Shield size={16} className="mr-1" />
+          <span className="hidden sm:inline">Admin</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/admin")}
+          className="zed-button rounded-xl text-muted-foreground hover:text-foreground"
+          title="Open integration setup"
+        >
+          <Settings size={16} className="mr-1" />
+          <span className="hidden sm:inline">Setup</span>
+        </Button>
       </div>
     </div>
   );

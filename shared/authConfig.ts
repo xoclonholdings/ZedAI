@@ -4,5 +4,5 @@ export const AUTH_CONFIG = {
   loginSubtitle: "Enter your credentials to access ZED",
   adminVerificationTitle: "Admin Verification",
   adminVerificationSubtitle: "Enter your secure phrase to continue",
-  securePhrasePlaceholder: "XOCLON-SECURE-2025",
+  securePhrasePlaceholder: "Enter secure phrase",
 };

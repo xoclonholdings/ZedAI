@@ -31,6 +31,39 @@ export interface ResearchBrief {
 export class IntelligenceAgent {
   private static skill: string | null = null;
 
+  private static expandKeywords(query: string): string[] {
+    const lower = query.toLowerCase();
+    const expanded = new Set<string>([query]);
+
+    if (/(stock|equity|shares|ticker)/.test(lower)) {
+      expanded.add(`${query} stock analysis`);
+      expanded.add(`${query} earnings guidance price target`);
+      expanded.add(`${query} institutional sentiment catalysts`);
+    }
+
+    if (/(crypto|bitcoin|btc|ethereum|eth|solana|token|defi)/.test(lower)) {
+      expanded.add(`${query} crypto market structure`);
+      expanded.add(`${query} on-chain catalysts sentiment`);
+      expanded.add(`${query} funding rates open interest`);
+    }
+
+    if (/(kalshi|prediction market|event contract|event market)/.test(lower)) {
+      expanded.add(`${query} kalshi market contract odds`);
+      expanded.add(`${query} event market probability drivers`);
+      expanded.add(`${query} prediction market catalysts risk factors`);
+    }
+
+    if (/(predict|forecast|outlook|scenario|probability)/.test(lower)) {
+      expanded.add(`${query} base case bull case bear case`);
+      expanded.add(`${query} leading indicators risks catalysts`);
+    }
+
+    expanded.add(`${query} latest news`);
+    expanded.add(`${query} key risks opportunities`);
+
+    return Array.from(expanded).slice(0, 6);
+  }
+
   static async loadSkill(): Promise<string> {
     if (this.skill) return this.skill;
     try {
@@ -44,8 +77,12 @@ export class IntelligenceAgent {
   static async research(request: ResearchRequest): Promise<ResearchBrief> {
     const skill = await this.loadSkill();
 
-    const searchResponse = await webSearch(request.query);
-    const searchBlock = formatResultsForPrompt(searchResponse);
+    const expandedQueries = this.expandKeywords(request.query);
+    const searchResponses = await Promise.all(expandedQueries.map((query) => webSearch(query, 4)));
+    const primarySearch = searchResponses[0];
+    const searchBlock = searchResponses
+      .map((response) => formatResultsForPrompt(response))
+      .join("\n\n");
 
     const priorResearch = await querySimilarResearch(request.query, 2);
     const priorBlock = priorResearch
@@ -80,7 +117,8 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
       systemPrompt
     );
 
-    const brief = this.parseBrief(request.query, rawReply, searchResponse.source);
+    const brief = this.parseBrief(request.query, rawReply, primarySearch.source);
+    brief.sources.push(`Expanded keyword search: ${expandedQueries.join(" | ")}`);
 
     await storeResearchBrief(brief);
     await this.log(request, brief);

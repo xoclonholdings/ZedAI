@@ -2,6 +2,8 @@ node_modules
 zed-backend/node_modules
 client/dist
 models/
+hub/config/admin-settings.json
+hub/sessions/
 
 # Local Netlify folder
 .netlify
@@ -9,3 +11,4 @@ zed-config/deployment/.netlify
 
 # Temporary files
 zed-temp/*
+memory-imports/*

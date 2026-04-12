@@ -1,20 +1,23 @@
 import fs from "fs/promises";
 import path from "path";
+import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
 
-const CWD = process.cwd();
-const WORKING_MEMORY = path.resolve(CWD, "hub/shared-memory/working/current-tasks.md");
-const EPISODIC_MEMORY = path.resolve(CWD, "hub/shared-memory/episodic/email-decisions.json");
-const APPROVAL_QUEUE = path.resolve(CWD, "hub/shared-memory/episodic/approval-queue.json");
-const CONSENSUS = path.resolve(CWD, "hub/shared-memory/consensus/posting-guidelines.md");
+const WORKING_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
+const EPISODIC_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/email-decisions.json");
+const APPROVAL_QUEUE = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/approval-queue.json");
+const CONSENSUS = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/posting-guidelines.md");
+const FOUNDATION_OVERVIEW = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/foundation-overview.md");
 
 const MAX_WORKING_CHARS = 1200;
 const MAX_EPISODIC_ENTRIES = 5;
 const MAX_CONSENSUS_CHARS = 800;
+const MAX_FOUNDATION_CHARS = 1000;
 
 export interface InjectedMemory {
   working: string;
   episodic: string;
   consensus: string;
+  foundation: string;
   formatted: string;
 }
 
@@ -68,11 +71,22 @@ async function loadConsensus(): Promise<string> {
   }
 }
 
+async function loadFoundation(): Promise<string> {
+  try {
+    const raw = await fs.readFile(FOUNDATION_OVERVIEW, "utf-8");
+    const trimmed = raw.trim();
+    return trimmed ? trimmed.slice(0, MAX_FOUNDATION_CHARS) : "No imported foundation memory summary yet.";
+  } catch {
+    return "No imported foundation memory summary yet.";
+  }
+}
+
 export async function injectMemory(agentName: string): Promise<InjectedMemory> {
-  const [working, episodic, consensus] = await Promise.all([
+  const [working, episodic, consensus, foundation] = await Promise.all([
     loadWorking(),
     loadEpisodic(),
     loadConsensus(),
+    loadFoundation(),
   ]);
 
   const formatted = `## ZED Hub Memory Context
@@ -85,7 +99,10 @@ ${working}
 ${episodic}
 
 ### Brand Voice & Guidelines (Consensus)
-${consensus}`;
+${consensus}
 
-  return { working, episodic, consensus, formatted };
+### Imported Foundation Memory
+${foundation}`;
+
+  return { working, episodic, consensus, foundation, formatted };
 }

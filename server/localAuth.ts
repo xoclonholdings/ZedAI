@@ -1,28 +1,15 @@
 import { Request, Response, NextFunction } from "express";
 import session from "express-session";
-import { logSecurityEvent } from "./services/SecurityAudit";
+
 import { FileSessionStore } from "./services/FileSessionStore";
-
-// Default credentials and security settings - changeable through settings
-let LOCAL_USERS = [
-  {
-    id: "user_001",
-    username: "Admin",
-    password: "Zed2025!",
-    email: "admin@zed-ai.online",
-    firstName: "ZED",
-    lastName: "Admin",
-    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin"
-  }
-];
-
-// Admin security settings - updatable by admin
-let ADMIN_SECURITY_SETTINGS = {
-  securePhrase: "XOCLON-SECURE-2025",
-  sessionTimeoutMinutes: 45,
-  maxFailedAttempts: 3,
-  lockoutDurationMinutes: 15
-};
+import { logSecurityEvent } from "./services/SecurityAudit";
+import {
+  authenticateManagedUser,
+  getPublicAdminSettings,
+  loadAdminSettings,
+  updateAuthSettings,
+  updateCurrentUserCredentials,
+} from "./services/AdminSettingsStore";
 
 export interface LocalUser {
   id: string;
@@ -31,70 +18,85 @@ export interface LocalUser {
   firstName: string;
   lastName: string;
   profileImageUrl: string;
+  isAdmin: boolean;
+  isActive: boolean;
 }
 
-export function getLocalSession() {
-  const sessionTtl = ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes * 60 * 1000;
-  
+const VERIFICATION_ATTEMPTS = new Map<string, { count: number; lastAttempt: number }>();
+
+function getClientIp(req: Request) {
+  return req.ip || req.connection.remoteAddress || "unknown";
+}
+
+async function getSessionMiddleware() {
+  const settings = await loadAdminSettings();
+  const sessionTtl = settings.auth.sessionTimeoutMinutes * 60 * 1000;
+  const frontendOrigin = process.env.FRONTEND_URL?.trim();
+  const isHostedCrossOrigin = Boolean(frontendOrigin);
+
   return session({
-    secret: process.env.SESSION_SECRET || "zed-local-secret-key-change-in-production",
+    secret: settings.auth.sessionSecret,
     store: new FileSessionStore(),
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax" as const,
+      secure: isHostedCrossOrigin || settings.auth.requireSecureCookies,
+      sameSite: isHostedCrossOrigin ? "none" : "lax",
       maxAge: sessionTtl,
     },
   });
 }
 
-// Enhanced verification tracking
-const VERIFICATION_ATTEMPTS = new Map<string, { count: number; lastAttempt: number; deviceFingerprint?: string }>();
-const TRUSTED_DEVICES = new Map<string, { userId: string; verified: boolean; lastSeen: number }>();
-
-function getDeviceFingerprint(req: Request): string {
-  const userAgent = req.headers['user-agent'] || '';
-  const acceptLanguage = req.headers['accept-language'] || '';
-  const acceptEncoding = req.headers['accept-encoding'] || '';
-  const ip = req.ip || req.connection.remoteAddress || '';
-  
-  return Buffer.from(`${userAgent}:${acceptLanguage}:${acceptEncoding}:${ip}`).toString('base64').slice(0, 32);
+function clearAttemptsForIp(ip: string) {
+  const keys = Array.from(VERIFICATION_ATTEMPTS.keys()).filter((key) => key.endsWith(`:${ip}`));
+  for (const key of keys) {
+    VERIFICATION_ATTEMPTS.delete(key);
+  }
 }
 
-function isDeviceTrusted(deviceFingerprint: string, userId: string): boolean {
-  const device = TRUSTED_DEVICES.get(deviceFingerprint);
-  return device?.userId === userId && device?.verified === true;
+function sessionUser(req: Request) {
+  return (req.session as any)?.user as LocalUser | undefined;
+}
+
+function attachUser(req: Request, user: LocalUser) {
+  const sessionData = req.session as any;
+  sessionData.userId = user.id;
+  sessionData.lastActivity = Date.now();
+  sessionData.user = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profileImageUrl: user.profileImageUrl,
+    isAdmin: user.isAdmin,
+  };
 }
 
 export async function setupLocalAuth(app: any) {
-  app.use(getLocalSession());
+  app.use(await getSessionMiddleware());
 
-  // Passphrase-only login
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
-      const { passphrase } = req.body;
-      const ip = req.ip || '';
-
-      if (!passphrase) {
-        return res.status(400).json({ error: "Passphrase required" });
-      }
-
-      // Rate-limit by IP
+      const ip = getClientIp(req);
+      const { username, password, passphrase } = req.body || {};
+      const settings = await loadAdminSettings();
       const attemptKey = `login:${ip}`;
       const attempts = VERIFICATION_ATTEMPTS.get(attemptKey) || { count: 0, lastAttempt: 0 };
 
       if (
-        attempts.count >= ADMIN_SECURITY_SETTINGS.maxFailedAttempts &&
-        Date.now() - attempts.lastAttempt < ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes * 60 * 1000
+        attempts.count >= settings.auth.maxFailedAttempts &&
+        Date.now() - attempts.lastAttempt < settings.auth.lockoutDurationMinutes * 60 * 1000
       ) {
         return res.status(429).json({
-          error: `Too many failed attempts. Please wait ${ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes} minutes.`,
+          error: `Too many failed attempts. Please wait ${settings.auth.lockoutDurationMinutes} minutes.`,
         });
       }
 
-      if (passphrase !== ADMIN_SECURITY_SETTINGS.securePhrase) {
+      const user = await authenticateManagedUser({ username, password, passphrase });
+
+      if (!user) {
         const newCount = attempts.count + 1;
         VERIFICATION_ATTEMPTS.set(attemptKey, {
           count: newCount,
@@ -103,38 +105,19 @@ export async function setupLocalAuth(app: any) {
         await logSecurityEvent({
           type: "auth.login.fail",
           ip,
-          detail: `Failed attempt ${newCount}/${ADMIN_SECURITY_SETTINGS.maxFailedAttempts}`,
+          detail: `Failed attempt ${newCount}/${settings.auth.maxFailedAttempts}`,
         });
-        if (newCount >= ADMIN_SECURITY_SETTINGS.maxFailedAttempts) {
-          await logSecurityEvent({
-            type: "auth.lockout",
-            ip,
-            detail: `IP locked out for ${ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes} minutes`,
-          });
-        }
-        return res.status(401).json({ error: "Invalid passphrase" });
+        return res.status(401).json({ error: "Invalid credentials or secure phrase" });
       }
 
-      // Correct passphrase — clear rate-limit and open session as Admin
       VERIFICATION_ATTEMPTS.delete(attemptKey);
-
-      const user = LOCAL_USERS[0];
-
-      (req.session as any).userId = user.id;
-      (req.session as any).user = {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
-      };
+      attachUser(req, user);
 
       await logSecurityEvent({
         type: "auth.login.success",
         ip,
         userId: user.id,
-        detail: `Admin login successful`,
+        detail: `${user.isAdmin ? "Admin" : "User"} login successful`,
       });
 
       res.json({
@@ -145,8 +128,9 @@ export async function setupLocalAuth(app: any) {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          isAdmin: true,
-          sessionExpiry: ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes,
+          profileImageUrl: user.profileImageUrl,
+          isAdmin: user.isAdmin,
+          sessionExpiry: settings.auth.sessionTimeoutMinutes,
         },
       });
     } catch (error) {
@@ -156,9 +140,8 @@ export async function setupLocalAuth(app: any) {
   });
 
   app.post("/api/logout", async (req: Request, res: Response) => {
-    const sess = req.session as any;
-    const userId = sess?.userId;
-    const ip = req.ip || "";
+    const userId = (req.session as any)?.userId;
+    const ip = getClientIp(req);
     req.session.destroy(async (err) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
@@ -168,208 +151,175 @@ export async function setupLocalAuth(app: any) {
     });
   });
 
-  // Admin verification challenge endpoint
   app.post("/api/admin/verify-challenge", async (req: Request, res: Response) => {
     try {
-      const { challengeAnswer, securePhrase } = req.body;
-      const deviceFingerprint = getDeviceFingerprint(req);
-      
-      // Simple logic challenge for demo (in production, use more sophisticated challenges)
-      const validAnswers = ['42', 'xoclon', 'diagnostic'];
-      const isValidChallenge = challengeAnswer && validAnswers.includes(challengeAnswer.toLowerCase());
-      const isValidPhrase = securePhrase === "XOCLON_SECURE_2025";
-      
+      const { challengeAnswer, securePhrase } = req.body || {};
+      const settings = await loadAdminSettings();
+      const validAnswers = ["42", "xoclon", "diagnostic"];
+      const isValidChallenge =
+        typeof challengeAnswer === "string" && validAnswers.includes(challengeAnswer.toLowerCase());
+      const isValidPhrase =
+        typeof securePhrase === "string" && securePhrase === settings.auth.securePhrase;
+
       if (isValidChallenge || isValidPhrase) {
-        // Clear all failed attempts for this IP
-        const keys = Array.from(VERIFICATION_ATTEMPTS.keys()).filter(key => key.includes(req.ip || ''));
-        keys.forEach(key => VERIFICATION_ATTEMPTS.delete(key));
-        
-        res.json({ success: true, message: "Challenge verified, please try logging in again" });
-      } else {
-        res.status(401).json({ error: "Invalid challenge response" });
+        clearAttemptsForIp(getClientIp(req));
+        return res.json({ success: true, message: "Challenge verified, please try logging in again" });
       }
+
+      res.status(401).json({ error: "Invalid challenge response" });
     } catch (error) {
+      console.error("Challenge verification failed:", error);
       res.status(500).json({ error: "Challenge verification failed" });
     }
   });
 
-  // Update credentials endpoint (protected)
-  app.post("/api/auth/update-credentials", isAuthenticated, (req: Request, res: Response) => {
+  app.post("/api/auth/update-credentials", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const { newUsername, newPassword } = req.body;
-      const session = req.session as any;
-      
-      if (!newUsername || !newPassword) {
-        return res.status(400).json({ error: "Username and password required" });
+      const { newUsername, newPassword } = req.body || {};
+      const currentUser = sessionUser(req);
+
+      if (!currentUser) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
 
-      if (newPassword.length < 6) {
-        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      if (!newUsername && !newPassword) {
+        return res.status(400).json({ error: "Provide a username, password, or both" });
       }
 
-      // Find and update the user
-      const userIndex = LOCAL_USERS.findIndex(u => u.id === session.userId);
-      if (userIndex !== -1) {
-        LOCAL_USERS[userIndex].username = newUsername;
-        LOCAL_USERS[userIndex].password = newPassword;
-        
-        // Update session
-        session.user.username = newUsername;
-        
-        res.json({ 
-          success: true, 
-          message: "Credentials updated successfully",
-          user: {
-            username: newUsername,
-            firstName: LOCAL_USERS[userIndex].firstName,
-            lastName: LOCAL_USERS[userIndex].lastName
-          }
-        });
-      } else {
-        res.status(404).json({ error: "User not found" });
-      }
-    } catch (error) {
-      console.error("Update credentials error:", error);
-      res.status(500).json({ error: "Failed to update credentials" });
-    }
-  });
-  
-  // Get current credentials (protected)
-  app.get("/api/auth/current-credentials", isAuthenticated, (req: Request, res: Response) => {
-    const session = req.session as any;
-    const user = LOCAL_USERS.find(u => u.id === session.userId);
-    
-    if (user) {
-      res.json({
-        username: user.username,
-        // Don't send password for security
+      const updated = await updateCurrentUserCredentials(currentUser.id, {
+        username: newUsername,
+        password: newPassword,
       });
-    } else {
-      res.status(404).json({ error: "User not found" });
-    }
-  });
 
-  // Get current security settings (Admin only)
-  app.get("/api/admin/security-settings", isLocalAuthenticated, async (req: Request, res: Response) => {
-    const user = (req.session as any)?.user;
-    if (!user || user.username !== 'Admin') {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-    
-    res.json({
-      currentSecurePhrase: ADMIN_SECURITY_SETTINGS.securePhrase,
-      sessionTimeoutMinutes: ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes,
-      maxFailedAttempts: ADMIN_SECURITY_SETTINGS.maxFailedAttempts,
-      lockoutDurationMinutes: ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes
-    });
-  });
-
-  // Update security settings (Admin only)
-  app.post("/api/admin/security-settings", isLocalAuthenticated, async (req: Request, res: Response) => {
-    const user = (req.session as any)?.user;
-    if (!user || user.username !== 'Admin') {
-      return res.status(403).json({ error: "Admin access required" });
-    }
-
-    const { 
-      newSecurePhrase, 
-      sessionTimeoutMinutes, 
-      maxFailedAttempts, 
-      lockoutDurationMinutes 
-    } = req.body;
-
-    // Validate inputs
-    if (newSecurePhrase && (typeof newSecurePhrase !== 'string' || newSecurePhrase.length < 8)) {
-      return res.status(400).json({ error: "Secure phrase must be at least 8 characters long" });
-    }
-
-    if (sessionTimeoutMinutes && (sessionTimeoutMinutes < 5 || sessionTimeoutMinutes > 480)) {
-      return res.status(400).json({ error: "Session timeout must be between 5 and 480 minutes" });
-    }
-
-    if (maxFailedAttempts && (maxFailedAttempts < 1 || maxFailedAttempts > 10)) {
-      return res.status(400).json({ error: "Max failed attempts must be between 1 and 10" });
-    }
-
-    if (lockoutDurationMinutes && (lockoutDurationMinutes < 1 || lockoutDurationMinutes > 60)) {
-      return res.status(400).json({ error: "Lockout duration must be between 1 and 60 minutes" });
-    }
-
-    // Update settings
-    if (newSecurePhrase) {
-      ADMIN_SECURITY_SETTINGS.securePhrase = newSecurePhrase;
-    }
-    if (sessionTimeoutMinutes) {
-      ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes = sessionTimeoutMinutes;
-    }
-    if (maxFailedAttempts) {
-      ADMIN_SECURITY_SETTINGS.maxFailedAttempts = maxFailedAttempts;
-    }
-    if (lockoutDurationMinutes) {
-      ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes = lockoutDurationMinutes;
-    }
-
-    res.json({
-      success: true,
-      message: "Security settings updated successfully",
-      settings: {
-        securePhrase: ADMIN_SECURITY_SETTINGS.securePhrase,
-        sessionTimeoutMinutes: ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes,
-        maxFailedAttempts: ADMIN_SECURITY_SETTINGS.maxFailedAttempts,
-        lockoutDurationMinutes: ADMIN_SECURITY_SETTINGS.lockoutDurationMinutes
+      if (!updated) {
+        return res.status(404).json({ error: "User not found" });
       }
+
+      attachUser(req, updated);
+
+      res.json({
+        success: true,
+        message: "Credentials updated successfully",
+        user: {
+          username: updated.username,
+          firstName: updated.firstName,
+          lastName: updated.lastName,
+        },
+      });
+    } catch (error: any) {
+      console.error("Update credentials error:", error);
+      res.status(400).json({ error: error.message || "Failed to update credentials" });
+    }
+  });
+
+  app.get("/api/auth/current-credentials", isAuthenticated, async (req: Request, res: Response) => {
+    const currentUser = sessionUser(req);
+    if (!currentUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      username: currentUser.username,
+      isAdmin: currentUser.isAdmin,
     });
+  });
+
+  app.get("/api/admin/security-settings", isAdmin, async (_req: Request, res: Response) => {
+    const settings = await getPublicAdminSettings();
+    res.json({
+      adminUsername: settings.auth.adminUsername,
+      currentSecurePhrase: settings.auth.securePhrase,
+      sessionTimeoutMinutes: settings.auth.sessionTimeoutMinutes,
+      maxFailedAttempts: settings.auth.maxFailedAttempts,
+      lockoutDurationMinutes: settings.auth.lockoutDurationMinutes,
+      requireSecureCookies: settings.auth.requireSecureCookies,
+    });
+  });
+
+  app.post("/api/admin/security-settings", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const {
+        adminUsername,
+        newSecurePhrase,
+        sessionTimeoutMinutes,
+        maxFailedAttempts,
+        lockoutDurationMinutes,
+        requireSecureCookies,
+      } = req.body || {};
+
+      const auth = await updateAuthSettings({
+        adminUsername: adminUsername?.trim(),
+        securePhrase: newSecurePhrase?.trim(),
+        sessionTimeoutMinutes,
+        maxFailedAttempts,
+        lockoutDurationMinutes,
+        requireSecureCookies,
+      });
+
+      res.json({
+        success: true,
+        message: "Security settings updated successfully",
+        settings: {
+          adminUsername: auth.adminUsername,
+          securePhrase: auth.securePhrase,
+          sessionTimeoutMinutes: auth.sessionTimeoutMinutes,
+          maxFailedAttempts: auth.maxFailedAttempts,
+          lockoutDurationMinutes: auth.lockoutDurationMinutes,
+          requireSecureCookies: auth.requireSecureCookies,
+        },
+      });
+    } catch (error: any) {
+      console.error("Security settings update failed:", error);
+      res.status(400).json({ error: error.message || "Failed to update security settings" });
+    }
   });
 }
 
-export const isLocalAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
+async function ensureAuthenticatedSession(req: Request, res: Response, next: NextFunction, requireAdmin = false) {
   const session = req.session as any;
-  
-  if (!session?.userId) {
+
+  if (!session?.userId || !session?.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  // Check session expiry
-  if (session.lastActivity && Date.now() - session.lastActivity > ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes * 60 * 1000) {
-    req.session.destroy(() => {});
-    return res.status(401).json({ message: "Session expired" });
-  }
-
-  // Update last activity
-  session.lastActivity = Date.now();
-
-  (req as any).user = {
-    claims: {
-      sub: session.userId,
-      username: session.user?.username
-    }
-  };
-
-  next();
-};
-
-export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
-  const session = req.session as any;
-
-  if (!session?.userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  if (session.lastActivity && Date.now() - session.lastActivity > ADMIN_SECURITY_SETTINGS.sessionTimeoutMinutes * 60 * 1000) {
+  const settings = await loadAdminSettings();
+  if (
+    session.lastActivity &&
+    Date.now() - session.lastActivity > settings.auth.sessionTimeoutMinutes * 60 * 1000
+  ) {
     const userId = session.userId;
     req.session.destroy(() => {});
-    await logSecurityEvent({ type: "auth.session_expired", userId, ip: req.ip || "", detail: "Session TTL exceeded" });
+    await logSecurityEvent({
+      type: "auth.session.expired",
+      userId,
+      ip: getClientIp(req),
+      detail: "Session timed out",
+    });
     return res.status(401).json({ message: "Session expired" });
   }
 
   session.lastActivity = Date.now();
 
+  if (requireAdmin && !session.user.isAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+
   (req as any).user = {
     claims: {
       sub: session.userId,
-      username: session.user?.username
-    }
+      username: session.user.username,
+      isAdmin: session.user.isAdmin,
+    },
   };
 
   next();
-};
+}
+
+export const isLocalAuthenticated = async (req: Request, res: Response, next: NextFunction) =>
+  ensureAuthenticatedSession(req, res, next, false);
+
+export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) =>
+  ensureAuthenticatedSession(req, res, next, false);
+
+export const isAdmin = async (req: Request, res: Response, next: NextFunction) =>
+  ensureAuthenticatedSession(req, res, next, true);

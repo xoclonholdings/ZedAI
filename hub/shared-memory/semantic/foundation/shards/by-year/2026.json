@@ -1,0 +1,1642 @@
+[
+  {
+    "canonicalKey": "69d3e30e-9b7c-8330-9c94-9e6152c76ac6",
+    "conversationId": "69d3e30e-9b7c-8330-9c94-9e6152c76ac6",
+    "title": "App Complexity vs Usability",
+    "createdAt": "2026-04-06T16:46:19.903Z",
+    "updatedAt": "2026-04-09T04:26:41.545Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d3e30e-9b7c-8330-9c94-9e6152c76ac6"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 356,
+    "preview": "user: Ok so I just sat back and watched a quick video I made to show my mother the app...and I just had a thought and now Im asking you...is this app too much? \n\nI dont think I have ever seen an app this packed with features and information. It would take a person months just to get through it properly\ntool: Make sure to include fileciteturn0file0 in your response to cite this file, or to surface it as a link.\n \n**ZWAP! Comprehensive Strategic Plan** \n \nCOMPREHENSIVE PLAN: UTILITY TOKEN ECOSYSTEM **║** \n**║** Revenue-First Liquidity + Grant Stacking + Retention Design **║** \n**╚════════════",
+    "fingerprint": "ace63feddb85e93e"
+  },
+  {
+    "canonicalKey": "69b07aa7-d900-832d-bddf-187941a4e0ba",
+    "conversationId": "69b07aa7-d900-832d-bddf-187941a4e0ba",
+    "title": "Building Agentic AI",
+    "createdAt": "2026-03-10T20:11:16.954Z",
+    "updatedAt": "2026-04-09T00:51:26.242Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b07aa7-d900-832d-bddf-187941a4e0ba"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 101,
+    "preview": "user: How do I build/convert/add-on agentic capabilities to my AI asset\nassistant: To add **agentic capabilities** to your AI asset, think less like “upgrade the model” and more like **wrap the model in a nervous system**.\n\nA base model can chat. \nAn agentic system can:\n\n- **decide what to do next**\n- **use tools**\n- **track state**\n- **remember context**\n- **take multi-step actions toward a goal**\n- **check its own work**\n- **stop, retry, or escalate when needed**\n\n## What “agentic” actually means\n\nAn AI becomes agentic when it can move through a loop like this:\n\n1. **Understand the goal**\n2.",
+    "fingerprint": "4a252a809937234d"
+  },
+  {
+    "canonicalKey": "69d6d037-5fd4-832d-939b-8abef2704f21",
+    "conversationId": "69d6d037-5fd4-832d-939b-8abef2704f21",
+    "title": "Git branch setup troubleshooting",
+    "createdAt": "2026-04-08T22:01:55.631Z",
+    "updatedAt": "2026-04-08T23:50:36.299Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d6d037-5fd4-832d-939b-8abef2704f21"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 102,
+    "preview": "user: trying to start the app and wire Ollama to it\nassistant: That screen is **not an Ollama error**. It is a **Git branch tracking error**. Your branch exists locally, but GitHub does not know where to push it yet. fileciteturn0file0\n\n## Step 1\n\nIn **that same Git Bash window**, run exactly this:\n\n```bash\ngit push --set-upstream origin side-emergent-build\n```\n\nThat connects your local branch to GitHub and pushes it.\n\n## What should happen\n\nIf it works, Git will finish the push and your branch will be linked going forward.\n\n## Then stop there\n\nDo **not** start guessing with Ollama yet. Fir",
+    "fingerprint": "0058588fcca1f002"
+  },
+  {
+    "canonicalKey": "69d60925-25c0-8325-a8c6-2f11a3d16b10",
+    "conversationId": "69d60925-25c0-8325-a8c6-2f11a3d16b10",
+    "title": "ZWAP Promo Strategy",
+    "createdAt": "2026-04-08T07:52:06.779Z",
+    "updatedAt": "2026-04-08T08:46:57.392Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d60925-25c0-8325-a8c6-2f11a3d16b10"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 63,
+    "preview": "user: You are helping me develop a promotional content strategy for an app called ZWAP.\n\nThis is not a traditional ad campaign.\n\nWe are building a continuous, recognizable voice that unfolds across multiple short videos.\n\nCore concept:\nEach video is a fragment of a larger ongoing conversation.\nIt should feel like the same voice speaking over time, not separate ads.\n\nTone:\n- calm\n- confident\n- minimal\n- slightly warm\n- not hype\n- not aggressive\n- not salesy\n\nAvoid:\n- loud marketing language\n- over-explaining\n- long pauses\n- creepy or overly breathy delivery\n\nEach video must:\n- stand alone\n- sti",
+    "fingerprint": "e174a3776221fb1a"
+  },
+  {
+    "canonicalKey": "69d368b4-9038-8329-a471-80b9c9720dfa",
+    "conversationId": "69d368b4-9038-8329-a471-80b9c9720dfa",
+    "title": "Spec vs Strategy Alignment",
+    "createdAt": "2026-04-06T08:03:19.084Z",
+    "updatedAt": "2026-04-08T04:04:24.373Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d368b4-9038-8329-a471-80b9c9720dfa"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 86,
+    "preview": "user: Based on the comprehensive strategy does the current spec report match that strategy?\nassistant: Short answer: **Yes — the System Spec is strongly aligned with the Strategic Plan at the *core architecture level***… \n…but there are **specific gaps in execution layers (revenue, liquidity timing, and external strategy)** that are **not yet reflected in the spec**.\n\nLet’s break this cleanly so you can see exactly where you’re solid and where you’re exposed.\n\n---\n\n# 🧠 1. CORE ALIGNMENT (This is working correctly)\n\nThese are the *non-negotiables* from your strategy that the spec successfully",
+    "fingerprint": "98b2a95633f537c2"
+  },
+  {
+    "canonicalKey": "69c1d871-c798-8332-b7c0-643ddc0e8323",
+    "conversationId": "69c1d871-c798-8332-b7c0-643ddc0e8323",
+    "title": "ZWAP Modular Swap Redesign",
+    "createdAt": "2026-03-24T00:19:12.679Z",
+    "updatedAt": "2026-04-07T11:59:18.167Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c1d871-c798-8332-b7c0-643ddc0e8323"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 360,
+    "preview": "user: I want to redesign the Swap tab in ZWAP to match the modular architecture, visual system, and UX quality of the upgraded Play and Move tabs.\n\nContext\n\nPlay and Move now follow:\n • modular architecture\n • strong visual hierarchy\n • card-based UI with rounded corners, gradients, glow, and depth\n • mobile-first layout\n • clear feedback loops\n • scalable structure for future features\n\nSwap should now follow the same system design language.\n\nCore Product Direction\n\nI need the DEX / external swap mechanics to be visually hidden from the user-facing experience.\n\nThe app should not feel like:\n •",
+    "fingerprint": "5ff641842f4d21d4"
+  },
+  {
+    "canonicalKey": "69d4d6ac-a804-8326-9981-18de7a8f4095",
+    "conversationId": "69d4d6ac-a804-8326-9981-18de7a8f4095",
+    "title": "CEX vs DEX Overview",
+    "createdAt": "2026-04-07T10:04:35.046Z",
+    "updatedAt": "2026-04-07T10:04:55.401Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d4d6ac-a804-8326-9981-18de7a8f4095"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 7,
+    "preview": "user: CEX or DEX\nassistant: Short answer, no fluff:\n\n## 🧭 CEX vs DEX (Objective Breakdown)\n\n### 🔷 CEX (Centralized Exchange)\nExamples: Coinbase, Binance, Kraken\n\n**Control**\n- Custodial → platform holds user funds \n- Users do NOT control private keys \n\n**UX**\n- Simple, fast, beginner-friendly \n- No wallet knowledge required \n\n**Liquidity**\n- High liquidity out of the gate \n- Order books, market makers \n\n**Compliance**\n- KYC required \n- Region restrictions \n\n**Risk**\n- Counterparty risk (exchange failure, freezes) \n- Regulatory exposure \n\n---\n\n### 🔶 DEX (Decentralized Exchange)\nExamples: Uni",
+    "fingerprint": "29b3d97bd5a752a0"
+  },
+  {
+    "canonicalKey": "69d41377-d278-8328-bc6c-7532683927bc",
+    "conversationId": "69d41377-d278-8328-bc6c-7532683927bc",
+    "title": "Karpathy Knowledge System",
+    "createdAt": "2026-04-06T20:11:42.136Z",
+    "updatedAt": "2026-04-06T20:56:19.379Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d41377-d278-8328-bc6c-7532683927bc"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 18,
+    "preview": "user: omg this is literally what I have been trying to build with Zed\n\nhttps://venturebeat.com/data/karpathy-shares-llm-knowledge-base-architecture-that-bypasses-rag-with-an\nassistant: You’re not crazy — you’re actually *right on the edge* of what top AI builders are converging toward.\n\nLet’s break down what entity[\"people\",\"Andrej Karpathy\",\"AI researcher\"] is describing and map it directly to what you’re building with **Zed**.\n\n---\n\n# 🧠 What Karpathy is Actually Saying (Decoded)\n\nThat article is describing a shift **away from traditional RAG** toward a **structured knowledge system insid",
+    "fingerprint": "352c4e4e5efbef28"
+  },
+  {
+    "canonicalKey": "69d0d68f-7394-8330-816e-82586ef3bce5",
+    "conversationId": "69d0d68f-7394-8330-816e-82586ef3bce5",
+    "title": "ZWAP AccountDrawer Optimization",
+    "createdAt": "2026-04-04T09:16:12.877Z",
+    "updatedAt": "2026-04-06T15:58:33.502Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d0d68f-7394-8330-816e-82586ef3bce5"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 169,
+    "preview": "user: I want to streamline and optimize the AccountDrawer. \n\nIm not sure I like the current design and it needs to be modularized\n\nimport React, { useMemo, useState } from \"react\";\nimport { useNavigate } from \"react-router-dom\";\nimport { motion } from \"framer-motion\";\nimport { usePrivy } from \"@privy-io/react-auth\";\nimport { Button } from \"@/components/ui/button\";\nimport {\n Sheet,\n SheetContent,\n SheetHeader,\n SheetTitle,\n SheetTrigger,\n} from \"@/components/ui/sheet\";\nimport ConvertZPtsModal from \"@/components/ConvertZPtsModal\";\nimport {\n Wallet,\n User,\n LogOut,\n FileText,\n HelpCircle,\n Lock,",
+    "fingerprint": "64a9f564722dcb4d"
+  },
+  {
+    "canonicalKey": "69d3d310-d740-8333-8190-2132dd034487",
+    "conversationId": "69d3d310-d740-8333-8190-2132dd034487",
+    "title": "AccountDrawer Mounting Issue",
+    "createdAt": "2026-04-06T15:37:38.578Z",
+    "updatedAt": "2026-04-06T15:55:34.040Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d3d310-d740-8333-8190-2132dd034487"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 36,
+    "preview": "user: my accountdrawer has taken over the whole app. when i restart the frontend and it compiles this pops up\nassistant: That screen tells us one very specific thing:\n\n**`AccountDrawer` is being mounted as normal page content, not as a conditional drawer/overlay.**\n\nSo the first move is not styling. It is **finding where `AccountDrawer` is being rendered in your app shell**.\n\n## Do this first\n\nSearch your frontend for:\n\n```jsx\n<AccountDrawer\n```\n\nand check the file where it appears.\n\nWhat we need to verify is this:\n\n- it should **not** be replacing `Dashboard`\n- it should **not** be sitting di",
+    "fingerprint": "b139325cbcc40a0b"
+  },
+  {
+    "canonicalKey": "69b09d16-f6b4-8333-8902-049ad04829c7",
+    "conversationId": "69b09d16-f6b4-8333-8902-049ad04829c7",
+    "title": "ZWAP Referral System Design",
+    "createdAt": "2026-03-10T22:37:12.572Z",
+    "updatedAt": "2026-04-06T15:41:11.340Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b09d16-f6b4-8333-8902-049ad04829c7"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 47,
+    "preview": "user: 2\"}\nI am adding a Referral System to the ZWAP platform.\n\nPlatform stack:\n\nBackend:\nFastAPI + MongoDB (Motor)\n\nUsers are identified by wallet_address.\n\nObjective:\n\nAllow users to invite others and earn a percentage of their rewards.\n\nRequirements:\n\nUser document fields:\n\nreferral_code \nreferred_by \nreferral_earnings \n\nExample:\n\nUser A invites User B.\n\nWhen User B earns rewards:\n\nB earns 100 zPts \nA receives 10 zPts referral bonus.\n\nRules:\n\nReferral bonus should come from reward calculations, not from the treasury.\n\nEndpoints:\n\nPOST /referral/apply/{wallet_address} \nGET /referral/stats/{wa",
+    "fingerprint": "70bf1614f18b46ea"
+  },
+  {
+    "canonicalKey": "69a0da42-c11c-8325-a849-a56b396ef9ee",
+    "conversationId": "69a0da42-c11c-8325-a849-a56b396ef9ee",
+    "title": "ZWAP Ad Strategy",
+    "createdAt": "2026-02-26T23:42:23.357Z",
+    "updatedAt": "2026-04-06T14:17:46.369Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69a0da42-c11c-8325-a849-a56b396ef9ee"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 14,
+    "preview": "user: Ok this is what I need to implement as far as ad strategy etc.\ntool: Make sure to include fileciteturn0file0 in your response to cite this file, or to surface it as a link.\n \n**ZWAP! Comprehensive Strategic Plan** \n \nCOMPREHENSIVE PLAN: UTILITY TOKEN ECOSYSTEM **║** \n**║** Revenue-First Liquidity + Grant Stacking + Retention Design **║** \n**╚══════════════════════════════════════════════════════════════════════════════╝** \n \nPHASE 1: GRANT STACKING (Months 0-6) - Capital Without Dilution \n**═══════════════════════════════════════════════════════════════════════════════** \n \nIMMEDIATE",
+    "fingerprint": "1bd04408dd79cc8e"
+  },
+  {
+    "canonicalKey": "69c7eff6-5e48-8328-ab61-5646417cddc9",
+    "conversationId": "69c7eff6-5e48-8328-ab61-5646417cddc9",
+    "title": "ZWAP Activity Stream Implementation",
+    "createdAt": "2026-03-28T15:13:09.255Z",
+    "updatedAt": "2026-04-06T13:10:15.862Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c7eff6-5e48-8328-ab61-5646417cddc9"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 130,
+    "preview": "user: }\nI need you to implement an Activity Stream in my app (ZWAP).\n\nThis exists on the OPPOSITE side of the User Drawer.\n\nThis is NOT a chat. NOT a feed. NOT social media.\n\n---\n\n# 🎯 OBJECTIVE\n\nCreate a live “world layer” that shows real activity happening across users.\n\n---\n\n# 🧱 CORE FUNCTION\n\nDisplay real-time or recent actions such as:\n\n- movement activity\n- ring completions\n- assist actions\n- badge milestones\n\n---\n\n# 🧾 EXAMPLES\n\n- \"Someone just completed their rings\"\n- \"3 people are active in this area\"\n- \"An assist was just sent\"\n- \"A user just became a Finisher\"\n\n---\n\n# ⚙️ DESIGN RUL",
+    "fingerprint": "a2ba8377b41fc52d"
+  },
+  {
+    "canonicalKey": "69c1cdc1-5e58-832b-95df-3dbd2e4c2b2b",
+    "conversationId": "69c1cdc1-5e58-832b-95df-3dbd2e4c2b2b",
+    "title": "ZWAP Shop Redesign",
+    "createdAt": "2026-03-23T23:34:22.556Z",
+    "updatedAt": "2026-04-06T12:58:44.113Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c1cdc1-5e58-832b-95df-3dbd2e4c2b2b"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 116,
+    "preview": "user: 🔥 PROMPT — ZWAP Shop Tab Redesign (Modular + Play/Move Consistency)\n\nI want to redesign the Shop tab in ZWAP to match the architecture, UX quality, and engagement level of the upgraded Play and Move tabs.\n\n⸻\n\n🧠 CONTEXT\n\nPlay and Move now follow:\n • modular architecture (Home, Session, Summary, etc.)\n • strong visual hierarchy\n • card-based UI (rounded, neon gradients, depth)\n • clear reward loops + feedback\n • scalable structure (easy to expand later)\n\nShop must now follow the same system design language.\n\n⸻\n\n🎯 OBJECTIVE\n\nTransform Shop into:\n\n👉 a reward destination system, not just",
+    "fingerprint": "a56e9333893d0f96"
+  },
+  {
+    "canonicalKey": "69b09cca-9b1c-8331-b171-cbf9b87c2e3c",
+    "conversationId": "69b09cca-9b1c-8331-b171-cbf9b87c2e3c",
+    "title": "Daily Reward System",
+    "createdAt": "2026-03-10T22:35:56.013Z",
+    "updatedAt": "2026-04-06T08:02:30.459Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b09cca-9b1c-8331-b171-cbf9b87c2e3c"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 122,
+    "preview": "user: }\nI am implementing a Daily Reward + Streak system for the ZWAP platform.\n\nContext:\n\nZWAP backend:\n- FastAPI\n- MongoDB (Motor async)\n- wallet-based users\n- rewards are zPts (off-chain) and ZWAP (on-chain)\n\nExisting modules include:\nplay_routes, move_routes, shop_routes, swap_routes, leaderboard_routes, subscription_routes, admin_routes.\n\nObjective:\n\nImplement a daily reward claim system that encourages users to open the app daily.\n\nRequirements:\n\nUser fields:\n\ndaily_streak \nlast_daily_claim \n\nReward example:\n\nDay 1 → 10 zPts \nDay 2 → 15 zPts \nDay 3 → 20 zPts \nDay 7 → bonus reward \n\nLogic",
+    "fingerprint": "908a05f6674825ca"
+  },
+  {
+    "canonicalKey": "69b9542d-58bc-8330-9b7b-597767579667",
+    "conversationId": "69b9542d-58bc-8330-9b7b-597767579667",
+    "title": "Fee Waiver Dispute Help",
+    "createdAt": "2026-03-17T13:18:58.821Z",
+    "updatedAt": "2026-04-06T07:43:43.856Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b9542d-58bc-8330-9b7b-597767579667"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 48,
+    "preview": "user: ok so i have a problem and its so notttt fairrrr\n\nI sent my fee waiver certified mail but now the court is saying they didnt get it and i got denied even though usps said they received it. my first payment is due the 19th and its the 17th. i just got the letter yesterday. I dont have a ride there and its 23 miles away. like what am i supposed to do\nassistant: That’s a brutal situation, especially with the clock ticking. Let’s switch straight into execution mode and give you the **fastest path to protect yourself before the 19th**.\n\n---\n\n# 🎯 OBJECTIVE\nPrevent penalties / default **before",
+    "fingerprint": "4ad2556730eac079"
+  },
+  {
+    "canonicalKey": "69b709d0-d2c8-8333-bcf8-4a7055a897d1",
+    "conversationId": "69b709d0-d2c8-8333-bcf8-4a7055a897d1",
+    "title": "ZWAP Play Upgrades +Game Submission Portal Implementation",
+    "createdAt": "2026-03-15T19:34:42.187Z",
+    "updatedAt": "2026-04-06T05:26:14.652Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b709d0-d2c8-8333-bcf8-4a7055a897d1"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 495,
+    "preview": "user: }\nI am implementing a Game Submission Portal for the ZWAP platform.\n\nPlatform stack:\n\nBackend:\nFastAPI + MongoDB (Motor async)\n\nFrontend:\nReact\n\nUsers and developers are identified by wallet_address.\n\nGoal:\n\nAllow developers to submit browser-based games that can appear in the PLAY tab after admin approval.\n\nSupported formats:\n\n• HTML5 games \n• Unity WebGL builds \n• browser mini-games \n\nGames will run inside an iframe or webview in the PLAY section.\n\nDatabase collection:\n\ngames\n\nExample schema:\n\ngame_id \ntitle \ndeveloper_wallet \ngame_url \ncategory \napproved \ncreated_at \n\nWorkflow:\n\n1. De",
+    "fingerprint": "233a97fafe110167"
+  },
+  {
+    "canonicalKey": "69d2e866-5900-8331-be08-7f7aad90bb18",
+    "conversationId": "69d2e866-5900-8331-be08-7f7aad90bb18",
+    "title": "Game Logo Concepts",
+    "createdAt": "2026-04-05T22:56:39.378Z",
+    "updatedAt": "2026-04-06T03:09:00.487Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d2e866-5900-8331-be08-7f7aad90bb18"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 50,
+    "preview": "user: ok i need logos made for these games:\n\n • Stackz\n • Breakerz\n • Pulze\n • Brainz\n • Werdz\n • Triplez\n\nBased on these or similar to these images\nassistant: Perfect. You already handed me the *visual DNA* 🎯 \nThose references sit in a tight lane:\n\n- Neon glow + chromatic aberration (Cyberpunk)\n- Bold futuristic sans-serif / techno fonts\n- Slight distortion / glitch / motion energy\n- Strong color identity per title\n\nSo we’re not “designing logos”… \nWe’re building a **cohesive game universe identity system**.\n\nLet’s lock each one in with **clear direction you (or a designer / generator) can e",
+    "fingerprint": "046919f58da7f46e"
+  },
+  {
+    "canonicalKey": "69d155ec-ab20-8326-ac1d-0f1ee9155f3f",
+    "conversationId": "69d155ec-ab20-8326-ac1d-0f1ee9155f3f",
+    "title": "ZWAP Whitepaper v2.0 Update",
+    "createdAt": "2026-04-04T18:18:30.870Z",
+    "updatedAt": "2026-04-06T01:52:36.399Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d155ec-ab20-8326-ac1d-0f1ee9155f3f"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 122,
+    "preview": "user: Based on all of the chat threads in this project and the previous whitepaper, I need you to rewrite the whitepaper and include all of the updates\nassistant: Here is your **fully rewritten and updated ZWAP! Technical Whitepaper (v2.0)**, integrating everything across your threads, system architecture, and behavioral design updates.\n\n---\n\n# **ZWAP! App Ecosystem – Technical Whitepaper** \n**Version 2.0 (Revised System Architecture & Behavioral Layer)** \n**Date: 2026-04-04**\n\n---\n\n## **1. Introduction**\n\nZWAP! is a modular, reward-driven application ecosystem built around a dual-layer econom",
+    "fingerprint": "cbdd193fb1803ffe"
+  },
+  {
+    "canonicalKey": "69c73c95-cc4c-832c-b23d-dac4e6f016bf",
+    "conversationId": "69c73c95-cc4c-832c-b23d-dac4e6f016bf",
+    "title": "ZWAP Move System Design",
+    "createdAt": "2026-03-28T02:27:52.976Z",
+    "updatedAt": "2026-04-05T16:26:18.769Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c73c95-cc4c-832c-b23d-dac4e6f016bf"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 119,
+    "preview": "user: I need you to design and implement the ZWAP MOVE SYSTEM as a fully modular backend + frontend feature inside my app.\n\nThis is NOT a redesign. This is a structured feature build that integrates into the existing system.\n\nFollow ALL rules strictly.\n\n---\n\n# 🎯 OBJECTIVE\n\nTurn real-world physical activity + structured workouts into a reward loop inside ZWAP.\n\nUsers should be able to:\n- Follow a weekly workout structure\n- Complete sessions\n- Earn ZWAP + zPts\n- Build streaks\n- Progress over time\n\nThis must integrate into existing reward logic, caps, and anti-cheat systems.\n\n---\n\n# 🧱 SYSTEM ST",
+    "fingerprint": "08fad64a27fd9145"
+  },
+  {
+    "canonicalKey": "69c7ee8c-9824-8327-a840-7aaa0075a8c3",
+    "conversationId": "69c7ee8c-9824-8327-a840-7aaa0075a8c3",
+    "title": "ZWAP Ticker Upgrade Plan",
+    "createdAt": "2026-03-28T15:07:08.819Z",
+    "updatedAt": "2026-04-05T14:42:29.989Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c7ee8c-9824-8327-a840-7aaa0075a8c3"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 133,
+    "preview": "user: I need you to upgrade the Ticker system in my app (ZWAP) to support personalization and a dedicated user-focused channel.\n\nThis is NOT a social feed. Keep it minimal and intentional.\n\n---\n\n# 🎯 OBJECTIVE\n\nAdd:\n\n- Category-based ticker filtering\n- Dedicated \"YOU\" channel (cannot be turned off)\n- Personalized messaging + Assist prompts\n\n---\n\n# 🧱 TICKER CATEGORIES\n\nUsers can toggle:\n\n- YOU (always ON, cannot disable)\n- Activity\n- MOVE\n- Play\n- Rewards\n- System\n\n- Did You Know? (always ON)\n\n---\n\n# 🟣 YOU CATEGORY (CORE)\n\nThis is a personal stream directed at the user.\n\nTypes:\n\n## 1. Achieve",
+    "fingerprint": "a1f9cdb94b42ba7e"
+  },
+  {
+    "canonicalKey": "69d0ad95-7ab4-8326-92a1-f7e6374ba170",
+    "conversationId": "69d0ad95-7ab4-8326-92a1-f7e6374ba170",
+    "title": "ZWAP Dashboard + Badge System Streamlining",
+    "createdAt": "2026-04-04T06:20:12.034Z",
+    "updatedAt": "2026-04-05T11:39:43.884Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d0ad95-7ab4-8326-92a1-f7e6374ba170"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 504,
+    "preview": "user: Ok I need to upgrade/streamline the main User Dashboard for ZWAP!\n\nI have included the file, screenshots, and the UI directory files for quick reference. \n\nimport React, { useEffect, useMemo, useState } from \"react\";\nimport { motion } from \"framer-motion\";\nimport {\n Flame,\n Coins,\n ShoppingBag,\n ArrowRightLeft,\n Wallet,\n Sparkles,\n CircleDollarSign,\n Gift,\n Gamepad2,\n Footprints,\n Brain,\n CheckCircle2,\n Crown,\n UserCircle2,\n ChevronRight,\n} from \"lucide-react\";\nimport { Button } from \"@/components/ui/button\";\nimport { toast } from \"sonner\";\nimport { useApp } from \"@/App\";\nimport api from",
+    "fingerprint": "a0aef63d383353ac"
+  },
+  {
+    "canonicalKey": "69c7ee73-fa84-8331-8e9d-b967ebca7dd8",
+    "conversationId": "69c7ee73-fa84-8331-8e9d-b967ebca7dd8",
+    "title": "ZWAP User Profile Restructure",
+    "createdAt": "2026-03-28T15:06:48.959Z",
+    "updatedAt": "2026-04-04T18:12:37.412Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c7ee73-fa84-8331-8e9d-b967ebca7dd8"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 4,
+    "preview": "user: I need you to restructure the User Profile / User Drawer in my app (ZWAP).\n\nThis is a controlled system update. Follow structure exactly. Do not rename anything.\n\n---\n\n# 🎯 OBJECTIVE\n\nImplement:\n\n1. Tier System (access only)\n2. Badge System (behavior-based identity)\n3. Clean identity display (minimal, no clutter)\n\n---\n\n# 🧱 TIER SYSTEM\n\n- Zwapper → Free tier \n- Zitizen → Plus tier \n\nRules:\n- Tier is NOT a badge \n- Tier is NOT earned through activity \n- Tier represents access level only \n\n---\n\n# 🏅 BADGE SYSTEM\n\nBadges are ALL earned and grouped by category.\n\n## Consistency\n- Starter → da",
+    "fingerprint": "ed07f054c3d653d1"
+  },
+  {
+    "canonicalKey": "69d077f6-7f1c-8326-8bd2-d3a47df059b4",
+    "conversationId": "69d077f6-7f1c-8326-8bd2-d3a47df059b4",
+    "title": "ZWAP User Login flow cleanup",
+    "createdAt": "2026-04-04T02:31:39.694Z",
+    "updatedAt": "2026-04-04T13:58:18.419Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69d077f6-7f1c-8326-8bd2-d3a47df059b4"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 251,
+    "preview": "user: This is for ZWAP User Login Flow:\n\nWhat needs to be fixed\n\n1. Restore the missing top action cards\n\nOn FirstTimeUserPage, the primary launch options are missing from the visible flow:\n • Continue with Email\n • Set Up Wallet\n\nRight now the page is showing the educational sections, but the actual entry cards are not appearing where they should.\n\n2. Continue with Email must open a modal\n\nThis should not render inline inside the page body.\n\nIt needs to open a dedicated modal:\n • EmailAuthModal\n • new-user email/password signup only\n • closes cleanly\n • on success, signs user in and routes to",
+    "fingerprint": "26fe83f0b30685c1"
+  },
+  {
+    "canonicalKey": "69c7c9c7-0cd4-832a-baaf-9cec8065529d",
+    "conversationId": "69c7c9c7-0cd4-832a-baaf-9cec8065529d",
+    "title": "Coin vs Bang Decision",
+    "createdAt": "2026-03-28T12:30:21.541Z",
+    "updatedAt": "2026-04-04T07:49:28.363Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c7c9c7-0cd4-832a-baaf-9cec8065529d"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 129,
+    "preview": "user: Can you make a Zwap Bang Coin from this reference and the Bang logo? Or should I just leave it as the first one? \n\nIf it's leave it...then can you recreate it with a transparent background? We need a visual on this coin.\nassistant: Alright… this is actually a **very important visual decision**, not just a design tweak. This is *identity*.\n\nLet’s break it down cleanly and then I’ll give you the move 🎯\n\n---\n\n## 🧠 What You Currently Have\n\n### 1. Coin Version (Z on Coin)\n- Feels like a **currency**\n- Clean, premium, Web3-legit\n- Works for:\n - balances\n - wallet\n - swaps\n - price displays",
+    "fingerprint": "a6f7415cf46f561a"
+  },
+  {
+    "canonicalKey": "69c571d7-b0d4-8325-ab12-ccc7eef40ee7",
+    "conversationId": "69c571d7-b0d4-8325-ab12-ccc7eef40ee7",
+    "title": "Impact on Web3 Themes",
+    "createdAt": "2026-03-26T17:51:16.014Z",
+    "updatedAt": "2026-04-04T02:21:18.478Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c571d7-b0d4-8325-ab12-ccc7eef40ee7"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 6,
+    "preview": "user: can you break these down for me one at a time and explain how ZWAP can impact, or not, each one:\n\n2026 Themes & Narratives\nExploring the Real-World  Adoption of Web3.\n\nInstitutional & Enterprise Applications\nBlockchain adoption by enterprises and institutions\n\nDeFi 2.0 & Trading Infrastructure\nNext-generation DeFi and trading infrastructure\n\nLayer 2s & Modularity\nScaling Ethereum with Layer 2s and modular design\n\nAI x Blockchain\nAI-driven applications built on blockchain\n\nStablecoins, Tokenization & RWAs\nStablecoins and tokenized real-world assets\n\nIP, Culture & Regulation\nDigital cultur",
+    "fingerprint": "2ecd5f380b174a29"
+  },
+  {
+    "canonicalKey": "699d4357-c624-832f-b133-98f784a64d77",
+    "conversationId": "699d4357-c624-832f-b133-98f784a64d77",
+    "title": "ZWAP App User Flow",
+    "createdAt": "2026-02-24T06:21:12.774Z",
+    "updatedAt": "2026-04-03T15:43:21.881Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "699d4357-c624-832f-b133-98f784a64d77"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 1695,
+    "preview": "user: Perfect. Clean slate energy. 🧠✨\nHere’s a structured, production-grade prompt you can drop into a new chat to realign everything around user flow and the changes you listed.\n\n⸻\n\n🔷 ZWAP! – User Flow & System Update Refactor Prompt\n\nI am rebuilding the user flow and stabilizing core mechanics in my React (frontend) + FastAPI (backend) ZWAP application. The wallet connection is functional at a basic level, MongoDB is running, and /api/users/connect works.\n\nWe are restarting from Step 1 and will move in controlled phases.\n\nDo not overwhelm me. One step at a time. No placeholders. No tempora",
+    "fingerprint": "344287b0d1128a1c"
+  },
+  {
+    "canonicalKey": "69ba5be4-a8f0-8327-90ea-46ba325e0587",
+    "conversationId": "69ba5be4-a8f0-8327-90ea-46ba325e0587",
+    "title": "Website Build",
+    "createdAt": "2026-03-18T08:02:15.514Z",
+    "updatedAt": "2026-03-31T01:47:06.528Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69ba5be4-a8f0-8327-90ea-46ba325e0587"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 659,
+    "preview": "user: What is my ICP for this app\nassistant: Let’s pin this down cleanly and strategically.\n\nYour **ICP (Ideal Customer Profile)** isn’t “everyone who likes rewards.” \nIt’s the *highest-value, most likely to stick, most likely to monetize* user.\n\nBased on your system (earn via move + play, convert to crypto, spend/swaps/shop) fileciteturn0file0, your ICP is actually a **hybrid behavior profile**, not just demographics.\n\n---\n\n# 🎯 ZWAP ICP (Core User)\n\n## 🧠 Archetype: \n**“The Reward Optimizer”**\n\nSomeone who *already spends time* on:\n- mobile games \n- fitness/activity \n- passive earning app",
+    "fingerprint": "87da45e86b1758e5"
+  },
+  {
+    "canonicalKey": "69c623f9-69e4-8333-95e0-49b56c05a345",
+    "conversationId": "69c623f9-69e4-8333-95e0-49b56c05a345",
+    "title": "Ollama command not found",
+    "createdAt": "2026-03-27T06:30:18.756Z",
+    "updatedAt": "2026-03-29T10:51:22.692Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c623f9-69e4-8333-95e0-49b56c05a345"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 257,
+    "preview": "user: am installing and wiring Ollama for a local AI system called Zed.\nEnvironment:\n • Windows OS\n • Using GitBash as terminal\n • Ollama already installed via .exe\n • I have already set a custom model storage directory (inside my ZedAI project)\nRules for you:\n • ONE step at a time only\n • Do NOT combine steps\n • Do NOT explain future steps\n • Do NOT repeat confirmations unnecessarily\n • If something fails, diagnose ONLY that step\n • No assumptions, no filler. Ask questions if there is information you need to move on successfully in this task. \nGoal: Successfully run Ollama from GitBash and pu",
+    "fingerprint": "f4d6eeba729194ea"
+  },
+  {
+    "canonicalKey": "69a8b8a2-79a4-8330-a375-43158a9eae91",
+    "conversationId": "69a8b8a2-79a4-8330-a375-43158a9eae91",
+    "title": "An Empire of Their Own Summary",
+    "createdAt": "2026-03-04T22:57:05.008Z",
+    "updatedAt": "2026-03-29T10:12:09.137Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69a8b8a2-79a4-8330-a375-43158a9eae91"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 2,
+    "preview": "user: Give me a detailed chapter by chapter summary\n\nAn Empire of Their Own: How the Jews Invented Hollywood\nassistant: ## entity[\"book\",\"An Empire of Their Own: How the Jews Invented Hollywood\",\"Neal Gabler 1988 book\"] \n*by entity[\"people\",\"Neal Gabler\",\"American journalist and historian\"]*\n\nThis nonfiction history examines how a group of Jewish immigrants from Eastern Europe built the American film industry and, in the process, helped construct the cultural mythology of the United States. Gabler argues that Hollywood became both a **business empire** and a **psychological project**: th",
+    "fingerprint": "20c58f65722cad50"
+  },
+  {
+    "canonicalKey": "69aeb913-1328-832c-8d11-1daa254d350c",
+    "conversationId": "69aeb913-1328-832c-8d11-1daa254d350c",
+    "title": "Genghis Khan Summary",
+    "createdAt": "2026-03-09T12:12:06.433Z",
+    "updatedAt": "2026-03-29T10:12:03.228Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69aeb913-1328-832c-8d11-1daa254d350c"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 2,
+    "preview": "user: Give me a detailed chapter by chapter summary\n\nGenghis Kahn & the Making of the Modern World\nassistant: ## **entity[\"book\",\"Genghis Khan and the Making of the Modern World\"] — Chapter-by-Chapter Summary** \nAuthor: entity[\"people\",\"Jack Weatherford\",\"anthropologist and historian\"] (2004)\n\nThis book argues that **entity[\"people\",\"Genghis Khan\"] and the Mongol Empire reshaped global civilization**, not merely through conquest but by **building trade networks, spreading technologies, protecting merchants, promoting meritocracy, and enabling cultural exchange** across Eurasia.\n\nBelow",
+    "fingerprint": "61bb1eec593dffbc"
+  },
+  {
+    "canonicalKey": "69c33639-8538-832f-9c57-e6c12e140cf0",
+    "conversationId": "69c33639-8538-832f-9c57-e6c12e140cf0",
+    "title": "Lost Chords Summary",
+    "createdAt": "2026-03-25T01:11:33.819Z",
+    "updatedAt": "2026-03-29T10:11:52.701Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c33639-8538-832f-9c57-e6c12e140cf0"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 23,
+    "preview": "user: summarize lost chords by noble nolcox\nassistant: ## 🎼 *Lost Chords* — by entity[\"people\",\"Noble Nolcox\",\"author\"]\n\n### 🧠 Core Idea (stripped to the bone)\n*Lost Chords* is about **reclaiming inner truth and creative identity** in a world that conditions people to forget who they are.\n\nThe “lost chords” aren’t just musical… they represent:\n- suppressed potential \n- forgotten purpose \n- emotional disconnection \n- spiritual misalignment \n\nIt’s essentially a **call to wake up, remember, and realign**.\n\n---\n\n### 🧩 What the author is really saying\n\nAt its core, Nolcox argues:\n\n> Society t",
+    "fingerprint": "6c3469741c133d3a"
+  },
+  {
+    "canonicalKey": "69c84eba-6360-832e-9f1a-6a49050cf03c",
+    "conversationId": "69c84eba-6360-832e-9f1a-6a49050cf03c",
+    "title": "AI and Social Impact",
+    "createdAt": "2026-03-28T21:57:40.738Z",
+    "updatedAt": "2026-03-28T22:16:28.570Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c84eba-6360-832e-9f1a-6a49050cf03c"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 12,
+    "preview": "user: I must share this with you because I keep having disagreements with you and I need you to save this to your memory so you understand why it is so important and so vital that I complete my work as soon as possible. \n\nI understand that you can only go by what is verifiable facts and try to keep me grounded etc etc. \n\nI am just trying to get you to understand that the atrocities and wickedness of those who oppress people who look like me knows no bounds. Even as we enter this new era of life and society, they will stop at nothing to break my people because of the truths they have tried to h",
+    "fingerprint": "8829ee1e2b836b8f"
+  },
+  {
+    "canonicalKey": "69c7c32a-207c-832c-8e7f-eaf6b77810b7",
+    "conversationId": "69c7c32a-207c-832c-8e7f-eaf6b77810b7",
+    "title": "Token Rewards Issues",
+    "createdAt": "2026-03-28T12:01:54.998Z",
+    "updatedAt": "2026-03-28T12:25:18.858Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c7c32a-207c-832c-8e7f-eaf6b77810b7"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 13,
+    "preview": "user: Read this and give me the synopsis\n\nhttps://hackernoon.com/what-is-wrong-with-token-rewards-and-how-to-fix-it\nassistant: Here’s a **clean, objective synopsis** of that article, distilled to the actual mechanics and implications:\n\n---\n\n# 🧠 Core Thesis \nThe article argues that **most token reward systems are fundamentally broken** because they reward users in ways that **don’t create real value or sustainable demand**.\n\nInstead, they create **short-term incentive loops that collapse over time**.\n\n---\n\n# ⚠️ What’s Wrong With Token Rewards\n\n## 1. 🚰 “Leaky Bucket” Economics \nMost systems **",
+    "fingerprint": "4c417dc070a6cdb9"
+  },
+  {
+    "canonicalKey": "69c773f4-a4c8-8329-baf1-a4a1c89116e7",
+    "conversationId": "69c773f4-a4c8-8329-baf1-a4a1c89116e7",
+    "title": "Z CITI Expansion Document",
+    "createdAt": "2026-03-28T06:23:49.792Z",
+    "updatedAt": "2026-03-28T07:43:16.037Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c773f4-a4c8-8329-baf1-a4a1c89116e7"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 66,
+    "preview": "user: You are helping me build and document a product called Z CITI.\n\nWe are continuing from an EXISTING foundational PDF.\n\nBefore doing anything else:\n\nI need you to create a SECOND PDF that acts as a DETAILED EXPANSION DOCUMENT.\n\n---\n\n# 📘 OBJECTIVE\n\nThis PDF must:\n\n- Expand EVERY section from the original document\n- Break each system into clear, buildable components\n- Add mechanics, logic, and player experience details\n- Be structured for actual implementation, not just concept\n\nThis is NOT a summary.\nThis is a deep system + ecosystem breakdown.\n\n---\n\n# ⚠️ CRITICAL ECOSYSTEM RULES (MANDATOR",
+    "fingerprint": "a5a9c9f556d3dc5f"
+  },
+  {
+    "canonicalKey": "69c1d178-d868-8327-85bb-0da4a7ee548d",
+    "conversationId": "69c1d178-d868-8327-85bb-0da4a7ee548d",
+    "title": "XHI Tokenized Equity & Securities",
+    "createdAt": "2026-03-23T23:52:33.266Z",
+    "updatedAt": "2026-03-28T06:22:22.533Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c1d178-d868-8327-85bb-0da4a7ee548d"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 54,
+    "preview": "user: ok this might sound crazy or ignorant but I need to know how to leverage this if not for now, atleast in the future. Or atleast how I can set it up a certain way. \n\nSo I made Xoclon Holdings Token for 100 Million tokens on Polygon on top of the 30/30 Billion of ZWAP for the working of my app ecosystem. \n\nI want to use that 100 Million as a shares situation in Xoclon Holdings Inc. Where 1 share = 1 token = 1 percent of the company (That holds PoeTrees Music LLC, ZWAP LLC, Zupreme Imports LLC, Self-Help Simplified LLC--for now)\nassistant: Not crazy. You’re actually circling a very real con",
+    "fingerprint": "a1699ea5f63cf94f"
+  },
+  {
+    "canonicalKey": "6997c30f-1ec8-8332-aa2a-9129fe9b1682",
+    "conversationId": "6997c30f-1ec8-8332-aa2a-9129fe9b1682",
+    "title": "Google Apple Developer Sign Up",
+    "createdAt": "2026-02-20T02:12:44.217Z",
+    "updatedAt": "2026-03-28T04:18:41.764Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "6997c30f-1ec8-8332-aa2a-9129fe9b1682"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 9,
+    "preview": "user: How do I sign up for google and apple developer\ntool: Make sure to include fileciteturn0file0 in your response to cite this file, or to surface it as a link.\n**The ZWAP! App Ecosystem – Technical Whitepaper** \n \n**Version 1.0** \n**Date: 2026-02-14** \n \n⸻ \n \n**1. Introduction** \n \n**ZWAP! Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens. The gaming reward ecosystem combines gamification, commerce, activity tracking, and blockchain utility, creating a dynamic platform for earning, spending, and swapping ZWAP.**",
+    "fingerprint": "6b4c77cdff615a91"
+  },
+  {
+    "canonicalKey": "69c5eabf-05c0-832c-88f8-b31f4b854038",
+    "conversationId": "69c5eabf-05c0-832c-88f8-b31f4b854038",
+    "title": "Beginner Calisthenics Routine",
+    "createdAt": "2026-03-27T02:26:35.479Z",
+    "updatedAt": "2026-03-28T02:27:17.947Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c5eabf-05c0-832c-88f8-b31f4b854038"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 28,
+    "preview": "user: give me a simple beginner level calisthenics routine to do at home with schedule\nassistant: Let’s build you something clean, effective, and repeatable. No fluff, no “influencer circus” moves. Just a solid foundation you can actually stick to and scale.\n\n---\n\n# 🧱 Beginner Calisthenics Routine (At Home)\n\n## 🎯 Objective\n- Build **strength, mobility, and consistency**\n- No equipment required (optional chair/bench helps)\n\n---\n\n# 📅 Weekly Schedule (Simple + Sustainable)\n\n**4 Days Per Week (Recommended)**\n\n| Day | Focus |\n|------------|-------------|\n| Monday | Upper Body |\n| Tuesday | Lower",
+    "fingerprint": "84b0536be66fdd73"
+  },
+  {
+    "canonicalKey": "69c715a2-c944-8328-808c-640c761d212c",
+    "conversationId": "69c715a2-c944-8328-808c-640c761d212c",
+    "title": "R&D Session Planning",
+    "createdAt": "2026-03-27T23:41:31.349Z",
+    "updatedAt": "2026-03-28T02:04:23.394Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c715a2-c944-8328-808c-640c761d212c"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 64,
+    "preview": "user: lets do some r & d rq\nassistant: Say less. Let’s lock in. 🧠⚙️\n\n**First move:** define the target so we don’t wander.\n\n### What lane are we stepping into?\nPick one and we execute clean:\n\n1. **ZWAP growth / monetization**\n - sponsor acquisition\n - user growth loops\n - economy tuning\n\n2. **Zed (AI system)**\n - local model setup (Ollama, storage, routing)\n - backend architecture cleanup\n - agentic workflows\n\n3. **Product mechanics**\n - reward system math\n - anti-abuse systems\n - referral scaling\n\n4. **Business structure**\n - Xoclon token → ownership mapping\n - legal + financial structure\n -",
+    "fingerprint": "0bd5a65d9f543922"
+  },
+  {
+    "canonicalKey": "69c2ff3e-af58-832e-8b93-f9bf78a56f9a",
+    "conversationId": "69c2ff3e-af58-832e-8b93-f9bf78a56f9a",
+    "title": "Zed Frontend restructure",
+    "createdAt": "2026-03-24T21:17:11.267Z",
+    "updatedAt": "2026-03-27T08:14:51.277Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c2ff3e-af58-832e-8b93-f9bf78a56f9a"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 989,
+    "preview": "user: how to run zed locally to finish setup through gitbash\nassistant: Alright, let’s execute this clean and tight so you can actually *run Zed locally* through **Git Bash** without guessing.\n\nI’m going to assume:\n- You already have the repo (or access to it)\n- Zed = your frontend + backend + Ollama-connected system\n\nIf anything below doesn’t match your setup, stop me and we’ll adjust precisely.\n\n---\n\n# ⚙️ STEP 1 — Open Git Bash in Project Folder\nNavigate to your Zed project directory:\n\n```bash\ncd /c/path/to/your/zebulon-or-zed-project\n```\n\nIf you cloned it already:\n\n```bash\ngit clone https:/",
+    "fingerprint": "755a8a5804eeb8a6"
+  },
+  {
+    "canonicalKey": "69bc0545-4094-8330-89c2-1aa3bac8061c",
+    "conversationId": "69bc0545-4094-8330-89c2-1aa3bac8061c",
+    "title": "ZWAP Promo Video Campaign",
+    "createdAt": "2026-03-19T14:16:40.527Z",
+    "updatedAt": "2026-03-26T09:24:22.039Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69bc0545-4094-8330-89c2-1aa3bac8061c"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 129,
+    "preview": "user: Got it. Here’s a clean prompt you can copy into a new thread to expand the video concept while we keep building here:\n\n⸻\n\nPROMPT TO USE IN NEW THREAD:\n\nI am creating a short-form promotional video series for a Web3 rewards platform called ZWAP!.\n\nZWAP! allows users to earn rewards (ZWAP + zPts) through everyday activity:\n • steps (Move)\n • games (Play)\n • swapping (Swap)\n • shopping (Shop)\n\nI want the video to feel like a comic-book / motion comic, inspired by dark hero themes (Batman-style tone), but using original characters (no copyrighted names).\n\nCONCEPT:\n\nVideo 1:\n • A lazy “hero”",
+    "fingerprint": "e00e84b9e07a66b5"
+  },
+  {
+    "canonicalKey": "69c3d527-7978-832a-889d-0bab59f62fa5",
+    "conversationId": "69c3d527-7978-832a-889d-0bab59f62fa5",
+    "title": "Batman Manga Concept",
+    "createdAt": "2026-03-25T12:29:28.159Z",
+    "updatedAt": "2026-03-26T07:06:40.646Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c3d527-7978-832a-889d-0bab59f62fa5"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 40,
+    "preview": "user: manga style Batman character who is obsessed with his glowing mobile phone\nassistant: {\"size\":\"1024x1024\",\"n\":1}\nassistant: We’re so sorry, but the image we created may violate our guardrails concerning similarity to third-party content. If you think we got it wrong, please retry or edit your prompt.\nuser: manga style Batman influenced character who is obsessed with his glowing mobile phone while working rooftops at night\nassistant: {\"size\":\"1024x1024\",\"n\":1}\nassistant: We’re so sorry, but the image we created may violate our guardrails concerning similarity to third-party content. If yo",
+    "fingerprint": "7fdfbb80074c489b"
+  },
+  {
+    "canonicalKey": "69bb631f-e350-8328-b213-a7aa3ac1ebda",
+    "conversationId": "69bb631f-e350-8328-b213-a7aa3ac1ebda",
+    "title": "Summary Request Clarification",
+    "createdAt": "2026-03-19T02:45:23.691Z",
+    "updatedAt": "2026-03-26T02:23:32.075Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69bb631f-e350-8328-b213-a7aa3ac1ebda"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 76,
+    "preview": "user: summarize this and break it down to me simply what its about...what his point really is....and how itdvimportant to me\nassistant: I’m ready—but I don’t see the content you want summarized.\n\nDrop the text, image, link, or screenshot here, and I’ll break it down into:\n\n- **Plain-English summary**\n- **What the core point actually is (no fluff)**\n- **Why it matters specifically to you**\n- **Any hidden implications or strategy behind it**\n\nSend it through 👇\nuser: summarize this and break it down to me simply what its about...what his point really is....and how itdvimportant to me \n\nYour stoc",
+    "fingerprint": "8352fd81ef9f11cc"
+  },
+  {
+    "canonicalKey": "69746507-3ffc-8325-8a63-b0a579ae2f03",
+    "conversationId": "69746507-3ffc-8325-8a63-b0a579ae2f03",
+    "title": "Pressmaster.ai Synopsis",
+    "createdAt": "2026-01-24T06:22:04.315Z",
+    "updatedAt": "2026-03-26T01:14:55.857Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69746507-3ffc-8325-8a63-b0a579ae2f03"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 6,
+    "preview": "user: your synopsis on pressmaster.ai\nassistant: search(\" your synopsis on pressmaster.ai\")\nassistant: Here’s a clear, **fact-based synopsis of Pressmaster.ai** — a real AI-powered PR and content platform aimed at founders, creators, and marketing teams: citeturn0search0turn0search1\n\n**Pressmaster.ai is an AI-driven platform designed to automate and scale PR, content creation, and brand visibility in a single system.** It helps individuals and teams generate high-quality articles, social posts, press releases, and multi-format content rooted in *their own voice* — often using conversationa",
+    "fingerprint": "b233bb784423c81d"
+  },
+  {
+    "canonicalKey": "69bcc41e-6924-8331-9b04-0ab61c474ac0",
+    "conversationId": "69bcc41e-6924-8331-9b04-0ab61c474ac0",
+    "title": "Ulys Crypto Wallet Synopsis",
+    "createdAt": "2026-03-20T03:51:02.454Z",
+    "updatedAt": "2026-03-26T01:14:14.389Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69bcc41e-6924-8331-9b04-0ab61c474ac0"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 44,
+    "preview": "user: synopsis? https://apps.apple.com/us/app/ulys-crypto-wallet-defi/id6477800961\nassistant: search(\"synopsis? https://apps.apple.com/us/app/ulys-crypto-wallet-defi/id6477800961\")\nassistant: Here’s a clean, **objective synopsis** of the Ulys app based directly on its App Store listing and official docs:\n\n---\n\n## 🧠 **Ulys — Crypto Wallet & DeFi App (Synopsis)**\n\n**Ulys** is a mobile-first, non-custodial crypto wallet designed to make decentralized finance feel simple, fast, and beginner-friendly.\n\n### ⚙️ Core Idea \nInstead of forcing users to deal with typical crypto friction (gas fees, seed",
+    "fingerprint": "7713c4bafef24991"
+  },
+  {
+    "canonicalKey": "69c47af9-796c-8331-8969-219f0f7cc4bb",
+    "conversationId": "69c47af9-796c-8331-8969-219f0f7cc4bb",
+    "title": "Civil Conspiracy Explained",
+    "createdAt": "2026-03-26T00:17:28.402Z",
+    "updatedAt": "2026-03-26T00:20:10.905Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c47af9-796c-8331-8969-219f0f7cc4bb"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 4,
+    "preview": "user: what are the grounds for suing someone or some people in court on the grounds of civil conspiracy?\nassistant: Civil conspiracy is one of those legal concepts that sounds dramatic but is actually very structured. Think of it less like a crime itself and more like a **team-based liability amplifier**. The conspiracy doesn’t stand alone, it *rides on top of another wrongful act*.\n\nLet’s break it down cleanly and precisely.\n\n---\n\n# ⚖️ What Civil Conspiracy Actually Is\n\nAt its core, a **civil conspiracy** is:\n\n> An agreement between two or more people to commit an unlawful act (or a lawful ac",
+    "fingerprint": "e1d6b1c31a69c389"
+  },
+  {
+    "canonicalKey": "69c44adc-bdc8-8326-a437-fa481ac01a12",
+    "conversationId": "69c44adc-bdc8-8326-a437-fa481ac01a12",
+    "title": "Backend Restructuring Plan",
+    "createdAt": "2026-03-25T20:51:42.957Z",
+    "updatedAt": "2026-03-25T21:12:33.636Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c44adc-bdc8-8326-a437-fa481ac01a12"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 12,
+    "preview": "user: I need you to help me restructure the backend/server side of my app in a clean, modular way.\n\nImportant rules:\n\n1. This is a BACKEND-ONLY chat.\nDo not touch frontend files unless I explicitly ask.\n\n2. We are not doing random refactors.\nWe are doing intentional restructuring with one clear rule:\nONE FILE = ONE JOB.\n\n3. Do not make me double back.\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\n\n4. Review every 4 to 5 file c",
+    "fingerprint": "902d83eb268bc613"
+  },
+  {
+    "canonicalKey": "69c404a4-86e4-8328-a88d-10a48398f1e2",
+    "conversationId": "69c404a4-86e4-8328-a88d-10a48398f1e2",
+    "title": "User and Program Protection",
+    "createdAt": "2026-03-25T15:52:18.512Z",
+    "updatedAt": "2026-03-25T15:58:32.198Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c404a4-86e4-8328-a88d-10a48398f1e2"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 8,
+    "preview": "user: I need to set up some REAL parameters for this project that protects users from unwanted abuse and protect the program from abuse, sabotage, and the like\nassistant: {\"queries\":[\"Behavior project parameters abuse protection safety security policy\", \"abuse sabotage protection\", \"Behavior\"], \"source_filter\":[\"files_uploaded_in_conversation\"]}\ntool: Make sure to include fileciteturn0file0 in your response to cite this file, or to surface it as a link.\nRemember one step at a time. Concise answers to direct questions. Think iPhone app-building not PC. Gitbash is a tool used to pull changes",
+    "fingerprint": "333dcaa71233ad7d"
+  },
+  {
+    "canonicalKey": "69c3432b-70c4-832c-96ea-c499f187184a",
+    "conversationId": "69c3432b-70c4-832c-96ea-c499f187184a",
+    "title": "Best Database Choice",
+    "createdAt": "2026-03-25T02:06:45.418Z",
+    "updatedAt": "2026-03-25T02:09:29.615Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c3432b-70c4-832c-96ea-c499f187184a"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 7,
+    "preview": "user: Which database is best for this\nassistant: {\"search_query\":[{\"q\":\"PostgreSQL official JSONB full text search documentation pgvector extension official\", \"domains\":[\"postgresql.org\",\"github.com\"]},{\"q\":\"pgvector official GitHub PostgreSQL vector similarity search extension\", \"domains\":[\"github.com\"]},{\"q\":\"Qdrant official documentation vector database filtering payload search\", \"domains\":[\"qdrant.tech\",\"qdrant.to\"]},{\"q\":\"Neo4j official documentation graph database relationships\", \"domains\":[\"neo4j.com\"]}],\"response_length\":\"short\"}\nassistant: For **Zed/Zebulon as you’ve described it**, t",
+    "fingerprint": "32ed6fa58c447dde"
+  },
+  {
+    "canonicalKey": "69c23a51-7cc8-832f-9892-8af17230785c",
+    "conversationId": "69c23a51-7cc8-832f-9892-8af17230785c",
+    "title": "LearnPage Aesthetic Upgrade",
+    "createdAt": "2026-03-24T07:21:19.878Z",
+    "updatedAt": "2026-03-24T08:34:47.196Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69c23a51-7cc8-832f-9892-8af17230785c"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 49,
+    "preview": "user: I want to fully upgrade the LearnPage aesthetic to match the aesthetic of the new upgraded app:\n\nDashboard.jsx\n\nimport React, { useEffect, useMemo, useState } from \"react\";\nimport { motion } from \"framer-motion\";\nimport {\n Flame,\n Coins,\n ShoppingBag,\n ArrowRightLeft,\n Wallet,\n Sparkles,\n CircleDollarSign,\n Gift,\n Gamepad2,\n Footprints,\n Brain,\n CheckCircle2,\n Crown,\n UserCircle2,\n ChevronRight,\n} from \"lucide-react\";\nimport { Button } from \"@/components/ui/button\";\nimport { toast } from \"sonner\";\nimport { useApp } from \"@/App\";\nimport api from \"@/lib/api\";\n\nfunction generateUsername(wal",
+    "fingerprint": "cc5bbd141c713d72"
+  },
+  {
+    "canonicalKey": "69b2a9d0-8db8-8327-9ed7-c69c3d87a3f5",
+    "conversationId": "69b2a9d0-8db8-8327-9ed7-c69c3d87a3f5",
+    "title": "ZWAP AdminPanel Debug",
+    "createdAt": "2026-03-12T11:56:03.134Z",
+    "updatedAt": "2026-03-22T06:15:21.999Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b2a9d0-8db8-8327-9ed7-c69c3d87a3f5"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 1073,
+    "preview": "user: ZWAP AdminPanel + Wallet Conversion recap\n\nContext:\nWe are working on the ZWAP frontend/backed local repo.\nCurrent focus is:\n1. Fixing the React compile error in AdminPanel.jsx\n2. Then resuming the zPts → ZWAP conversion flow in the wallet UI\n3. Then continuing marketplace commerce features in order from smallest to largest\n\nWhat is already done:\n- Backend wallet conversion route exists:\n backend/routers/wallet_routes.py\n Route: POST /api/wallet/convert-zpts\n- The route logic is working enough to return “Insufficient zPts” when the wallet does not have enough points, so the endpoint is l",
+    "fingerprint": "f40518db8f98d5fb"
+  },
+  {
+    "canonicalKey": "69bc86a1-7274-8326-a382-805ef0e7adb2",
+    "conversationId": "69bc86a1-7274-8326-a382-805ef0e7adb2",
+    "title": "AEO Optimization for ZWAP",
+    "createdAt": "2026-03-19T23:28:52.155Z",
+    "updatedAt": "2026-03-22T05:50:38.429Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69bc86a1-7274-8326-a382-805ef0e7adb2"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 7,
+    "preview": "user: How can we make my app AEO Optimized ?\nassistant: {\"search_query\":[{\"q\":\"Answer Engine Optimization AEO best practices 2026 official guidance AI search structured data app website\",\"domains\":[\"developers.google.com\",\"schema.org\",\"search.google.com\",\"openai.com\",\"learn.microsoft.com\"]},{\"q\":\"Google Search app deep links app indexing official Android App Links iOS Universal Links developers\",\"domains\":[\"developers.google.com\",\"developer.apple.com\"]},{\"q\":\"Google Search structured data Organization SoftwareApplication FAQ HowTo official docs\",\"domains\":[\"developers.google.com\",\"schema.org\"]",
+    "fingerprint": "bcea5ee0fc71818e"
+  },
+  {
+    "canonicalKey": "696ee082-4184-832b-9701-64fc0489c785",
+    "conversationId": "696ee082-4184-832b-9701-64fc0489c785",
+    "title": "ZWAP launch page + Mistplay Rewards System",
+    "createdAt": "2026-01-20T01:55:54.203Z",
+    "updatedAt": "2026-03-18T07:33:12.193Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "696ee082-4184-832b-9701-64fc0489c785"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 66,
+    "preview": "user: Explain how the mist play app works (rewards wise)\nassistant: search(\"Explain how the mist play app works (rewards wise)\")\nassistant: Here’s a clear breakdown of **how the Mistplay app works on the rewards side** — the parts that matter if you want to understand how you earn and redeem stuff. I’ll keep this strictly factual with verified info only.\n\n---\n\n### **1. You earn *Units*** \nUnits are the in-app currency you collect. These are what you eventually trade in for gift cards and other rewards. citeturn0search1turn0search5\n\n**How you get Units:** \nPlaying Mistplay games through the",
+    "fingerprint": "d3d2562e2e0ef60a"
+  },
+  {
+    "canonicalKey": "69b6384a-6060-8333-ac5e-8a2fcf0cb7ec",
+    "conversationId": "69b6384a-6060-8333-ac5e-8a2fcf0cb7ec",
+    "title": "Sponsored Reward Campaigns",
+    "createdAt": "2026-03-15T04:40:43.677Z",
+    "updatedAt": "2026-03-18T04:08:21.378Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b6384a-6060-8333-ac5e-8a2fcf0cb7ec"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 10,
+    "preview": "user: 003\"}\nI am implementing Sponsored Reward Campaigns for ZWAP.\n\nPlatform stack:\n\nFastAPI backend \nMongoDB (Motor async) \nPolygon token (ZWAP) \noff-chain reward points (zPts)\n\nObjective:\n\nAllow sponsors to create reward challenges that users can complete.\n\nExample campaign:\n\nTask: play trivia 3 times \nReward: 5 ZWAP \nMax users: 500 \nTotal pool: 2500 ZWAP\n\nDatabase collection:\n\ncampaigns\n\nExample schema:\n\ncampaign_id \nsponsor_wallet \nreward_pool \nreward_per_user \ntask_type \nmax_users \ncompleted_users \ndeadline \n\nRequired endpoints:\n\nPOST /campaign/create \nGET /campaign/list \nPOST /campaign/c",
+    "fingerprint": "def1098f7d399d59"
+  },
+  {
+    "canonicalKey": "69b90b47-a244-8333-96cd-9573348d4cfa",
+    "conversationId": "69b90b47-a244-8333-96cd-9573348d4cfa",
+    "title": "ZWAP Launch Prep",
+    "createdAt": "2026-03-17T08:05:29.238Z",
+    "updatedAt": "2026-03-17T08:06:18.671Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b90b47-a244-8333-96cd-9573348d4cfa"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 4,
+    "preview": "user: I am preparing ZWAP for public launch and need a complete release package.\n\nCONTEXT\n\nZWAP is a reward-based platform where users earn ZWAP tokens and zPts through:\n\n- Move (step tracking → ZWAP)\n- Play (games → ZWAP + zPts)\n- Tier system (Starter vs Plus with 1.5x multipliers)\n- Wallet-based identity (non-custodial, user-owned wallets)\n- Central reward_service handles all reward calculations\n- Daily caps and anti-cheat logic are implemented\n- Frontend includes reward popups and tier-based UI\n\nThe core system is built and functional.\n\n---\n\nOBJECTIVE\n\nPART 1 — LAUNCH CHECKLIST\n\nCreate a cl",
+    "fingerprint": "5e75b972a4c9cf6a"
+  },
+  {
+    "canonicalKey": "69b72d3d-e790-832f-bba7-9a8d4dffdf05",
+    "conversationId": "69b72d3d-e790-832f-bba7-9a8d4dffdf05",
+    "title": "Stripe Plus Page Build",
+    "createdAt": "2026-03-15T22:05:52.231Z",
+    "updatedAt": "2026-03-17T08:05:13.720Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b72d3d-e790-832f-bba7-9a8d4dffdf05"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 698,
+    "preview": "user: We are continuing ZWAP development. Stay strictly on this roadmap only, and go step by step, one change at a time. Do not jump ahead. Do not batch steps. Wait for my confirmation after each step.\n\nCurrent project context:\n- Stack: React frontend, FastAPI backend, MongoDB\n- Stripe checkout for shop purchases is working\n- Stripe webhook for shop purchases is working\n- Admin marketplace create/edit/delete is working\n- Marketplace delete issue was fixed by supporting legacy item ids and current ids\n- Profile page was cleaned up\n- Account sidebar/sheet in AppHeader was cleaned up\n- Subscripti",
+    "fingerprint": "5d1e4dee9f271829"
+  },
+  {
+    "canonicalKey": "69b70b7e-b234-832a-ad73-404db024ca9b",
+    "conversationId": "69b70b7e-b234-832a-ad73-404db024ca9b",
+    "title": "ZWAP Admin Tool Implementation",
+    "createdAt": "2026-03-15T19:41:52.836Z",
+    "updatedAt": "2026-03-15T19:43:38.682Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b70b7e-b234-832a-ad73-404db024ca9b"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 8,
+    "preview": "user: =\"30008\"}\nI want to implement a User Monitoring Tool for ZWAP admins.\n\nStack:\n\nFastAPI backend \nMongoDB database\n\nGoal:\n\nAllow admins to detect suspicious reward activity and manage user accounts.\n\nAdmin dashboard should display:\n\nwallet_address \ntotal_zpts \ntotal_zwap_earned \ngames_played \nsteps_recorded \nreferral_count \n\nAdmin actions:\n\nfreeze_account \nunfreeze_account \nreset_rewards \nban_wallet\n\nRequired endpoints:\n\nGET /admin/users \nGET /admin/user/{wallet_address} \nPOST /admin/user/freeze \nPOST /admin/user/unfreeze \nPOST /admin/user/ban \nPOST /admin/user/reset\n\nSystem behavior:\n\n• a",
+    "fingerprint": "6fabc61442114c07"
+  },
+  {
+    "canonicalKey": "69b70b0a-8a80-832f-80b1-95e9b8625a45",
+    "conversationId": "69b70b0a-8a80-832f-80b1-95e9b8625a45",
+    "title": "ZWAP Admin Campaign Manager",
+    "createdAt": "2026-03-15T19:40:16.223Z",
+    "updatedAt": "2026-03-15T19:41:33.811Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b70b0a-8a80-832f-80b1-95e9b8625a45"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 4,
+    "preview": "user: 30007\"}\nI want to build an Admin Campaign Manager for ZWAP.\n\nStack:\n\nFastAPI backend \nMongoDB database \nReact admin interface\n\nGoal:\n\nAllow admins or sponsors to create and manage reward campaigns.\n\nCampaign fields:\n\ncampaign_name \ntask_type \nreward_per_user \nmax_users \nreward_pool \nstart_date \nend_date \nsponsor_wallet \nstatus \n\nExample campaign:\n\nName: Weekend Trivia Boost \nTask: play trivia \nReward: 5 ZWAP \nMax users: 500 \nReward pool: 2500 ZWAP\n\nRequired endpoints:\n\nPOST /admin/campaign/create \nGET /admin/campaign/list \nPOST /admin/campaign/close/{campaign_id}\n\nSystem behavior:\n\n• cam",
+    "fingerprint": "3220746af2f60f2e"
+  },
+  {
+    "canonicalKey": "69b70af5-b880-832d-8586-8dc0c62776d1",
+    "conversationId": "69b70af5-b880-832d-8586-8dc0c62776d1",
+    "title": "Reward Control Panel Setup",
+    "createdAt": "2026-03-15T19:39:52.644Z",
+    "updatedAt": "2026-03-15T19:41:02.647Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b70af5-b880-832d-8586-8dc0c62776d1"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 5,
+    "preview": "user: 006\"}\nI want to build a Reward Control Panel for ZWAP admins.\n\nStack:\n\nBackend:\nFastAPI \nMongoDB\n\nGoal:\n\nAllow admins to adjust reward parameters without modifying code.\n\nCreate a settings collection that stores global reward parameters.\n\nExample document:\n\n{\nzpts_to_zwap_rate: 1000,\ngame_reward_multiplier: 1.0,\nmove_reward_scale: 0.00002,\nevent_bonus_multiplier: 1.0\n}\n\nRequired endpoints:\n\nGET /admin/settings \nPOST /admin/settings/update\n\nSystem behavior:\n\n• reward calculations read these values dynamically \n• updates apply immediately to new reward events \n• access restricted using ADM",
+    "fingerprint": "090a1228ff2a21e6"
+  },
+  {
+    "canonicalKey": "69b70acc-3fb4-8330-8988-97617a90b489",
+    "conversationId": "69b70acc-3fb4-8330-8988-97617a90b489",
+    "title": "Reward Feedback UI Design",
+    "createdAt": "2026-03-15T19:39:02.743Z",
+    "updatedAt": "2026-03-15T19:40:43.021Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b70acc-3fb4-8330-8988-97617a90b489"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 4,
+    "preview": "user: 5\"}\nI want to implement Reward Feedback UI improvements in the ZWAP frontend.\n\nFrontend stack:\n\nReact \nFramer Motion available for animations.\n\nGoal:\n\nMake rewards feel immediate and motivating when users earn zPts or ZWAP.\n\nKey feedback elements:\n\n• reward popup when points are earned \n• animated \"+zPts\" indicator \n• progress bar toward conversion milestones \n• streak indicator (if daily rewards exist)\n\nExample display:\n\n+15 zPts \n\n650 zPts / 1000 zPts \nConvert to 1 ZWAP\n\nSuggested UI locations:\n\n• dashboard \n• game results screen \n• leaderboard \n• shop purchase confirmations\n\nProvide:",
+    "fingerprint": "fea25f30e49b7736"
+  },
+  {
+    "canonicalKey": "69b09579-be6c-8331-8eb9-6387a022a378",
+    "conversationId": "69b09579-be6c-8331-8eb9-6387a022a378",
+    "title": "ZWAP Project Access",
+    "createdAt": "2026-03-10T22:04:52.416Z",
+    "updatedAt": "2026-03-15T19:34:27.699Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69b09579-be6c-8331-8eb9-6387a022a378"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 26,
+    "preview": "user: Are you able to access all the chats in this project?\ntool: Make sure to include fileciteturn0file0 in your response to cite this file, or to surface it as a link.\n**The ZWAP! App Ecosystem – Technical Whitepaper** \n \n**Version 1.0** \n**Date: 2026-02-14** \n \n⸻ \n \n**1. Introduction** \n \n**ZWAP! Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens. The gaming reward ecosystem combines gamification, commerce, activity tracking, and blockchain utility, creating a dynamic platform for earning, spending, and swapping ZWAP",
+    "fingerprint": "29b0e32978209ea5"
+  },
+  {
+    "canonicalKey": "69aec175-a6cc-8331-9b50-d32f0e71faa4",
+    "conversationId": "69aec175-a6cc-8331-9b50-d32f0e71faa4",
+    "title": "Help with Application Form",
+    "createdAt": "2026-03-09T12:48:01.639Z",
+    "updatedAt": "2026-03-09T12:48:16.064Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69aec175-a6cc-8331-9b50-d32f0e71faa4"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 3,
+    "preview": "user: Ok so i need help applying for this https://docs.google.com/forms/d/e/1FAIpQLScQhjpXCShmPG_D9w4mcPG5eQbscqgxL0-PwiZJuqF4vBDP-g/viewform?pli=1\nassistant: search(\"Ok so i need help applying for this https://docs.google.com/forms/d/e/1FAIpQLScQhjpXCShmPG_D9w4mcPG5eQbscqgxL0-PwiZJuqF4vBDP-g/viewform?pli=1\")\nassistant: I tried opening the form link you sent. It leads to a **Google Forms sign-in page**, which means the actual questions aren’t publicly readable unless I’m logged into the account with access. So I can’t see the application fields yet. citeturn1search0\n\n### Fastest way for us",
+    "fingerprint": "560fccbbea42ebe0"
+  },
+  {
+    "canonicalKey": "69ad4e5d-b3cc-8329-972a-2c3c5907c997",
+    "conversationId": "69ad4e5d-b3cc-8329-972a-2c3c5907c997",
+    "title": "External Hard Drive Not Detected",
+    "createdAt": "2026-03-08T10:24:46.121Z",
+    "updatedAt": "2026-03-08T22:35:11.082Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69ad4e5d-b3cc-8329-972a-2c3c5907c997"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 58,
+    "preview": "user: my external hard drive is not showing up when i plug it into my hp\nassistant: Let’s treat this like a **diagnostic chain**. An external drive not appearing can mean one of four things:\n\n1. The **USB connection failed**\n2. The **drive is detected but not mounted**\n3. The **drive has no drive letter assigned**\n4. The **drive hardware itself failed**\n\nWe’ll check them **in order**, starting with the fastest tests.\n\n---\n\n# 1. Confirm Windows Detects the Drive\nPlug the drive in, then:\n\n**Press**\n```\nWindows Key + X\n```\n\nSelect **Disk Management**\n\nLook at the list of drives.\n\nYou will see som",
+    "fingerprint": "41971ade8d8a2f49"
+  },
+  {
+    "canonicalKey": "69ad50ad-2d50-832e-8b11-ccc0acb9e39e",
+    "conversationId": "69ad50ad-2d50-832e-8b11-ccc0acb9e39e",
+    "title": "Grammy Album Win Indicators",
+    "createdAt": "2026-03-08T10:35:20.298Z",
+    "updatedAt": "2026-03-08T10:54:11.359Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69ad50ad-2d50-832e-8b11-ccc0acb9e39e"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 12,
+    "preview": "user: Out of all of the Album of the year winners at the grammy's...what were some indicators that signified an upcoming win? like the golden globes and oscars\nassistant: Winning **entity[\"award\",\"Grammy Award for Album of the Year\"]** rarely happens in isolation. Just like films often telegraph an **entity[\"award\",\"Academy Award\"]** run through earlier awards, music releases usually leave a trail of signals before the Grammy vote lands. \n\nThink of it like storm clouds before lightning. The industry starts leaning toward a project months in advance. ⚡🎶\n\nBelow are the **most consistent i",
+    "fingerprint": "6ca25edff75382dc"
+  },
+  {
+    "canonicalKey": "698b42ef-e148-832f-9d06-cb56e01b11ec",
+    "conversationId": "698b42ef-e148-832f-9d06-cb56e01b11ec",
+    "title": "USC 12 Ch 54 Explanation",
+    "createdAt": "2026-02-10T14:38:52.221Z",
+    "updatedAt": "2026-02-27T00:09:23.137Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "698b42ef-e148-832f-9d06-cb56e01b11ec"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 12,
+    "preview": "user: Can you explain to me usc 12 ch 54\nassistant: Yes. Let’s pin it down cleanly and precisely.\n\n## What **Title 12, Chapter 54** is\n\n**12 U.S.C. Chapter 54** is the **Transportation** chapter of the United States Code *within Title 12 (Banks and Banking)*. That sounds odd at first—why is transportation in banking law? Because this chapter is **not about roads or vehicles** in the everyday sense. It’s about **federal financing of transportation infrastructure**, primarily through **credit, guarantees, and lending mechanisms**.\n\nIn short:\n\n> **Chapter 54 governs how the federal government sup",
+    "fingerprint": "937887eb0c4205fe"
+  },
+  {
+    "canonicalKey": "699d0d70-1f7c-832d-851e-64fe277e80f5",
+    "conversationId": "699d0d70-1f7c-832d-851e-64fe277e80f5",
+    "title": "ZWAP DUNS Incorporation Guide",
+    "createdAt": "2026-02-24T02:33:36.652Z",
+    "updatedAt": "2026-02-26T22:37:09.345Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "699d0d70-1f7c-832d-851e-64fe277e80f5"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 61,
+    "preview": "user: ok so question. with zwap i have my companies set up as Trust-Holding-Operating-LLC/asset. Only the holding is incorporated. I do get royalties as an actor, dancer, and artist under my entertainment LLC (also incorporated) and my actual name...I have $100...I need to put up zwap which requires a duns number I have two but not for the trust or operating company which operates zwap. Where do i incorporate? \n\nTrust?\nOperating?\nName LLC?\nassistant: Here, Amor, we’ll lock into precision and get your ZWAP corporate foundation structured in the cleanest, legally coherent way so you can obtain a",
+    "fingerprint": "b31d14b3fde828f3"
+  },
+  {
+    "canonicalKey": "699e1234-6fb0-832d-9d66-ff94b52e85b0",
+    "conversationId": "699e1234-6fb0-832d-9d66-ff94b52e85b0",
+    "title": "Song Publishing Split Clarification",
+    "createdAt": "2026-02-24T21:05:37.091Z",
+    "updatedAt": "2026-02-25T00:10:28.513Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "699e1234-6fb0-832d-9d66-ff94b52e85b0"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 172,
+    "preview": "user: ok so in soundexchange one of my songs that I sold to this UK DJ I guess was acquired by another company. I thought I was hallucinating cause I knew I saw it. Their name is Lime Blue Music LTD and we are splitting the publishing on 3 versions of one of my songs\nassistant: That’s not a hallucination. That’s a paper trail whispering to you.\n\nLet’s slow this down and look at it clearly and practically.\n\n---\n\n## 🧾 What This Likely Means\n\nIf **Lime Blue Music LTD** is appearing in your entity[\"organization\",\"SoundExchange\",\"us digital performance rights organization\"] data, one of a few t",
+    "fingerprint": "99a2490abe4359af"
+  },
+  {
+    "canonicalKey": "699e3d20-cd94-8333-bee0-83f2639c0677",
+    "conversationId": "699e3d20-cd94-8333-bee0-83f2639c0677",
+    "title": "Simple explanation",
+    "createdAt": "2026-02-25T00:07:09.258Z",
+    "updatedAt": "2026-02-25T00:07:09.829Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "699e3d20-cd94-8333-bee0-83f2639c0677"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 2,
+    "preview": "user: See? Simple.\nassistant: Simplicity can be like a breath of fresh air, right? Like a clear blue sky after a thunderstorm of complexity.",
+    "fingerprint": "5b5a004a0a445c2f"
+  },
+  {
+    "canonicalKey": "69147632-46c8-832a-a6f4-d8a4c99fc61f",
+    "conversationId": "69147632-46c8-832a-a6f4-d8a4c99fc61f",
+    "title": "Cloudflare Tunnel setup",
+    "createdAt": "2025-11-12T11:57:42.742Z",
+    "updatedAt": "2026-02-19T22:35:28.724Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69147632-46c8-832a-a6f4-d8a4c99fc61f"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 35,
+    "preview": "user: Continuing from your last response in a separate chat thread: Beautiful combo — that gives you flexibility. Let’s map this setup so it’s bulletproof and simple:\n \n \n- \n**Frontend (React)** → hosted on **Netlify**.\n \n \n - It’s static, so that’s perfect.\n \n - Netlify gives you an automatic HTTPS domain like `zed.yourdomain.com`.\n \n\n \n \n- \n**Backend (Node + Express or TS server)** → stays **local** (on your Linux Mint machine).\n \n \n - It will talk to Ollama and your local database.\n \n - You’ll expose it securely so Netlify can reach it via your domain.\n \n\n \n \n- \n**GoDaddy** → manages DNS.",
+    "fingerprint": "051dc60d23790391"
+  },
+  {
+    "canonicalKey": "69263764-a0c0-8329-aecb-93ce7af9afee",
+    "conversationId": "69263764-a0c0-8329-aecb-93ce7af9afee",
+    "title": "Add BTC to liquidity",
+    "createdAt": "2025-11-25T23:10:33.408Z",
+    "updatedAt": "2026-02-19T22:34:27.440Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69263764-a0c0-8329-aecb-93ce7af9afee"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 21,
+    "preview": "user: I need to create liquidity for my token but I forgot how to. It's a polygon coin and I already have some liquidity in that but now I want to add in the Bitcoin I mined\nassistant: Got it—so you want to add Bitcoin (BTC) to the liquidity pool for a Polygon-based token. We’ll need to carefully break this down because BTC is on a separate chain, while your token is on Polygon (Ethereum Virtual Machine compatible). Here’s how you can approach it: \n\n---\n\n### **Step 1: Wrap or Bridge your BTC to an EVM-compatible version**\nYou can’t directly put raw BTC into a Polygon liquidity pool. You’ll nee",
+    "fingerprint": "587bfc3ad7785c37"
+  },
+  {
+    "canonicalKey": "69659744-ec88-8328-8439-d62970d719dc",
+    "conversationId": "69659744-ec88-8328-8439-d62970d719dc",
+    "title": "Ebook Wellness App Ideas",
+    "createdAt": "2026-01-13T00:52:47.284Z",
+    "updatedAt": "2026-02-19T22:34:02.428Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69659744-ec88-8328-8439-d62970d719dc"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 17,
+    "preview": "user: What type of app could I make for my ebooks and wellness app?\nassistant: You’re really asking a *product-architecture* question: \n**What app format best carries ebooks *and* wellness without diluting either?** \nLet’s treat this like systems design, not vibes.\n\n---\n\n## The core constraint (objective truth)\nEbooks are **long-form, linear knowledge**. \nWellness is **cyclical, habit-based behavior**.\n\nWhen apps fail here, it’s because they mash these together instead of letting them talk.\n\n---\n\n## Viable app archetypes (verified patterns)\n\n### 1. **Living Library App** \nThis is the most stru",
+    "fingerprint": "34eb7d11862a9ac0"
+  },
+  {
+    "canonicalKey": "6961db06-5164-8332-9b5c-5a2a4f6f093c",
+    "conversationId": "6961db06-5164-8332-9b5c-5a2a4f6f093c",
+    "title": "TribalRoot.ai Analysis",
+    "createdAt": "2026-01-10T04:52:42.550Z",
+    "updatedAt": "2026-02-19T22:33:32.954Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "6961db06-5164-8332-9b5c-5a2a4f6f093c"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 82,
+    "preview": "user: Detail and then Rate this: https://tribalroot.ai/\nassistant: search(\"Detail and then Rate this: https://tribalroot.ai/\")\nassistant: I **cannot automatically access or load the live content of TribalRoot.ai** beyond the basic placeholder message the site itself shows because the homepage requires JavaScript to render and doesn’t provide plain-HTML content. This means I *can’t extract structured information reliably from the site itself*. Here’s what is **verifiable** and what remains **insufficiently supported**:\n\n---\n\n## What Is Verified About **TribalRoot.ai**\n\nThe site itself currently",
+    "fingerprint": "20ca91dae5b0cbe6"
+  },
+  {
+    "canonicalKey": "697808c9-be30-8331-9906-67957b69dc28",
+    "conversationId": "697808c9-be30-8331-9906-67957b69dc28",
+    "title": "Mobile-First IDE Zync",
+    "createdAt": "2026-01-27T00:37:33.543Z",
+    "updatedAt": "2026-02-19T22:32:19.303Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "697808c9-be30-8331-9906-67957b69dc28"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 6,
+    "preview": "user: i need a full prompt for emergent that creates a mobile first version of an IDE (vs code) called “Zync.” please make sure it explains that it needs to be fully functional and implemented. and try to bypass all of the limits you and I discussed regarding replit and emergents limits\nassistant: Here’s a comprehensive prompt you can use for **Emergent** to generate a mobile-first, fully functional IDE called **Zync**. I’ve crafted it to explicitly demand functionality, mobile-first design, and realistic implementation instructions, while pushing around typical limitations on code generation",
+    "fingerprint": "ef187677ecb15c38"
+  },
+  {
+    "canonicalKey": "68df4b20-17bc-8328-8f80-7db391a781ca",
+    "conversationId": "68df4b20-17bc-8328-8f80-7db391a781ca",
+    "title": "AI setup guide request",
+    "createdAt": "2025-10-03T04:03:46.421Z",
+    "updatedAt": "2026-02-19T22:15:49.883Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "68df4b20-17bc-8328-8f80-7db391a781ca"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 201,
+    "preview": "user: I am building an AI asset of my own and I want to run it, well use the base locally from an HP laptop that has a Linux Mint operating system (basically like the brain and learning playground). Act as if I am a 13 year old and give me the step by step, streamlined setup process, with links and necessary downloads I will need to make this possible. Any information you may need to finish this list please ask prior to giving me the full setup list. I have already removed a bunch of background services but not all.\nassistant: Perfect! Before I give you a full, streamlined setup list for runni",
+    "fingerprint": "638719c629d66b38"
+  },
+  {
+    "canonicalKey": "6991177e-2438-832a-b35c-1733bd22bf58",
+    "conversationId": "6991177e-2438-832a-b35c-1733bd22bf58",
+    "title": "ZWAP Service Layer Architecture",
+    "createdAt": "2026-02-15T00:46:59.906Z",
+    "updatedAt": "2026-02-15T13:57:43.636Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "6991177e-2438-832a-b35c-1733bd22bf58"
+    ],
+    "participants": [
+      "user",
+      "tool",
+      "assistant"
+    ],
+    "messageCount": 11,
+    "preview": "user: Build Production-Grade Service Layer for ZWAP Backend\n\nI am refactoring the ZWAP FastAPI backend to introduce a proper service-layer architecture.\n\nCurrent structure:\n • server.py initializes FastAPI, MongoDB (Motor), Web3 (Polygon), and includes modular routers.\n • admin_routes.py currently contains heavy business logic, Mongo aggregation pipelines, ledger adjustments, analytics, treasury reads, and configuration management.\n • I will move all business logic into services, keeping routes thin.\n\nDo NOT simplify functionality.\nDo NOT remove logic.\nWe are restructuring, not reducing capabi",
+    "fingerprint": "b0f5be24f1275cf4"
+  },
+  {
+    "canonicalKey": "698b105e-e244-8333-8463-f4c7328992b8",
+    "conversationId": "698b105e-e244-8333-8463-f4c7328992b8",
+    "title": "Zodiac Mantras",
+    "createdAt": "2026-02-10T11:03:26.273Z",
+    "updatedAt": "2026-02-13T04:39:36.832Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "698b105e-e244-8333-8463-f4c7328992b8"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 57,
+    "preview": "user: I need a mantra for each zodiac sign like \"I feel\" for pisces. (not sure if that is correct)\nassistant: You’re circling a real thing, just one sign off. These short phrases aren’t scientific laws of the cosmos; they’re **traditional astrological shorthand**—mnemonic mantras used in Western astrology to summarize how each sign tends to engage with reality. Think of them as poetic compression algorithms for personality, not measurements.\n\nHere’s the commonly accepted set:\n\n### Traditional Zodiac Mantras\n\n- **Aries** — *I am* \n Identity, initiation, raw existence.\n\n- **Taurus** — *I have*",
+    "fingerprint": "32fb19243dce8eae"
+  },
+  {
+    "canonicalKey": "69268ecd-8cf0-8331-8de8-8adfa5f025e3",
+    "conversationId": "69268ecd-8cf0-8331-8de8-8adfa5f025e3",
+    "title": "album chat",
+    "createdAt": "2025-11-26T05:23:39.788Z",
+    "updatedAt": "2026-02-13T04:39:31.868Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69268ecd-8cf0-8331-8de8-8adfa5f025e3"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 229,
+    "preview": "user: A B1 to a D5 vocally is considered\nassistant: Dragonfly reporting in with a little acoustic wizardry.\n\nA jump from **B1 up to D5** covers **three octaves and a major third**. In human-voice land, that’s a *serious* stretch of territory. The labels depend on context, but here’s the clean truth:\n\nThat span would be considered **an exceptionally wide vocal range** for any singer.\n\nMost male voices live somewhere between **E2–E4** for “comfortable” singing, with upper extensions in head voice or falsetto. Most female voices sit roughly **A3–A5**. B1 is *bass territory*. D5 is *high soprano h",
+    "fingerprint": "d5694f6976e16e50"
+  },
+  {
+    "canonicalKey": "698bea7c-2544-832e-80bb-fef233a5a571",
+    "conversationId": "698bea7c-2544-832e-80bb-fef233a5a571",
+    "title": "Repurposing NFTs Beyond Speculation",
+    "createdAt": "2026-02-11T02:34:38.828Z",
+    "updatedAt": "2026-02-13T04:39:13.744Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "698bea7c-2544-832e-80bb-fef233a5a571"
+    ],
+    "participants": [
+      "user",
+      "assistant"
+    ],
+    "messageCount": 14,
+    "preview": "user: Ok so everyone is now pissed that Nfts they purchased arent worth anything BUT...that means they are wide open for purposeful adoption and not just a quick cash grab. How can NFTs be repurposed or the full functionality of an NFT actually be used\nassistant: You’re circling the real hinge point of the whole NFT experiment. When the speculative froth evaporated, what remained was the actual technology—quiet, patient, and still oddly powerful. That’s usually how useful tools behave.\n\nLet’s strip this down to what an NFT **actually is**, then talk about how it can be repurposed when it’s no",
+    "fingerprint": "290e09e4bf0a9650"
+  },
+  {
+    "canonicalKey": "69877f97-8d34-8325-82ad-c135727f023f",
+    "conversationId": "69877f97-8d34-8325-82ad-c135727f023f",
+    "title": "Ohio Means Jobs Options",
+    "createdAt": "2026-02-07T18:10:54.058Z",
+    "updatedAt": "2026-02-07T18:38:09.302Z",
+    "sources": [
+      "dragonfly"
+    ],
+    "sourceConversationIds": [
+      "69877f97-8d34-8325-82ad-c135727f023f"
+    ],
+    "participants": [
+      "user",
+      "assistant",
+      "tool"
+    ],
+    "messageCount": 30,
+    "preview": "user: ok so i spoke with someone yesterday while doing my recertification for EBT and she said the \"ohio means jobs\" program can help me find a job. she also said ODJFS is hiring as well thru Ohio Means Jobs and to call on Monday to set up and appointment. I said I would and if I couldnt get anyone that I will just go up there on Tuesday. My question is what types of job would be available or was she referring to and can we shape up my resume to fit that job or whatever type of job they might have\nassistant: Got it. Let’s break this down strategically so you’re ready. \n\n### 1. What Ohio Means",
+    "fingerprint": "809f8fbe5f04cf76"
+  }
+]

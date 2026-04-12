@@ -1,0 +1,329 @@
+# Imported Foundation Document
+
+- Source: `dragonfly`
+- Original path: `dragonfly/file_0000000027f071f5885f8c987df2f374-Zwap gameplan.txt`
+- Imported: `2026-04-12T08:21:35.835Z`
+
+---
+
+═══════════════════════════════════════════════════════════════════════════════
+GRANT APPLICATION TEMPLATE: POLYGON VILLAGE
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT TITLE: "StepWise: Movement-Verified Financial Literacy for 
+ Underserved Communities"
+
+EXECUTIVE SUMMARY (150 words):
+StepWise is a mobile-first platform combining physical activity verification 
+with micro-learning to onboard first-time crypto users from low-income and 
+fixed-income backgrounds. Unlike speculative "play-to-earn" models, StepWise 
+uses a revenue-first utility token backed by advertising, subscriptions, and 
+B2B wellness partnerships. Users earn tokens through verified walking and 
+educational game completion, redeemable for essential goods, credit-building 
+tools, or swapped for liquid assets. Our pilot targets 1,000 users in 
+[City/Region] with zero prior crypto exposure, measuring financial literacy 
+gains and economic impact.
+
+PROBLEM STATEMENT:
+• 63% of adults in target demographics lack basic financial literacy (FINRA)
+• 89% report "crypto seems important but I don't know where to start"
+• Existing "learn-to-earn" platforms pay pennies or require capital risk
+• Physical inactivity correlates with financial stress (study citation)
+
+SOLUTION ARCHITECTURE:
+1. Movement Verification: GPS + accelerometer anti-spoofing
+2. Micro-Learning: 3-5 minute audio modules during walks
+3. Earned Utility Token: No ICO, no purchase, pure reward mechanism
+4. Redemption Ecosystem: Shop (goods), Swap (liquidity), Services (credit)
+
+TECHNICAL STACK:
+• Polygon PoS (negligible gas, fast finality)
+• ERC-20 utility token with vesting mechanics
+• React Native mobile app
+• Firebase backend with blockchain indexing
+• Custom DEX aggregator (1inch SDK integration)
+
+TRACTION (Even if pre-launch):
+• Beta tested with [X] users for [Y] weeks
+• [Z]% daily retention rate
+• Partnership letters of intent from [Credit Union/Non-profit]
+
+USE OF FUNDS ($25K request):
+• $10K: Content production (audio modules, localization)
+• $8K: 6-month server/infra costs for 5,000 MAU
+• $4K: Security audit (token contract + anti-cheat)
+• $3K: Community manager (bilingual, target demographic)
+
+SUCCESS METRICS (90 days):
+• 1,000 downloads with 40%+ Day-7 retention
+• 70% of users complete first educational module
+• $2,000 monthly revenue (proving sustainability)
+• 50 users redeem tokens for external value (shop or swap)
+
+WHY POLYGON:
+• Zero gas abstraction possible (meta-transactions)
+• Your target demographic can't afford $5 ETH fees
+• Polygon Village support for non-technical founders
+• Alignment with Polygon's "mass adoption" thesis
+
+═══════════════════════════════════════════════════════════════════════════════
+TECHNICAL IMPLEMENTATION: SINGLE-SIDED LIQUIDITY
+═══════════════════════════════════════════════════════════════════════════════
+
+OPTION A: BANCOR V3 (Recommended for beginners)
+─────────────────────────────────────────────────────────────────────────────
+
+CONTRACT INTERACTION:
+```solidity
+// You provide POL only, Bancor handles the math
+IBancorNetwork bancor = IBancorNetwork(0x...);
+
+// Deposit 25,000 POL (no token needed)
+bancor.depositPOL{value: 25000 ether}(
+ tokenAddress, // Your token
+ 25000 ether, // POL amount
+ 1 // Single-sided flag
+);
+
+// Result: You get "bnPOL" tokens representing your position
+// Users can swap YourToken → POL instantly
+// You earn 0.2% fee on every swap
+```
+
+PROTECTION:
+• Impermanent Loss Protection: After 100 days, you're protected from IL
+• If token drops 50%, Bancor protocol covers your loss from fees
+• You can withdraw single-sided (get POL back, not 50/50)
+
+OPTION B: UNISWAP V3 (Concentrated Liquidity)
+─────────────────────────────────────────────────────────────────────────────
+
+CUSTOM POSITION:
+• Create pool: YourToken/POL
+• Set range: 0.00005 to 0.00020 (your target price ±50%)
+• Deposit: 100% POL, 0% YourToken (protocol allows this)
+• Result: You provide liquidity only on one side of the curve
+
+ADVANTAGE: Higher fee earnings (0.3% vs 0.2%)
+RISK: No IL protection, you must actively manage range
+
+OPTION C: CUSTOM AGGREGATOR (Your Integration)
+─────────────────────────────────────────────────────────────────────────────
+
+USER FLOW:
+1. User has 10,000 YourTokens, wants USDC
+2. Your app calls 1inch API:
+ ```javascript
+ const swapParams = {
+ fromTokenAddress: 'YOUR_TOKEN',
+ toTokenAddress: 'USDC',
+ amount: '10000000000000000000', // 10k tokens
+ fromAddress: userWallet,
+ slippage: 2,
+ // Route: YourToken → POL (your pool) → USDC (Uniswap)
+ disableEstimate: false,
+ allowPartialFill: false,
+ };
+ ```
+3. 1inch finds best route through your POL pool + existing liquidity
+4. User gets USDC, you earn fee on the first hop
+
+IMPLEMENTATION CODE:
+```javascript
+// Frontend React component
+import { OneInchSwap } from '@1inch/swap-sdk';
+
+const SwapModule = ({ userTokens }) => {
+ const handleSwap = async () => {
+ const tx = await OneInchSwap.swap({
+ chainId: 137, // Polygon
+ fromToken: YOUR_TOKEN_ADDRESS,
+ toToken: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // USDC
+ amount: userTokens,
+ fromAddress: wallet.address,
+ // Critical: Set max slippage to protect users
+ slippage: 2, // 2%
+ // Enable single-hop through your pool
+ protocols: ['BANCOR_V3', 'UNISWAP_V3'],
+ });
+ await wallet.sendTransaction(tx);
+ };
+
+ return (
+ <div>
+ <SlippageWarning currentPrice={oraclePrice} />
+ <SwapButton onClick={handleSwap} />
+ <FeeBreakdown 
+ yourFee="0.3%" 
+ route="YourToken → POL → USDC" 
+ />
+ </div>
+ );
+};
+```
+
+═══════════════════════════════════════════════════════════════════════════════
+RETENTION MECHANICS: DETAILED SPECIFICATIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+VARIABLE RATIO REINFORCEMENT SCHEDULE:
+─────────────────────────────────────────────────────────────────────────────
+
+WEEK 1-2: Fixed Ratio (Build Habit)
+• Day 1: 100 tokens (guaranteed)
+• Day 2: 100 tokens (guaranteed)
+• ... continue fixed
+
+WEEK 3+: Variable Ratio (Create Addiction)
+• Base: 100 tokens
+• Multiplier: Random 1x, 1.5x, 2x, 3x (weighted: 60%, 25%, 10%, 5%)
+• Visual: "Mystery Box" animation before revealing
+• Psychology: Uncertainty creates dopamine loops (like slot machines, 
+ but for healthy behavior)
+
+STREAK PROTECTION ALGORITHM:
+─────────────────────────────────────────────────────────────────────────────
+
+```python
+class StreakManager:
+ def __init__(self):
+ self.grace_period = 3 # days
+ self.max_streak = 365
+
+ def process_day(self, user, activity_completed):
+ if activity_completed:
+ user.streak += 1
+ user.grace_used = 0
+ reward = self.calculate_reward(user.streak, bonus=True)
+ else:
+ if user.grace_used < self.grace_period:
+ user.grace_used += 1
+ user.streak_paused = True
+ # Send push: "Streak paused! Walk tomorrow to keep it alive"
+ else:
+ user.streak = 0
+ user.grace_used = 0
+ # Send push: "Streak reset, but you earned X this week!"
+
+ def calculate_reward(self, streak, bonus=False):
+ base = 100
+ streak_multiplier = min(streak / 30, 2.0) # Max 2x at 60 days
+
+ if bonus:
+ # Variable ratio
+ import random
+ mystery = random.choices(
+ [1, 1.5, 2, 3], 
+ weights=[60, 25, 10, 5]
+ )[0]
+ return base * streak_multiplier * mystery
+
+ return base * streak_multiplier
+```
+
+SUNK COST GARDEN (AR Lite):
+─────────────────────────────────────────────────────────────────────────────
+
+CONCEPT: Tamagotchi meets Pokemon Go meets Financial Literacy
+
+MECHANICS:
+• User gets virtual "seed" when they complete first module
+• Seed grows into plant based on:
+ - Daily steps (water)
+ - Module completion (sunlight)
+ - Streak maintenance (fertilizer)
+• Plant has health bar (0-100%)
+• Miss a day: Health -10%
+• Complete bonus: Health +15%
+• Plant dies at 0%: "Your garden needs attention! Start over?"
+• Rare plants unlock at 30/60/90 day streaks
+• AR view: Point camera at ground, see garden growing (lightweight, 
+ no complex 3D—sprites acceptable)
+
+ECONOMIC VALUE:
+• Dead plants = emotional loss aversion (stronger than token loss)
+• Rare plants = social status (share to Instagram)
+• Garden persistence = reason to return even when token price dips
+
+═══════════════════════════════════════════════════════════════════════════════
+PARTNERSHIP OUTREACH TEMPLATES
+═══════════════════════════════════════════════════════════════════════════════
+
+HEALTH INSURER PITCH (Oscar/Clover):
+─────────────────────────────────────────────────────────────────────────────
+
+Subject: Verified Wellness Data Partnership - 10,000 Active Users
+
+Body:
+Oscar Team,
+
+We're seeing 73% daily engagement with verified physical activity in our 
+pilot of [demographic]. Unlike fitness apps that lose users after 2 weeks, 
+our financial incentive layer maintains 40%+ Day-30 retention.
+
+Proposal:
+• You subsidize $10/user/month in token rewards
+• We provide HIPAA-compliant, verified step data + engagement metrics
+• You get: Risk score improvement data, member retention, brand alignment
+• Pilot: 1,000 users for 6 months
+
+Differentiation: Our users are 35-55, previously sedentary, low-income—
+exactly the demographic with highest healthcare cost potential.
+
+[Attach: 10-page pilot proposal with data model]
+
+CREDIT UNION PITCH:
+─────────────────────────────────────────────────────────────────────────────
+
+Subject: Alternative Credit Scoring via Behavioral Data
+
+Body:
+[Credit Union] Leadership,
+
+We're generating 90 days of verified financial behavioral data on unbanked 
+individuals: consistent activity, learning completion, community engagement.
+
+This correlates with creditworthiness but isn't captured by FICO.
+
+Proposal:
+• Co-branded "Financial Fitness" program
+• Your members earn our tokens for education
+• We provide "Financial Responsibility Score" for your underwriting
+• You approve secured cards for scores >700
+• Revenue share on new accounts
+
+Social impact + new member acquisition + risk reduction.
+
+═══════════════════════════════════════════════════════════════════════════════
+NEXT STEPS CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════
+
+WEEK 1:
+□ Register Polygon Village account
+□ Draft Gitcoin grant (use template above)
+□ Set up Giveth project page
+□ Create 90-day content calendar (audio modules)
+
+WEEK 2:
+□ Submit Polygon Village application
+□ Reach out to 3 regional credit unions
+□ Compile HIPAA compliance checklist
+□ Build "Garden" MVP (simplest retention mechanic)
+
+WEEK 3:
+□ Launch shop-only beta (100 users)
+□ Implement streak tracking
+□ Begin grant reporting documentation
+□ Create user testimonial pipeline
+
+WEEK 4:
+□ Analyze beta retention data
+□ Adjust token emission rates
+□ Apply for Gitcoin matching round
+□ Pitch to first health insurer
+
+MONTH 2-3:
+□ Scale to 1,000 users
+□ First revenue from shop margins
+□ Complete security audit
+□ Submit RPGF application (if data strong)

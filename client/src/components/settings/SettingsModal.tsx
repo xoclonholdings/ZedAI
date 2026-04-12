@@ -13,8 +13,10 @@ import {
 } from "@/components/ui/dialog";
 
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { useAuth } from "@/components/auth/UseAuth";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
+import IntegrationSettings from "./IntegrationSettings";
 import NotificationsSettings from "./NotificationsSettings";
 import PersonalizationSettings from "./PersonalizationSettings";
 import RulesSettings from "./RulesSettings";
@@ -30,8 +32,9 @@ export default function SettingsModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("main");
   const { appSettings, setAppSettings } = useAppSettings();
+  const { user } = useAuth();
 
-  const isAdmin = true; // Always admin in single-admin mode
+  const isAdmin = user?.isAdmin !== false;
 
   function BackButton() {
     return (
@@ -156,6 +159,13 @@ export default function SettingsModal() {
             <div>
               <BackButton />
               <AdminSecuritySettings />
+            </div>
+          )}
+
+          {activeSection === "integrations" && (
+            <div>
+              <BackButton />
+              <IntegrationSettings />
             </div>
           )}
 

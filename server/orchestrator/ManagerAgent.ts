@@ -3,13 +3,13 @@ import path from "path";
 import yaml from "js-yaml";
 import { OperationsAgent, type AgentRequest, type AgentResponse } from "../agents/operations/OperationsAgent";
 import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/IntelligenceAgent";
-import { IDEOperatorAgent } from "../agents/ide-operator/IDEOperatorAgent";
-import { AudioEngineerAgent } from "../agents/audio-engineer/AudioEngineerAgent";
+import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
 import { injectMemory } from "../services/MemoryInjector";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
+import { HUB_CONFIG_DIR, HUB_LOG_DIR } from "../utils/repoPaths";
 
-const CONFIG_DIR = path.resolve(process.cwd(), "hub/config");
-const LOG_DIR = path.resolve(process.cwd(), "hub/logs");
+const CONFIG_DIR = HUB_CONFIG_DIR;
+const LOG_DIR = HUB_LOG_DIR;
 
 interface HubConfig {
   personality: any;
@@ -24,6 +24,7 @@ interface OrchestratorRequest {
   conversationId?: string;
   context?: Record<string, any>;
   ip?: string;
+  targetAgent?: "auto" | "operations" | "research" | "business";
 }
 
 interface OrchestratorResponse {
@@ -36,7 +37,7 @@ interface OrchestratorResponse {
   metadata?: Record<string, any>;
 }
 
-type AgentName = "OperationsAgent" | "IntelligenceAgent" | "IDEOperatorAgent" | "AudioEngineerAgent";
+type AgentName = "OperationsAgent" | "IntelligenceAgent" | "BusinessManagerAgent";
 
 export class ManagerAgent {
   private static config: HubConfig | null = null;
@@ -67,11 +68,7 @@ export class ManagerAgent {
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
     const config = await this.loadConfig();
 
-    const tierCheck = await checkTiers(
-      request.message,
-      request.userId,
-      request.ip || "unknown"
-    );
+    const tierCheck = await checkTiers(request.message, request.userId, request.ip || "unknown");
     if (tierCheck.blocked) {
       return {
         reply: tierCheck.reply,
@@ -82,8 +79,7 @@ export class ManagerAgent {
     }
 
     const memory = await injectMemory("ManagerAgent");
-
-    const agent = this.selectAgent(request.message, config);
+    const agent = this.selectAgent(request.message, config, request.targetAgent);
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await this.logRouting(request, agent);
 
@@ -105,26 +101,23 @@ export class ManagerAgent {
         break;
       }
 
-      case "IDEOperatorAgent": {
-        if (!IDEOperatorAgent.isActive()) {
-          return {
-            reply: "The IDE Operator Agent is not yet active. It requires ADMIN setup.",
-            agent: "IDEOperatorAgent",
-          };
-        }
-        const resp = await IDEOperatorAgent.process({ userId: request.userId, task: request.message });
-        return { reply: resp.message, agent: resp.agent };
-      }
-
-      case "AudioEngineerAgent": {
-        if (!AudioEngineerAgent.isActive()) {
-          return {
-            reply: "The Audio Engineer Agent is not yet active. It requires DAW setup.",
-            agent: "AudioEngineerAgent",
-          };
-        }
-        const resp = await AudioEngineerAgent.process({ userId: request.userId, task: request.message });
-        return { reply: resp.message, agent: resp.agent };
+      case "BusinessManagerAgent": {
+        const resp = await BusinessManagerAgent.process({
+          userId: request.userId,
+          task: request.message,
+          conversationId: request.conversationId,
+          memoryContext: memory.formatted,
+        });
+        return {
+          reply: resp.message,
+          agent: resp.agent,
+          requiresApproval: resp.requiresApproval,
+          metadata: {
+            planned: resp.planned,
+            capabilities: resp.capabilities,
+            integration: "Business Operations",
+          },
+        };
       }
 
       case "OperationsAgent":
@@ -155,58 +148,105 @@ export class ManagerAgent {
     };
   }
 
-  private static selectAgent(message: string, config: HubConfig): AgentName {
+  private static selectAgent(
+    message: string,
+    config: HubConfig,
+    targetAgent: OrchestratorRequest["targetAgent"] = "auto",
+  ): AgentName {
+    if (targetAgent === "operations") return "OperationsAgent";
+    if (targetAgent === "research") return "IntelligenceAgent";
+    if (targetAgent === "business") return "BusinessManagerAgent";
+
     const lower = message.toLowerCase();
     const params = config.parameters || {};
 
-    // IDE and Audio are unambiguous — check first
-    const ideKeywords = ["code", "debug", "refactor", "pull request", " pr ", "commit", "repository", "bug fix", "git "];
-    const audioKeywords = ["mix", "master", "daw", "stem", "music production", "audio engineer", "beat maker"];
+    const businessKeywords = [
+      "payroll",
+      "gusto",
+      "contractor",
+      "employee",
+      "onboarding",
+      "benefits",
+      "reimbursement",
+      "w-2",
+      "1099",
+      "business manager",
+      "dropshipping",
+      "ecommerce",
+      "business credit",
+      "property",
+      "real estate",
+      "acquisition",
+      "deal flow",
+      "underwriting",
+    ];
 
-    if (ideKeywords.some((k) => lower.includes(k))) return "IDEOperatorAgent";
-    if (audioKeywords.some((k) => lower.includes(k))) return "AudioEngineerAgent";
+    if (businessKeywords.some((keyword) => lower.includes(keyword))) return "BusinessManagerAgent";
 
-    // Operations keywords — explicitly task/action oriented.
-    // Check BEFORE research so "what is on my calendar" routes correctly.
     const opsKeywords = [
-      "calendar", "schedule", "reschedule", "meeting", "appointment",
-      "email", "send email", "draft email", "reply to",
-      "task", "todo", "to-do", "to do", "remind me",
-      "post to", "post on", "publish", "tweet", "draft post",
-      "send invoice", "invoice", "cancel", "book ",
+      "calendar",
+      "schedule",
+      "reschedule",
+      "meeting",
+      "appointment",
+      "email",
+      "send email",
+      "draft email",
+      "reply to",
+      "task",
+      "todo",
+      "to-do",
+      "to do",
+      "remind me",
+      "post to",
+      "post on",
+      "publish",
+      "tweet",
+      "draft post",
+      "send invoice",
+      "invoice",
+      "cancel",
+      "book ",
+      "call",
+      "voicemail",
+      "phone",
     ];
 
-    if (opsKeywords.some((k) => lower.includes(k))) return "OperationsAgent";
+    if (opsKeywords.some((keyword) => lower.includes(keyword))) return "OperationsAgent";
 
-    // Research/intelligence keywords — open-ended queries about the world
     const researchKeywords: string[] = params.agent_routing?.research_keywords || [
-      "research", "find information", "analyze", "trend", "market", "github", "news",
-      "what is", "how does", "who is", "explain", "summarize", "what are",
-      "latest", "current events", "happening in", "tell me about",
+      "research",
+      "find information",
+      "analyze",
+      "trend",
+      "market",
+      "github",
+      "news",
+      "what is",
+      "how does",
+      "who is",
+      "explain",
+      "summarize",
+      "what are",
+      "latest",
+      "current events",
+      "happening in",
+      "tell me about",
     ];
 
-    if (researchKeywords.some((k) => lower.includes(k))) return "IntelligenceAgent";
+    if (researchKeywords.some((keyword) => lower.includes(keyword))) return "IntelligenceAgent";
 
     return "OperationsAgent";
   }
 
   private static formatBrief(brief: any): string {
-    const findings = brief.keyFindings.map((f: string) => `• ${f}`).join("\n");
-    return `**Research Brief: ${brief.topic}**
-
-**Confidence**: ${brief.confidence}
-
-**Key Findings**:
-${findings}
-
-**Implications**: ${brief.implications}
-
-**Recommended Action**: ${brief.recommendedAction}`;
+    const findings = brief.keyFindings.map((finding: string) => `- ${finding}`).join("\n");
+    return `**Research Brief: ${brief.topic}**\n\n**Confidence**: ${brief.confidence}\n\n**Key Findings**:\n${findings}\n\n**Implications**: ${brief.implications}\n\n**Recommended Action**: ${brief.recommendedAction}`;
   }
 
   static flushConfig(): void {
     this.config = null;
-    console.log("[ManagerAgent] Config cache flushed — will reload from disk on next request");
+    console.log("[ManagerAgent] Config cache flushed; will reload from disk on next request");
   }
 
   private static async logRouting(request: OrchestratorRequest, agent: AgentName): Promise<void> {
@@ -214,13 +254,14 @@ ${findings}
       await fs.mkdir(LOG_DIR, { recursive: true });
       const date = new Date().toISOString().split("T")[0];
       const logFile = path.join(LOG_DIR, `routing-${date}.log`);
-      const entry = JSON.stringify({
-        timestamp: new Date().toISOString(),
-        userId: request.userId,
-        agent,
-        messageLength: request.message.length,
-        conversationId: request.conversationId,
-      }) + "\n";
+      const entry =
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          userId: request.userId,
+          agent,
+          messageLength: request.message.length,
+          conversationId: request.conversationId,
+        }) + "\n";
       await fs.appendFile(logFile, entry);
     } catch {}
   }

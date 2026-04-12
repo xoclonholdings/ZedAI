@@ -8,8 +8,28 @@ import { fallbackStorage } from "./services/fallbackStorage";
 const app = express();
 
 process.env.NODE_ENV = process.env.NODE_ENV || "development";
+const frontendOrigin = process.env.FRONTEND_URL?.trim();
 
 app.set("trust proxy", 1);
+
+app.use((req, res, next) => {
+  const requestOrigin = req.headers.origin;
+
+  if (frontendOrigin && requestOrigin === frontendOrigin) {
+    res.header("Access-Control-Allow-Origin", frontendOrigin);
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+    res.header("Vary", "Origin");
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

@@ -1,8 +1,9 @@
 import session from "express-session";
 import fs from "fs";
 import path from "path";
+import { HUB_SESSIONS_DIR } from "../utils/repoPaths";
 
-const SESSIONS_DIR = path.resolve(process.cwd(), "hub/sessions");
+const SESSIONS_DIR = HUB_SESSIONS_DIR;
 
 export class FileSessionStore extends session.Store {
   constructor() {

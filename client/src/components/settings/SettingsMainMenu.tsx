@@ -1,6 +1,7 @@
 import {
   Archive,
   Bell,
+  Briefcase,
   ChevronRight,
   Lock,
   Shield,
@@ -52,6 +53,12 @@ const menuItems = [
     label: "Security",
     icon: Lock,
     color: "text-red-400",
+  },
+  {
+    key: "integrations",
+    label: "Integrations",
+    icon: Briefcase,
+    color: "text-emerald-400",
   },
 ];
 
