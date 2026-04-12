@@ -6,6 +6,7 @@ import {
   Bot,
   Briefcase,
   CheckCircle,
+  ChevronDown,
   ChevronLeft,
   Clock,
   Database,
@@ -37,6 +38,64 @@ import SettingsVoiceControls from "@/components/settings/SettingsVoiceControls";
 import UserManagement from "@/components/settings/UserManagement";
 
 type Section = "overview" | "configuration" | "users" | "integrations" | "ruleset" | "approvals" | "logs" | "security";
+
+const sectionMeta: Record<Section, { label: string; description: string; icon: any }> = {
+  overview: {
+    label: "Overview",
+    description: "Live system health, agent status, and quick launch controls.",
+    icon: Activity,
+  },
+  configuration: {
+    label: "Workspace Controls",
+    description: "Admin-managed configuration, preferences, and behavior defaults.",
+    icon: Shield,
+  },
+  users: {
+    label: "Users",
+    description: "Manage admin and local user access for the workspace.",
+    icon: Bot,
+  },
+  integrations: {
+    label: "Integrations",
+    description: "Connect provider-backed services and review readiness.",
+    icon: Briefcase,
+  },
+  ruleset: {
+    label: "Rules",
+    description: "Edit the live YAML rules and system configuration files.",
+    icon: Edit3,
+  },
+  approvals: {
+    label: "Approvals",
+    description: "Review agent actions that require your sign-off.",
+    icon: Clock,
+  },
+  logs: {
+    label: "Logs",
+    description: "Track agent routing, client errors, and runtime failures.",
+    icon: FileText,
+  },
+  security: {
+    label: "Security",
+    description: "Audit login, approval, and security events.",
+    icon: Lock,
+  },
+};
+
+const navGroups: Array<{ title: string; items: Section[] }> = [
+  {
+    title: "Control Center",
+    items: ["overview", "approvals", "logs", "security"],
+  },
+  {
+    title: "Workspace",
+    items: ["configuration", "users", "integrations"],
+  },
+  {
+    title: "System Rules",
+    items: ["ruleset"],
+  },
+];
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -175,17 +234,7 @@ export default function Admin() {
   );
 
   const pendingCount = approvals.filter((entry) => entry.status === "pending").length;
-
-  const navTabs: Array<{ id: Section; label: string; badge?: number }> = [
-    { id: "overview", label: "System Overview" },
-    { id: "configuration", label: "Configuration" },
-    { id: "users", label: "Users" },
-    { id: "integrations", label: "Integrations" },
-    { id: "ruleset", label: "Ruleset Editor" },
-    { id: "approvals", label: "Approval Queue", badge: pendingCount },
-    { id: "logs", label: "Agent Logs" },
-    { id: "security", label: "Security Log" },
-  ];
+  const activeSectionMeta = sectionMeta[section];
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -208,36 +257,76 @@ export default function Admin() {
         </Badge>
       </div>
 
-      <div className="border-b border-white/10 px-4 flex gap-1 bg-black/60">
-        {navTabs.map(({ id, label, badge }) => (
-          <button
-            key={id}
-            onClick={() => setSection(id)}
-            className={`px-4 py-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${
-              section === id ? "text-white border-b-2 border-purple-500" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {label}
-            {badge != null && badge > 0 && (
-              <span className="bg-pink-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                {badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <div className="mx-auto max-w-7xl p-4 md:p-6 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
+        <aside className="mb-6 lg:mb-0">
+          <Card className="zed-glass border-white/10 lg:sticky lg:top-24">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base">Admin Panel</CardTitle>
+              <CardDescription>Simple left-rail navigation with grouped controls.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {navGroups.map((group) => (
+                <div key={group.title} className="space-y-2">
+                  <div className="flex items-center gap-2 px-2 text-[11px] uppercase tracking-[0.22em] text-muted-foreground/80">
+                    <ChevronDown size={12} />
+                    <span>{group.title}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const meta = sectionMeta[item];
+                      const Icon = meta.icon;
+                      const badge = item === "approvals" ? pendingCount : 0;
+                      const isActive = section === item;
+                      return (
+                        <button
+                          key={item}
+                          onClick={() => setSection(item)}
+                          className={`flex w-full items-center justify-between rounded-xl border px-3 py-3 text-left transition-all ${
+                            isActive
+                              ? "border-cyan-400/30 bg-white/10 text-white"
+                              : "border-transparent bg-white/5 text-muted-foreground hover:border-white/10 hover:text-foreground"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Icon size={16} className={isActive ? "text-cyan-300" : "text-muted-foreground"} />
+                            <span className="text-sm font-medium">{meta.label}</span>
+                          </span>
+                          {badge > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-pink-600 px-1.5 text-[10px] font-bold text-white">
+                              {badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </aside>
 
-      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+        <div className="space-y-6">
+          <Card className="zed-glass border-white/10">
+            <CardContent className="flex items-start justify-between gap-4 pt-6">
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <activeSectionMeta.icon size={18} className="text-cyan-300" />
+                  <h2 className="text-lg font-semibold">{activeSectionMeta.label}</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">{activeSectionMeta.description}</p>
+              </div>
+              {section === "overview" && (
+                <Button variant="ghost" size="sm" onClick={fetchStatus} className="zed-button text-muted-foreground hover:text-foreground">
+                  <RefreshCw size={14} className="mr-1" />
+                  Refresh
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
         {section === "overview" && (
           <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">System Status</h2>
-              <Button variant="ghost" size="sm" onClick={fetchStatus} className="zed-button text-muted-foreground hover:text-foreground">
-                <RefreshCw size={14} className="mr-1" />
-                Refresh
-              </Button>
-            </div>
-
             {statusLoading ? (
               <div className="text-center text-muted-foreground py-12">Loading...</div>
             ) : status ? (
@@ -646,6 +735,7 @@ export default function Admin() {
             )}
           </>
         )}
+        </div>
       </div>
     </div>
   );
