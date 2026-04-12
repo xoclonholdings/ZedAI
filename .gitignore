@@ -1,6 +1,7 @@
 node_modules
 zed-backend/node_modules
 client/dist
+models/
 
 # Local Netlify folder
 .netlify
