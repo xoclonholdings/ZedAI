@@ -43,12 +43,43 @@ import {
   insertMessageSchema,
   insertFileSchema,
   insertSessionSchema,
+  users,
 } from "../shared/schema";
+import { db } from "./db";
 
 let isDatabaseHealthy = false;
 
 export function setDatabaseStatus(status: boolean) {
   isDatabaseHealthy = status;
+}
+
+async function ensureSessionUserInDatabase(req: any) {
+  if (!db) return;
+
+  const sessionUserId = req.user?.claims?.sub;
+  const sessionUser = req.session?.user;
+
+  if (!sessionUserId || !sessionUser) return;
+
+  await db
+    .insert(users)
+    .values({
+      id: sessionUserId,
+      email: sessionUser.email || null,
+      firstName: sessionUser.firstName || null,
+      lastName: sessionUser.lastName || null,
+      profileImageUrl: sessionUser.profileImageUrl || null,
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        email: sessionUser.email || null,
+        firstName: sessionUser.firstName || null,
+        lastName: sessionUser.lastName || null,
+        profileImageUrl: sessionUser.profileImageUrl || null,
+        updatedAt: new Date(),
+      },
+    });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -102,6 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      await ensureSessionUserInDatabase(req);
       const conversation = await storage.createConversation(
         insertConversationSchema.parse({
           userId,
