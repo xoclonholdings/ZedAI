@@ -62,13 +62,25 @@ export default function ChatSidebar({
       if (!res.ok) throw new Error("Failed to create conversation");
       return res.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
+      const verifyRes = await fetch(`/api/conversations/${data.id}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!verifyRes.ok) {
+        throw new Error(`Conversation verification failed (${verifyRes.status})`);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       if (selectedProjectId) {
         void onAssignProject(data.id, selectedProjectId);
       }
       navigate(`/chat/${data.id}`);
       if (isMobile && onClose) onClose();
+    },
+    onError: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     },
   });
 

@@ -462,9 +462,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(response);
     } catch (error) {
       console.error("[Orchestrator] Error:", error);
-      res.status(500).json({
+      const detail =
+        error instanceof Error && error.message
+          ? error.message
+          : "The selected agent is temporarily unavailable.";
+      res.json({
         error: "Orchestration failed",
-        reply: "An error occurred while processing your request.",
+        reply: `Agent lane unavailable right now: ${detail}`,
         agent: "ManagerAgent",
       });
     }
