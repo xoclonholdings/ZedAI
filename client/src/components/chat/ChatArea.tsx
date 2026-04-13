@@ -343,8 +343,22 @@ export default function ChatArea({
     }
 
     const newConv = await res.json();
+    if (!newConv?.id) {
+      throw new Error("Conversation response did not include an id");
+    }
+
+    const verifyRes = await fetch(`/api/conversations/${newConv.id}`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!verifyRes.ok) {
+      throw new Error(`Conversation verification failed (${verifyRes.status})`);
+    }
+
     setStagedConversationId(newConv.id);
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    queryClient.setQueryData(["/api/conversations", newConv.id], newConv);
     if (navigateAfterCreate) {
       navigate(`/chat/${newConv.id}`);
     }
