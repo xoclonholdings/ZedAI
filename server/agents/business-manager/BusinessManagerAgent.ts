@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
+import { retrieveFoundationMemory } from "../../services/FoundationMemoryService";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
 
 export interface BusinessManagerRequest {
@@ -106,6 +107,7 @@ export class BusinessManagerAgent {
     const matched = detected.filter((capability) => enabledCapabilities.includes(capability));
     const scope = matched.length > 0 ? matched : enabledCapabilities;
     const approval = needsApproval(request.task);
+    const foundationBlock = await retrieveFoundationMemory(request.task);
     const systemPrompt = `You are ZED's Business Manager Agent.
 
 You help with:
@@ -119,7 +121,8 @@ You help with:
 Current enabled capabilities: ${scope.map(capabilityLabel).join(", ")}.
 If a request would require a real-world commitment, acquisition, send action, or payment, do not pretend it was executed. Instead produce an actionable operating brief with next steps, risks, and an approval recommendation.
 
-${request.memoryContext ? `\nShared memory:\n${request.memoryContext}` : ""}`.trim();
+${request.memoryContext ? `\nShared memory:\n${request.memoryContext}` : ""}
+${foundationBlock ? `\n\nFoundation memory matches:\n${foundationBlock}` : ""}`.trim();
 
     const reply = await generateChatFromOllama([{ role: "user", content: request.task }], systemPrompt);
     await this.writeToMemory(request, reply, scope, approval);

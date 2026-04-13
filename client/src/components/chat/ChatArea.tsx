@@ -47,6 +47,8 @@ export default function ChatArea({
   const [streamingMessage, setStreamingMessage] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
   const [agentTarget, setAgentTarget] = useState<AgentTarget>("auto");
+  const [composerValue, setComposerValue] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -85,6 +87,46 @@ export default function ChatArea({
       }
     },
   });
+
+  const renameConversationMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const res = await fetch(`/api/conversations/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error("Failed to rename conversation");
+      return res.json();
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", vars.id] });
+    },
+  });
+
+  async function ensureConversationTitle(convId: string, message: string) {
+    const rawTitle = (conversation?.title || "").trim().toLowerCase();
+    const shouldRename =
+      !conversation ||
+      !conversation.title ||
+      rawTitle === "new chat" ||
+      rawTitle === "new conversation" ||
+      rawTitle === "hello";
+
+    if (!shouldRename) return;
+
+    const title = message
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .slice(0, 8)
+      .join(" ");
+
+    if (title) {
+      await renameConversationMutation.mutateAsync({ id: convId, title });
+    }
+  }
 
   // ─── SSE streaming chat (Chat mode) ──────────────────────────────────────
 
@@ -203,16 +245,6 @@ export default function ChatArea({
     };
     setLocalMessages((prev) => [...prev, tempUser]);
 
-    const tempThinking: Message = {
-      id: `temp-thinking-${Date.now()}`,
-      conversationId: convId,
-      role: "assistant",
-      content: "⚡ Agent is working...",
-      metadata: null,
-      createdAt: new Date(),
-    };
-    setLocalMessages((prev) => [...prev, tempThinking]);
-
     try {
       const res = await fetch("/api/orchestrate", {
         method: "POST",
@@ -225,7 +257,7 @@ export default function ChatArea({
 
       setLocalMessages((prev) => {
         const withoutTemp = prev.filter(
-          (m) => m.id !== tempUser.id && m.id !== tempThinking.id
+          (m) => m.id !== tempUser.id
         );
         return [
           ...withoutTemp,
@@ -247,9 +279,6 @@ export default function ChatArea({
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     } catch (err) {
       console.error("[Agent] Error:", err);
-      setLocalMessages((prev) =>
-        prev.filter((m) => m.id !== tempThinking.id)
-      );
     } finally {
       setIsStreaming(false);
     }
@@ -281,6 +310,10 @@ export default function ChatArea({
       }
     }
 
+    await ensureConversationTitle(convId!, message);
+    setEditingMessageId(null);
+    setComposerValue("");
+
     if (currentMode === "agent") {
       await sendAgentMessage(message, convId!);
     } else {
@@ -304,6 +337,15 @@ export default function ChatArea({
     setShowFileUpload(false);
   }
 
+  async function handleCopyMessage(message: Message) {
+    await navigator.clipboard.writeText(message.content);
+  }
+
+  function handleEditMessage(message: Message) {
+    setComposerValue(message.content);
+    setEditingMessageId(message.id);
+  }
+
   return (
     <div className="flex-1 flex h-screen relative overflow-hidden">
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
@@ -317,6 +359,8 @@ export default function ChatArea({
           streamingMessage={streamingMessage}
           hasStartedTyping={hasStartedTyping}
           messagesEndRef={messagesEndRef}
+          onCopyMessage={handleCopyMessage}
+          onEditMessage={handleEditMessage}
         />
 
         {showFileUpload && conversationId && (
@@ -340,6 +384,10 @@ export default function ChatArea({
             <ChatInput
               onSend={handleSend}
               isLoading={isStreaming}
+              value={composerValue}
+              onValueChange={setComposerValue}
+              editModeLabel={editingMessageId ? "Editing message draft" : null}
+              onCancelEdit={editingMessageId ? () => { setEditingMessageId(null); setComposerValue(""); } : undefined}
             />
           </div>
         </div>

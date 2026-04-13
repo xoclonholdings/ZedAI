@@ -9,6 +9,8 @@ interface ChatMessagesListProps {
   streamingMessage?: string;
   hasStartedTyping: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
+  onCopyMessage?: (message: Message) => void;
+  onEditMessage?: (message: Message) => void;
 }
 
 export default function ChatMessagesList({
@@ -17,6 +19,8 @@ export default function ChatMessagesList({
   streamingMessage,
   hasStartedTyping,
   messagesEndRef,
+  onCopyMessage,
+  onEditMessage,
 }: ChatMessagesListProps) {
   return (
     <div className="relative z-10 flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
@@ -29,12 +33,17 @@ export default function ChatMessagesList({
       ) : (
         <div className="mx-auto max-w-4xl space-y-3 md:space-y-4">
           {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} />
+            <ChatMessage
+              key={message.id}
+              message={message}
+              onCopy={onCopyMessage}
+              onEdit={message.role === "user" ? onEditMessage : undefined}
+            />
           ))}
         </div>
       )}
 
-      {isStreaming && (
+      {false && isStreaming && (
         <ChatStreamIndicator streamingMessage={streamingMessage} />
       )}
 

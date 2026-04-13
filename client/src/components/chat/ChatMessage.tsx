@@ -1,10 +1,12 @@
 import { Badge } from "@/components/ui/badge";
-import { User, FileText, Image, BarChart, Sparkles } from "lucide-react";
+import { Copy, Pencil, User, FileText, Image, BarChart, Sparkles } from "lucide-react";
 import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 import type { Message } from "@shared/schema";
 
 interface ChatMessageProps {
   message: Message;
+  onCopy?: (message: Message) => void;
+  onEdit?: (message: Message) => void;
 }
 
 type MessageAttachment = {
@@ -13,7 +15,7 @@ type MessageAttachment = {
   size: number;
 };
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({ message, onCopy, onEdit }: ChatMessageProps) {
   const isUser = message.role === "user";
   const attachments = Array.isArray((message.metadata as any)?.attachments)
     ? ((message.metadata as any).attachments as MessageAttachment[])
@@ -34,6 +36,20 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         <div className="max-w-[72%] space-y-3">
           <div className="inline-block max-w-full px-1 py-0.5 text-sm leading-7 text-foreground/95 whitespace-pre-wrap">
             {message.content}
+          </div>
+          <div className="flex items-center gap-3 px-1 text-[11px] text-muted-foreground">
+            {onCopy && (
+              <button type="button" onClick={() => onCopy(message)} className="hover:text-foreground">
+                <Copy size={12} className="mr-1 inline" />
+                Copy
+              </button>
+            )}
+            {onEdit && (
+              <button type="button" onClick={() => onEdit(message)} className="hover:text-foreground">
+                <Pencil size={12} className="mr-1 inline" />
+                Edit
+              </button>
+            )}
           </div>
 
           {attachments.length > 0 && (
@@ -72,6 +88,14 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
         <div className="ml-auto inline-block max-w-full px-1 py-0.5 text-sm leading-7 text-foreground/95 whitespace-pre-wrap">
           {message.content}
+        </div>
+        <div className="flex items-center justify-end gap-3 px-1 text-[11px] text-muted-foreground">
+          {onCopy && (
+            <button type="button" onClick={() => onCopy(message)} className="hover:text-foreground">
+              <Copy size={12} className="mr-1 inline" />
+              Copy
+            </button>
+          )}
         </div>
       </div>
     </div>

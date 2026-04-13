@@ -6,14 +6,20 @@ import { Textarea } from "@/components/ui/textarea";
 interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading?: boolean;
+  value?: string;
+  onValueChange?: (value: string) => void;
+  editModeLabel?: string | null;
+  onCancelEdit?: () => void;
 }
 
-export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
-  const [input, setInput] = useState("");
+export default function ChatInput({ onSend, isLoading, value, onValueChange, editModeLabel, onCancelEdit }: ChatInputProps) {
+  const [internalInput, setInternalInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const input = value ?? internalInput;
+  const setInput = onValueChange ?? setInternalInput;
 
   useEffect(() => {
     const SpeechRecognition =
@@ -80,8 +86,19 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
   };
 
   return (
-    <div className="flex items-end gap-2">
-      <div className="flex-1 relative">
+    <div className="space-y-2">
+      {editModeLabel && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{editModeLabel}</span>
+          {onCancelEdit && (
+            <button type="button" onClick={onCancelEdit} className="text-cyan-300 hover:text-cyan-200">
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
+      <div className="flex items-end gap-2">
+        <div className="flex-1 relative">
         <Textarea
           ref={textareaRef}
           value={input}
@@ -92,37 +109,38 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
           className="min-h-[42px] max-h-[120px] resize-none rounded-2xl border-white/10 bg-black/40 pr-3 text-sm leading-6 text-white overflow-y-auto"
           disabled={isLoading}
         />
-      </div>
+        </div>
 
-      {speechSupported && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={toggleRecording}
-          disabled={isLoading}
-          className={`h-10 w-10 flex-shrink-0 rounded-xl p-0 transition-colors ${
-            isRecording
-              ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
-              : "text-muted-foreground hover:text-cyan-400 zed-button"
-          }`}
-          title={isRecording ? "Stop recording" : "Voice input"}
-        >
-          {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-        </Button>
-      )}
-
-      <Button
-        onClick={handleSend}
-        disabled={!input.trim() || !!isLoading}
-        className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-0 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
-      >
-        {isLoading ? (
-          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        ) : (
-          <Send size={16} />
+        {speechSupported && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={toggleRecording}
+            disabled={isLoading}
+            className={`h-10 w-10 flex-shrink-0 rounded-xl p-0 transition-colors ${
+              isRecording
+                ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
+                : "text-muted-foreground hover:text-cyan-400 zed-button"
+            }`}
+            title={isRecording ? "Stop recording" : "Voice input"}
+          >
+            {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+          </Button>
         )}
-      </Button>
+
+        <Button
+          onClick={handleSend}
+          disabled={!input.trim() || !!isLoading}
+          className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-0 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
+        >
+          {isLoading ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Send size={16} />
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

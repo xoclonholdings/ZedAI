@@ -87,6 +87,21 @@ export default function ChatSidebar({
     }
   }
 
+  async function handleRenameConversation(id: string, currentTitle: string) {
+    const title = window.prompt("Rename chat", currentTitle);
+    if (!title?.trim() || title.trim() === currentTitle) return;
+    const res = await fetch(`/api/conversations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ title: title.trim() }),
+    });
+    if (res.ok) {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", id] });
+    }
+  }
+
   if (isCollapsed) {
     return (
       <div className="w-16 flex flex-col items-center py-4 space-y-4 zed-glass border-r border-white/10 backdrop-blur-xl">
@@ -187,6 +202,7 @@ export default function ChatSidebar({
           }}
           onDelete={handleDeleteConversation}
           onAssignProject={onAssignProject}
+          onRename={handleRenameConversation}
         />
       </div>
 

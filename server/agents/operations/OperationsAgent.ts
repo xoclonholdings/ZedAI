@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
+import { retrieveFoundationMemory } from "../../services/FoundationMemoryService";
 import { logSecurityEvent } from "../../services/SecurityAudit";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR, REPO_ROOT } from "../../utils/repoPaths";
@@ -69,6 +70,7 @@ export class OperationsAgent {
     const email = settings.integrations.email;
     const telephony = settings.integrations.telephony;
     const memoryBlock = request.memoryContext ? `\n\n${request.memoryContext}` : "";
+    const foundationBlock = await retrieveFoundationMemory(request.message);
 
     const capabilityBlock = `## Executive Capability Surface
 - Email lane: ${email.enabled ? `${email.status} via ${email.provider}` : "not configured"}
@@ -85,6 +87,8 @@ If the user asks to send an email, place a call, return a missed call, or handle
 ${guidelines}
 
 ${capabilityBlock}${memoryBlock}
+
+${foundationBlock ? `## Foundation Memory Matches\n${foundationBlock}` : ""}
 
 ## Session Context
 User: ${request.userId}

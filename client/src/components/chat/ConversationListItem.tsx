@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import type { Conversation } from "@shared/schema";
 import type { FilingProject } from "@/pages/chat";
 
@@ -11,6 +11,7 @@ interface ConversationListItemProps {
   onSelect: () => void;
   onDelete: () => void;
   onAssignProject: (projectId: string | null) => void;
+  onRename: () => void;
 }
 
 function formatDate(dateInput: string | Date | null | undefined): string {
@@ -40,6 +41,7 @@ export default function ConversationListItem({
   onSelect,
   onDelete,
   onAssignProject,
+  onRename,
 }: ConversationListItemProps) {
   const date = conversation.updatedAt || conversation.createdAt;
 
@@ -106,18 +108,32 @@ export default function ConversationListItem({
           </div>
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 hover:bg-red-500/20 h-auto p-1 ml-2 rounded-lg"
-        >
-          <Trash2 size={14} />
-        </Button>
+        <div className="ml-2 flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRename();
+            }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 h-auto p-1 rounded-lg"
+          >
+            <Pencil size={13} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 hover:bg-red-500/20 h-auto p-1 rounded-lg"
+          >
+            <Trash2 size={14} />
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ interface ConversationListProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onAssignProject: (conversationId: string, projectId: string | null) => void;
+  onRename: (conversationId: string, currentTitle: string) => void;
 }
 
 export default function ConversationList({
@@ -20,6 +21,7 @@ export default function ConversationList({
   onSelect,
   onDelete,
   onAssignProject,
+  onRename,
 }: ConversationListProps) {
   const activeProjectConversationIds = new Set(
     selectedProjectId
@@ -62,6 +64,7 @@ export default function ConversationList({
           onSelect={() => onSelect(conversation.id)}
           onDelete={() => onDelete(conversation.id)}
           onAssignProject={(projectId) => onAssignProject(conversation.id, projectId)}
+          onRename={() => onRename(conversation.id, conversation.title || "New Chat")}
         />
       ))}
     </div>

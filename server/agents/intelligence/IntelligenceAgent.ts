@@ -3,6 +3,7 @@ import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 import { webSearch, formatResultsForPrompt } from "../../services/WebSearchService";
 import { storeResearchBrief, querySimilarResearch } from "../../services/ChromaService";
+import { retrieveFoundationMemory } from "../../services/FoundationMemoryService";
 
 const CWD = process.cwd();
 const SKILL_PATH = path.resolve(CWD, "agents/intelligence/SKILL.md");
@@ -88,12 +89,16 @@ export class IntelligenceAgent {
     const priorBlock = priorResearch
       ? `\n\n## Prior Research (from semantic memory)\n${priorResearch}`
       : "";
+    const foundationMatches = await retrieveFoundationMemory(request.query);
+    const foundationBlock = foundationMatches
+      ? `\n\n## Foundation Memory Matches\n${foundationMatches}`
+      : "";
 
     const memoryBlock = request.memoryContext
       ? `\n\n${request.memoryContext}`
       : "";
 
-    const systemPrompt = `${skill}${memoryBlock}${priorBlock}
+    const systemPrompt = `${skill}${memoryBlock}${priorBlock}${foundationBlock}
 
 ## Current Research Task
 Query: ${request.query}
@@ -101,6 +106,8 @@ Depth: ${request.depth || "shallow"}
 User: ${request.userId}
 
 ${searchBlock}
+
+When foundation memory is relevant, use it directly and reference it in the findings instead of ignoring it.
 
 Always produce output in this exact format:
 BRIEF: [topic summary]

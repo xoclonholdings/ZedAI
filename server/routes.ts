@@ -16,6 +16,7 @@ import { checkTiers, filterOutputForTier3 } from "./middleware/TierEnforcement";
 import { logSecurityEvent, getRecentSecurityEvents } from "./services/SecurityAudit";
 import { injectMemory } from "./services/MemoryInjector";
 import { addToCollection, queryCollection } from "./services/ChromaService";
+import { retrieveFoundationMemory } from "./services/FoundationMemoryService";
 import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationService";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
@@ -366,12 +367,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const retrievedMemory = await loadRetrievableMemory(content);
+      const foundationMemory = await retrieveFoundationMemory(content);
       if (retrievedMemory) {
         systemPrompt = systemPrompt
           ? `${systemPrompt}\n\n### Retrieved Relevant Memory\n${retrievedMemory}`
           : `${ZED_IDENTITY_PROMPT}\n\n### Retrieved Relevant Memory\n${retrievedMemory}`;
       } else if (!systemPrompt) {
         systemPrompt = ZED_IDENTITY_PROMPT;
+      }
+      if (foundationMemory) {
+        systemPrompt = `${systemPrompt}\n\n### Foundation Memory Matches\n${foundationMemory}`;
       }
 
       if (stream) {
