@@ -476,13 +476,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/orchestrate/status", async (_req, res) => {
     const settings = await getPublicAdminSettings();
-    const visiblePlannedAgents = settings.agents.filter(
-      (agent) => agent.status === "planned" && agent.key === "BusinessManagerAgent",
-    );
+    const normalizedAgents = settings.agents.map((agent) => {
+      if (agent.key === "BusinessManagerAgent") {
+        const isBusinessReady = settings.integrations.businessOperations.enabled;
+        return {
+          ...agent,
+          status: isBusinessReady ? "active" : "planned",
+          description: isBusinessReady
+            ? "Business operations lane is enabled for commerce, property, credit, and planning workflows."
+            : agent.description,
+        };
+      }
+      return agent;
+    });
     res.json({
       orchestrator: "ManagerAgent",
-      active_agents: settings.agents.filter((agent) => agent.status === "active"),
-      planned_agents: visiblePlannedAgents,
+      active_agents: normalizedAgents.filter((agent) => agent.status === "active"),
+      planned_agents: normalizedAgents.filter((agent) => agent.status === "planned"),
       integrations: settings.integrations,
       status: "operational",
     });
@@ -506,16 +516,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const settings = await getPublicAdminSettings();
     const github = await checkGitHubIntegrationStatus();
     const firewall = await getFirewallIntegrationStatus();
+    const normalizedAgents = settings.agents.map((agent) => {
+      if (agent.key === "BusinessManagerAgent") {
+        const isBusinessReady = settings.integrations.businessOperations.enabled;
+        return {
+          ...agent,
+          status: isBusinessReady ? "active" : "planned",
+          description: isBusinessReady
+            ? "Business Manager lane is enabled through Business Operations."
+            : agent.description,
+        };
+      }
+      return agent;
+    });
     res.json({
       system: "ZED",
       ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
       database: isDatabaseHealthy ? "connected" : "offline",
       orchestrator: {
         status: "operational",
-        active: settings.agents.filter((agent) => agent.status === "active"),
-        planned: settings.agents.filter(
-          (agent) => agent.status === "planned" && agent.key === "BusinessManagerAgent",
-        ),
+        active: normalizedAgents.filter((agent) => agent.status === "active"),
+        planned: normalizedAgents.filter((agent) => agent.status === "planned"),
       },
       integrations: settings.integrations,
       github,

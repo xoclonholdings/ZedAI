@@ -399,10 +399,13 @@ export default function Admin() {
                       </p>
                     )}
                     <div className="space-y-2">
-                      <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={testAiHost} disabled={aiHostTest.status === "testing"}>
-                        <RefreshCw size={14} className={`mr-1 ${aiHostTest.status === "testing" ? "animate-spin" : ""}`} />
-                        {aiHostTest.status === "testing" ? "Testing..." : "Test AI Host"}
-                      </Button>
+                        <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={testAiHost} disabled={aiHostTest.status === "testing"}>
+                          <RefreshCw size={14} className={`mr-1 ${aiHostTest.status === "testing" ? "animate-spin" : ""}`} />
+                          {aiHostTest.status === "testing" ? "Testing..." : "Test / Reconnect AI Host"}
+                        </Button>
+                        <p className="text-[11px] leading-5 text-muted-foreground">
+                          Colab cannot start itself from ZED. This button checks whether the current bridge is alive after you run the notebook.
+                        </p>
                       {aiHostTest.status !== "idle" && (
                         <p className={`text-xs ${aiHostTest.status === "ok" ? "text-emerald-300" : aiHostTest.status === "error" ? "text-red-300" : "text-muted-foreground"}`}>
                           {aiHostTest.detail}
@@ -448,7 +451,7 @@ export default function Admin() {
                         ))}
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground mb-2">Planned lanes</p>
+                        <p className="text-xs text-muted-foreground mb-2">Inactive / planned lanes</p>
                         {status.orchestrator?.planned?.map((agent: any) => (
                           <div key={agent.key || agent.label} className="flex items-center gap-2 mb-1">
                             <AlertCircle size={12} className="text-yellow-400" />
