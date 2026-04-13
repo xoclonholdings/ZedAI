@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { useAuth } from "@/components/auth/UseAuth";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
 import IntegrationSettings from "./IntegrationSettings";
@@ -28,16 +29,21 @@ import SettingsVoiceControls from "./SettingsVoiceControls";
 const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhODU1Zjc7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ViNDg5OTtzdG9wLW9wYWNpdHk6MSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjgiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPjwvc3ZnPg==";
 
 export default function SettingsModal() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("main");
   const { appSettings, setAppSettings } = useAppSettings();
+  const compact = !!user?.personalization?.compactMessages;
+  const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
+  const titleClass = fontSize === "small" ? "text-base" : fontSize === "large" ? "text-xl" : "text-lg";
+  const descriptionClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-sm" : "text-sm";
 
   function BackButton() {
     return (
       <Button
         variant="ghost"
         onClick={() => setActiveSection("main")}
-        className="mb-4 text-muted-foreground hover:text-foreground"
+        className={`${compact ? "mb-3" : "mb-4"} text-muted-foreground hover:text-foreground`}
       >
         <ChevronLeft className="mr-1 h-4 w-4" />
         Back to Settings
@@ -56,15 +62,15 @@ export default function SettingsModal() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="w-full justify-start zed-button">
+        <Button variant="ghost" size="sm" className={`w-full justify-start zed-button ${compact ? "py-2 text-xs" : ""}`}>
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="zed-glass max-h-[90vh] max-w-2xl overflow-hidden border-white/10 flex flex-col">
+      <DialogContent className={`zed-glass max-h-[90vh] max-w-2xl overflow-hidden border-white/10 flex flex-col ${compact ? "p-4" : ""}`}>
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2 text-foreground">
+          <DialogTitle className={`flex items-center gap-2 text-foreground ${titleClass}`}>
             <img src={zLogoPath} alt="Z" className="h-4 w-4" />
             <span>
               <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
@@ -74,14 +80,14 @@ export default function SettingsModal() {
             </span>
           </DialogTitle>
 
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription className={`${descriptionClass} text-muted-foreground`}>
             Manage your preferences, rules, and security.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div className={`flex-1 overflow-y-auto pr-1 ${compact ? "space-y-3" : "space-y-4"}`}>
           {activeSection === "main" && (
-            <div className="space-y-6">
+            <div className={compact ? "space-y-4" : "space-y-6"}>
               <SettingsMainMenu onNavigate={setActiveSection} />
 
             </div>
@@ -90,7 +96,7 @@ export default function SettingsModal() {
           {activeSection === "preferences" && (
             <div>
               <BackButton />
-              <div className="space-y-6">
+              <div className={compact ? "space-y-4" : "space-y-6"}>
                 <PersonalizationSettings />
                 <NotificationsSettings
                   appSettings={appSettings}
@@ -115,7 +121,7 @@ export default function SettingsModal() {
           {activeSection === "workspace" && (
             <div>
               <BackButton />
-              <div className="space-y-6">
+              <div className={compact ? "space-y-4" : "space-y-6"}>
                 <RulesSettings />
                 <DataControlsSettings />
                 <Card className="zed-glass border-white/10">
