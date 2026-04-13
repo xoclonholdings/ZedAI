@@ -3,11 +3,20 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 type AuthUser = {
   id?: string;
   username: string;
+  displayName?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
   isAdmin?: boolean;
+  personalization?: {
+    displayName?: string;
+    preferredLanguage?: string;
+    colorScheme?: string;
+    compactMessages?: boolean;
+    showTimestamps?: boolean;
+    fontSize?: string;
+  };
 };
 
 type AuthState = {

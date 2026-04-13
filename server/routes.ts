@@ -33,6 +33,7 @@ import {
   updateManagedUser,
   updatePersonalizationSettings,
 } from "./services/AdminSettingsStore";
+import { getUserPersonalization, saveUserPersonalization } from "./services/UserPersonalizationStore";
 import {
   assignConversationToProject,
   createProject,
@@ -134,9 +135,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/me", (req, res) => {
     const session = (req as any).session;
     if (session?.userId && session?.user) {
-      return res.json({ user: session.user });
+      void getUserPersonalization(session.userId)
+        .then((personalization) => {
+          res.json({
+            user: {
+              ...session.user,
+              displayName: personalization.displayName,
+              personalization,
+            },
+          });
+        })
+        .catch(() => {
+          res.json({ user: session.user });
+        });
+      return;
     }
     return res.json({ user: null });
+  });
+
+  app.get("/api/settings/personalization", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const personalization = await getUserPersonalization(userId);
+      res.json(personalization);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch personalization" });
+    }
+  });
+
+  app.put("/api/settings/personalization", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const personalization = await saveUserPersonalization(userId, req.body || {});
+      res.json(personalization);
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update personalization" });
+    }
   });
 
   // ─── Conversations ────────────────────────────────────────────────────────

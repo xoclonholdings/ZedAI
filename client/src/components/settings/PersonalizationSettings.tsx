@@ -10,8 +10,10 @@ import { Switch } from "@/components/ui/switch";
 
 import type { PersonalizationSettings as PersonalizationData } from "@shared/adminSettings";
 import { defaultPersonalizationSettings } from "@shared/adminSettings";
+import { useAuth } from "@/components/auth/UseAuth";
 
 export default function PersonalizationSettings() {
+  const { refresh } = useAuth();
   const [data, setData] = useState<PersonalizationData>(defaultPersonalizationSettings);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -21,7 +23,7 @@ export default function PersonalizationSettings() {
 
     async function load() {
       try {
-        const response = await fetch("/api/admin/settings", {
+        const response = await fetch("/api/settings/personalization", {
           credentials: "include",
           cache: "no-store",
         });
@@ -30,7 +32,7 @@ export default function PersonalizationSettings() {
         if (!cancelled) {
           setData({
             ...defaultPersonalizationSettings,
-            ...(payload.personalization || {}),
+            ...(payload || {}),
           });
         }
       } catch {
@@ -52,7 +54,7 @@ export default function PersonalizationSettings() {
   async function handleSave() {
     setSaving(true);
     try {
-      const response = await fetch("/api/admin/settings/personalization", {
+      const response = await fetch("/api/settings/personalization", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -65,6 +67,7 @@ export default function PersonalizationSettings() {
           ...defaultPersonalizationSettings,
           ...next,
         });
+        void refresh();
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       }
