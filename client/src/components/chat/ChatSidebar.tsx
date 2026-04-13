@@ -27,10 +27,16 @@ interface ChatSidebarProps {
 
 interface LocalUser {
   id: string;
+  displayName?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
+  personalization?: {
+    compactMessages?: boolean;
+    fontSize?: string;
+    showTimestamps?: boolean;
+  };
 }
 
 export default function ChatSidebar({
@@ -47,6 +53,9 @@ export default function ChatSidebar({
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user } = useAuth() as { user?: LocalUser };
+  const compact = !!user?.personalization?.compactMessages;
+  const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
+  const headingClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
 
   const createConversationMutation = useMutation({
     mutationFn: async () => {
@@ -149,10 +158,10 @@ export default function ChatSidebar({
         onCollapse={() => setIsCollapsed(true)}
       />
 
-      <div className="flex-1 px-4 overflow-y-auto">
-        <div className="space-y-3 py-3">
+      <div className={`flex-1 px-4 overflow-y-auto ${compact ? "text-sm" : ""}`}>
+        <div className={`${compact ? "space-y-2 py-2" : "space-y-3 py-3"}`}>
           <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-foreground">Projects</div>
+            <div className={`${headingClass} font-medium text-foreground`}>Projects</div>
             <Button
               variant="ghost"
               size="sm"
@@ -163,10 +172,10 @@ export default function ChatSidebar({
             </Button>
           </div>
 
-          <div className="space-y-2">
+          <div className={`${compact ? "space-y-1.5" : "space-y-2"}`}>
             <button
               onClick={() => onSelectProject(null)}
-              className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+              className={`w-full rounded-xl border px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left transition-all ${
                 selectedProjectId === null
                   ? "border-cyan-400/40 bg-white/10 text-white"
                   : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
@@ -179,7 +188,7 @@ export default function ChatSidebar({
               <button
                 key={project.id}
                 onClick={() => onSelectProject(project.id)}
-                className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+                className={`w-full rounded-xl border px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left transition-all ${
                   selectedProjectId === project.id
                     ? "border-cyan-400/40 bg-white/10 text-white"
                     : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"

@@ -1,6 +1,7 @@
 import ConversationListItem from "./ConversationListItem";
 import type { Conversation } from "@shared/schema";
 import type { FilingProject } from "@/pages/chat";
+import { useAuth } from "@/components/auth/UseAuth";
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -23,6 +24,7 @@ export default function ConversationList({
   onAssignProject,
   onRename,
 }: ConversationListProps) {
+  const { user } = useAuth();
   const activeProjectConversationIds = new Set(
     selectedProjectId
       ? projects.find((project) => project.id === selectedProjectId)?.conversationIds || []
@@ -34,6 +36,9 @@ export default function ConversationList({
     : conversations;
 
   const projectIdByConversation = new Map<string, string>();
+  const compact = !!user?.personalization?.compactMessages;
+  const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
+  const showTimestamps = !!user?.personalization?.showTimestamps;
   for (const project of projects) {
     for (const conversationId of project.conversationIds) {
       projectIdByConversation.set(conversationId, project.id);
@@ -50,7 +55,7 @@ export default function ConversationList({
   }
 
   return (
-    <div className="space-y-2 py-3">
+    <div className={`${compact ? "space-y-1.5 py-2" : "space-y-2 py-3"}`}>
       {visibleConversations.map((conversation) => (
         <ConversationListItem
           key={conversation.id}
@@ -61,6 +66,9 @@ export default function ConversationList({
             currentPath === `/chat/${conversation.id}` ||
             currentPath === `/chat/${conversation.id}/`
           }
+          compact={compact}
+          fontSize={fontSize}
+          showTimestamp={showTimestamps}
           onSelect={() => onSelect(conversation.id)}
           onDelete={() => onDelete(conversation.id)}
           onAssignProject={(projectId) => onAssignProject(conversation.id, projectId)}

@@ -8,6 +8,9 @@ interface ConversationListItemProps {
   currentProjectId: string | null;
   projects: FilingProject[];
   isActive: boolean;
+  compact?: boolean;
+  fontSize?: "small" | "medium" | "large";
+  showTimestamp?: boolean;
   onSelect: () => void;
   onDelete: () => void;
   onAssignProject: (projectId: string | null) => void;
@@ -38,12 +41,17 @@ export default function ConversationListItem({
   currentProjectId,
   projects,
   isActive,
+  compact = false,
+  fontSize = "medium",
+  showTimestamp = true,
   onSelect,
   onDelete,
   onAssignProject,
   onRename,
 }: ConversationListItemProps) {
   const date = conversation.updatedAt || conversation.createdAt;
+  const titleClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
+  const previewClass = fontSize === "small" ? "text-[10px] leading-4" : fontSize === "large" ? "text-xs leading-5" : "text-[11px] leading-4";
 
   return (
     <div
@@ -56,20 +64,18 @@ export default function ConversationListItem({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="mb-1 truncate text-sm font-medium text-foreground">
+          <h3 className={`mb-1 truncate font-medium text-foreground ${titleClass}`}>
             {conversation.title || "New Conversation"}
           </h3>
 
           {conversation.preview && (
-            <p className="mb-2 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+            <p className={`mb-2 line-clamp-2 text-muted-foreground ${previewClass}`}>
               {conversation.preview}
             </p>
           )}
 
           <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">
-              {formatDate(date)}
-            </span>
+            {showTimestamp ? <span className="text-xs text-muted-foreground">{formatDate(date)}</span> : <span />}
 
             <div className="flex items-center gap-2">
               <select
@@ -83,7 +89,7 @@ export default function ConversationListItem({
                   e.stopPropagation();
                   onAssignProject(e.target.value || null);
                 }}
-                className="rounded-md border border-white/10 bg-black/50 px-2 py-1 text-[10px] text-muted-foreground"
+                className={`rounded-md border border-white/10 bg-black/50 px-2 text-[10px] text-muted-foreground ${compact ? "py-0.5" : "py-1"}`}
               >
                 <option value="">Inbox</option>
                 {projects.map((project) => (
