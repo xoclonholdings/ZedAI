@@ -15,6 +15,7 @@ import { ManagerAgent } from "./orchestrator/ManagerAgent";
 import { checkTiers, filterOutputForTier3 } from "./middleware/TierEnforcement";
 import { logSecurityEvent, getRecentSecurityEvents } from "./services/SecurityAudit";
 import { injectMemory } from "./services/MemoryInjector";
+import { addToCollection, queryCollection } from "./services/ChromaService";
 import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationService";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
@@ -48,6 +49,59 @@ import {
 import { db } from "./db";
 
 let isDatabaseHealthy = false;
+
+const ZED_IDENTITY_PROMPT = [
+  "You are ZED, the AI assistant for Zed Hub.",
+  "Never describe yourself as 'an agent named Agent' or 'ZED Hub's agent'.",
+  "If asked your name, answer simply: 'I am ZED.'",
+  "Use any provided memory context as background knowledge when it is relevant.",
+].join(" ");
+
+async function loadRetrievableMemory(query: string): Promise<string> {
+  try {
+    const [episodic, semantic] = await Promise.all([
+      queryCollection("episodic", query, 2),
+      queryCollection("semantic", query, 3),
+    ]);
+
+    const lines = [...episodic, ...semantic]
+      .filter((entry) => entry.document?.trim())
+      .slice(0, 4)
+      .map((entry, index) => `Memory ${index + 1}: ${entry.document.slice(0, 280)}`);
+
+    return lines.length > 0 ? lines.join("\n\n") : "";
+  } catch (error) {
+    console.warn("[Memory] Retrieval failed (non-fatal):", error);
+    return "";
+  }
+}
+
+async function persistConversationMemory(params: {
+  conversationId: string;
+  userContent: string;
+  assistantContent: string;
+}) {
+  const { conversationId, userContent, assistantContent } = params;
+  const timestamp = new Date().toISOString();
+  const document = `User: ${userContent}\nAssistant: ${assistantContent}`;
+  const baseMetadata = {
+    conversationId,
+    savedAt: timestamp,
+  };
+
+  await Promise.allSettled([
+    addToCollection("episodic", {
+      id: `episodic-${conversationId}-${Date.now()}`,
+      document,
+      metadata: baseMetadata,
+    }),
+    addToCollection("semantic", {
+      id: `semantic-${conversationId}-${Date.now()}`,
+      document,
+      metadata: baseMetadata,
+    }),
+  ]);
+}
 
 export function setDatabaseStatus(status: boolean) {
   isDatabaseHealthy = status;
@@ -305,10 +359,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const memCtx = await injectMemory("ChatMode");
         const memBlock = memCtx.formatted;
         systemPrompt = systemPrompt
-          ? `${systemPrompt}\n\n${memBlock}`
-          : memBlock;
+          ? `${ZED_IDENTITY_PROMPT}\n\n${systemPrompt}\n\n${memBlock}`
+          : `${ZED_IDENTITY_PROMPT}\n\n${memBlock}`;
       } catch (memErr) {
         console.warn("[SSE] Memory injection failed (non-fatal):", memErr);
+      }
+
+      const retrievedMemory = await loadRetrievableMemory(content);
+      if (retrievedMemory) {
+        systemPrompt = systemPrompt
+          ? `${systemPrompt}\n\n### Retrieved Relevant Memory\n${retrievedMemory}`
+          : `${ZED_IDENTITY_PROMPT}\n\n### Retrieved Relevant Memory\n${retrievedMemory}`;
+      } else if (!systemPrompt) {
+        systemPrompt = ZED_IDENTITY_PROMPT;
       }
 
       if (stream) {
@@ -338,6 +401,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 content: fullResponse || "(no response)",
               })
             );
+            await persistConversationMemory({
+              conversationId,
+              userContent: content,
+              assistantContent: aiMessage.content,
+            });
             res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
             res.end();
           },
@@ -366,6 +434,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const aiMessage = await storage.createMessage(
           insertMessageSchema.parse({ conversationId, role: "assistant", content: aiText })
         );
+        await persistConversationMemory({
+          conversationId,
+          userContent: content,
+          assistantContent: aiMessage.content,
+        });
         res.json({ userMessage, aiMessage });
       }
     } catch (error) {

@@ -1,10 +1,10 @@
 import { ChromaClient, Collection } from "chromadb";
 import fs from "fs/promises";
 import path from "path";
+import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
 
 const CHROMA_URL = process.env.CHROMA_URL || "http://localhost:8000";
-const CWD = process.cwd();
-const SEMANTIC_DIR = path.resolve(CWD, "hub/shared-memory/semantic");
+const SEMANTIC_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "semantic");
 
 const COLLECTIONS = {
   working: "zed_working",
