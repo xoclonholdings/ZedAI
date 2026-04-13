@@ -82,6 +82,15 @@ async function ensureSessionUserInDatabase(req: any) {
     });
 }
 
+async function requireConversation(req: any, res: Response) {
+  const conversation = await storage.getConversation(req.params.id);
+  if (!conversation) {
+    res.status(404).json({ error: "Conversation not found" });
+    return null;
+  }
+  return conversation;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupLocalAuth(app);
 
@@ -143,9 +152,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isActive: true,
         })
       );
-      await storage.createSession(
-        insertSessionSchema.parse({ conversationId: conversation.id, userId })
-      );
+      try {
+        await storage.createSession(
+          insertSessionSchema.parse({ conversationId: conversation.id, userId })
+        );
+      } catch (sessionError) {
+        console.warn("[Conversations] Session creation failed (non-fatal):", sessionError);
+      }
       res.json(conversation);
     } catch (err) {
       console.error(err);
@@ -233,6 +246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/conversations/:id/messages", isAuthenticated, async (req: any, res) => {
     try {
+      const conversation = await requireConversation(req, res);
+      if (!conversation) return;
       const messages = await storage.getMessagesByConversation(req.params.id);
       res.json(messages);
     } catch (err) {
@@ -246,6 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const conversationId = req.params.id;
       const { content, stream = true } = req.body;
+      const conversation = await requireConversation(req, res);
+      if (!conversation) return;
 
       if (!content) return res.status(400).json({ error: "Message required" });
 
