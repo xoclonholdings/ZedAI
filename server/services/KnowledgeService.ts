@@ -68,6 +68,21 @@ const CORE_PRIORITY_KEYS = [
   "default_context",
 ] as const;
 
+const LANE_DIRECTIVES: Record<KnowledgeLane, string> = {
+  chat:
+    "Answer as ZED using the supplied knowledge context first. Prefer specific, decisive answers over generic filler. Do not ask the user to repeat information already present in memory unless it is conflicting or missing a critical detail.",
+  manager:
+    "Use the shared knowledge stack to route intelligently. Favor the lane that best matches the goal and the known business context. Do not over-route into generic research if the knowledge context already provides the answer.",
+  operations:
+    "Prefer execution-ready outputs that reflect known brand, operating rules, and prior decisions. Use the knowledge context directly when it contains the sender identity, project context, or operating preferences.",
+  business:
+    "Ground strategy in the known business foundation, project memory, and rules before generating new recommendations. Avoid boilerplate when the venture or goals are already known.",
+  research:
+    "Use internal foundation and project knowledge as the baseline, then layer retrieved or searched evidence on top. If internal knowledge conflicts with external signals, say so clearly.",
+  admin:
+    "Summarize the knowledge system faithfully and prefer direct excerpts over speculation.",
+};
+
 function normalizeText(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9\s-]/g, " ");
 }
@@ -86,6 +101,30 @@ function extractKeywords(query: string): string[] {
 function scoreText(text: string, keywords: string[]): number {
   const haystack = normalizeText(text);
   return keywords.reduce((score, keyword) => score + (haystack.includes(keyword) ? 1 : 0), 0);
+}
+
+function scoreProjectMemory(
+  entry: { name: string; description: string | null; content: string; type?: string | null },
+  keywords: string[],
+): number {
+  return (
+    scoreText(entry.name, keywords) * 4 +
+    scoreText(entry.description || "", keywords) * 2 +
+    scoreText(entry.type || "", keywords) * 2 +
+    scoreText(entry.content, keywords)
+  );
+}
+
+function scoreScratchpadMemory(
+  entry: { content: string; tags?: string[] | null; conversationId?: string | null },
+  keywords: string[],
+  conversationId?: string,
+): number {
+  return (
+    scoreText(entry.content, keywords) * 2 +
+    scoreText((entry.tags || []).join(" "), keywords) * 3 +
+    (conversationId && entry.conversationId === conversationId ? 5 : 0)
+  );
 }
 
 function safeExcerpt(text: string, max = 320): string {
@@ -126,6 +165,20 @@ function formatRetrievedMemory(entries: VectorEntry[]): string {
       return `### Retrieved Memory ${index + 1} (${source})\n${safeExcerpt(entry.document, 380)}`;
     })
     .join("\n\n");
+}
+
+function dedupeRetrievedMemory(entries: VectorEntry[]): VectorEntry[] {
+  const seen = new Set<string>();
+  const output: VectorEntry[] = [];
+
+  for (const entry of entries) {
+    const key = safeExcerpt(entry.document, 180).toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    output.push(entry);
+  }
+
+  return output;
 }
 
 async function loadRulesetMemory(): Promise<Array<{ key: string; value: string }>> {
@@ -171,7 +224,7 @@ export class KnowledgeService {
     const relevantProjectMemory = allProjectMemory
       .map((entry) => ({
         entry,
-        score: scoreText(`${entry.name} ${entry.description || ""} ${entry.content}`, keywords),
+        score: scoreProjectMemory(entry, keywords),
       }))
       .filter((item) => item.score > 0 || keywords.length === 0)
       .sort((a, b) => b.score - a.score || Number(new Date(b.entry.updatedAt)) - Number(new Date(a.entry.updatedAt)))
@@ -182,14 +235,14 @@ export class KnowledgeService {
       .filter((entry) => !params.conversationId || !entry.conversationId || entry.conversationId === params.conversationId)
       .map((entry) => ({
         entry,
-        score: scoreText(`${entry.content} ${(entry.tags || []).join(" ")}`, keywords),
+        score: scoreScratchpadMemory(entry, keywords, params.conversationId),
       }))
       .filter((item) => item.score > 0 || item.entry.conversationId === params.conversationId)
       .sort((a, b) => b.score - a.score || Number(new Date(b.entry.createdAt)) - Number(new Date(a.entry.createdAt)))
       .slice(0, 5)
       .map((item) => item.entry);
 
-    const retrievedEntries = [...episodic, ...semantic].slice(0, 5);
+    const retrievedEntries = dedupeRetrievedMemory([...episodic, ...semantic]).slice(0, 5);
 
     const coreBlock = formatCoreMemory(
       relevantCoreMemory.map((entry) => ({ key: entry.key, value: entry.value })),
@@ -219,6 +272,7 @@ export class KnowledgeService {
     const retrievedBlock = formatRetrievedMemory(retrievedEntries);
 
     const sections = [
+      `## Knowledge Use Policy\n${LANE_DIRECTIVES[lane]}`,
       params.injectedMemory ? `## Hub Memory\n${params.injectedMemory}` : "",
       coreBlock ? `## Core Knowledge (${lane})\n${coreBlock}` : "",
       rulesetBlock ? `## Active Ruleset\n${rulesetBlock}` : "",
@@ -276,7 +330,7 @@ export class KnowledgeService {
           name: entry.name,
           description: entry.description || null,
           excerpt: safeExcerpt(entry.content, 220),
-          score: scoreText(`${entry.name} ${entry.description || ""} ${entry.content}`, keywords),
+          score: scoreProjectMemory(entry, keywords),
         }))
         .filter((entry) => entry.score > 0)
         .sort((a, b) => b.score - a.score)
@@ -288,13 +342,13 @@ export class KnowledgeService {
           id: entry.id,
           excerpt: safeExcerpt(entry.content, 220),
           tags: entry.tags || [],
-          score: scoreText(`${entry.content} ${(entry.tags || []).join(" ")}`, keywords),
+          score: scoreScratchpadMemory(entry, keywords, params.conversationId),
         }))
         .filter((entry) => entry.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 6)
         .map(({ score: _score, ...entry }) => entry),
-      retrieved: retrievedEntries.map((entry) => ({
+      retrieved: dedupeRetrievedMemory(retrievedEntries).map((entry) => ({
         id: entry.id,
         source:
           typeof entry.metadata?.topic === "string"
