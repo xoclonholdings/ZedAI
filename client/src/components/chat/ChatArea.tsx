@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { notifyMessage } from "@/lib/notify";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 import ChatBackground from "./ChatBackground";
 import ChatControls from "./ChatControls";
@@ -50,6 +51,7 @@ export default function ChatArea({
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
   const [agentTarget, setAgentTarget] = useState<AgentTarget>("auto");
   const [stagedConversationId, setStagedConversationId] = useState<string | undefined>(conversationId);
+  const [aiHostAlert, setAiHostAlert] = useState<{ title: string; description: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -70,6 +72,33 @@ export default function ChatArea({
       setLocalMessages(messages);
     }
   }, [messages, isStreaming]);
+
+  const surfaceAiHostIssue = useCallback(
+    (detail?: string) => {
+      const normalized = (detail || "").toLowerCase();
+      const isTimeout = normalized.includes("timeout");
+      const isOffline =
+        normalized.includes("404") ||
+        normalized.includes("502") ||
+        normalized.includes("fetch failed") ||
+        normalized.includes("econnrefused");
+
+      const title = isTimeout ? "AI host timed out" : isOffline ? "AI host is unavailable" : "AI host error";
+      const description = isTimeout
+        ? "The temporary Colab bridge took too long to answer. Re-open the notebook, warm it up, then test the AI host from Admin."
+        : isOffline
+          ? "The remote model bridge is offline or unreachable. Reconnect the Colab tunnel, then test the AI host from Admin."
+          : detail || "The AI host returned an unexpected error.";
+
+      setAiHostAlert({ title, description });
+      toast({
+        title,
+        description,
+        variant: "destructive",
+      });
+    },
+    [toast],
+  );
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -106,6 +135,7 @@ export default function ChatArea({
 
     setIsStreaming(true);
     setStreamingMessage("");
+    setAiHostAlert(null);
 
     // Optimistically add user message to local state
     const tempUser: Message = {
@@ -159,6 +189,11 @@ export default function ChatArea({
               const aiMessage: Message = data.message;
               setStreamingMessage("");
               setIsStreaming(false);
+              if (data.type === "done") {
+                setAiHostAlert(null);
+              } else {
+                surfaceAiHostIssue(data.error || aiMessage?.content);
+              }
               // Replace temp user message with real one, add AI message
               setLocalMessages((prev) => {
                 const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
@@ -186,13 +221,18 @@ export default function ChatArea({
       console.error("[Chat] SSE error:", err);
       setStreamingMessage("");
       setIsStreaming(false);
+      const message =
+        typeof err?.message === "string" && err.message.trim().length > 0
+          ? err.message
+          : "The remote AI host could not be reached.";
+      surfaceAiHostIssue(message);
       setLocalMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           conversationId: convId,
           role: "assistant",
-          content: "Connection error. Make sure Ollama is running locally.",
+          content: `AI model error: ${message}`,
           metadata: null,
           createdAt: new Date(),
         },
@@ -398,6 +438,35 @@ export default function ChatArea({
         <ChatBackground />
 
         <ChatHeader isMobile={isMobile} onOpenSidebar={onOpenSidebar} />
+
+        {aiHostAlert && (
+          <div className="px-4 pt-3 md:px-6 md:pt-4 relative z-10">
+            <div className="mx-auto flex max-w-4xl items-start justify-between gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-red-200">{aiHostAlert.title}</p>
+                <p className="mt-1 text-xs leading-5 text-red-100/80">{aiHostAlert.description}</p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 border-white/10 bg-black/30 px-3 text-xs"
+                  onClick={() => navigate("/admin")}
+                >
+                  Test in Admin
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setAiHostAlert(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <ChatMessagesList
           messages={localMessages}

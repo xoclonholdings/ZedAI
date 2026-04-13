@@ -504,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const firewall = await getFirewallIntegrationStatus();
     res.json({
       system: "ZED",
-      ollama: { status: ollama.status, models: ollama.models },
+      ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
       database: isDatabaseHealthy ? "connected" : "offline",
       orchestrator: {
         status: "operational",
@@ -521,6 +521,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requireSecureCookies: settings.auth.requireSecureCookies,
       },
     });
+  });
+
+  app.post("/api/admin/ai-host/test", isAdmin, async (_req, res) => {
+    try {
+      const health = await checkOllamaHealth();
+      let chatStatus: "ok" | "error" = "ok";
+      let reply = "";
+      let error = "";
+
+      try {
+        reply = await generateChatFromOllama([{ role: "user", content: "Reply with READY only." }]);
+      } catch (chatError: any) {
+        chatStatus = "error";
+        error = chatError?.message || "AI host test failed";
+      }
+
+      res.json({
+        health,
+        chat: {
+          status: chatStatus,
+          reply,
+          error,
+        },
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "AI host test failed" });
+    }
   });
 
   app.get("/api/admin/settings", isAdmin, async (_req, res) => {

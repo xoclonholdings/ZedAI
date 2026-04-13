@@ -28,21 +28,21 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   if (isUser) {
     return (
-      <div className="flex items-start space-x-4 flex-row-reverse max-w-4xl mx-auto">
-        <div className="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl flex items-center justify-center flex-shrink-0">
-          <User className="text-white" size={18} />
+      <div className="mx-auto flex max-w-4xl flex-row-reverse items-start space-x-3">
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-600 to-slate-700">
+          <User className="text-white" size={16} />
         </div>
-        <div className="flex-1 max-w-2xl">
-          <Card className="zed-glass border-white/20 p-6">
-            <div className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap text-foreground leading-relaxed">{message.content}</p>
+        <div className="max-w-xl flex-1">
+          <Card className="zed-glass border-white/20 p-4 md:p-5">
+            <div className="max-w-none">
+              <p className="whitespace-pre-wrap text-sm leading-6 text-foreground md:text-[15px]">{message.content}</p>
             </div>
             
             {attachments.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="mt-3 border-t border-white/10 pt-3">
                 <div className="space-y-2">
                   {attachments.map((file, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-2 rounded-xl bg-white/5">
+                    <div key={index} className="flex items-center space-x-3 rounded-xl bg-white/5 p-2">
                       <div className="text-cyan-400">
                         {getFileIcon(file.mimeType)}
                       </div>
@@ -62,20 +62,20 @@ export default function ChatMessage({ message }: ChatMessageProps) {
   }
 
   return (
-    <div className="flex items-start space-x-4 max-w-4xl mx-auto">
+    <div className="mx-auto flex max-w-4xl items-start space-x-3">
       <div className="flex-1">
-        <Card className="zed-message p-6 ml-4">
-          <div className="flex items-center space-x-2 mb-4">
-            <img src={zLogoPath} alt="Z" className="w-4 h-4" />
-            <span className="text-lg font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">ZED</span>
+        <Card className="zed-message ml-2 p-4 md:p-5">
+          <div className="mb-3 flex items-center space-x-2">
+            <img src={zLogoPath} alt="Z" className="h-3.5 w-3.5" />
+            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-sm font-semibold tracking-[0.14em] text-transparent">ZED</span>
             <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-300">
               <Sparkles size={10} className="mr-1" />
               Assistant
             </Badge>
           </div>
           
-          <div className="prose prose-sm max-w-none">
-            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+          <div className="max-w-none">
+            <p className="whitespace-pre-wrap text-sm leading-6 md:text-[15px]">{message.content}</p>
           </div>
         </Card>
       </div>

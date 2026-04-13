@@ -19,15 +19,15 @@ export default function ChatMessagesList({
   messagesEndRef,
 }: ChatMessagesListProps) {
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6 relative z-10">
+    <div className="relative z-10 flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
       {messages.length === 0 && !isStreaming && !hasStartedTyping ? (
         <ChatEmptyState />
       ) : messages.length === 0 && !isStreaming ? (
-        <div className="max-w-4xl mx-auto rounded-2xl border border-white/10 zed-glass p-6 text-center text-sm text-muted-foreground">
+        <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 zed-glass p-4 text-center text-xs text-muted-foreground md:text-sm">
           Your message was sent. If the response does not appear, refresh the conversation and check Admin logs.
         </div>
       ) : (
-        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
+        <div className="mx-auto max-w-4xl space-y-3 md:space-y-4">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}

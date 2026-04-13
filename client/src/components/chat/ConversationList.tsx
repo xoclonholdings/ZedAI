@@ -40,15 +40,15 @@ export default function ConversationList({
 
   if (visibleConversations.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="py-6 text-center text-muted-foreground">
         <p className="text-sm">No conversations here yet</p>
-        <p className="text-xs">Start a new chat or file one into this project</p>
+        <p className="text-[11px]">Start a new chat or file one into this project</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-2 py-4">
+    <div className="space-y-2 py-3">
       {visibleConversations.map((conversation) => (
         <ConversationListItem
           key={conversation.id}

@@ -45,7 +45,7 @@ export default function ConversationListItem({
 
   return (
     <div
-      className={`group relative p-3 rounded-xl cursor-pointer transition-all zed-button ${
+      className={`group relative cursor-pointer rounded-xl p-2.5 transition-all zed-button ${
         isActive
           ? "zed-glass border-purple-500/50 shadow-lg shadow-purple-500/20"
           : "hover:bg-white/5"
@@ -54,12 +54,12 @@ export default function ConversationListItem({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-foreground truncate mb-1">
+          <h3 className="mb-1 truncate text-sm font-medium text-foreground">
             {conversation.title || "New Conversation"}
           </h3>
 
           {conversation.preview && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
+            <p className="mb-2 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
               {conversation.preview}
             </p>
           )}
@@ -81,7 +81,7 @@ export default function ConversationListItem({
                   e.stopPropagation();
                   onAssignProject(e.target.value || null);
                 }}
-                className="rounded-md border border-white/10 bg-black/50 px-2 py-1 text-[11px] text-muted-foreground"
+                className="rounded-md border border-white/10 bg-black/50 px-2 py-1 text-[10px] text-muted-foreground"
               >
                 <option value="">Inbox</option>
                 {projects.map((project) => (
@@ -93,7 +93,7 @@ export default function ConversationListItem({
 
               {conversation.mode && (
                 <span
-                  className={`text-xs px-2 py-1 rounded-full ${
+                  className={`rounded-full px-2 py-1 text-[10px] ${
                     conversation.mode === "agent"
                       ? "bg-purple-500/20 text-purple-400"
                       : "bg-cyan-500/20 text-cyan-400"

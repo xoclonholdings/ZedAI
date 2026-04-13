@@ -116,9 +116,9 @@ export default function ChatSidebar({
   }
 
   return (
-    <div
+      <div
       className={`${
-        isMobile ? "w-full h-screen" : "w-80 h-full"
+        isMobile ? "w-full h-screen" : "w-72 h-full"
       } flex flex-col relative zed-glass ${
         isMobile ? "" : "border-r"
       } border-purple-500/30 backdrop-blur-xl`}
@@ -142,11 +142,11 @@ export default function ChatSidebar({
         onOpenAdmin={() => navigate("/admin")}
       />
 
-      <div className="flex-1 px-4 overflow-y-auto">
-        <div className="space-y-2 py-4 border-b border-white/10">
+      <div className="flex-1 overflow-y-auto px-3">
+        <div className="space-y-2 border-b border-white/10 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <FolderKanban className="h-4 w-4 text-purple-400" />
+              <FolderKanban className="h-3.5 w-3.5 text-purple-400" />
               Projects
             </div>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 zed-button" onClick={onCreateProject}>
@@ -172,7 +172,7 @@ export default function ChatSidebar({
               <span className="inline-flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: project.color }} />
                 {project.name}
-                <span className="text-xs text-muted-foreground">({project.conversationIds.length})</span>
+                <span className="text-[11px] text-muted-foreground">({project.conversationIds.length})</span>
               </span>
             </button>
           ))}
@@ -194,8 +194,8 @@ export default function ChatSidebar({
       <ChatSidebarUserCard user={user} isUploadingPicture={false} onUpload={() => {}} />
 
       {/* Bottom controls */}
-      <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
-        <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground pt-1">
+      <div className="relative z-10 space-y-1 border-t border-white/10 p-3">
+        <div className="flex items-center justify-center space-x-2 pt-1 text-[11px] text-muted-foreground">
           <Zap size={12} className="text-purple-400" />
           <span>Qwen2.5 via Ollama</span>
           <div className="w-1 h-1 bg-purple-400 rounded-full" />

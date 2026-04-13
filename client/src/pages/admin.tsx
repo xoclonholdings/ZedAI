@@ -116,6 +116,10 @@ export default function Admin() {
   const [logsLoading, setLogsLoading] = useState(false);
   const [securityEvents, setSecurityEvents] = useState<any[]>([]);
   const [securityLoading, setSecurityLoading] = useState(false);
+  const [aiHostTest, setAiHostTest] = useState<{
+    status: "idle" | "testing" | "ok" | "error";
+    detail?: string;
+  }>({ status: "idle" });
 
   useEffect(() => {
     fetchStatus();
@@ -179,6 +183,38 @@ export default function Admin() {
       }
     } catch {}
     setSecurityLoading(false);
+  }
+
+  async function testAiHost() {
+    setAiHostTest({ status: "testing" });
+    try {
+      const res = await fetch("/api/admin/ai-host/test", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "AI host test failed");
+      }
+
+      if (data.chat?.status === "ok") {
+        setAiHostTest({
+          status: "ok",
+          detail: data.chat.reply || "AI host responded successfully.",
+        });
+      } else {
+        setAiHostTest({
+          status: "error",
+          detail: data.chat?.error || "AI host health passed, but chat failed.",
+        });
+      }
+      void fetchStatus();
+    } catch (error: any) {
+      setAiHostTest({
+        status: "error",
+        detail: error.message || "AI host test failed",
+      });
+    }
   }
 
   async function saveRulesetFile() {
@@ -335,13 +371,16 @@ export default function Admin() {
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Bot size={18} className="text-purple-400" />
-                      Ollama AI Engine
+                      AI Host
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-2">
                       <StatusDot online={status.ollama?.status === "online"} />
                       <span className="text-sm capitalize">{status.ollama?.status}</span>
+                      <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]">
+                        {status.ollama?.provider || "ollama"}
+                      </Badge>
                     </div>
                     {status.ollama?.models?.length > 0 ? (
                       <div className="space-y-1">
@@ -354,9 +393,22 @@ export default function Admin() {
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        No models loaded. Run <code className="bg-white/10 px-1 rounded">ollama pull qwen2.5:7b</code>
+                        {status.ollama?.provider === "colab"
+                          ? "Colab bridge is offline. Re-run the notebook warmup cells, then test the AI host."
+                          : <>No models loaded. Run <code className="bg-white/10 px-1 rounded">ollama pull qwen2.5:7b</code></>}
                       </p>
                     )}
+                    <div className="space-y-2">
+                      <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={testAiHost} disabled={aiHostTest.status === "testing"}>
+                        <RefreshCw size={14} className={`mr-1 ${aiHostTest.status === "testing" ? "animate-spin" : ""}`} />
+                        {aiHostTest.status === "testing" ? "Testing..." : "Test AI Host"}
+                      </Button>
+                      {aiHostTest.status !== "idle" && (
+                        <p className={`text-xs ${aiHostTest.status === "ok" ? "text-emerald-300" : aiHostTest.status === "error" ? "text-red-300" : "text-muted-foreground"}`}>
+                          {aiHostTest.detail}
+                        </p>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 

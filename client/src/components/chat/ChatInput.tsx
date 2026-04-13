@@ -89,7 +89,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
           onKeyDown={handleKeyDown}
           placeholder={isRecording ? "Listening…" : "Type a message…"}
           rows={1}
-          className="resize-none bg-black/40 border-white/10 text-white pr-3 rounded-2xl min-h-[44px] max-h-[120px] overflow-y-auto leading-relaxed"
+          className="min-h-[42px] max-h-[120px] resize-none rounded-2xl border-white/10 bg-black/40 pr-3 text-sm leading-6 text-white overflow-y-auto"
           disabled={isLoading}
         />
       </div>
@@ -101,7 +101,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
           size="sm"
           onClick={toggleRecording}
           disabled={isLoading}
-          className={`h-11 w-11 p-0 rounded-xl flex-shrink-0 transition-colors ${
+          className={`h-10 w-10 flex-shrink-0 rounded-xl p-0 transition-colors ${
             isRecording
               ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
               : "text-muted-foreground hover:text-cyan-400 zed-button"
@@ -115,7 +115,7 @@ export default function ChatInput({ onSend, isLoading }: ChatInputProps) {
       <Button
         onClick={handleSend}
         disabled={!input.trim() || !!isLoading}
-        className="h-11 w-11 p-0 rounded-xl flex-shrink-0 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
+        className="h-10 w-10 flex-shrink-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-0 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
       >
         {isLoading ? (
           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

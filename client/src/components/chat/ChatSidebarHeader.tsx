@@ -24,16 +24,16 @@ export default function ChatSidebarHeader({
   onOpenAdmin,
 }: ChatSidebarHeaderProps) {
   return (
-    <div className="p-6 border-b border-white/10 relative z-10">
-      <div className="flex items-center justify-between mb-6">
+    <div className="relative z-10 border-b border-white/10 p-4">
+      <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div>
-            <h2 className="text-xl font-black uppercase tracking-[0.24em]">
+            <h2 className="text-lg font-black uppercase tracking-[0.22em]">
               <span className="bg-gradient-to-r from-pink-500 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
                 ZED
               </span>
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-muted-foreground">
               Enhanced AI Assistant
             </p>
           </div>
@@ -56,12 +56,12 @@ export default function ChatSidebarHeader({
       <Button
         onClick={onCreateConversation}
         disabled={isCreating}
-        className="w-full zed-gradient hover:zed-gradient-hover rounded-xl p-4 text-white font-medium transition-all duration-300"
+        className="w-full rounded-xl p-3 text-sm font-medium text-white transition-all duration-300 zed-gradient hover:zed-gradient-hover"
       >
         <div className="flex items-center justify-center space-x-2">
-          <Plus size={18} />
+          <Plus size={16} />
           <span>New Conversation</span>
-          <Sparkles size={14} className="text-cyan-300" />
+          <Sparkles size={12} className="text-cyan-300" />
         </div>
       </Button>
 
