@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { notifyMessage } from "@/lib/notify";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
 
 import ChatBackground from "./ChatBackground";
 import ChatControls from "./ChatControls";
@@ -13,11 +10,11 @@ import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
 
 import type {
-  AgentTarget,
   Conversation,
   Message,
   File as DBFile,
   ConversationMode,
+  AgentTarget,
 } from "@shared/schema";
 
 interface ChatAreaProps {
@@ -50,55 +47,17 @@ export default function ChatArea({
   const [streamingMessage, setStreamingMessage] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
   const [agentTarget, setAgentTarget] = useState<AgentTarget>("auto");
-  const [stagedConversationId, setStagedConversationId] = useState<string | undefined>(conversationId);
-  const [aiHostAlert, setAiHostAlert] = useState<{ title: string; description: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-  const [, navigate] = useLocation();
   const abortRef = useRef<AbortController | null>(null);
-  const { toast } = useToast();
-  const activeConversationId = conversationId || stagedConversationId;
-
-  useEffect(() => {
-    if (conversationId) {
-      setStagedConversationId(conversationId);
-    }
-  }, [conversationId]);
 
   // Keep localMessages in sync with prop (except when streaming)
   useEffect(() => {
-    if (!isStreaming && messages.length > 0) {
+    if (!isStreaming) {
       setLocalMessages(messages);
     }
   }, [messages, isStreaming]);
-
-  const surfaceAiHostIssue = useCallback(
-    (detail?: string) => {
-      const normalized = (detail || "").toLowerCase();
-      const isTimeout = normalized.includes("timeout");
-      const isOffline =
-        normalized.includes("404") ||
-        normalized.includes("502") ||
-        normalized.includes("fetch failed") ||
-        normalized.includes("econnrefused");
-
-      const title = isTimeout ? "AI host timed out" : isOffline ? "AI host is unavailable" : "AI host error";
-      const description = isTimeout
-        ? "The temporary Colab bridge took too long to answer. Re-open the notebook, warm it up, then test the AI host from Admin."
-        : isOffline
-          ? "The remote model bridge is offline or unreachable. Reconnect the Colab tunnel, then test the AI host from Admin."
-          : detail || "The AI host returned an unexpected error.";
-
-      setAiHostAlert({ title, description });
-      toast({
-        title,
-        description,
-        variant: "destructive",
-      });
-    },
-    [toast],
-  );
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -110,8 +69,8 @@ export default function ChatArea({
 
   const updateModeMutation = useMutation({
     mutationFn: async (mode: ConversationMode) => {
-      if (!activeConversationId) return null;
-      const res = await fetch(`/api/conversations/${activeConversationId}`, {
+      if (!conversationId) return null;
+      const res = await fetch(`/api/conversations/${conversationId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -121,8 +80,8 @@ export default function ChatArea({
       return res.json();
     },
     onSuccess: () => {
-      if (activeConversationId) {
-        queryClient.invalidateQueries({ queryKey: ["/api/conversations", activeConversationId] });
+      if (conversationId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId] });
       }
     },
   });
@@ -135,7 +94,6 @@ export default function ChatArea({
 
     setIsStreaming(true);
     setStreamingMessage("");
-    setAiHostAlert(null);
 
     // Optimistically add user message to local state
     const tempUser: Message = {
@@ -189,11 +147,6 @@ export default function ChatArea({
               const aiMessage: Message = data.message;
               setStreamingMessage("");
               setIsStreaming(false);
-              if (data.type === "done") {
-                setAiHostAlert(null);
-              } else {
-                surfaceAiHostIssue(data.error || aiMessage?.content);
-              }
               // Replace temp user message with real one, add AI message
               setLocalMessages((prev) => {
                 const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
@@ -221,18 +174,13 @@ export default function ChatArea({
       console.error("[Chat] SSE error:", err);
       setStreamingMessage("");
       setIsStreaming(false);
-      const message =
-        typeof err?.message === "string" && err.message.trim().length > 0
-          ? err.message
-          : "The remote AI host could not be reached.";
-      surfaceAiHostIssue(message);
       setLocalMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           conversationId: convId,
           role: "assistant",
-          content: `AI model error: ${message}`,
+          content: "Connection error. Make sure Ollama is running locally.",
           metadata: null,
           createdAt: new Date(),
         },
@@ -270,7 +218,7 @@ export default function ChatArea({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message, conversationId: convId, targetAgent: agentTarget }),
+        body: JSON.stringify({ message, conversationId: convId, agentTarget }),
       });
 
       const data = await res.json();
@@ -287,7 +235,7 @@ export default function ChatArea({
             conversationId: convId,
             role: "assistant" as const,
             content: data.reply || data.error || "No response",
-            metadata: { agent: data.agent, targetAgent: agentTarget },
+            metadata: { agent: data.agent },
             createdAt: new Date(),
           },
         ];
@@ -313,16 +261,20 @@ export default function ChatArea({
     if (!message.trim() || isStreaming) return;
     setHasStartedTyping(true);
 
-    let convId = activeConversationId;
-    let createdConversation = false;
+    let convId = conversationId;
 
     if (!convId) {
       try {
-        convId = await ensureConversation(currentMode, false);
-        if (selectedProjectId && onAssignProject) {
-          await onAssignProject(convId, selectedProjectId);
-        }
-        createdConversation = true;
+        const res = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ title: message.slice(0, 50), mode: currentMode }),
+        });
+        const newConv = await res.json();
+        convId = newConv.id;
+        window.history.pushState({}, "", `/chat/${newConv.id}`);
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       } catch (err) {
         console.error("Failed to create conversation:", err);
         return;
@@ -334,102 +286,22 @@ export default function ChatArea({
     } else {
       await sendChatMessage(message, convId!);
     }
-
-    if (createdConversation && convId) {
-      navigate(`/chat/${convId}`);
-    }
-  }
-
-  async function handleVoiceOpen() {
-    try {
-      const response = await fetch("/api/voice/transcribe", {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await response.json();
-      toast({
-        title: "Voice workflow",
-        description: data.note || "Voice controls are planned and currently browser-first.",
-      });
-    } catch {
-      toast({
-        title: "Voice workflow",
-        description: "Voice controls are planned and currently browser-first.",
-      });
-    }
   }
 
   async function handleModeToggle(mode: ConversationMode) {
     setCurrentMode(mode);
-    if (activeConversationId) {
+    if (conversationId) {
       updateModeMutation.mutate(mode);
     }
   }
 
-  async function ensureConversation(mode: ConversationMode = currentMode, navigateAfterCreate = true) {
-    if (activeConversationId) {
-      return activeConversationId;
-    }
-
-    const res = await fetch("/api/conversations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ title: "New Conversation", mode }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to create conversation");
-    }
-
-    const newConv = await res.json();
-    if (!newConv?.id) {
-      throw new Error("Conversation response did not include an id");
-    }
-
-    const verifyRes = await fetch(`/api/conversations/${newConv.id}`, {
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    if (!verifyRes.ok) {
-      throw new Error(`Conversation verification failed (${verifyRes.status})`);
-    }
-
-    setStagedConversationId(newConv.id);
-    queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-    queryClient.setQueryData(["/api/conversations", newConv.id], newConv);
-    if (navigateAfterCreate) {
-      navigate(`/chat/${newConv.id}`);
-    }
-    return newConv.id as string;
-  }
-
   function handleFileUpload() {
-    if (activeConversationId) {
+    if (conversationId) {
       queryClient.invalidateQueries({
-        queryKey: ["/api/conversations", activeConversationId, "files"],
+        queryKey: ["/api/conversations", conversationId, "files"],
       });
     }
     setShowFileUpload(false);
-  }
-
-  async function handleToggleFileUpload() {
-    if (showFileUpload) {
-      setShowFileUpload(false);
-      return;
-    }
-
-    try {
-      await ensureConversation();
-      setShowFileUpload(true);
-    } catch (error) {
-      toast({
-        title: "Upload unavailable",
-        description: "Could not create a conversation for file upload. Please try again.",
-        variant: "destructive",
-      });
-    }
   }
 
   return (
@@ -439,35 +311,6 @@ export default function ChatArea({
 
         <ChatHeader isMobile={isMobile} onOpenSidebar={onOpenSidebar} />
 
-        {aiHostAlert && (
-          <div className="px-4 pt-3 md:px-6 md:pt-4 relative z-10">
-            <div className="mx-auto flex max-w-4xl items-start justify-between gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-red-200">{aiHostAlert.title}</p>
-                <p className="mt-1 text-xs leading-5 text-red-100/80">{aiHostAlert.description}</p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 border-white/10 bg-black/30 px-3 text-xs"
-                  onClick={() => navigate("/admin")}
-                >
-                  Test in Admin
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  onClick={() => setAiHostAlert(null)}
-                >
-                  Dismiss
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
         <ChatMessagesList
           messages={localMessages}
           isStreaming={isStreaming}
@@ -476,27 +319,24 @@ export default function ChatArea({
           messagesEndRef={messagesEndRef}
         />
 
+        {showFileUpload && conversationId && (
+          <FileUpload
+            conversationId={conversationId}
+            onUpload={handleFileUpload}
+            onClose={() => setShowFileUpload(false)}
+          />
+        )}
+
         <div className="border-t border-white/10 zed-glass p-4 md:p-6 flex-shrink-0 z-10">
           <div className="max-w-4xl mx-auto space-y-3">
-        {showFileUpload && activeConversationId && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-28 z-20 md:inset-x-6 md:bottom-32">
-            <div className="pointer-events-auto mx-auto max-w-4xl">
-              <FileUpload
-                conversationId={activeConversationId}
-                onUpload={handleFileUpload}
-                onClose={() => setShowFileUpload(false)}
-              />
-            </div>
-          </div>
-        )}
-        <ChatControls
-          currentMode={currentMode}
-          onModeToggle={handleModeToggle}
-          onOpenFileUpload={handleToggleFileUpload}
-          onOpenVoice={handleVoiceOpen}
-          agentTarget={agentTarget}
-          onAgentTargetChange={setAgentTarget}
-        />
+            <ChatControls
+              currentMode={currentMode}
+              onModeToggle={handleModeToggle}
+              onOpenFileUpload={() => setShowFileUpload(true)}
+              onOpenVoice={() => {}}
+              agentTarget={agentTarget}
+              onAgentTargetChange={setAgentTarget}
+            />
             <ChatInput
               onSend={handleSend}
               isLoading={isStreaming}

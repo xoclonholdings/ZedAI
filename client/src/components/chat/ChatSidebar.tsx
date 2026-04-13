@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FolderKanban, MessageSquare, Plus, Zap } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
@@ -19,8 +19,8 @@ interface ChatSidebarProps {
   projects: FilingProject[];
   selectedProjectId: string | null;
   onSelectProject: (projectId: string | null) => void;
-  onCreateProject: () => void;
-  onAssignProject: (conversationId: string, projectId: string | null) => void;
+  onCreateProject: () => Promise<void> | void;
+  onAssignProject: (conversationId: string, projectId: string | null) => Promise<void> | void;
   onClose?: () => void;
   isMobile?: boolean;
   onMenuClick?: () => void;
@@ -28,12 +28,10 @@ interface ChatSidebarProps {
 
 interface LocalUser {
   id: string;
-  username?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
-  isAdmin?: boolean;
 }
 
 export default function ChatSidebar({
@@ -62,25 +60,10 @@ export default function ChatSidebar({
       if (!res.ok) throw new Error("Failed to create conversation");
       return res.json();
     },
-    onSuccess: async (data: any) => {
-      const verifyRes = await fetch(`/api/conversations/${data.id}`, {
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      if (!verifyRes.ok) {
-        throw new Error(`Conversation verification failed (${verifyRes.status})`);
-      }
-
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      if (selectedProjectId) {
-        void onAssignProject(data.id, selectedProjectId);
-      }
-      navigate(`/chat/${data.id}`);
+      window.history.pushState({}, "", `/chat/${data.id}`);
       if (isMobile && onClose) onClose();
-    },
-    onError: () => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     },
   });
 
@@ -101,7 +84,7 @@ export default function ChatSidebar({
   async function handleDeleteConversation(id: string) {
     await deleteConversationMutation.mutateAsync(id);
     if (location.includes(id)) {
-      navigate("/chat");
+      window.history.pushState({}, "", "/chat");
     }
   }
 
@@ -128,9 +111,9 @@ export default function ChatSidebar({
   }
 
   return (
-      <div
+    <div
       className={`${
-        isMobile ? "w-full h-screen" : "w-72 h-full"
+        isMobile ? "w-full h-screen" : "w-80 h-full"
       } flex flex-col relative zed-glass ${
         isMobile ? "" : "border-r"
       } border-purple-500/30 backdrop-blur-xl`}
@@ -150,52 +133,57 @@ export default function ChatSidebar({
         onCreateConversation={() => createConversationMutation.mutate()}
         onClose={onClose}
         onCollapse={() => setIsCollapsed(true)}
-        isAdmin={!!user?.isAdmin}
-        onOpenAdmin={() => navigate("/admin")}
       />
 
-      <div className="flex-1 overflow-y-auto px-3">
-        <div className="space-y-2 border-b border-white/10 py-3">
+      <div className="flex-1 px-4 overflow-y-auto">
+        <div className="space-y-3 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <FolderKanban className="h-3.5 w-3.5 text-purple-400" />
-              Projects
-            </div>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 zed-button" onClick={onCreateProject}>
-              <Plus className="h-4 w-4" />
+            <div className="text-sm font-medium text-foreground">Projects</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onCreateProject()}
+              className="h-8 w-8 rounded-xl zed-button p-0 text-muted-foreground hover:text-foreground"
+            >
+              +
             </Button>
           </div>
-          <button
-            onClick={() => onSelectProject(null)}
-            className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-              selectedProjectId === null ? "zed-glass border border-purple-500/30 text-white" : "text-muted-foreground hover:bg-white/5"
-            }`}
-          >
-            Inbox
-          </button>
-          {projects.map((project) => (
+
+          <div className="space-y-2">
             <button
-              key={project.id}
-              onClick={() => onSelectProject(project.id)}
-              className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-                selectedProjectId === project.id ? "zed-glass border border-purple-500/30 text-white" : "text-muted-foreground hover:bg-white/5"
+              onClick={() => onSelectProject(null)}
+              className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+                selectedProjectId === null
+                  ? "border-cyan-400/40 bg-white/10 text-white"
+                  : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
               }`}
             >
-              <span className="inline-flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: project.color }} />
-                {project.name}
-                <span className="text-[11px] text-muted-foreground">({project.conversationIds.length})</span>
-              </span>
+              Inbox
             </button>
-          ))}
+
+            {projects.map((project) => (
+              <button
+                key={project.id}
+                onClick={() => onSelectProject(project.id)}
+                className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+                  selectedProjectId === project.id
+                    ? "border-cyan-400/40 bg-white/10 text-white"
+                    : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {project.name}
+              </button>
+            ))}
+          </div>
         </div>
+
         <ConversationList
           conversations={conversations}
           projects={projects}
           currentPath={location}
           selectedProjectId={selectedProjectId}
           onSelect={(id) => {
-            navigate(`/chat/${id}`);
+            window.history.pushState({}, "", `/chat/${id}`);
             if (isMobile && onClose) onClose();
           }}
           onDelete={handleDeleteConversation}
@@ -206,8 +194,20 @@ export default function ChatSidebar({
       <ChatSidebarUserCard user={user} isUploadingPicture={false} onUpload={() => {}} />
 
       {/* Bottom controls */}
-      <div className="relative z-10 space-y-1 border-t border-white/10 p-3">
-        <div className="flex items-center justify-center space-x-2 pt-1 text-[11px] text-muted-foreground">
+      <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
+        <SettingsModal />
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/admin")}
+          className="w-full justify-start zed-button text-muted-foreground hover:text-purple-400"
+        >
+          <LayoutDashboard className="mr-2 h-4 w-4" />
+          Admin Panel
+        </Button>
+
+        <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground pt-1">
           <Zap size={12} className="text-purple-400" />
           <span>Qwen2.5 via Ollama</span>
           <div className="w-1 h-1 bg-purple-400 rounded-full" />
