@@ -11,6 +11,9 @@ interface ChatMessagesListProps {
   messagesEndRef: React.RefObject<HTMLDivElement>;
   onCopyMessage?: (message: Message) => void;
   onEditMessage?: (message: Message) => void;
+  compact?: boolean;
+  fontSize?: "small" | "medium" | "large";
+  showTimestamps?: boolean;
 }
 
 export default function ChatMessagesList({
@@ -21,9 +24,12 @@ export default function ChatMessagesList({
   messagesEndRef,
   onCopyMessage,
   onEditMessage,
+  compact = false,
+  fontSize = "medium",
+  showTimestamps = false,
 }: ChatMessagesListProps) {
   return (
-    <div className="relative z-10 flex-1 overflow-y-auto px-4 py-3 md:px-6 md:py-4">
+    <div className={`relative z-10 flex-1 overflow-y-auto px-4 md:px-6 ${compact ? "py-2 md:py-3" : "py-3 md:py-4"}`}>
       {messages.length === 0 && !isStreaming && !hasStartedTyping ? (
         <ChatEmptyState />
       ) : messages.length === 0 && !isStreaming ? (
@@ -31,13 +37,16 @@ export default function ChatMessagesList({
           Your message was sent. If the response does not appear, refresh the conversation and check Admin logs.
         </div>
       ) : (
-        <div className="mx-auto max-w-4xl space-y-3 md:space-y-4">
+        <div className={`mx-auto max-w-4xl ${compact ? "space-y-1.5 md:space-y-2" : "space-y-3 md:space-y-4"}`}>
           {messages.map((message) => (
             <ChatMessage
               key={message.id}
               message={message}
               onCopy={onCopyMessage}
               onEdit={message.role === "user" ? onEditMessage : undefined}
+              compact={compact}
+              fontSize={fontSize}
+              showTimestamp={showTimestamps}
             />
           ))}
         </div>

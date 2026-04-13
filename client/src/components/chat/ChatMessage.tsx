@@ -7,6 +7,9 @@ interface ChatMessageProps {
   message: Message;
   onCopy?: (message: Message) => void;
   onEdit?: (message: Message) => void;
+  compact?: boolean;
+  fontSize?: "small" | "medium" | "large";
+  showTimestamp?: boolean;
 }
 
 type MessageAttachment = {
@@ -15,11 +18,28 @@ type MessageAttachment = {
   size: number;
 };
 
-export default function ChatMessage({ message, onCopy, onEdit }: ChatMessageProps) {
+const FONT_CLASS: Record<NonNullable<ChatMessageProps["fontSize"]>, string> = {
+  small: "text-xs leading-6",
+  medium: "text-sm leading-7",
+  large: "text-base leading-8",
+};
+
+export default function ChatMessage({
+  message,
+  onCopy,
+  onEdit,
+  compact = false,
+  fontSize = "medium",
+  showTimestamp = false,
+}: ChatMessageProps) {
   const isUser = message.role === "user";
   const attachments = Array.isArray((message.metadata as any)?.attachments)
     ? ((message.metadata as any).attachments as MessageAttachment[])
     : [];
+  const bodyClass = FONT_CLASS[fontSize];
+  const timestamp = message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+  const rowPadding = compact ? "py-1.5" : "py-3";
+  const metaPadding = compact ? "px-0.5" : "px-1";
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith('image/')) return <Image size={14} />;
@@ -29,15 +49,16 @@ export default function ChatMessage({ message, onCopy, onEdit }: ChatMessageProp
 
   if (isUser) {
     return (
-      <div className="flex max-w-4xl items-start gap-3 py-3">
+      <div className={`flex max-w-4xl items-start gap-3 ${rowPadding}`}>
         <div className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5">
           <User className="text-white" size={18} />
         </div>
         <div className="max-w-[72%] space-y-3">
-          <div className="inline-block max-w-full px-1 py-0.5 text-sm leading-7 text-foreground/95 whitespace-pre-wrap">
+          <div className={`inline-block max-w-full py-0.5 text-foreground/95 whitespace-pre-wrap ${bodyClass} ${metaPadding}`}>
             {message.content}
           </div>
-          <div className="flex items-center gap-3 px-1 text-[11px] text-muted-foreground">
+          <div className={`flex items-center gap-3 text-[11px] text-muted-foreground ${metaPadding}`}>
+            {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
             {onCopy && (
               <button type="button" onClick={() => onCopy(message)} className="hover:text-foreground">
                 <Copy size={12} className="mr-1 inline" />
@@ -73,7 +94,7 @@ export default function ChatMessage({ message, onCopy, onEdit }: ChatMessageProp
   }
 
   return (
-    <div className="flex max-w-4xl justify-end py-3">
+    <div className={`flex max-w-4xl justify-end ${rowPadding}`}>
       <div className="max-w-[72%]">
         <div className="mb-2 flex items-center justify-end gap-2 text-xs">
           <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-300">
@@ -86,10 +107,11 @@ export default function ChatMessage({ message, onCopy, onEdit }: ChatMessageProp
           <img src={zLogoPath} alt="Z" className="h-3.5 w-3.5" />
         </div>
 
-        <div className="ml-auto inline-block max-w-full px-1 py-0.5 text-sm leading-7 text-foreground/95 whitespace-pre-wrap">
+        <div className={`ml-auto inline-block max-w-full py-0.5 text-foreground/95 whitespace-pre-wrap ${bodyClass} ${metaPadding}`}>
           {message.content}
         </div>
-        <div className="flex items-center justify-end gap-3 px-1 text-[11px] text-muted-foreground">
+        <div className={`flex items-center justify-end gap-3 text-[11px] text-muted-foreground ${metaPadding}`}>
+          {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
           {onCopy && (
             <button type="button" onClick={() => onCopy(message)} className="hover:text-foreground">
               <Copy size={12} className="mr-1 inline" />

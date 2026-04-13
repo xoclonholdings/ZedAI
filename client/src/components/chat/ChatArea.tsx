@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { notifyMessage } from "@/lib/notify";
+import { useAuth } from "@/components/auth/UseAuth";
 
 import ChatBackground from "./ChatBackground";
 import ChatControls from "./ChatControls";
@@ -38,6 +39,7 @@ export default function ChatArea({
   isMobile = false,
   onOpenSidebar,
 }: ChatAreaProps) {
+  const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const [currentMode, setCurrentMode] = useState<ConversationMode>(
@@ -53,6 +55,9 @@ export default function ChatArea({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
+  const compactMessages = !!user?.personalization?.compactMessages;
+  const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
+  const showTimestamps = !!user?.personalization?.showTimestamps;
 
   // Keep localMessages in sync with prop (except when streaming)
   useEffect(() => {
@@ -361,6 +366,9 @@ export default function ChatArea({
           messagesEndRef={messagesEndRef}
           onCopyMessage={handleCopyMessage}
           onEditMessage={handleEditMessage}
+          compact={compactMessages}
+          fontSize={fontSize}
+          showTimestamps={showTimestamps}
         />
 
         {showFileUpload && conversationId && (
