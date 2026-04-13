@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth/UseAuth";
 import { useAppSettings } from "@/hooks/useAppSettings";
-import zedLogo from "@assets/Zed_logo.png";
+import { zedLogoSrc } from "@/lib/zedLogo";
 import AdminSecuritySettings from "@/components/settings/AdminSecuritySettings";
 import IntegrationSettings from "@/components/settings/IntegrationSettings";
 import PersonalizationSettings from "@/components/settings/PersonalizationSettings";
@@ -245,7 +245,7 @@ export default function Admin() {
             Back
           </Button>
           <div className="flex items-center gap-2">
-            <img src={zedLogo} alt="ZED" className="w-6 h-6 object-contain" />
+            <img src={zedLogoSrc} alt="ZED" className="w-6 h-6 object-contain" />
             <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
               ZED Admin
             </span>
