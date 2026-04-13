@@ -1,4 +1,3 @@
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User, FileText, Image, BarChart, Sparkles } from "lucide-react";
 import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
@@ -28,56 +27,48 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
   if (isUser) {
     return (
-      <div className="flex items-start space-x-4 flex-row-reverse max-w-4xl mx-auto">
-        <div className="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl flex items-center justify-center flex-shrink-0">
+      <div className="flex max-w-4xl flex-row-reverse items-start gap-3 border-b border-white/5 py-4">
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5">
           <User className="text-white" size={18} />
         </div>
-        <div className="flex-1 max-w-2xl">
-          <Card className="zed-glass border-white/20 p-6">
-            <div className="prose prose-sm max-w-none">
-              <p className="whitespace-pre-wrap text-foreground leading-relaxed">{message.content}</p>
-            </div>
-            
-            {attachments.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <div className="space-y-2">
-                  {attachments.map((file, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-2 rounded-xl bg-white/5">
-                      <div className="text-cyan-400">
-                        {getFileIcon(file.mimeType)}
-                      </div>
-                      <span className="truncate text-sm text-foreground">{file.name}</span>
-                      <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-300">
-                        {(file.size / 1024 / 1024).toFixed(1)} MB
-                      </Badge>
-                    </div>
-                  ))}
+        <div className="flex-1 space-y-3">
+          <div className="text-sm leading-7 text-foreground/95 whitespace-pre-wrap">{message.content}</div>
+
+          {attachments.length > 0 && (
+            <div className="space-y-2 border-l border-cyan-500/20 pl-3">
+              {attachments.map((file, index) => (
+                <div key={index} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+                  <div className="text-cyan-400">
+                    {getFileIcon(file.mimeType)}
+                  </div>
+                  <span className="truncate text-sm text-foreground">{file.name}</span>
+                  <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-300">
+                    {(file.size / 1024 / 1024).toFixed(1)} MB
+                  </Badge>
                 </div>
-              </div>
-            )}
-          </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-start space-x-4 max-w-4xl mx-auto">
-      <div className="flex-1">
-        <Card className="zed-message p-6 ml-4">
-          <div className="flex items-center space-x-2 mb-4">
-            <img src={zLogoPath} alt="Z" className="w-4 h-4" />
-            <span className="text-lg font-semibold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">ZED</span>
-            <Badge variant="outline" className="text-xs border-purple-500/30 text-purple-300">
-              <Sparkles size={10} className="mr-1" />
-              Assistant
-            </Badge>
-          </div>
-          
-          <div className="prose prose-sm max-w-none">
-            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-          </div>
-        </Card>
+    <div className="max-w-4xl border-b border-white/5 py-4">
+      <div className="mb-3 flex items-center gap-2 text-xs">
+        <img src={zLogoPath} alt="Z" className="h-3.5 w-3.5" />
+        <span className="font-semibold uppercase tracking-[0.18em] bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+          ZED
+        </span>
+        <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-300">
+          <Sparkles size={10} className="mr-1" />
+          Assistant
+        </Badge>
+      </div>
+
+      <div className="pl-5 text-sm leading-7 text-foreground/95 whitespace-pre-wrap">
+        {message.content}
       </div>
     </div>
   );

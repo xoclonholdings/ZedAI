@@ -5,7 +5,6 @@ import { LayoutDashboard, MessageSquare, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
-import SettingsModal from "@/components/settings/SettingsModal";
 
 import ChatSidebarHeader from "./ChatSidebarHeader";
 import ConversationList from "./ConversationList";
@@ -195,8 +194,6 @@ export default function ChatSidebar({
 
       {/* Bottom controls */}
       <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
-        <SettingsModal />
-
         <Button
           variant="ghost"
           size="sm"
