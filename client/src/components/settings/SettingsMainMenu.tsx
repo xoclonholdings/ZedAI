@@ -4,14 +4,11 @@ import {
   ChevronRight,
   Lock,
   FolderKanban,
-  User,
-  Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
 interface SettingsMainMenuProps {
-  isAdmin?: boolean;
   onNavigate: (section: string) => void;
 }
 
@@ -43,7 +40,6 @@ const menuItems = [
 ];
 
 export default function SettingsMainMenu({
-  isAdmin = false,
   onNavigate,
 }: SettingsMainMenuProps) {
   return (
@@ -62,20 +58,6 @@ export default function SettingsMainMenu({
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Button>
       ))}
-
-      {isAdmin && (
-        <Button
-          variant="ghost"
-          onClick={() => onNavigate("admin")}
-          className="w-full justify-between p-4 text-left zed-glass rounded-xl"
-        >
-          <div className="flex items-center space-x-3">
-            <Users className="h-5 w-5 text-green-400" />
-            <span>Admin Panel</span>
-          </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      )}
     </div>
   );
 }
