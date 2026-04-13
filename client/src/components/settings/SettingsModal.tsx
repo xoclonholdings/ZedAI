@@ -16,6 +16,7 @@ import { useAppSettings } from "@/hooks/useAppSettings";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
 import IntegrationSettings from "./IntegrationSettings";
+import MyMemorySettings from "./MyMemorySettings";
 import NotificationsSettings from "./NotificationsSettings";
 import PersonalizationSettings from "./PersonalizationSettings";
 import RulesSettings from "./RulesSettings";
@@ -147,6 +148,13 @@ export default function SettingsModal() {
             </div>
           )}
 
+          {activeSection === "memory" && (
+            <div>
+              <BackButton />
+              <MyMemorySettings />
+            </div>
+          )}
+
           {activeSection === "security" && (
             <div>
               <BackButton />
@@ -158,6 +166,25 @@ export default function SettingsModal() {
             <div>
               <BackButton />
               <IntegrationSettings />
+            </div>
+          )}
+
+          {activeSection === "archived" && (
+            <div>
+              <BackButton />
+              <Card className="zed-glass border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Archive className="h-5 w-5" />
+                    Archived Chats
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    No archived conversations yet. Conversations you archive will appear here.
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           )}
         </div>

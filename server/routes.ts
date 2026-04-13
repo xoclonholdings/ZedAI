@@ -239,6 +239,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/knowledge/personal-base", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { MemoryService } = await import("./services/memoryService");
+      const items = await MemoryService.getProjectMemory(userId);
+      const item =
+        items.find((entry) => (entry.type || "").toLowerCase() === "profile" && entry.isActive !== false) ||
+        items.find((entry) => (entry.type || "").toLowerCase() === "profile") ||
+        null;
+      res.json({ item });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch personal base memory" });
+    }
+  });
+
+  app.get("/api/knowledge/core-memory", isAdmin, async (_req: any, res) => {
+    try {
+      const { MemoryService } = await import("./services/memoryService");
+      const items = await MemoryService.getAllCoreMemory();
+      res.json({ items });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch core memory" });
+    }
+  });
+
+  app.put("/api/knowledge/core-memory/:key", isAdmin, async (req: any, res) => {
+    try {
+      const { MemoryService } = await import("./services/memoryService");
+      const item = await MemoryService.setCoreMemory({
+        key: req.params.key,
+        value: String(req.body?.value || ""),
+        description: req.body?.description || "",
+        adminOnly: req.body?.adminOnly ?? true,
+      });
+      res.json({ item });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update core memory" });
+    }
+  });
+
   app.post("/api/knowledge/project-memory", isAuthenticated, async (req: any, res) => {
     try {
       await ensureSessionUserInDatabase(req);
@@ -257,6 +297,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ item });
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to create project memory" });
+    }
+  });
+
+  app.put("/api/knowledge/personal-base", isAuthenticated, async (req: any, res) => {
+    try {
+      await ensureSessionUserInDatabase(req);
+      const userId = req.user.claims.sub;
+      const { MemoryService } = await import("./services/memoryService");
+      const existing = (await MemoryService.getProjectMemory(userId)).find(
+        (entry) => (entry.type || "").toLowerCase() === "profile",
+      );
+
+      const payload = {
+        userId,
+        name: req.body?.name || "Personal Base Memory",
+        description: req.body?.description || "User-owned profile, preferences, goals, and working context.",
+        content: req.body?.content || "",
+        type: "profile",
+        isActive: req.body?.isActive ?? true,
+      };
+
+      const item = existing
+        ? await MemoryService.updateProjectMemory(existing.id, payload)
+        : await MemoryService.createProjectMemory(insertProjectMemorySchema.parse(payload));
+
+      res.json({ item });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to save personal base memory" });
     }
   });
 
@@ -308,6 +376,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ item });
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to create scratchpad memory" });
+    }
+  });
+
+  app.delete("/api/knowledge/scratchpad/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { MemoryService } = await import("./services/memoryService");
+      const success = await MemoryService.deleteScratchpadMemory(req.params.id);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to delete scratchpad memory" });
     }
   });
 

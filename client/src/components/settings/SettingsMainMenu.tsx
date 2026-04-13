@@ -1,7 +1,7 @@
 import {
   Archive,
-  Bell,
   ChevronRight,
+  Brain,
   Lock,
   Shield,
   SlidersHorizontal,
@@ -18,26 +18,32 @@ interface SettingsMainMenuProps {
 
 const menuItems = [
   {
-    key: "rules",
-    label: "Rules & Parameters",
-    icon: SlidersHorizontal,
-    color: "text-purple-400",
-  },
-  {
-    key: "personalization",
-    label: "Personalization",
+    key: "preferences",
+    label: "Preferences",
     icon: User,
     color: "text-cyan-400",
   },
   {
-    key: "notifications",
-    label: "Notifications",
-    icon: Bell,
-    color: "text-yellow-400",
+    key: "memory",
+    label: "My Memory",
+    icon: Brain,
+    color: "text-blue-400",
   },
   {
-    key: "data",
-    label: "Data Controls",
+    key: "workspace",
+    label: "Workspace",
+    icon: SlidersHorizontal,
+    color: "text-purple-400",
+  },
+  {
+    key: "security",
+    label: "Security",
+    icon: Lock,
+    color: "text-red-400",
+  },
+  {
+    key: "integrations",
+    label: "Integrations",
     icon: Shield,
     color: "text-pink-400",
   },
@@ -46,12 +52,6 @@ const menuItems = [
     label: "Archived Chats",
     icon: Archive,
     color: "text-orange-400",
-  },
-  {
-    key: "security",
-    label: "Security",
-    icon: Lock,
-    color: "text-red-400",
   },
 ];
 

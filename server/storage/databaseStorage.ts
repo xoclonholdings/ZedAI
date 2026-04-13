@@ -227,6 +227,10 @@ class DatabaseStorage implements IStorage {
     return this.memory.createScratchpadMemory(data);
   }
 
+  async deleteScratchpadMemory(id: string): Promise<boolean> {
+    return this.memory.deleteScratchpadMemory(id);
+  }
+
   async cleanupExpiredScratchpadMemory(): Promise<void> {
     return this.memory.cleanupExpiredScratchpadMemory();
   }

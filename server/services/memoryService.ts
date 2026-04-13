@@ -135,6 +135,10 @@ export class MemoryService {
     });
   }
 
+  static async deleteScratchpadMemory(id: string): Promise<boolean> {
+    return await storage.deleteScratchpadMemory(id);
+  }
+
   // Daily reset for scratchpad memory
   static async resetScratchpadMemory(): Promise<void> {
     await storage.cleanupExpiredScratchpadMemory();

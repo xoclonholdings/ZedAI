@@ -224,6 +224,32 @@ export class MemoryDatabaseStorage {
     return memory;
   }
 
+  async deleteScratchpadMemory(id: string): Promise<boolean> {
+    try {
+      const [memory] = await db
+        .select()
+        .from(scratchpadMemory)
+        .where(eq(scratchpadMemory.id, id));
+
+      const result = await db
+        .delete(scratchpadMemory)
+        .where(eq(scratchpadMemory.id, id));
+
+      const success = (result.rowCount ?? 0) > 0;
+
+      if (success && memory) {
+        memoryCache.delete(
+          this.generateCacheKey("scratchpad_memory", memory.userId)
+        );
+      }
+
+      return success;
+    } catch (error) {
+      console.error("[MEMORY STORAGE] deleteScratchpadMemory failed:", error);
+      return false;
+    }
+  }
+
   async cleanupExpiredScratchpadMemory(): Promise<void> {
     try {
       const now = new Date();

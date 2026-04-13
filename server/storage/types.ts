@@ -67,6 +67,7 @@ export interface IStorage {
 
   getScratchpadMemoryByUser(userId: string): Promise<ScratchpadMemory[]>;
   createScratchpadMemory(data: InsertScratchpadMemory): Promise<ScratchpadMemory>;
+  deleteScratchpadMemory(id: string): Promise<boolean>;
   cleanupExpiredScratchpadMemory(): Promise<void>;
 
   searchConversations(userId: string, query: string): Promise<Conversation[]>;

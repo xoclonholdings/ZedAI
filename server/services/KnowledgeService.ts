@@ -68,6 +68,8 @@ const CORE_PRIORITY_KEYS = [
   "default_context",
 ] as const;
 
+const PERSONAL_MEMORY_TYPES = new Set(["profile", "identity", "preferences", "goals"]);
+
 const LANE_DIRECTIVES: Record<KnowledgeLane, string> = {
   chat:
     "Answer as ZED using the supplied knowledge context first. Prefer specific, decisive answers over generic filler. Do not ask the user to repeat information already present in memory unless it is conflicting or missing a critical detail.",
@@ -108,6 +110,7 @@ function scoreProjectMemory(
   keywords: string[],
 ): number {
   return (
+    (PERSONAL_MEMORY_TYPES.has((entry.type || "").toLowerCase()) ? 5 : 0) +
     scoreText(entry.name, keywords) * 4 +
     scoreText(entry.description || "", keywords) * 2 +
     scoreText(entry.type || "", keywords) * 2 +
@@ -221,6 +224,10 @@ export class KnowledgeService {
       .filter((entry) => CORE_PRIORITY_KEYS.includes(entry.key as (typeof CORE_PRIORITY_KEYS)[number]))
       .sort((a, b) => CORE_PRIORITY_KEYS.indexOf(a.key as (typeof CORE_PRIORITY_KEYS)[number]) - CORE_PRIORITY_KEYS.indexOf(b.key as (typeof CORE_PRIORITY_KEYS)[number]));
 
+    const personalProjectMemory = allProjectMemory
+      .filter((entry) => PERSONAL_MEMORY_TYPES.has((entry.type || "").toLowerCase()) && entry.isActive !== false)
+      .slice(0, 3);
+
     const relevantProjectMemory = allProjectMemory
       .map((entry) => ({
         entry,
@@ -230,6 +237,10 @@ export class KnowledgeService {
       .sort((a, b) => b.score - a.score || Number(new Date(b.entry.updatedAt)) - Number(new Date(a.entry.updatedAt)))
       .slice(0, 4)
       .map((item) => item.entry);
+
+    const mergedProjectMemory = Array.from(
+      new Map([...personalProjectMemory, ...relevantProjectMemory].map((entry) => [entry.id, entry])).values(),
+    ).slice(0, 5);
 
     const relevantScratchpad = allScratchpadMemory
       .filter((entry) => !params.conversationId || !entry.conversationId || entry.conversationId === params.conversationId)
@@ -250,8 +261,8 @@ export class KnowledgeService {
     const rulesetBlock = formatCoreMemory(rulesetMemory);
 
     const projectBlock =
-      relevantProjectMemory.length > 0
-        ? relevantProjectMemory
+      mergedProjectMemory.length > 0
+        ? mergedProjectMemory
             .map(
               (entry) =>
                 `### ${entry.name}\nType: ${entry.type}\n${entry.description ? `Description: ${entry.description}\n` : ""}${safeExcerpt(entry.content, 700)}`,
@@ -293,7 +304,7 @@ export class KnowledgeService {
       counts: {
         core: relevantCoreMemory.length,
         ruleset: rulesetMemory.length,
-        project: relevantProjectMemory.length,
+        project: mergedProjectMemory.length,
         scratchpad: relevantScratchpad.length,
         retrieved: retrievedEntries.length,
       },
