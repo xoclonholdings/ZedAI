@@ -14,6 +14,7 @@ import {
   Lock,
   Mail,
   Phone,
+  Plus,
   RefreshCw,
   Save,
   Server,
@@ -21,6 +22,7 @@ import {
   Sparkles,
   ThumbsDown,
   ThumbsUp,
+  Trash2,
   Waves,
   Zap,
 } from "lucide-react";
@@ -180,6 +182,23 @@ export default function Admin() {
   const [knowledgeQuery, setKnowledgeQuery] = useState("");
   const [knowledgeResults, setKnowledgeResults] = useState<any | null>(null);
   const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [projectMemoryItems, setProjectMemoryItems] = useState<any[]>([]);
+  const [scratchpadItems, setScratchpadItems] = useState<any[]>([]);
+  const [knowledgeAdminLoading, setKnowledgeAdminLoading] = useState(false);
+  const [projectMemoryDraft, setProjectMemoryDraft] = useState({
+    id: "",
+    name: "",
+    description: "",
+    content: "",
+    type: "context",
+    isActive: true,
+  });
+  const [projectMemorySaveStatus, setProjectMemorySaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [scratchpadDraft, setScratchpadDraft] = useState({
+    content: "",
+    tags: "",
+  });
+  const [scratchpadSaveStatus, setScratchpadSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const [approvals, setApprovals] = useState<any[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
@@ -197,7 +216,10 @@ export default function Admin() {
 
   useEffect(() => {
     if (section === "ruleset" && Object.keys(ruleset).length === 0) fetchRuleset();
-    if (section === "knowledge" && !knowledgeOverview) fetchKnowledgeOverview();
+    if (section === "knowledge") {
+      if (!knowledgeOverview) fetchKnowledgeOverview();
+      if (projectMemoryItems.length === 0 && scratchpadItems.length === 0) fetchKnowledgeAdminData();
+    }
     if (section === "logs") fetchLogs();
     if (section === "approvals") fetchApprovals();
     if (section === "security") fetchSecurityLog();
@@ -249,6 +271,27 @@ export default function Admin() {
     } catch {}
   }
 
+  async function fetchKnowledgeAdminData() {
+    setKnowledgeAdminLoading(true);
+    try {
+      const [projectRes, scratchpadRes] = await Promise.all([
+        fetch("/api/knowledge/project-memory", { credentials: "include" }),
+        fetch("/api/knowledge/scratchpad", { credentials: "include" }),
+      ]);
+
+      if (projectRes.ok) {
+        const data = await projectRes.json();
+        setProjectMemoryItems(data.items || []);
+      }
+
+      if (scratchpadRes.ok) {
+        const data = await scratchpadRes.json();
+        setScratchpadItems(data.items || []);
+      }
+    } catch {}
+    setKnowledgeAdminLoading(false);
+  }
+
   async function searchKnowledge() {
     if (!knowledgeQuery.trim()) return;
     setKnowledgeLoading(true);
@@ -261,6 +304,105 @@ export default function Admin() {
       }
     } catch {}
     setKnowledgeLoading(false);
+  }
+
+  async function saveProjectMemoryItem() {
+    if (!projectMemoryDraft.name.trim() || !projectMemoryDraft.content.trim()) {
+      setProjectMemorySaveStatus("error");
+      return;
+    }
+
+    setProjectMemorySaveStatus("saving");
+    try {
+      const isEditing = Boolean(projectMemoryDraft.id);
+      const res = await fetch(
+        isEditing ? `/api/knowledge/project-memory/${projectMemoryDraft.id}` : "/api/knowledge/project-memory",
+        {
+          method: isEditing ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            name: projectMemoryDraft.name,
+            description: projectMemoryDraft.description,
+            content: projectMemoryDraft.content,
+            type: projectMemoryDraft.type,
+            isActive: projectMemoryDraft.isActive,
+          }),
+        },
+      );
+
+      if (!res.ok) throw new Error("Failed to save project memory");
+
+      await fetchKnowledgeAdminData();
+      await fetchKnowledgeOverview();
+      setProjectMemoryDraft({
+        id: "",
+        name: "",
+        description: "",
+        content: "",
+        type: "context",
+        isActive: true,
+      });
+      setProjectMemorySaveStatus("saved");
+      setTimeout(() => setProjectMemorySaveStatus("idle"), 2000);
+    } catch {
+      setProjectMemorySaveStatus("error");
+    }
+  }
+
+  async function deleteProjectMemoryItem(id: string) {
+    try {
+      const res = await fetch(`/api/knowledge/project-memory/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      await fetchKnowledgeAdminData();
+      await fetchKnowledgeOverview();
+      if (projectMemoryDraft.id === id) {
+        setProjectMemoryDraft({
+          id: "",
+          name: "",
+          description: "",
+          content: "",
+          type: "context",
+          isActive: true,
+        });
+      }
+    } catch {}
+  }
+
+  async function saveScratchpadItem() {
+    if (!scratchpadDraft.content.trim()) {
+      setScratchpadSaveStatus("error");
+      return;
+    }
+
+    setScratchpadSaveStatus("saving");
+    try {
+      const res = await fetch("/api/knowledge/scratchpad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          content: scratchpadDraft.content,
+          tags: scratchpadDraft.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean),
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save scratchpad");
+
+      await fetchKnowledgeAdminData();
+      await fetchKnowledgeOverview();
+      setScratchpadDraft({ content: "", tags: "" });
+      setScratchpadSaveStatus("saved");
+      setTimeout(() => setScratchpadSaveStatus("idle"), 2000);
+    } catch {
+      setScratchpadSaveStatus("error");
+    }
   }
 
   async function fetchApprovals() {
@@ -875,6 +1017,218 @@ export default function Admin() {
                 )}
               </CardContent>
             </Card>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card className="zed-glass border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Plus size={16} className="text-emerald-300" />
+                    Project Memory
+                  </CardTitle>
+                  <CardDescription>
+                    Curate durable business, product, and operating knowledge that ZED should retrieve later.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <LabeledField
+                      label="Name"
+                      value={projectMemoryDraft.name}
+                      onChange={(value) => setProjectMemoryDraft((prev) => ({ ...prev, name: value }))}
+                      placeholder="ZWAP Go-To-Market"
+                    />
+                    <LabeledField
+                      label="Type"
+                      value={projectMemoryDraft.type}
+                      onChange={(value) => setProjectMemoryDraft((prev) => ({ ...prev, type: value }))}
+                      placeholder="context"
+                    />
+                  </div>
+                  <label className="space-y-2">
+                    <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Description</span>
+                    <Textarea
+                      rows={3}
+                      value={projectMemoryDraft.description}
+                      onChange={(e) => setProjectMemoryDraft((prev) => ({ ...prev, description: e.target.value }))}
+                      className="zed-glass border-white/10 text-sm"
+                      placeholder="Why this knowledge matters"
+                    />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Content</span>
+                    <Textarea
+                      rows={8}
+                      value={projectMemoryDraft.content}
+                      onChange={(e) => setProjectMemoryDraft((prev) => ({ ...prev, content: e.target.value }))}
+                      className="zed-glass border-white/10 text-sm"
+                      placeholder="Write the durable knowledge ZED should remember"
+                    />
+                  </label>
+                  <ToggleField
+                    label="Active"
+                    checked={projectMemoryDraft.isActive}
+                    onChange={(next) => setProjectMemoryDraft((prev) => ({ ...prev, isActive: next }))}
+                    description="Inactive entries remain stored but won’t be prioritized."
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button onClick={saveProjectMemoryItem}>
+                      <Save size={14} className="mr-1" />
+                      {projectMemorySaveStatus === "saving"
+                        ? "Saving..."
+                        : projectMemoryDraft.id
+                          ? "Update Memory"
+                          : "Create Memory"}
+                    </Button>
+                    {projectMemoryDraft.id ? (
+                      <Button
+                        variant="outline"
+                        className="border-white/10"
+                        onClick={() =>
+                          setProjectMemoryDraft({
+                            id: "",
+                            name: "",
+                            description: "",
+                            content: "",
+                            type: "context",
+                            isActive: true,
+                          })
+                        }
+                      >
+                        Cancel Edit
+                      </Button>
+                    ) : null}
+                    {projectMemorySaveStatus === "error" ? (
+                      <span className="text-xs text-red-400">Name and content are required.</span>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="zed-glass border-white/10">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Edit3 size={16} className="text-purple-300" />
+                    Scratchpad Capture
+                  </CardTitle>
+                  <CardDescription>
+                    Store temporary working context that should influence near-term reasoning without becoming permanent canon.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <label className="space-y-2">
+                    <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Working Note</span>
+                    <Textarea
+                      rows={8}
+                      value={scratchpadDraft.content}
+                      onChange={(e) => setScratchpadDraft((prev) => ({ ...prev, content: e.target.value }))}
+                      className="zed-glass border-white/10 text-sm"
+                      placeholder="Capture active priorities, temporary facts, or immediate session context"
+                    />
+                  </label>
+                  <LabeledField
+                    label="Tags"
+                    value={scratchpadDraft.tags}
+                    onChange={(value) => setScratchpadDraft((prev) => ({ ...prev, tags: value }))}
+                    placeholder="launch, zwap, campaign"
+                  />
+                  <div className="flex items-center gap-3">
+                    <Button onClick={saveScratchpadItem}>
+                      <Save size={14} className="mr-1" />
+                      {scratchpadSaveStatus === "saving" ? "Saving..." : "Save Scratchpad"}
+                    </Button>
+                    {scratchpadSaveStatus === "error" ? (
+                      <span className="text-xs text-red-400">Scratchpad content is required.</span>
+                    ) : null}
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/25 p-4 text-xs leading-5 text-muted-foreground">
+                    Scratchpad entries expire automatically and are intended for active work, not permanent foundational knowledge.
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Card className="zed-glass border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-base">Stored Project Memory</CardTitle>
+                  <CardDescription>Edit or remove durable knowledge entries.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {knowledgeAdminLoading ? (
+                    <div className="text-sm text-muted-foreground">Loading memory…</div>
+                  ) : projectMemoryItems.length > 0 ? (
+                    projectMemoryItems.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-white/10 bg-black/25 p-4">
+                        <div className="mb-2 flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.type}
+                              {item.description ? ` • ${item.description}` : ""}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-white/10"
+                              onClick={() =>
+                                setProjectMemoryDraft({
+                                  id: item.id,
+                                  name: item.name,
+                                  description: item.description || "",
+                                  content: item.content,
+                                  type: item.type || "context",
+                                  isActive: item.isActive ?? true,
+                                })
+                              }
+                            >
+                              <Edit3 size={12} className="mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-red-500/20 text-red-300 hover:bg-red-500/10"
+                              onClick={() => deleteProjectMemoryItem(item.id)}
+                            >
+                              <Trash2 size={12} className="mr-1" />
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="text-sm text-foreground/85">{item.content}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No project memory stored yet.</div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="zed-glass border-white/10">
+                <CardHeader>
+                  <CardTitle className="text-base">Active Scratchpad</CardTitle>
+                  <CardDescription>Temporary working memory currently available for retrieval.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {knowledgeAdminLoading ? (
+                    <div className="text-sm text-muted-foreground">Loading scratchpad…</div>
+                  ) : scratchpadItems.length > 0 ? (
+                    scratchpadItems.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-white/10 bg-black/25 p-4">
+                        <div className="mb-2 text-xs text-muted-foreground">
+                          {item.tags?.length ? item.tags.join(" • ") : "untagged"}
+                        </div>
+                        <div className="text-sm text-foreground/85">{item.content}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No scratchpad entries stored yet.</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
 
