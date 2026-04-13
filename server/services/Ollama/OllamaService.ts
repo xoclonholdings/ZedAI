@@ -3,6 +3,7 @@ const PRIMARY_MODEL = process.env.OLLAMA_MODEL || "qwen2.5:7b";
 const FALLBACK_MODEL = "llama3.2";
 const REMOTE_INFERENCE_URL = process.env.REMOTE_INFERENCE_URL?.replace(/\/+$/, "") || "";
 const REMOTE_INFERENCE_MODE = process.env.REMOTE_INFERENCE_MODE || "ollama";
+const REMOTE_INFERENCE_TIMEOUT_MS = 45000;
 
 console.log(`[OllamaService] Ollama target: ${OLLAMA_BASE}`);
 if (REMOTE_INFERENCE_URL) {
@@ -38,6 +39,25 @@ function splitIntoTokens(text: string) {
   return matches && matches.length > 0 ? matches : [text];
 }
 
+async function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs = REMOTE_INFERENCE_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError") {
+      throw new Error(`Remote inference timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function getAvailableModel(): Promise<string> {
   if (useRemoteInference() && REMOTE_INFERENCE_MODE !== "ollama") {
     return PRIMARY_MODEL;
@@ -65,7 +85,7 @@ async function callRemoteInference(messages: OllamaMessage[], systemPrompt?: str
     const userMessage = [...messages].reverse().find((message) => message.role === "user")?.content
       || buildPromptFromMessages(messages, systemPrompt);
 
-    const response = await fetch(`${REMOTE_INFERENCE_URL}/chat`, {
+    const response = await fetchWithTimeout(`${REMOTE_INFERENCE_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -89,7 +109,7 @@ async function callRemoteInference(messages: OllamaMessage[], systemPrompt?: str
     stream: false,
   };
 
-  const response = await fetch(`${REMOTE_INFERENCE_URL}/api/chat`, {
+  const response = await fetchWithTimeout(`${REMOTE_INFERENCE_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -161,8 +181,8 @@ export async function streamChatFromOllama(
   messages: OllamaMessage[],
   systemPrompt: string | undefined,
   onToken: (token: string) => void,
-  onDone: () => void,
-  onError: (err: Error) => void,
+  onDone: () => void | Promise<void>,
+  onError: (err: Error) => void | Promise<void>,
 ): Promise<void> {
   if (useRemoteInference()) {
     try {
@@ -170,9 +190,9 @@ export async function streamChatFromOllama(
       for (const token of splitIntoTokens(reply)) {
         onToken(token);
       }
-      onDone();
+      await onDone();
     } catch (err) {
-      onError(err instanceof Error ? err : new Error(String(err)));
+      await onError(err instanceof Error ? err : new Error(String(err)));
     }
     return;
   }
@@ -204,15 +224,15 @@ export async function streamChatFromOllama(
           const json = JSON.parse(line);
           if (json.message?.content) onToken(json.message.content);
           if (json.done) {
-            onDone();
+            await onDone();
             return;
           }
         } catch {}
       }
     }
-    onDone();
+    await onDone();
   } catch (err) {
-    onError(err instanceof Error ? err : new Error(String(err)));
+    await onError(err instanceof Error ? err : new Error(String(err)));
   }
 }
 
