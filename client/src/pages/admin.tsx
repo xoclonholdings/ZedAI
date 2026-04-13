@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/UseAuth";
 import zedLogo from "@assets/Zed_logo.png";
 
-type Section = "overview" | "integrations" | "ruleset" | "approvals" | "logs" | "security";
+type Section = "overview" | "knowledge" | "integrations" | "ruleset" | "approvals" | "logs" | "security";
 type IntegrationKey =
   | "aiHost"
   | "businessOperations"
@@ -176,6 +176,10 @@ export default function Admin() {
   const [activeRulesFile, setActiveRulesFile] = useState<RulesetKey>("personality.yaml");
   const [editContent, setEditContent] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [knowledgeOverview, setKnowledgeOverview] = useState<{ coreCount: number; projectCount: number; scratchpadCount: number } | null>(null);
+  const [knowledgeQuery, setKnowledgeQuery] = useState("");
+  const [knowledgeResults, setKnowledgeResults] = useState<any | null>(null);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
 
   const [approvals, setApprovals] = useState<any[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
@@ -193,6 +197,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (section === "ruleset" && Object.keys(ruleset).length === 0) fetchRuleset();
+    if (section === "knowledge" && !knowledgeOverview) fetchKnowledgeOverview();
     if (section === "logs") fetchLogs();
     if (section === "approvals") fetchApprovals();
     if (section === "security") fetchSecurityLog();
@@ -233,6 +238,29 @@ export default function Admin() {
         setEditContent(data[activeRulesFile] || "");
       }
     } catch {}
+  }
+
+  async function fetchKnowledgeOverview() {
+    try {
+      const res = await fetch("/api/admin/knowledge/overview", { credentials: "include" });
+      if (res.ok) {
+        setKnowledgeOverview(await res.json());
+      }
+    } catch {}
+  }
+
+  async function searchKnowledge() {
+    if (!knowledgeQuery.trim()) return;
+    setKnowledgeLoading(true);
+    try {
+      const res = await fetch(`/api/knowledge/search?q=${encodeURIComponent(knowledgeQuery.trim())}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        setKnowledgeResults(await res.json());
+      }
+    } catch {}
+    setKnowledgeLoading(false);
   }
 
   async function fetchApprovals() {
@@ -373,6 +401,7 @@ export default function Admin() {
 
   const NAV_TABS: { id: Section; label: string; badge?: number }[] = [
     { id: "overview", label: "Overview" },
+    { id: "knowledge", label: "Knowledge" },
     { id: "integrations", label: "Integrations" },
     { id: "ruleset", label: "Ruleset" },
     { id: "approvals", label: "Approvals", badge: pendingCount },
@@ -695,6 +724,10 @@ export default function Admin() {
                         <Bot size={14} className="mr-1" />
                         Integrations
                       </Button>
+                      <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => setSection("knowledge")}>
+                        <Database size={14} className="mr-1" />
+                        Knowledge
+                      </Button>
                       <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => setSection("ruleset")}>
                         <Edit3 size={14} className="mr-1" />
                         Edit Ruleset
@@ -723,6 +756,128 @@ export default function Admin() {
         )}
 
         {/* ── Ruleset Editor ────────────────────────────────── */}
+        {section === "knowledge" && (
+          <>
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold">Knowledge System</h2>
+              <p className="text-sm text-muted-foreground">
+                Inspect active memory layers and run live retrieval across rules, foundation memory, project memory, scratchpad, and semantic recall.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card className="zed-glass border-white/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Core Memory</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-semibold">{knowledgeOverview?.coreCount ?? "—"}</CardContent>
+              </Card>
+              <Card className="zed-glass border-white/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Project Memory</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-semibold">{knowledgeOverview?.projectCount ?? "—"}</CardContent>
+              </Card>
+              <Card className="zed-glass border-white/10">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Scratchpad</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-semibold">{knowledgeOverview?.scratchpadCount ?? "—"}</CardContent>
+              </Card>
+            </div>
+
+            <Card className="zed-glass border-white/10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Database size={16} className="text-cyan-300" />
+                  Knowledge Retrieval
+                </CardTitle>
+                <CardDescription>Search the full knowledge stack from one place.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    value={knowledgeQuery}
+                    onChange={(e) => setKnowledgeQuery(e.target.value)}
+                    placeholder="Search knowledge…"
+                    className="border-white/10 bg-black/30 text-sm"
+                  />
+                  <Button onClick={searchKnowledge} disabled={knowledgeLoading}>
+                    <RefreshCw size={14} className={`mr-1 ${knowledgeLoading ? "animate-spin" : ""}`} />
+                    {knowledgeLoading ? "Searching..." : "Search"}
+                  </Button>
+                </div>
+
+                {knowledgeResults && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-white/10 bg-black/25 p-4">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Foundation + Rules</p>
+                        <div className="whitespace-pre-wrap text-sm text-foreground/85">
+                          {knowledgeResults.foundation || knowledgeResults.core || "No foundation or ruleset matches found."}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-white/10 bg-black/25 p-4">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Retrieved Memory</p>
+                        <div className="space-y-3 text-sm text-foreground/85">
+                          {(knowledgeResults.retrieved || []).length > 0 ? (
+                            knowledgeResults.retrieved.map((item: any) => (
+                              <div key={item.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                <div className="mb-1 text-[11px] uppercase tracking-[0.16em] text-cyan-300">{item.source}</div>
+                                <div>{item.excerpt}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-muted-foreground">No retrieved semantic or episodic matches.</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="rounded-xl border border-white/10 bg-black/25 p-4">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Project Memory</p>
+                        <div className="space-y-3 text-sm text-foreground/85">
+                          {(knowledgeResults.project || []).length > 0 ? (
+                            knowledgeResults.project.map((item: any) => (
+                              <div key={item.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                <div className="mb-1 font-medium">{item.name}</div>
+                                {item.description ? <div className="mb-1 text-muted-foreground">{item.description}</div> : null}
+                                <div>{item.excerpt}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-muted-foreground">No project memory matches.</div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-white/10 bg-black/25 p-4">
+                        <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Scratchpad Memory</p>
+                        <div className="space-y-3 text-sm text-foreground/85">
+                          {(knowledgeResults.scratchpad || []).length > 0 ? (
+                            knowledgeResults.scratchpad.map((item: any) => (
+                              <div key={item.id} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                                {item.tags?.length > 0 ? (
+                                  <div className="mb-1 text-[11px] uppercase tracking-[0.16em] text-purple-300">{item.tags.join(" • ")}</div>
+                                ) : null}
+                                <div>{item.excerpt}</div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-muted-foreground">No scratchpad matches.</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
+
         {section === "integrations" && (
           <>
             <div className="space-y-1">

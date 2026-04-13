@@ -15,8 +15,7 @@ import { ManagerAgent } from "./orchestrator/ManagerAgent";
 import { checkTiers, filterOutputForTier3 } from "./middleware/TierEnforcement";
 import { logSecurityEvent, getRecentSecurityEvents } from "./services/SecurityAudit";
 import { injectMemory } from "./services/MemoryInjector";
-import { addToCollection, queryCollection } from "./services/ChromaService";
-import { retrieveFoundationMemory } from "./services/FoundationMemoryService";
+import { KnowledgeService } from "./services/KnowledgeService";
 import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationService";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
@@ -27,6 +26,7 @@ import {
   createManagedUser,
   getPublicAdminSettings,
   listManagedUsers,
+  loadAdminSettings,
   resetAppSettings,
   updateAppSettings,
   updateIntegrationSettings,
@@ -42,7 +42,9 @@ import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repo
 
 import {
   insertConversationSchema,
+  insertProjectMemorySchema,
   insertMessageSchema,
+  insertScratchpadMemorySchema,
   insertFileSchema,
   insertSessionSchema,
   users,
@@ -57,52 +59,6 @@ const ZED_IDENTITY_PROMPT = [
   "If asked your name, answer simply: 'I am ZED.'",
   "Use any provided memory context as background knowledge when it is relevant.",
 ].join(" ");
-
-async function loadRetrievableMemory(query: string): Promise<string> {
-  try {
-    const [episodic, semantic] = await Promise.all([
-      queryCollection("episodic", query, 2),
-      queryCollection("semantic", query, 3),
-    ]);
-
-    const lines = [...episodic, ...semantic]
-      .filter((entry) => entry.document?.trim())
-      .slice(0, 4)
-      .map((entry, index) => `Memory ${index + 1}: ${entry.document.slice(0, 280)}`);
-
-    return lines.length > 0 ? lines.join("\n\n") : "";
-  } catch (error) {
-    console.warn("[Memory] Retrieval failed (non-fatal):", error);
-    return "";
-  }
-}
-
-async function persistConversationMemory(params: {
-  conversationId: string;
-  userContent: string;
-  assistantContent: string;
-}) {
-  const { conversationId, userContent, assistantContent } = params;
-  const timestamp = new Date().toISOString();
-  const document = `User: ${userContent}\nAssistant: ${assistantContent}`;
-  const baseMetadata = {
-    conversationId,
-    savedAt: timestamp,
-  };
-
-  await Promise.allSettled([
-    addToCollection("episodic", {
-      id: `episodic-${conversationId}-${Date.now()}`,
-      document,
-      metadata: baseMetadata,
-    }),
-    addToCollection("semantic", {
-      id: `semantic-${conversationId}-${Date.now()}`,
-      document,
-      metadata: baseMetadata,
-    }),
-  ]);
-}
 
 export function setDatabaseStatus(status: boolean) {
   isDatabaseHealthy = status;
@@ -228,6 +184,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ projects });
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/knowledge/context", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const query = String(req.query.q || "").trim();
+      if (!query) return res.status(400).json({ error: "Query required" });
+
+      const hubMemory = await injectMemory("KnowledgeContext").catch(() => ({ formatted: "" }));
+      const knowledge = await KnowledgeService.buildContext({
+        userId,
+        query,
+        conversationId: typeof req.query.conversationId === "string" ? req.query.conversationId : undefined,
+        lane: "admin",
+        injectedMemory: hubMemory.formatted,
+      });
+
+      res.json(knowledge);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to build knowledge context" });
+    }
+  });
+
+  app.get("/api/knowledge/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const query = String(req.query.q || "").trim();
+      if (!query) return res.status(400).json({ error: "Query required" });
+
+      const results = await KnowledgeService.search({
+        userId,
+        query,
+        conversationId: typeof req.query.conversationId === "string" ? req.query.conversationId : undefined,
+      });
+
+      res.json(results);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Knowledge search failed" });
+    }
+  });
+
+  app.get("/api/knowledge/project-memory", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { MemoryService } = await import("./services/memoryService");
+      const items = await MemoryService.getProjectMemory(userId);
+      res.json({ items });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch project memory" });
+    }
+  });
+
+  app.post("/api/knowledge/project-memory", isAuthenticated, async (req: any, res) => {
+    try {
+      await ensureSessionUserInDatabase(req);
+      const userId = req.user.claims.sub;
+      const { MemoryService } = await import("./services/memoryService");
+      const item = await MemoryService.createProjectMemory(
+        insertProjectMemorySchema.parse({
+          userId,
+          name: req.body?.name || "Untitled knowledge item",
+          description: req.body?.description || "",
+          content: req.body?.content || "",
+          type: req.body?.type || "context",
+          isActive: req.body?.isActive ?? true,
+        }),
+      );
+      res.json({ item });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create project memory" });
+    }
+  });
+
+  app.patch("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { MemoryService } = await import("./services/memoryService");
+      const item = await MemoryService.updateProjectMemory(req.params.id, req.body || {});
+      res.json({ item });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update project memory" });
+    }
+  });
+
+  app.delete("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { MemoryService } = await import("./services/memoryService");
+      const success = await MemoryService.deleteProjectMemory(req.params.id);
+      res.json({ success });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to delete project memory" });
+    }
+  });
+
+  app.get("/api/knowledge/scratchpad", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { MemoryService } = await import("./services/memoryService");
+      const items = await MemoryService.getScratchpadMemory(userId);
+      res.json({ items });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch scratchpad memory" });
+    }
+  });
+
+  app.post("/api/knowledge/scratchpad", isAuthenticated, async (req: any, res) => {
+    try {
+      await ensureSessionUserInDatabase(req);
+      const userId = req.user.claims.sub;
+      const { MemoryService } = await import("./services/memoryService");
+      const item = await MemoryService.createScratchpadMemory(
+        insertScratchpadMemorySchema.parse({
+          userId,
+          conversationId: req.body?.conversationId || null,
+          content: req.body?.content || "",
+          tags: Array.isArray(req.body?.tags) ? req.body.tags : [],
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        }),
+      );
+      res.json({ item });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to create scratchpad memory" });
     }
   });
 
@@ -358,25 +436,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         const memCtx = await injectMemory("ChatMode");
-        const memBlock = memCtx.formatted;
+        const knowledge = await KnowledgeService.buildContext({
+          userId: req.user.claims.sub,
+          query: content,
+          conversationId,
+          lane: "chat",
+          injectedMemory: memCtx.formatted,
+        });
         systemPrompt = systemPrompt
-          ? `${ZED_IDENTITY_PROMPT}\n\n${systemPrompt}\n\n${memBlock}`
-          : `${ZED_IDENTITY_PROMPT}\n\n${memBlock}`;
+          ? `${ZED_IDENTITY_PROMPT}\n\n${systemPrompt}\n\n${knowledge.prompt}`
+          : `${ZED_IDENTITY_PROMPT}\n\n${knowledge.prompt}`;
       } catch (memErr) {
         console.warn("[SSE] Memory injection failed (non-fatal):", memErr);
       }
 
-      const retrievedMemory = await loadRetrievableMemory(content);
-      const foundationMemory = await retrieveFoundationMemory(content);
-      if (retrievedMemory) {
-        systemPrompt = systemPrompt
-          ? `${systemPrompt}\n\n### Retrieved Relevant Memory\n${retrievedMemory}`
-          : `${ZED_IDENTITY_PROMPT}\n\n### Retrieved Relevant Memory\n${retrievedMemory}`;
-      } else if (!systemPrompt) {
+      if (!systemPrompt) {
         systemPrompt = ZED_IDENTITY_PROMPT;
-      }
-      if (foundationMemory) {
-        systemPrompt = `${systemPrompt}\n\n### Foundation Memory Matches\n${foundationMemory}`;
       }
 
       if (stream) {
@@ -406,10 +481,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 content: fullResponse || "(no response)",
               })
             );
-            await persistConversationMemory({
+            await KnowledgeService.persistInteraction({
+              userId: req.user.claims.sub,
               conversationId,
               userContent: content,
               assistantContent: aiMessage.content,
+              tags: ["chat", "conversation"],
             });
             res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
             res.end();
@@ -439,10 +516,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const aiMessage = await storage.createMessage(
           insertMessageSchema.parse({ conversationId, role: "assistant", content: aiText })
         );
-        await persistConversationMemory({
+        await KnowledgeService.persistInteraction({
+          userId: req.user.claims.sub,
           conversationId,
           userContent: content,
           assistantContent: aiMessage.content,
+          tags: ["chat", "conversation"],
         });
         res.json({ userMessage, aiMessage });
       }
@@ -523,7 +602,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const ip = req.ip || "";
-      const response = await ManagerAgent.route({ userId, message, conversationId, ip, targetAgent });
+      const knowledge = await KnowledgeService.buildContext({
+        userId,
+        query: message,
+        conversationId,
+        lane: "manager",
+        injectedMemory: (await injectMemory("ManagerAgent").catch(() => ({ formatted: "" }))).formatted,
+      });
+
+      const response = await ManagerAgent.route({
+        userId,
+        message,
+        conversationId,
+        ip,
+        targetAgent,
+        context: {
+          ...(req.body?.context || {}),
+          knowledgePrompt: knowledge.prompt,
+        },
+      });
 
       // Save agent response
       if (conversationId) {
@@ -607,9 +704,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       return agent;
     });
-    res.json({
-      system: "ZED",
-      ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
+      res.json({
+        system: "ZED",
+        ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
       database: isDatabaseHealthy ? "connected" : "offline",
       orchestrator: {
         status: "operational",
@@ -624,6 +721,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requireSecureCookies: settings.auth.requireSecureCookies,
       },
     });
+  });
+
+  app.get("/api/admin/knowledge/overview", isAdmin, async (_req, res) => {
+    try {
+      const settings = await loadAdminSettings();
+      const defaultUserId = settings.managedUsers?.[0]?.id || "admin-user";
+      const { MemoryService } = await import("./services/memoryService");
+      const [core, project, scratchpad] = await Promise.all([
+        MemoryService.getAllCoreMemory(),
+        MemoryService.getProjectMemory(defaultUserId).catch(() => []),
+        MemoryService.getScratchpadMemory(defaultUserId).catch(() => []),
+      ]);
+
+      res.json({
+        coreCount: core.length,
+        projectCount: project.length,
+        scratchpadCount: scratchpad.length,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to load knowledge overview" });
+    }
   });
 
   app.post("/api/admin/ai-host/test", isAdmin, async (_req, res) => {

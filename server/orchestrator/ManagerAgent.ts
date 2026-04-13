@@ -4,7 +4,7 @@ import yaml from "js-yaml";
 import { OperationsAgent, type AgentRequest, type AgentResponse } from "../agents/operations/OperationsAgent";
 import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/IntelligenceAgent";
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
-import { injectMemory } from "../services/MemoryInjector";
+import { KnowledgeService } from "../services/KnowledgeService";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR } from "../utils/repoPaths";
 
@@ -78,7 +78,17 @@ export class ManagerAgent {
       };
     }
 
-    const memory = await injectMemory("ManagerAgent");
+    const knowledgePrompt =
+      typeof request.context?.knowledgePrompt === "string"
+        ? request.context.knowledgePrompt
+        : (
+            await KnowledgeService.buildContext({
+              userId: request.userId,
+              query: request.message,
+              conversationId: request.conversationId,
+              lane: "manager",
+            })
+          ).prompt;
     const agent = this.selectAgent(request.message, config, request.targetAgent);
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await this.logRouting(request, agent);
@@ -93,7 +103,7 @@ export class ManagerAgent {
           query: request.message,
           depth: request.message.length > 100 ? "deep" : "shallow",
           conversationId: request.conversationId,
-          memoryContext: memory.formatted,
+          memoryContext: knowledgePrompt,
         };
         const brief = await IntelligenceAgent.research(researchReq);
         reply = this.formatBrief(brief);
@@ -106,7 +116,7 @@ export class ManagerAgent {
           userId: request.userId,
           task: request.message,
           conversationId: request.conversationId,
-          memoryContext: memory.formatted,
+          memoryContext: knowledgePrompt,
         });
         return {
           reply: resp.message,
@@ -127,7 +137,7 @@ export class ManagerAgent {
           message: request.message,
           conversationId: request.conversationId,
           context: request.context,
-          memoryContext: memory.formatted,
+          memoryContext: knowledgePrompt,
         };
         const opResp: AgentResponse = await OperationsAgent.process(opReq);
         reply = opResp.reply;
