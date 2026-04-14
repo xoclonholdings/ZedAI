@@ -984,6 +984,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(ruleset);
   });
 
+  app.get("/api/admin/ruleset/structured", isAdmin, async (_req, res) => {
+    const files = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
+    const ruleset: Record<string, any> = {};
+    for (const f of files) {
+      try {
+        const raw = await fs.readFile(path.join(HUB_CONFIG_DIR, f), "utf-8");
+        ruleset[f] = yaml.load(raw) || {};
+      } catch {
+        ruleset[f] = {};
+      }
+    }
+    res.json(ruleset);
+  });
+
   app.post("/api/admin/ruleset", isAdmin, async (req: any, res) => {
     const { filename, content } = req.body;
     const allowed = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
@@ -994,6 +1008,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       yaml.load(content); // validate YAML
       await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
       await fs.writeFile(path.join(HUB_CONFIG_DIR, filename), content, "utf-8");
+      ManagerAgent.flushConfig();
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/ruleset/structured", isAdmin, async (req: any, res) => {
+    const { filename, content } = req.body;
+    const allowed = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
+    if (!allowed.includes(filename)) {
+      return res.status(400).json({ error: "Invalid filename" });
+    }
+    try {
+      const serialized = yaml.dump(content || {}, { noRefs: true, lineWidth: 120, sortKeys: false });
+      yaml.load(serialized);
+      await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
+      await fs.writeFile(path.join(HUB_CONFIG_DIR, filename), serialized, "utf-8");
       ManagerAgent.flushConfig();
       res.json({ success: true });
     } catch (err: any) {

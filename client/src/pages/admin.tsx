@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/UseAuth";
 import KnowledgeSettings from "@/components/settings/KnowledgeSettings";
+import RulesetSettings from "@/components/settings/RulesetSettings";
 import zedLogo from "@assets/Zed_logo.png";
 
 type Section = "overview" | "knowledge" | "integrations" | "ruleset" | "approvals" | "logs" | "security";
@@ -45,15 +46,6 @@ type IntegrationKey =
   | "gusto"
   | "kalshi"
   | "voiceTranscription";
-
-type RulesetKey = "personality.yaml" | "security.yaml" | "parameters.yaml" | "access.yaml";
-
-const RULESET_LABELS: Record<RulesetKey, { label: string; hint: string }> = {
-  "personality.yaml": { label: "Personality", hint: "Voice, tone, and operator style." },
-  "security.yaml": { label: "Security", hint: "Security posture and safeguards." },
-  "parameters.yaml": { label: "Parameters", hint: "Routing thresholds and system defaults." },
-  "access.yaml": { label: "Access", hint: "Permissions, visibility, and exposure boundaries." },
-};
 
 const integrationMeta: Record<IntegrationKey, { label: string; description: string; icon: any }> = {
   aiHost: {
@@ -173,10 +165,6 @@ export default function Admin() {
     status: "idle",
   });
 
-  const [ruleset, setRuleset] = useState<Record<string, string>>({});
-  const [activeRulesFile, setActiveRulesFile] = useState<RulesetKey>("personality.yaml");
-  const [editContent, setEditContent] = useState("");
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [approvals, setApprovals] = useState<any[]>([]);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
 
@@ -192,16 +180,10 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    if (section === "ruleset" && Object.keys(ruleset).length === 0) fetchRuleset();
     if (section === "logs") fetchLogs();
     if (section === "approvals") fetchApprovals();
     if (section === "security") fetchSecurityLog();
   }, [section]);
-
-  useEffect(() => {
-    setEditContent(ruleset[activeRulesFile] || "");
-    setSaveStatus("idle");
-  }, [activeRulesFile, ruleset]);
 
   async function fetchStatus() {
     setStatusLoading(true);
@@ -222,17 +204,6 @@ export default function Admin() {
       setIntegrationsDraft(data.integrations);
     } catch {}
     setIntegrationsLoading(false);
-  }
-
-  async function fetchRuleset() {
-    try {
-      const res = await fetch("/api/admin/ruleset", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setRuleset(data);
-        setEditContent(data[activeRulesFile] || "");
-      }
-    } catch {}
   }
 
   async function fetchApprovals() {
@@ -269,27 +240,6 @@ export default function Admin() {
       }
     } catch {}
     setSecurityLoading(false);
-  }
-
-  async function saveRulesetFile() {
-    setSaveStatus("saving");
-    try {
-      const res = await fetch("/api/admin/ruleset", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ filename: activeRulesFile, content: editContent }),
-      });
-      if (res.ok) {
-        setRuleset((prev) => ({ ...prev, [activeRulesFile]: editContent }));
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
-      } else {
-        setSaveStatus("error");
-      }
-    } catch {
-      setSaveStatus("error");
-    }
   }
 
   async function saveIntegrations() {
@@ -770,71 +720,7 @@ export default function Admin() {
           </>
         )}
 
-        {section === "ruleset" && (
-          <>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Ruleset</h2>
-                <Button variant="ghost" size="sm" onClick={fetchRuleset} className="zed-button text-muted-foreground hover:text-foreground">
-                  <RefreshCw size={14} className="mr-1" />
-                  Reload
-                </Button>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Choose a rules domain first, then edit only that section below.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(RULESET_LABELS) as RulesetKey[]).map((key) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveRulesFile(key)}
-                  className={`rounded-xl border px-3 py-2 text-sm transition-all ${
-                    activeRulesFile === key
-                      ? "border-cyan-400/40 bg-white/10 text-white"
-                      : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {RULESET_LABELS[key].label}
-                </button>
-              ))}
-            </div>
-
-            <Card className="zed-glass border-white/10">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <FileText size={16} className="text-cyan-300" />
-                  {RULESET_LABELS[activeRulesFile].label}
-                </CardTitle>
-                <CardDescription>
-                  {RULESET_LABELS[activeRulesFile].hint} Editing{" "}
-                  <code className="rounded bg-black/30 px-1.5 py-0.5 text-[11px]">{activeRulesFile}</code>. Changes apply to orchestrator behavior after saving.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Textarea
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  rows={16}
-                  className="zed-glass border-white/10 font-mono text-xs resize-none"
-                  placeholder="YAML content…"
-                />
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={saveRulesetFile}
-                    disabled={saveStatus === "saving"}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  >
-                    <Save size={14} className="mr-1" />
-                    {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved!" : saveStatus === "error" ? "Error — retry" : "Save Changes"}
-                  </Button>
-                  {saveStatus === "error" && <span className="text-xs text-red-400">Invalid YAML or save failed.</span>}
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+        {section === "ruleset" && <RulesetSettings />}
 
         {/* ── Approval Queue ────────────────────────────────── */}
         {section === "approvals" && (
