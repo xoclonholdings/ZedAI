@@ -4,63 +4,221 @@ import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
 
 const FOUNDATION_OVERVIEW = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/foundation-overview.md");
 const FOUNDATION_DOCS_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/imported-docs");
+const FOUNDATION_SUMMARY = path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/merged-summary.json");
+const FOUNDATION_SOURCE_SHARDS_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/shards/by-source");
 
-function extractKeywords(query: string): string[] {
-  return Array.from(
-    new Set(
-      query
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, " ")
-        .split(/\s+/)
-        .map((part) => part.trim())
-        .filter((part) => part.length >= 4)
-    )
-  ).slice(0, 8);
+type MemoryBlock = {
+  title: string;
+  content: string;
+  source: string;
+};
+
+type RankedBlock = MemoryBlock & { score: number };
+
+const STOP_WORDS = new Set([
+  "about",
+  "after",
+  "again",
+  "against",
+  "being",
+  "could",
+  "doing",
+  "from",
+  "have",
+  "into",
+  "just",
+  "more",
+  "need",
+  "than",
+  "that",
+  "them",
+  "then",
+  "they",
+  "this",
+  "what",
+  "when",
+  "where",
+  "which",
+  "with",
+  "would",
+  "your",
+]);
+
+function normalize(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function bestMatchingLines(content: string, keywords: string[], limit = 6): string[] {
-  const lines = content
-    .split(/\r?\n/)
-    .map((line) => line.trim())
+function extractKeywords(query: string): string[] {
+  const parts = normalize(query)
+    .split(" ")
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 3 && !STOP_WORDS.has(part));
+
+  const output = new Set<string>(parts);
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    output.add(`${parts[i]} ${parts[i + 1]}`);
+  }
+
+  return Array.from(output).slice(0, 18);
+}
+
+function splitMarkdownSections(content: string): string[] {
+  const sections = content
+    .split(/\n(?=##?\s)/g)
+    .map((section) => section.trim())
     .filter(Boolean);
 
-  return lines
-    .map((line) => ({
-      line,
-      score: keywords.reduce((sum, keyword) => sum + (line.toLowerCase().includes(keyword) ? 1 : 0), 0),
+  if (sections.length > 0) return sections;
+
+  return content
+    .split(/\n\s*\n/g)
+    .map((section) => section.trim())
+    .filter(Boolean);
+}
+
+function scoreText(text: string, keywords: string[]): number {
+  const haystack = normalize(text);
+  return keywords.reduce((score, keyword) => {
+    if (!keyword) return score;
+    if (!haystack.includes(keyword)) return score;
+    return score + (keyword.includes(" ") ? 4 : keyword.length >= 6 ? 3 : 2);
+  }, 0);
+}
+
+function rankBlocks(blocks: MemoryBlock[], keywords: string[], limit: number): RankedBlock[] {
+  return blocks
+    .map((block) => ({
+      ...block,
+      score:
+        scoreText(block.title, keywords) * 3 +
+        scoreText(block.source, keywords) * 2 +
+        scoreText(block.content, keywords),
     }))
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score || b.line.length - a.line.length)
-    .slice(0, limit)
-    .map((entry) => entry.line);
+    .filter((block) => block.score > 0)
+    .sort((a, b) => b.score - a.score || b.content.length - a.content.length)
+    .slice(0, limit);
+}
+
+async function loadOverviewBlocks(): Promise<MemoryBlock[]> {
+  try {
+    const content = await fs.readFile(FOUNDATION_OVERVIEW, "utf-8");
+    return splitMarkdownSections(content).map((section, index) => ({
+      title: index === 0 ? "Foundation Overview" : `Foundation Overview ${index + 1}`,
+      content: section,
+      source: "foundation-overview",
+    }));
+  } catch {
+    return [];
+  }
+}
+
+async function loadImportedDocBlocks(): Promise<MemoryBlock[]> {
+  try {
+    const files = (await fs.readdir(FOUNDATION_DOCS_DIR)).filter((name) => name.endsWith(".md") || name.endsWith(".txt"));
+    const output: MemoryBlock[] = [];
+
+    for (const file of files) {
+      const content = await fs.readFile(path.join(FOUNDATION_DOCS_DIR, file), "utf-8");
+      const sections = splitMarkdownSections(content).slice(0, 10);
+      for (const section of sections) {
+        output.push({
+          title: file,
+          content: section,
+          source: file,
+        });
+      }
+    }
+
+    return output;
+  } catch {
+    return [];
+  }
+}
+
+async function loadSummaryBlocks(): Promise<MemoryBlock[]> {
+  try {
+    const raw = await fs.readFile(FOUNDATION_SUMMARY, "utf-8");
+    const parsed = JSON.parse(raw);
+    const collections = [
+      ...(Array.isArray(parsed?.mostRecentConversations) ? parsed.mostRecentConversations : []),
+      ...(Array.isArray(parsed?.topTopics) ? parsed.topTopics : []),
+      ...(Array.isArray(parsed?.strategicHighlights) ? parsed.strategicHighlights : []),
+    ];
+
+    return collections
+      .map((entry: any, index: number) => ({
+        title: entry?.title || entry?.topic || `Summary ${index + 1}`,
+        content: [entry?.summary, entry?.preview, entry?.details, entry?.description].filter(Boolean).join("\n"),
+        source: "merged-summary",
+      }))
+      .filter((entry) => entry.content);
+  } catch {
+    return [];
+  }
+}
+
+async function loadSourceShardBlocks(): Promise<MemoryBlock[]> {
+  try {
+    const files = (await fs.readdir(FOUNDATION_SOURCE_SHARDS_DIR)).filter((name) => name.endsWith(".json"));
+    const output: MemoryBlock[] = [];
+
+    for (const file of files) {
+      const raw = await fs.readFile(path.join(FOUNDATION_SOURCE_SHARDS_DIR, file), "utf-8");
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) continue;
+
+      for (const entry of parsed.slice(0, 250)) {
+        output.push({
+          title: entry?.title || entry?.canonicalKey || file,
+          content: [entry?.preview, entry?.createdAt, entry?.updatedAt, Array.isArray(entry?.sources) ? entry.sources.join(", ") : ""]
+            .filter(Boolean)
+            .join("\n"),
+          source: file.replace(".json", ""),
+        });
+      }
+    }
+
+    return output;
+  } catch {
+    return [];
+  }
+}
+
+function formatBlocks(blocks: RankedBlock[]): string {
+  return blocks
+    .map((block) => `## ${block.title}\n${block.content}`)
+    .join("\n\n");
 }
 
 export async function retrieveFoundationMemory(query: string, options?: { enabled?: boolean }): Promise<string> {
   if (options?.enabled === false) return "";
+
   const keywords = extractKeywords(query);
   if (keywords.length === 0) return "";
 
-  const blocks: string[] = [];
+  const [overviewBlocks, importedDocBlocks, summaryBlocks, sourceShardBlocks] = await Promise.all([
+    loadOverviewBlocks(),
+    loadImportedDocBlocks(),
+    loadSummaryBlocks(),
+    loadSourceShardBlocks(),
+  ]);
 
-  try {
-    const overview = await fs.readFile(FOUNDATION_OVERVIEW, "utf-8");
-    const lines = bestMatchingLines(overview, keywords, 4);
-    if (lines.length > 0) {
-      blocks.push(`## Foundation Overview\n${lines.join("\n")}`);
-    }
-  } catch {}
+  const rankedOverview = rankBlocks(overviewBlocks, keywords, 2);
+  const rankedImported = rankBlocks(importedDocBlocks, keywords, 3);
+  const rankedSummary = rankBlocks(summaryBlocks, keywords, 2);
+  const rankedShard = rankBlocks(sourceShardBlocks, keywords, 3);
 
-  try {
-    const files = (await fs.readdir(FOUNDATION_DOCS_DIR)).filter((name) => name.endsWith(".md") || name.endsWith(".txt"));
-    for (const file of files) {
-      const content = await fs.readFile(path.join(FOUNDATION_DOCS_DIR, file), "utf-8");
-      const lines = bestMatchingLines(content, keywords, 3);
-      if (lines.length > 0) {
-        blocks.push(`## ${file}\n${lines.join("\n")}`);
-      }
-      if (blocks.length >= 3) break;
-    }
-  } catch {}
+  const deduped = Array.from(
+    new Map(
+      [...rankedOverview, ...rankedImported, ...rankedSummary, ...rankedShard].map((block) => [
+        `${block.title}:${normalize(block.content).slice(0, 120)}`,
+        block,
+      ]),
+    ).values(),
+  )
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6);
 
-  return blocks.join("\n\n");
+  return formatBlocks(deduped);
 }
