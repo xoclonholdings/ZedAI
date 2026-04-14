@@ -15,10 +15,28 @@ type ProjectMemoryDraft = { id: string; name: string; description: string; conte
 type ScratchpadDraft = { content: string; tags: string };
 type CoreMemoryDraft = { key: string; description: string; value: string; adminOnly: boolean };
 type KnowledgeView = "overview" | "project" | "scratchpad" | "core";
+type FoundationProfile = {
+  company: string;
+  mission: string;
+  products: string;
+  audience: string;
+  brand: string;
+  principles: string;
+  priorities: string;
+};
 
 const EMPTY_PROJECT_MEMORY: ProjectMemoryDraft = { id: "", name: "", description: "", content: "", type: "context", isActive: true };
 const EMPTY_SCRATCHPAD: ScratchpadDraft = { content: "", tags: "" };
 const EMPTY_CORE_MEMORY: CoreMemoryDraft = { key: "", description: "", value: "", adminOnly: true };
+const EMPTY_FOUNDATION_PROFILE: FoundationProfile = {
+  company: "",
+  mission: "",
+  products: "",
+  audience: "",
+  brand: "",
+  principles: "",
+  priorities: "",
+};
 
 const VIEW_META: Record<KnowledgeView, { label: string; description: string; icon: typeof BrainCircuit }> = {
   overview: { label: "Overview", description: "Inspect knowledge health and retrieval quality.", icon: BrainCircuit },
@@ -82,6 +100,40 @@ function LabeledInput({ label, value, onChange, placeholder }: { label: string; 
   );
 }
 
+function serializeFoundationProfile(profile: FoundationProfile) {
+  return [
+    `## Company\n${profile.company.trim() || "Not provided yet."}`,
+    `## Mission\n${profile.mission.trim() || "Not provided yet."}`,
+    `## Products & Ventures\n${profile.products.trim() || "Not provided yet."}`,
+    `## Audience\n${profile.audience.trim() || "Not provided yet."}`,
+    `## Brand Voice\n${profile.brand.trim() || "Not provided yet."}`,
+    `## Operating Principles\n${profile.principles.trim() || "Not provided yet."}`,
+    `## Strategic Priorities\n${profile.priorities.trim() || "Not provided yet."}`,
+  ].join("\n\n");
+}
+
+function extractSection(content: string, heading: string) {
+  const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`## ${escaped}\\n([\\s\\S]*?)(?=\\n## |$)`, "i");
+  const match = content.match(regex);
+  return match?.[1]?.trim() || "";
+}
+
+function parseFoundationProfile(content: string): FoundationProfile {
+  if (!content.includes("## ")) {
+    return { ...EMPTY_FOUNDATION_PROFILE, company: content.trim() };
+  }
+  return {
+    company: extractSection(content, "Company"),
+    mission: extractSection(content, "Mission"),
+    products: extractSection(content, "Products & Ventures"),
+    audience: extractSection(content, "Audience"),
+    brand: extractSection(content, "Brand Voice"),
+    principles: extractSection(content, "Operating Principles"),
+    priorities: extractSection(content, "Strategic Priorities"),
+  };
+}
+
 export default function KnowledgeSettings() {
   const [view, setView] = useState<KnowledgeView>("overview");
   const [overview, setOverview] = useState<KnowledgeOverview | null>(null);
@@ -95,11 +147,14 @@ export default function KnowledgeSettings() {
   const [projectDraft, setProjectDraft] = useState<ProjectMemoryDraft>(EMPTY_PROJECT_MEMORY);
   const [scratchpadDraft, setScratchpadDraft] = useState<ScratchpadDraft>(EMPTY_SCRATCHPAD);
   const [coreDraft, setCoreDraft] = useState<CoreMemoryDraft>(EMPTY_CORE_MEMORY);
+  const [foundationProfile, setFoundationProfile] = useState<FoundationProfile>(EMPTY_FOUNDATION_PROFILE);
   const [projectStatus, setProjectStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [scratchpadStatus, setScratchpadStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [coreStatus, setCoreStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [foundationStatus, setFoundationStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const retrievedCount = useMemo(() => (results?.retrieved || []).length, [results]);
+  const foundationPreview = useMemo(() => serializeFoundationProfile(foundationProfile), [foundationProfile]);
 
   useEffect(() => {
     void refreshKnowledgeData();
@@ -117,7 +172,14 @@ export default function KnowledgeSettings() {
       if (overviewRes.ok) setOverview(await overviewRes.json());
       if (projectRes.ok) setProjectMemoryItems((await projectRes.json()).items || []);
       if (scratchpadRes.ok) setScratchpadItems((await scratchpadRes.json()).items || []);
-      if (coreRes.ok) setCoreMemoryItems((await coreRes.json()).items || []);
+      if (coreRes.ok) {
+        const items = (await coreRes.json()).items || [];
+        setCoreMemoryItems(items);
+        const foundationEntry = items.find((item: any) => item.key === "foundation_profile");
+        if (foundationEntry?.value) {
+          setFoundationProfile(parseFoundationProfile(String(foundationEntry.value)));
+        }
+      }
     } catch {}
     setRefreshing(false);
   }
@@ -237,6 +299,28 @@ export default function KnowledgeSettings() {
       setTimeout(() => setCoreStatus("idle"), 1800);
     } catch {
       setCoreStatus("error");
+    }
+  }
+
+  async function saveFoundationProfile() {
+    setFoundationStatus("saving");
+    try {
+      const res = await fetch("/api/knowledge/core-memory/foundation_profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          description: "Structured global foundation profile for company, products, mission, audience, and operating principles.",
+          value: foundationPreview,
+          adminOnly: true,
+        }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      await refreshKnowledgeData();
+      setFoundationStatus("saved");
+      setTimeout(() => setFoundationStatus("idle"), 1800);
+    } catch {
+      setFoundationStatus("error");
     }
   }
 
@@ -516,6 +600,71 @@ export default function KnowledgeSettings() {
 
       {view === "core" ? (
         <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <Card className="zed-glass border-white/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BrainCircuit size={16} className="text-cyan-300" />
+                Foundation Profile
+              </CardTitle>
+              <CardDescription>
+                Curate the global company-level knowledge ZED should use across brand, products, mission, and strategic direction.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Company</div>
+                  <Textarea rows={4} value={foundationProfile.company} onChange={(e) => setFoundationProfile((prev) => ({ ...prev, company: e.target.value }))} className="zed-glass border-white/10 text-sm" placeholder="Company identity, structure, and overarching context." />
+                </label>
+                <label className="space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Mission</div>
+                  <Textarea rows={4} value={foundationProfile.mission} onChange={(e) => setFoundationProfile((prev) => ({ ...prev, mission: e.target.value }))} className="zed-glass border-white/10 text-sm" placeholder="What the organization is trying to accomplish." />
+                </label>
+                <label className="space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Products & Ventures</div>
+                  <Textarea rows={5} value={foundationProfile.products} onChange={(e) => setFoundationProfile((prev) => ({ ...prev, products: e.target.value }))} className="zed-glass border-white/10 text-sm" placeholder="Products, brands, apps, services, and venture portfolio." />
+                </label>
+                <label className="space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Audience</div>
+                  <Textarea rows={5} value={foundationProfile.audience} onChange={(e) => setFoundationProfile((prev) => ({ ...prev, audience: e.target.value }))} className="zed-glass border-white/10 text-sm" placeholder="Who the company serves and how users/customers should be understood." />
+                </label>
+                <label className="space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Brand Voice</div>
+                  <Textarea rows={5} value={foundationProfile.brand} onChange={(e) => setFoundationProfile((prev) => ({ ...prev, brand: e.target.value }))} className="zed-glass border-white/10 text-sm" placeholder="Voice, tone, positioning, and brand personality." />
+                </label>
+                <label className="space-y-2">
+                  <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Operating Principles</div>
+                  <Textarea rows={5} value={foundationProfile.principles} onChange={(e) => setFoundationProfile((prev) => ({ ...prev, principles: e.target.value }))} className="zed-glass border-white/10 text-sm" placeholder="How the organization prefers to operate and make decisions." />
+                </label>
+              </div>
+
+              <label className="space-y-2">
+                <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Strategic Priorities</div>
+                <Textarea rows={6} value={foundationProfile.priorities} onChange={(e) => setFoundationProfile((prev) => ({ ...prev, priorities: e.target.value }))} className="zed-glass border-white/10 text-sm" placeholder="Near-term priorities, current focus areas, and what ZED should optimize toward." />
+              </label>
+
+              <Card className="border-white/10 bg-black/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Foundation Memory Preview</CardTitle>
+                  <CardDescription>This is the structured core-memory document ZED will retrieve from the global foundation layer.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/30 p-3 text-xs leading-6 text-foreground/80">
+                    {foundationPreview}
+                  </pre>
+                </CardContent>
+              </Card>
+
+              <div className="flex items-center gap-3">
+                <Button onClick={saveFoundationProfile}>
+                  <Save size={14} className="mr-2" />
+                  {foundationStatus === "saving" ? "Saving..." : "Save Foundation Profile"}
+                </Button>
+                {foundationStatus === "error" ? <span className="text-xs text-red-400">Failed to save the foundation profile.</span> : null}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="zed-glass border-white/10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">

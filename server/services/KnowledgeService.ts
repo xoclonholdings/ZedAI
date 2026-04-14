@@ -56,6 +56,7 @@ type KnowledgeSearchResult = {
 };
 
 const CORE_PRIORITY_KEYS = [
+  "foundation_profile",
   "identity",
   "tone",
   "operation",
