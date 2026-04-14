@@ -21,6 +21,10 @@ export interface InjectedMemory {
   formatted: string;
 }
 
+type InjectMemoryOptions = {
+  includeFoundation?: boolean;
+};
+
 async function loadWorking(): Promise<string> {
   try {
     const raw = await fs.readFile(WORKING_MEMORY, "utf-8");
@@ -81,12 +85,13 @@ async function loadFoundation(): Promise<string> {
   }
 }
 
-export async function injectMemory(agentName: string): Promise<InjectedMemory> {
+export async function injectMemory(agentName: string, options?: InjectMemoryOptions): Promise<InjectedMemory> {
+  const includeFoundation = options?.includeFoundation !== false;
   const [working, episodic, consensus, foundation] = await Promise.all([
     loadWorking(),
     loadEpisodic(),
     loadConsensus(),
-    loadFoundation(),
+    includeFoundation ? loadFoundation() : Promise.resolve("Admin-only foundation memory is not included in this context."),
   ]);
 
   const formatted = `## ZED Hub Memory Context
@@ -101,8 +106,7 @@ ${episodic}
 ### Brand Voice & Guidelines (Consensus)
 ${consensus}
 
-### Imported Foundation Memory
-${foundation}`;
+${includeFoundation ? `### Imported Foundation Memory\n${foundation}` : "### Imported Foundation Memory\nNot included for this user scope."}`;
 
   return { working, episodic, consensus, foundation, formatted };
 }

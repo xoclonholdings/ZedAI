@@ -20,6 +20,7 @@ type BuildKnowledgeContextParams = {
   conversationId?: string;
   lane?: KnowledgeLane;
   injectedMemory?: string;
+  includeAdminFoundation?: boolean;
 };
 
 export type KnowledgeContext = {
@@ -218,7 +219,7 @@ export class KnowledgeService {
         MemoryService.getScratchpadMemory(params.userId),
         queryCollection("episodic", params.query, 3),
         queryCollection("semantic", params.query, 4),
-        retrieveFoundationMemory(params.query),
+        retrieveFoundationMemory(params.query, { enabled: params.includeAdminFoundation === true }),
       ]);
 
     const relevantCoreMemory = allCoreMemory

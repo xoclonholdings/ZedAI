@@ -229,13 +229,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const query = String(req.query.q || "").trim();
       if (!query) return res.status(400).json({ error: "Query required" });
 
-      const hubMemory = await injectMemory("KnowledgeContext").catch(() => ({ formatted: "" }));
+      const hubMemory = await injectMemory("KnowledgeContext", { includeFoundation: true }).catch(() => ({ formatted: "" }));
       const knowledge = await KnowledgeService.buildContext({
         userId,
         query,
         conversationId: typeof req.query.conversationId === "string" ? req.query.conversationId : undefined,
         lane: "admin",
         injectedMemory: hubMemory.formatted,
+        includeAdminFoundation: true,
       });
 
       res.json(knowledge);
@@ -549,13 +550,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch {}
 
       try {
-        const memCtx = await injectMemory("ChatMode");
+        const isAdmin = !!req.user?.claims?.isAdmin;
+        const memCtx = await injectMemory("ChatMode", { includeFoundation: isAdmin });
         const knowledge = await KnowledgeService.buildContext({
           userId: req.user.claims.sub,
           query: content,
           conversationId,
           lane: "chat",
           injectedMemory: memCtx.formatted,
+          includeAdminFoundation: isAdmin,
         });
         systemPrompt = systemPrompt
           ? `${ZED_IDENTITY_PROMPT}\n\n${systemPrompt}\n\n${knowledge.prompt}`
@@ -721,7 +724,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         query: message,
         conversationId,
         lane: "manager",
-        injectedMemory: (await injectMemory("ManagerAgent").catch(() => ({ formatted: "" }))).formatted,
+        injectedMemory: (
+          await injectMemory("ManagerAgent", { includeFoundation: !!req.user?.claims?.isAdmin }).catch(() => ({ formatted: "" }))
+        ).formatted,
+        includeAdminFoundation: !!req.user?.claims?.isAdmin,
       });
 
       const response = await ManagerAgent.route({

@@ -35,7 +35,8 @@ function bestMatchingLines(content: string, keywords: string[], limit = 6): stri
     .map((entry) => entry.line);
 }
 
-export async function retrieveFoundationMemory(query: string): Promise<string> {
+export async function retrieveFoundationMemory(query: string, options?: { enabled?: boolean }): Promise<string> {
+  if (options?.enabled === false) return "";
   const keywords = extractKeywords(query);
   if (keywords.length === 0) return "";
 
