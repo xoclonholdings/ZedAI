@@ -52,7 +52,8 @@ export default function ChatSidebar({
   const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user } = useAuth() as { user?: LocalUser };
+  const { user, logout } = useAuth() as { user?: LocalUser; logout: () => Promise<void> };
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const compact = !!user?.personalization?.compactMessages;
   const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
   const headingClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
@@ -108,6 +109,17 @@ export default function ChatSidebar({
     if (res.ok) {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", id] });
+    }
+  }
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      queryClient.clear();
+      navigate("/login");
+    } finally {
+      setIsLoggingOut(false);
     }
   }
 
@@ -215,7 +227,13 @@ export default function ChatSidebar({
         />
       </div>
 
-      <ChatSidebarUserCard user={user} isUploadingPicture={false} onUpload={() => {}} />
+      <ChatSidebarUserCard
+        user={user}
+        isUploadingPicture={false}
+        onUpload={() => {}}
+        onLogout={handleLogout}
+        isLoggingOut={isLoggingOut}
+      />
 
       {/* Bottom controls */}
       <div className="p-3 border-t border-white/10 relative z-10 space-y-1">

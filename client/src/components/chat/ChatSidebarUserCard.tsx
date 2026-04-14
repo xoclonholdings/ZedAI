@@ -1,4 +1,5 @@
-import { Camera, User } from "lucide-react";
+import { Camera, LogOut, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface LocalUser {
   id: string;
@@ -14,12 +15,16 @@ interface ChatSidebarUserCardProps {
   user?: LocalUser;
   isUploadingPicture: boolean;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onLogout: () => void | Promise<void>;
+  isLoggingOut?: boolean;
 }
 
 export default function ChatSidebarUserCard({
   user,
   isUploadingPicture,
   onUpload,
+  onLogout,
+  isLoggingOut = false,
 }: ChatSidebarUserCardProps) {
   return (
     <div className="p-4 border-t border-white/10">
@@ -75,6 +80,17 @@ export default function ChatSidebarUserCard({
           </div>
         </div>
       </div>
+
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => void onLogout()}
+        disabled={isLoggingOut}
+        className="mt-3 w-full justify-start rounded-xl border border-white/10 bg-black/20 text-muted-foreground hover:bg-black/30 hover:text-foreground"
+      >
+        <LogOut size={14} className="mr-2" />
+        {isLoggingOut ? "Logging out..." : "Logout"}
+      </Button>
     </div>
   );
 }

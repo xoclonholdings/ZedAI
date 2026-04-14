@@ -24,6 +24,7 @@ type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
   refresh: () => Promise<void>;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -47,6 +48,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function logout() {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {}
+    setUser(null);
+  }
+
   useEffect(() => {
     checkSession();
   }, []);
@@ -58,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         refresh: checkSession,
+        logout,
       }}
     >
       {children}
