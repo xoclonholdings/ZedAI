@@ -10,7 +10,14 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 type KnowledgeOverview = { coreCount: number; projectCount: number; scratchpadCount: number };
-type SearchResults = { foundation?: string; core?: string; retrieved?: any[]; project?: any[]; scratchpad?: any[] };
+type SearchResults = {
+  foundation?: string;
+  foundationTrace?: Array<{ title: string; source: string; excerpt: string; score: number }>;
+  core?: string;
+  retrieved?: any[];
+  project?: any[];
+  scratchpad?: any[];
+};
 type ProjectMemoryDraft = { id: string; name: string; description: string; content: string; type: string; isActive: boolean };
 type ScratchpadDraft = { content: string; tags: string };
 type CoreMemoryDraft = { key: string; description: string; value: string; adminOnly: boolean };
@@ -379,8 +386,29 @@ export default function KnowledgeSettings() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm">Foundation + Rules</CardTitle>
                     </CardHeader>
-                    <CardContent className="whitespace-pre-wrap text-sm text-foreground/85">
-                      {results.foundation || results.core || "No foundation or ruleset matches were returned."}
+                    <CardContent className="space-y-4">
+                      <div className="whitespace-pre-wrap text-sm text-foreground/85">
+                        {results.foundation || results.core || "No foundation or ruleset matches were returned."}
+                      </div>
+                      {results.foundationTrace?.length ? (
+                        <div className="space-y-3 border-t border-white/10 pt-4">
+                          <div className="text-xs font-medium uppercase tracking-[0.18em] text-cyan-300">Foundation Trace</div>
+                          {results.foundationTrace.map((item, index) => (
+                            <div key={`${item.source}-${index}`} className="rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-foreground/85">
+                              <div className="mb-1 flex flex-wrap items-center gap-2">
+                                <span className="font-medium">{item.title}</span>
+                                <Badge variant="outline" className="border-white/10 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                                  {item.source}
+                                </Badge>
+                                <Badge variant="outline" className="border-cyan-400/20 text-cyan-300 text-[10px]">
+                                  score {item.score}
+                                </Badge>
+                              </div>
+                              <div className="text-xs leading-5 text-muted-foreground">{item.excerpt}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
                     </CardContent>
                   </Card>
                   <Card className="border-white/10 bg-black/20">

@@ -3,7 +3,7 @@ import path from "path";
 import yaml from "js-yaml";
 import { MemoryService } from "./memoryService";
 import { addToCollection, queryCollection, type VectorEntry } from "./ChromaService";
-import { retrieveFoundationMemory } from "./FoundationMemoryService";
+import { retrieveFoundationMemoryWithTrace, type FoundationTraceItem } from "./FoundationMemoryService";
 import { HUB_CONFIG_DIR } from "../utils/repoPaths";
 
 type KnowledgeLane =
@@ -26,6 +26,7 @@ type BuildKnowledgeContextParams = {
 export type KnowledgeContext = {
   prompt: string;
   foundation: string;
+  foundationTrace: FoundationTraceItem[];
   core: string;
   ruleset: string;
   project: string;
@@ -50,6 +51,7 @@ type PersistInteractionParams = {
 
 type KnowledgeSearchResult = {
   foundation: string;
+  foundationTrace: FoundationTraceItem[];
   core: string;
   project: Array<{ id: string; name: string; description: string | null; excerpt: string }>;
   scratchpad: Array<{ id: string; excerpt: string; tags: string[] }>;
@@ -211,7 +213,7 @@ export class KnowledgeService {
 
     await MemoryService.resetScratchpadMemory().catch(() => {});
 
-    const [allCoreMemory, rulesetMemory, allProjectMemory, allScratchpadMemory, episodic, semantic, foundation] =
+    const [allCoreMemory, rulesetMemory, allProjectMemory, allScratchpadMemory, episodic, semantic, foundationResult] =
       await Promise.all([
         MemoryService.getAllCoreMemory(),
         loadRulesetMemory(),
@@ -219,8 +221,10 @@ export class KnowledgeService {
         MemoryService.getScratchpadMemory(params.userId),
         queryCollection("episodic", params.query, 3),
         queryCollection("semantic", params.query, 4),
-        retrieveFoundationMemory(params.query, { enabled: params.includeAdminFoundation === true }),
+        retrieveFoundationMemoryWithTrace(params.query, { enabled: params.includeAdminFoundation === true }),
       ]);
+    const foundation = foundationResult.content;
+    const foundationTrace = foundationResult.trace;
 
     const relevantCoreMemory = allCoreMemory
       .filter((entry) => CORE_PRIORITY_KEYS.includes(entry.key as (typeof CORE_PRIORITY_KEYS)[number]))
@@ -298,6 +302,7 @@ export class KnowledgeService {
     return {
       prompt: sections.join("\n\n"),
       foundation,
+      foundationTrace,
       core: coreBlock,
       ruleset: rulesetBlock,
       project: projectBlock,
@@ -336,6 +341,7 @@ export class KnowledgeService {
 
     return {
       foundation: context.foundation,
+      foundationTrace: context.foundationTrace,
       core: [context.core, context.ruleset].filter(Boolean).join("\n\n"),
       project: projectMemory
         .map((entry) => ({

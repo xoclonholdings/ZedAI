@@ -14,6 +14,12 @@ type MemoryBlock = {
 };
 
 type RankedBlock = MemoryBlock & { score: number };
+export type FoundationTraceItem = {
+  title: string;
+  source: string;
+  excerpt: string;
+  score: number;
+};
 
 const STOP_WORDS = new Set([
   "about",
@@ -191,11 +197,14 @@ function formatBlocks(blocks: RankedBlock[]): string {
     .join("\n\n");
 }
 
-export async function retrieveFoundationMemory(query: string, options?: { enabled?: boolean }): Promise<string> {
-  if (options?.enabled === false) return "";
+export async function retrieveFoundationMemoryWithTrace(
+  query: string,
+  options?: { enabled?: boolean },
+): Promise<{ content: string; trace: FoundationTraceItem[] }> {
+  if (options?.enabled === false) return { content: "", trace: [] };
 
   const keywords = extractKeywords(query);
-  if (keywords.length === 0) return "";
+  if (keywords.length === 0) return { content: "", trace: [] };
 
   const [overviewBlocks, importedDocBlocks, summaryBlocks, sourceShardBlocks] = await Promise.all([
     loadOverviewBlocks(),
@@ -220,5 +229,18 @@ export async function retrieveFoundationMemory(query: string, options?: { enable
     .sort((a, b) => b.score - a.score)
     .slice(0, 6);
 
-  return formatBlocks(deduped);
+  return {
+    content: formatBlocks(deduped),
+    trace: deduped.map((block) => ({
+      title: block.title,
+      source: block.source,
+      excerpt: block.content.replace(/\s+/g, " ").trim().slice(0, 280),
+      score: block.score,
+    })),
+  };
+}
+
+export async function retrieveFoundationMemory(query: string, options?: { enabled?: boolean }): Promise<string> {
+  const result = await retrieveFoundationMemoryWithTrace(query, options);
+  return result.content;
 }
