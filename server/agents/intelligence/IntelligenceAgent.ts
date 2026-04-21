@@ -115,7 +115,8 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
 
     const rawReply = await generateChatFromOllama(
       [{ role: "user", content: request.query }],
-      systemPrompt
+      systemPrompt,
+      { lane: "research" },
     );
 
     const brief = this.parseBrief(request.query, rawReply, primarySearch.source);
@@ -133,7 +134,8 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
         role: "user",
         content: `Synthesize the following documents about "${topic}" into a concise research brief:\n\n${documents.join("\n\n---\n\n")}`,
       }],
-      "You are a research synthesis expert. Be analytical, cite sources, flag speculation. Lead with the most important finding."
+      "You are a research synthesis expert. Be analytical, cite sources, flag speculation. Lead with the most important finding.",
+      { lane: "research" },
     );
   }
 

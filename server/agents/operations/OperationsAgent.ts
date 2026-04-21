@@ -90,7 +90,9 @@ ${capabilityBlock}${knowledgeBlock}
 User: ${request.userId}
 ConversationID: ${request.conversationId || "none"}`.trim();
 
-    const reply = await generateChatFromOllama([{ role: "user", content: request.message }], systemPrompt);
+    const reply = await generateChatFromOllama([{ role: "user", content: request.message }], systemPrompt, {
+      lane: "operations",
+    });
     const requiresApproval = this.checkApprovalRequired(request.message, reply);
 
     if (requiresApproval) {

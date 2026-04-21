@@ -9,6 +9,8 @@ import {
   checkOllamaHealth,
   type OllamaMessage,
 } from "./services/Ollama/OllamaService";
+import { getActiveProviderName, getProviderRoutingSummary, getResolvedTargetName } from "./core/providers/provider-executor";
+import { getProviderRuntimeConfig } from "./core/providers/provider-config";
 import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
 import { setupLocalAuth, isAdmin, isAuthenticated } from "./localAuth";
 import { ManagerAgent } from "./orchestrator/ManagerAgent";
@@ -620,13 +622,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             );
             res.write(`data: ${JSON.stringify({ type: "error", message: aiMessage, error: err.message })}\n\n`);
             res.end();
-          }
+          },
+          { lane: "chat" },
         );
       } else {
         // Non-streaming fallback
         let aiText: string;
         try {
-          aiText = await generateChatFromOllama(ollamaMessages, systemPrompt);
+          aiText = await generateChatFromOllama(ollamaMessages, systemPrompt, { lane: "chat" });
         } catch {
           aiText = "I'm having trouble connecting to the AI model. Please check that Ollama is running locally.";
         }
@@ -739,6 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         context: {
           ...(req.body?.context || {}),
           knowledgePrompt: knowledge.prompt,
+          isAdmin: Boolean(req.user?.claims?.isAdmin),
         },
       });
 
@@ -808,6 +812,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/admin/system-status", isAdmin, async (_req, res) => {
     const ollama = await checkOllamaHealth();
+    const providerConfig = getProviderRuntimeConfig();
+    const activeProvider = getActiveProviderName({ lane: "chat" });
+    const routingSummary = getProviderRoutingSummary();
     const settings = await getPublicAdminSettings();
     const github = await checkGitHubIntegrationStatus();
     const firewall = await getFirewallIntegrationStatus();
@@ -827,6 +834,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         system: "ZED",
         ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
+        aiHost: {
+          provider: activeProvider,
+          target: getResolvedTargetName({ lane: "chat" }),
+          configuredModel:
+            providerConfig.targets[getResolvedTargetName({ lane: "chat" })].model || providerConfig.activeModel,
+          remoteMode: providerConfig.clawTemp.mode,
+        },
+      providerRouting: routingSummary.routing,
       database: isDatabaseHealthy ? "connected" : "offline",
       orchestrator: {
         status: "operational",
@@ -872,7 +887,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let error = "";
 
       try {
-        reply = await generateChatFromOllama([{ role: "user", content: "Reply with READY only." }]);
+        reply = await generateChatFromOllama([{ role: "user", content: "Reply with READY only." }], undefined, {
+          lane: "admin",
+        });
       } catch (chatError: any) {
         chatStatus = "error";
         error = chatError?.message || "AI host test failed";
@@ -982,6 +999,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     res.json(ruleset);
+  });
+
+  app.get("/api/admin/provider-diagnostics", isAdmin, async (_req, res) => {
+    const providerConfig = getProviderRuntimeConfig();
+    const health = await checkOllamaHealth();
+    const activeProvider = getActiveProviderName({ lane: "chat" });
+    const routingSummary = getProviderRoutingSummary();
+
+    res.json({
+      activeProvider,
+      health,
+      config: {
+        model: providerConfig.targets[getResolvedTargetName({ lane: "chat" })].model || providerConfig.activeModel,
+        ollamaBaseUrl: providerConfig.ollama.baseUrl,
+        clawBaseUrl: providerConfig.clawTemp.baseUrl,
+        clawMode: providerConfig.clawTemp.mode,
+        openaiConfigured: Boolean(providerConfig.openai.apiKey),
+        claudeConfigured: Boolean(providerConfig.claude.apiKey),
+      },
+      routing: routingSummary.routing,
+      targets: routingSummary.targets,
+    });
   });
 
   app.get("/api/admin/ruleset/structured", isAdmin, async (_req, res) => {
@@ -1163,7 +1202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const ollama = await checkOllamaHealth();
     res.json({
       system: "ZED",
-      ai: "ollama-only",
+      ai: getActiveProviderName({ lane: "chat" }),
+      target: getResolvedTargetName({ lane: "chat" }),
       ollama: ollama.status,
       database: isDatabaseHealthy ? "connected" : "offline",
     });
@@ -1176,8 +1216,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { message } = req.body;
       if (!message) return res.status(400).json({ error: "Message required" });
       const prompt = buildOllamaPrompt(message);
-      const reply = await generateFromOllama(prompt);
-      res.json({ reply, provider: "ollama" });
+      const options = { lane: "chat" as const };
+      const reply = await generateFromOllama(prompt, options);
+      res.json({ reply, provider: getActiveProviderName(options), target: getResolvedTargetName(options) });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Chat failed", reply: "Error processing request" });

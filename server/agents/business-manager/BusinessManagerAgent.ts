@@ -121,7 +121,9 @@ If a request would require a real-world commitment, acquisition, send action, or
 
 ${request.memoryContext ? `\nShared knowledge context:\n${request.memoryContext}` : ""}`.trim();
 
-    const reply = await generateChatFromOllama([{ role: "user", content: request.task }], systemPrompt);
+    const reply = await generateChatFromOllama([{ role: "user", content: request.task }], systemPrompt, {
+      lane: "business",
+    });
     await this.writeToMemory(request, reply, scope, approval);
     await this.log(request, reply, scope, approval);
 
