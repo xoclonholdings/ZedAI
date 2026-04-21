@@ -62,6 +62,16 @@ ZedAI/
 - Main route file: `server/routes.ts`
 - Dev server script:
   - `server/package.json` -> `npm run dev`
+- Local production boot scripts at repo root:
+  - `zed-start.ps1`
+  - `zed-start-dev.ps1`
+  - `zed-stop.ps1`
+  - `install-zed-autostart.ps1`
+  - `install-zed-autostart.cmd`
+  - `install-zed-workstation.cmd`
+  - `install-zed-model-host.ps1`
+  - `install-zed-model-host.cmd`
+  - `zed-ollama-host.ps1`
 - Default local port:
   - `5000`
 
@@ -94,10 +104,13 @@ ZedAI/
 - Current active agents:
   - `OperationsAgent`
   - `IntelligenceAgent` (`R&D Agent` in the UI)
+- `BusinessManagerAgent` is reachable in the current live orchestrator and may operate as an active lane when Business Operations is enabled in Admin settings
+- `FinanceAgent` is a live specialist lane for trading, crypto/web3, forex, and wealth-building analysis
+- `FinanceAgent` is intended as a distinct lane from `BusinessManagerAgent`, focusing on predictive analysis, market opportunity, accumulation strategy, and trading/wealth contexts while sharing research blackboard data with the R&D/Intelligence lane
 - Current planned agents:
   - `IDEOperatorAgent`
   - `AudioEngineerAgent`
-  - `BusinessManagerAgent` with planned Gusto integration
+  - future expanded `BusinessManagerAgent` capability layers, including planned Gusto integration
 - Agent-mode UI supports explicit targeting for:
   - `Auto`
   - `Operations`
@@ -135,7 +148,9 @@ ZedAI/
 
 ### Local/Primary Dependencies
 
-- Ollama for local model inference
+- Provider-agnostic model execution routed through backend adapters
+- Ollama for local-first model inference
+- Optional OpenAI, Claude, and temporary remote runner adapters through shared execution contracts
 - Filesystem-backed fallback storage
 - Hub/shared-memory content used by agents
 
@@ -224,6 +239,22 @@ npm run build
 The client build currently succeeds with:
 
 - `tsc -p tsconfig.build.json && vite build`
+
+For Windows local production boot, the server now serves the built frontend from:
+
+- `client/dist` first
+- fallback: `dist/public`
+
+Local workstation boot is designed to be single-process in production:
+
+- `zed-start.ps1` builds the client when needed
+- then starts the backend in non-development mode
+- the backend serves the built frontend directly
+
+Optional separate model-host boot on a dedicated machine uses:
+
+- `install-zed-model-host.ps1`
+- `zed-ollama-host.ps1`
 
 ## Deploy Specification
 

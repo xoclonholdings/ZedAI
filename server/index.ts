@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection, gracefulShutdown } from "./db";
 import { runMigrations } from "./migrations";
 import { fallbackStorage } from "./services/fallbackStorage";
+import { UPLOADS_DIR, ensureRuntimeDataReady } from "./utils/repoPaths";
 
 const app = express();
 
@@ -33,7 +34,15 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.get("/", (_req, res) => {
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true, service: "zed-server" });
+});
+
+app.get("/", (req, res, next) => {
+  const accepts = String(req.headers.accept || "");
+  if (accepts.includes("text/html")) {
+    return next();
+  }
   res.status(200).json({ ok: true, service: "zed-server" });
 });
 
@@ -75,7 +84,7 @@ process.on("uncaughtException", (error: Error) => {
   process.exit(1);
 });
 
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -110,6 +119,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await ensureRuntimeDataReady();
+  log(`Runtime data root ready at ${UPLOADS_DIR.replace(/\\uploads$/, "")}`);
+
   log("Initializing fallback storage system...");
   try {
     await fallbackStorage.initialize();
@@ -141,13 +153,7 @@ app.use((req, res, next) => {
   }
 
   if (!dbHealthy) {
-    try {
-      const { offlineStorage } = await import("./offlineStorage");
-      await offlineStorage.initialize();
-      log("Offline storage system initialized successfully");
-    } catch (offlineError) {
-      log("[ERROR] Failed to initialize offline storage:", String(offlineError));
-    }
+    log("Offline database mode active; using fallback storage only");
   }
 
   const { setDatabaseStatus } = await import("./routes");

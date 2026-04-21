@@ -54,10 +54,12 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(process.cwd(), "../dist/public");
+  const preferredDistPath = path.resolve(process.cwd(), "../client/dist");
+  const legacyDistPath = path.resolve(process.cwd(), "../dist/public");
+  const distPath = fs.existsSync(preferredDistPath) ? preferredDistPath : legacyDistPath;
 
   if (!fs.existsSync(distPath)) {
-    log(`Warning: dist/public not found at ${distPath}`, "express");
+    log(`Warning: no built frontend found at ${preferredDistPath} or ${legacyDistPath}`, "express");
     return;
   }
 
