@@ -2,72 +2,38 @@ import { ClaudeProvider } from "./claude-provider";
 import { ClawTempProvider } from "./claw-provider-temp";
 import { OpenAIProvider } from "./openai-provider";
 import { OllamaProvider } from "./ollama-provider";
-import { getProviderRuntimeConfig, type ProviderTargetConfig } from "./provider-config";
+import { getProviderRuntimeConfig } from "./provider-config";
 import { splitIntoTokens } from "./provider-helpers";
-import type {
-  ComputeTargetName,
-  ExecutionLane,
-  ModelProvider,
-  ProviderExecutionOptions,
-  ProviderHealth,
-  ProviderMessage,
-} from "./provider-interface";
+import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
-function resolveTargetName(options?: ProviderExecutionOptions): ComputeTargetName {
+function getActiveProvider(): ModelProvider {
   const config = getProviderRuntimeConfig();
-  if (options?.target) {
-    return options.target;
-  }
-  const lane: ExecutionLane | "default" = options?.lane || "default";
-  return config.routing[lane] || config.routing.default;
-}
-
-function resolveTargetConfig(options?: ProviderExecutionOptions): ProviderTargetConfig {
-  const config = getProviderRuntimeConfig();
-  return config.targets[resolveTargetName(options)];
-}
-
-function getProviderForTarget(target: ProviderTargetConfig): ModelProvider {
-  switch (target.provider) {
+  switch (config.activeProvider) {
     case "openai":
-      return new OpenAIProvider(target);
+      return new OpenAIProvider();
     case "claude":
-      return new ClaudeProvider(target);
+      return new ClaudeProvider();
     case "claw-temp":
-      return new ClawTempProvider(target);
+      return new ClawTempProvider();
     case "ollama":
     default:
-      return new OllamaProvider(target);
+      return new OllamaProvider();
   }
 }
 
-export function getActiveProviderName(options?: ProviderExecutionOptions): string {
-  return resolveTargetConfig(options).provider;
-}
-
-export function getResolvedTargetName(options?: ProviderExecutionOptions): ComputeTargetName {
-  return resolveTargetName(options);
-}
-
-export function getProviderRoutingSummary() {
-  const config = getProviderRuntimeConfig();
-  return {
-    activeProvider: config.activeProvider,
-    activeModel: config.activeModel,
-    routing: config.routing,
-    targets: config.targets,
-  };
+export function getActiveProviderName(): string {
+  return getProviderRuntimeConfig().activeProvider;
 }
 
 export async function executeProviderPrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
-  return getProviderForTarget(resolveTargetConfig(options)).executePrompt(prompt, options);
+  return getActiveProvider().executePrompt(prompt, options);
 }
 
 export async function executeProviderChat(
   messages: ProviderMessage[],
   options?: ProviderExecutionOptions,
 ): Promise<string> {
-  return getProviderForTarget(resolveTargetConfig(options)).executeChat(messages, options);
+  return getActiveProvider().executeChat(messages, options);
 }
 
 export async function streamProviderChat(
@@ -77,7 +43,7 @@ export async function streamProviderChat(
   onDone: () => void | Promise<void>,
   onError: (err: Error) => void | Promise<void>,
 ): Promise<void> {
-  const provider = getProviderForTarget(resolveTargetConfig(options));
+  const provider = getActiveProvider();
 
   if (provider.streamChat) {
     await provider.streamChat(messages, options, onToken, onDone, onError);
@@ -95,6 +61,6 @@ export async function streamProviderChat(
   }
 }
 
-export async function checkActiveProviderHealth(options?: ProviderExecutionOptions): Promise<ProviderHealth> {
-  return getProviderForTarget(resolveTargetConfig(options)).checkHealth();
+export async function checkActiveProviderHealth(): Promise<ProviderHealth> {
+  return getActiveProvider().checkHealth();
 }

@@ -1,6 +1,4 @@
 export type ProviderRole = "system" | "user" | "assistant";
-export type ExecutionLane = "chat" | "operations" | "business" | "finance" | "research" | "admin" | "embedding";
-export type ComputeTargetName = "local" | "persistent" | "burst";
 
 export interface ProviderMessage {
   role: ProviderRole;
@@ -10,8 +8,6 @@ export interface ProviderMessage {
 export interface ProviderExecutionOptions {
   model?: string;
   systemPrompt?: string;
-  lane?: ExecutionLane;
-  target?: ComputeTargetName;
 }
 
 export interface ProviderHealth {

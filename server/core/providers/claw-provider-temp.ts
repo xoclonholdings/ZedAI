@@ -1,4 +1,4 @@
-import type { ProviderTargetConfig } from "./provider-config";
+import { getProviderRuntimeConfig } from "./provider-config";
 import {
   buildPromptFromMessages,
   extractAssistantText,
@@ -8,13 +8,16 @@ import {
 import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
 export class ClawTempProvider implements ModelProvider {
-  constructor(private readonly config: ProviderTargetConfig) {}
+  private getConfig() {
+    return getProviderRuntimeConfig().clawTemp;
+  }
 
   private ensureConfigured() {
-    if (!this.config.baseUrl) {
+    const config = this.getConfig();
+    if (!config.baseUrl) {
       throw new Error("CLAW_BASE_URL / REMOTE_INFERENCE_URL is not configured");
     }
-    return this.config;
+    return config;
   }
 
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
@@ -68,25 +71,22 @@ export class ClawTempProvider implements ModelProvider {
   }
 
   async checkHealth(): Promise<ProviderHealth> {
-    if (!this.config.baseUrl) {
+    const config = this.getConfig();
+    if (!config.baseUrl) {
       return { status: "offline", models: [], provider: "claw-temp", detail: "No temporary runner configured" };
     }
 
     try {
-      const res = await fetchWithTimeout(
-        `${this.config.baseUrl}${this.config.healthPath || "/health"}`,
-        {},
-        this.config.timeoutMs,
-      );
+      const res = await fetchWithTimeout(`${config.baseUrl}${config.healthPath}`, {}, config.timeoutMs);
       if (!res.ok) return { status: "offline", models: [], provider: "claw-temp" };
       const data = await res.json();
       return {
         status: "online",
-        models: data.model ? [data.model] : [this.config.model],
-        provider: this.config.mode === "colab" ? "colab" : "claw-temp",
+        models: data.model ? [data.model] : [config.model],
+        provider: config.mode === "colab" ? "colab" : "claw-temp",
       };
     } catch {
-      return { status: "offline", models: [], provider: this.config.mode === "colab" ? "colab" : "claw-temp" };
+      return { status: "offline", models: [], provider: config.mode === "colab" ? "colab" : "claw-temp" };
     }
   }
 }

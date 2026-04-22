@@ -1,15 +1,18 @@
-import type { ProviderTargetConfig } from "./provider-config";
+import { getProviderRuntimeConfig } from "./provider-config";
 import { extractAssistantText } from "./provider-helpers";
 import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
 export class ClaudeProvider implements ModelProvider {
-  constructor(private readonly config: ProviderTargetConfig) {}
+  private getConfig() {
+    return getProviderRuntimeConfig().claude;
+  }
 
   private ensureConfigured() {
-    if (!this.config.apiKey) {
+    const config = this.getConfig();
+    if (!config.apiKey) {
       throw new Error("CLAUDE_API_KEY / ANTHROPIC_API_KEY is not configured");
     }
-    return this.config;
+    return config;
   }
 
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
@@ -42,12 +45,13 @@ export class ClaudeProvider implements ModelProvider {
   }
 
   async checkHealth(): Promise<ProviderHealth> {
-    if (!this.config.apiKey) {
+    const config = this.getConfig();
+    if (!config.apiKey) {
       return { status: "offline", models: [], provider: "claude", detail: "CLAUDE_API_KEY missing" };
     }
     return {
       status: "online",
-      models: [this.config.model],
+      models: [config.model],
       provider: "claude",
     };
   }

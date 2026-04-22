@@ -1,31 +1,31 @@
-import type { ProviderTargetConfig } from "./provider-config";
+import { getProviderRuntimeConfig } from "./provider-config";
 import {
+  buildPromptFromMessages,
   extractAssistantText,
   fetchWithTimeout,
   mergeMessagesWithSystem,
 } from "./provider-helpers";
 import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
-async function getAvailableModel(config: ProviderTargetConfig): Promise<string> {
+async function getAvailableModel(config = getProviderRuntimeConfig()): Promise<string> {
   try {
-    const res = await fetch(`${config.baseUrl}/api/tags`);
-    if (!res.ok) return config.fallbackModel || config.model;
+    const res = await fetch(`${config.ollama.baseUrl}/api/tags`);
+    if (!res.ok) return config.ollama.fallbackModel;
     const data = await res.json();
     const names: string[] = (data.models || []).map((model: any) => model.name);
-    if (names.some((name) => name === config.model || name.startsWith(config.model.split(":")[0]))) return config.model;
-    if (config.fallbackModel && names.some((name) => name.startsWith(config.fallbackModel))) return config.fallbackModel;
-    return names[0] || config.fallbackModel || config.model;
+    if (names.some((name) => name.startsWith("qwen2.5"))) return config.ollama.model;
+    if (names.some((name) => name.startsWith(config.ollama.fallbackModel))) return config.ollama.fallbackModel;
+    return names[0] || config.ollama.fallbackModel;
   } catch {
-    return config.fallbackModel || config.model;
+    return config.ollama.fallbackModel;
   }
 }
 
 export class OllamaProvider implements ModelProvider {
-  constructor(private readonly config: ProviderTargetConfig) {}
-
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
-    const model = options?.model || (await getAvailableModel(this.config));
-    const response = await fetch(`${this.config.baseUrl}/api/generate`, {
+    const config = getProviderRuntimeConfig();
+    const model = options?.model || (await getAvailableModel(config));
+    const response = await fetch(`${config.ollama.baseUrl}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model, prompt, stream: false }),
@@ -35,8 +35,9 @@ export class OllamaProvider implements ModelProvider {
   }
 
   async executeChat(messages: ProviderMessage[], options?: ProviderExecutionOptions): Promise<string> {
-    const model = options?.model || (await getAvailableModel(this.config));
-    const response = await fetch(`${this.config.baseUrl}/api/chat`, {
+    const config = getProviderRuntimeConfig();
+    const model = options?.model || (await getAvailableModel(config));
+    const response = await fetch(`${config.ollama.baseUrl}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -56,10 +57,11 @@ export class OllamaProvider implements ModelProvider {
     onDone: () => void | Promise<void>,
     onError: (err: Error) => void | Promise<void>,
   ): Promise<void> {
-    const model = options?.model || (await getAvailableModel(this.config));
+    const config = getProviderRuntimeConfig();
+    const model = options?.model || (await getAvailableModel(config));
 
     try {
-      const response = await fetchWithTimeout(`${this.config.baseUrl}/api/chat`, {
+      const response = await fetchWithTimeout(`${config.ollama.baseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -100,8 +102,9 @@ export class OllamaProvider implements ModelProvider {
   }
 
   async checkHealth(): Promise<ProviderHealth> {
+    const config = getProviderRuntimeConfig();
     try {
-      const res = await fetch(`${this.config.baseUrl}/api/tags`);
+      const res = await fetch(`${config.ollama.baseUrl}/api/tags`);
       if (!res.ok) return { status: "offline", models: [], provider: "ollama" };
       const data = await res.json();
       return {
