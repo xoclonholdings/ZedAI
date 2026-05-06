@@ -21,6 +21,7 @@ import { KnowledgeService } from "./services/KnowledgeService";
 import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationService";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
+import { registerExecutionRoutes } from "./services/execution/registerExecutionRoutes";
 import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
@@ -1224,6 +1225,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Chat failed", reply: "Error processing request" });
     }
   });
+
+  // Additive: register execution / approval / workflow / operational endpoints.
+  // No existing routes are touched; UI is unchanged. See
+  // server/services/execution/registerExecutionRoutes.ts.
+  registerExecutionRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
