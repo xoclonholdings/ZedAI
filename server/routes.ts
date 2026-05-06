@@ -22,6 +22,7 @@ import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationServ
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
 import { registerExecutionRoutes } from "./services/execution/registerExecutionRoutes";
+import { registerIntakeRoutes } from "./services/intake/registerIntakeRoutes";
 import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
@@ -1230,6 +1231,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // No existing routes are touched; UI is unchanged. See
   // server/services/execution/registerExecutionRoutes.ts.
   registerExecutionRoutes(app);
+
+  // Additive: register universal external command intake endpoints
+  // (app_chat, voice, sms, whatsapp, email, webhook, api). See
+  // server/services/intake/registerIntakeRoutes.ts.
+  registerIntakeRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
