@@ -119,7 +119,7 @@ export default function Landing() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2 text-foreground">Secure Access</h3>
                 <p className="text-sm text-muted-foreground">
-                  Protected by Replit authentication to keep your data safe
+                  Protected by local authentication to keep your data safe
                 </p>
               </Card>
             </div>

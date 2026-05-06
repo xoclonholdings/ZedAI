@@ -4,7 +4,7 @@ ollama:
   timeout_ms: 60000
 
 local_services:
-  database: "postgresql (Replit managed)"
+  database: "postgresql"
   vector_store: "filesystem-based (hub/shared-memory/semantic)"
   log_store: "filesystem (hub/logs)"
 

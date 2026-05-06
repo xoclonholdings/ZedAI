@@ -307,7 +307,6 @@ Canonical config is in `netlify.toml`:
 ### Root
 
 - `netlify.toml`
-- `.replit`
 - `package.json`
 - `tsconfig.json`
 
@@ -327,9 +326,9 @@ Canonical config is in `netlify.toml`:
 - `client/tsconfig.build.json`
 - `client/vite.config.ts`
 
-## Replit Behavior
+## Runtime Behavior
 
-The current `.replit` workflow starts:
+The backend is started with:
 
 ```text
 cd server && npm run dev
@@ -338,8 +337,10 @@ cd server && npm run dev
 and expects:
 
 - local port `5000`
-- external port `80`
 - all hub/config/log/session paths to resolve against the repo-root `hub/` directory
+
+The backend is deployed to Render; configuration lives in the Render dashboard
+(environment variables, build/start command, optional persistent disk).
 
 ## Documentation Policy
 
@@ -354,7 +355,6 @@ and expects:
 The following locations are legacy reference material and should not be treated as canonical without verification:
 
 - `zed-docs/`
-- `replit.md`
 - `Agentic_Guide.md`
 - `Agentic_Guide_Add_On.md`
 - `SKILL.md`
