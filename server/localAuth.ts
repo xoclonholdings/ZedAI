@@ -5,11 +5,13 @@ import { FileSessionStore } from "./services/FileSessionStore";
 import { logSecurityEvent } from "./services/SecurityAudit";
 import {
   authenticateManagedUser,
+  findAdminUser,
   getPublicAdminSettings,
   loadAdminSettings,
   updateAuthSettings,
   updateCurrentUserCredentials,
 } from "./services/AdminSettingsStore";
+import { ADMIN_EMAIL, AdminMagicLinkService } from "./services/auth/AdminMagicLinkService";
 
 export interface LocalUser {
   id: string;
@@ -158,6 +160,114 @@ export async function setupLocalAuth(app: any) {
       await logSecurityEvent({ type: "auth.logout", ip, userId, detail: "Session destroyed" });
       res.json({ success: true });
     });
+  });
+
+  app.post("/api/admin/login/request-code", async (req: Request, res: Response) => {
+    try {
+      const ip = getClientIp(req);
+      const { email } = req.body || {};
+      const result = await AdminMagicLinkService.requestCode({ email, ip });
+
+      // Always 200 with a generic shape so attackers can't distinguish
+      // whether the email matches the admin email.
+      const message = result.rate_limited
+        ? `Please wait ${result.retry_after_seconds || 60}s before requesting another code.`
+        : "If that email is recognized, a sign-in code has been sent.";
+
+      res.json({
+        success: true,
+        message,
+        rate_limited: !!result.rate_limited,
+        retry_after_seconds: result.retry_after_seconds,
+        // Surface delivery channel only for the actual admin email so a
+        // legitimate operator knows whether to check email vs server logs.
+        delivery_channel:
+          result.generated && typeof result.emailed === "boolean"
+            ? result.emailed
+              ? "email"
+              : "server_log"
+            : undefined,
+      });
+    } catch (error: any) {
+      console.error("Admin OTP request error:", error);
+      res.status(500).json({ error: "Failed to request sign-in code" });
+    }
+  });
+
+  app.post("/api/admin/login/verify-code", async (req: Request, res: Response) => {
+    try {
+      const ip = getClientIp(req);
+      const { email, code } = req.body || {};
+      const settings = await loadAdminSettings();
+      const attemptKey = `admin-otp:${ip}`;
+      const attempts = VERIFICATION_ATTEMPTS.get(attemptKey) || { count: 0, lastAttempt: 0 };
+
+      if (
+        attempts.count >= settings.auth.maxFailedAttempts &&
+        Date.now() - attempts.lastAttempt < settings.auth.lockoutDurationMinutes * 60 * 1000
+      ) {
+        return res.status(429).json({
+          error: `Too many failed attempts. Please wait ${settings.auth.lockoutDurationMinutes} minutes.`,
+        });
+      }
+
+      const verifyResult = await AdminMagicLinkService.verifyCode({ email, code, ip });
+      if (!verifyResult.ok) {
+        VERIFICATION_ATTEMPTS.set(attemptKey, {
+          count: attempts.count + 1,
+          lastAttempt: Date.now(),
+        });
+        await logSecurityEvent({
+          type: "auth.login.fail",
+          ip,
+          detail: `Admin OTP failed: ${verifyResult.reason || "unknown"}`,
+        });
+        return res.status(401).json({ error: "Invalid or expired code" });
+      }
+
+      const adminUser = await findAdminUser();
+      if (!adminUser) {
+        return res.status(500).json({ error: "Admin user not provisioned" });
+      }
+
+      VERIFICATION_ATTEMPTS.delete(attemptKey);
+      attachUser(req, adminUser);
+      await logSecurityEvent({
+        type: "auth.login.success",
+        ip,
+        userId: adminUser.id,
+        detail: "Admin OTP login successful",
+      });
+
+      req.session.save((saveError) => {
+        if (saveError) {
+          console.error("Session save error:", saveError);
+          return res.status(500).json({ error: "Login failed" });
+        }
+        res.json({
+          success: true,
+          user: {
+            id: adminUser.id,
+            username: adminUser.username,
+            email: adminUser.email,
+            firstName: adminUser.firstName,
+            lastName: adminUser.lastName,
+            profileImageUrl: adminUser.profileImageUrl,
+            isAdmin: adminUser.isAdmin,
+            sessionExpiry: settings.auth.sessionTimeoutMinutes,
+          },
+        });
+      });
+    } catch (error: any) {
+      console.error("Admin OTP verify error:", error);
+      res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
+  app.get("/api/admin/login/email", (_req: Request, res: Response) => {
+    // Public so the login screen can render the right hint without
+    // exposing other admin settings.
+    res.json({ adminEmail: ADMIN_EMAIL });
   });
 
   app.post("/api/admin/verify-challenge", async (req: Request, res: Response) => {

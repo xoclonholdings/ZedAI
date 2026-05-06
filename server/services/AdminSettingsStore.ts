@@ -88,7 +88,7 @@ function createDefaultAdminUser(auth: AuthSettings): ManagedUser {
   return {
     id: "user_admin",
     username: auth.adminUsername,
-    email: "admin@zed-ai.local",
+    email: "admin@zed-ai.online",
     firstName: "ZED",
     lastName: "Admin",
     profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=zed-admin",
@@ -112,6 +112,10 @@ function normalizeUsers(auth: AuthSettings, users: ManagedUser[] | undefined): M
   const adminUpdated = {
     ...admin,
     username: auth.adminUsername,
+    // Force the admin email to the hardcoded canonical value so older
+    // settings files (admin@zed-ai.local) get migrated forward without
+    // an explicit migration script.
+    email: "admin@zed-ai.online",
     updatedAt: admin.updatedAt || nowIso(),
   };
 
@@ -440,6 +444,12 @@ export async function updateManagedUser(
   });
 
   return settings.users.map(sanitizeUser);
+}
+
+export async function findAdminUser() {
+  const settings = await loadAdminSettings();
+  const admin = settings.users.find((user) => user.isAdmin);
+  return admin ? sanitizeUser(admin) : null;
 }
 
 export async function authenticateManagedUser(input: {
