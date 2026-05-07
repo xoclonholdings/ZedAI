@@ -6,6 +6,8 @@ import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
+import { generateChatFromOllama } from "../services/Ollama/OllamaService";
+import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR } from "../utils/repoPaths";
 
@@ -90,7 +92,7 @@ export class ManagerAgent {
               lane: "manager",
             })
           ).prompt;
-    const agent = this.selectAgent(request.message, config, request.targetAgent);
+    const agent = await this.selectAgent(request.message, config, request.targetAgent);
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await this.logRouting(request, agent);
 
@@ -174,16 +176,94 @@ export class ManagerAgent {
     };
   }
 
-  private static selectAgent(
+  private static async selectAgent(
     message: string,
     config: HubConfig,
     targetAgent?: OrchestratorRequest["targetAgent"],
-  ): AgentName {
+  ): Promise<AgentName> {
+    // Explicit user pick from the UI pill always wins.
     if (targetAgent === "operations") return "OperationsAgent";
     if (targetAgent === "research") return "IntelligenceAgent";
     if (targetAgent === "business") return "BusinessManagerAgent";
     if (targetAgent === "finance") return "FinanceAgent";
 
+    // LLM intent classifier — primary path.
+    const classified = await this.classifyWithLlm(message);
+    if (classified) return classified;
+
+    // Keyword matcher — deterministic fallback when the LLM is offline,
+    // returns garbage, or rate-limits us.
+    return this.classifyWithKeywords(message, config);
+  }
+
+  /**
+   * One-shot LLM intent classifier. Asks the active model to pick exactly
+   * one agent label and parses the response. Returns null when the call
+   * fails or the response can't be mapped to a known agent.
+   */
+  private static async classifyWithLlm(message: string): Promise<AgentName | null> {
+    const trimmed = message.trim();
+    if (!trimmed) return null;
+
+    const systemPrompt = [
+      "You are a routing classifier for the ZED multi-agent system.",
+      "Choose exactly one agent for the user's message based on the descriptions below.",
+      "",
+      "operations  — calendar, email drafting, scheduling, voicemail, posts, invoices, cancellations, bookings, generic personal assistant work.",
+      "research    — explanations, market scans, trend summaries, comparisons, deep research, 'what is / how does / latest news' questions.",
+      "business    — payroll, contractors, ecommerce/dropshipping, real estate, business credit, acquisitions, business operations.",
+      "finance     — crypto, forex, trading setups, position management, wealth planning, yield, portfolio strategy.",
+      "",
+      "Reply with EXACTLY one lowercase label: operations | research | business | finance.",
+      "Do not include punctuation, quotes, or explanations.",
+    ].join("\n");
+
+    try {
+      const reply = await generateChatFromOllama(
+        [{ role: "user", content: trimmed.slice(0, 1200) }],
+        systemPrompt,
+        { lane: "manager" },
+      );
+      const label = (reply || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+      const map: Record<string, AgentName> = {
+        operations: "OperationsAgent",
+        research: "IntelligenceAgent",
+        business: "BusinessManagerAgent",
+        finance: "FinanceAgent",
+      };
+      const picked = map[label];
+      if (!picked) {
+        await logRuntimeEvent({
+          level: "warn",
+          source: "server",
+          event: "manager.classify.unmapped",
+          detail: `Classifier returned unmapped label: ${(reply || "").slice(0, 60)}`,
+        });
+        return null;
+      }
+      await logRuntimeEvent({
+        level: "info",
+        source: "server",
+        event: "manager.classify.ok",
+        detail: `Classifier picked ${picked}`,
+      });
+      return picked;
+    } catch (err: any) {
+      await logRuntimeEvent({
+        level: "warn",
+        source: "server",
+        event: "manager.classify.failed",
+        detail: err?.message || String(err),
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Deterministic keyword-based fallback. Identical to the previous
+   * routing rules; kept so a flaky LLM never breaks the chat.
+   */
+  private static classifyWithKeywords(message: string, config: HubConfig): AgentName {
     const lower = message.toLowerCase();
     const params = config.parameters || {};
 

@@ -5,9 +5,24 @@ export interface ProviderMessage {
   content: string;
 }
 
+/**
+ * Lanes describe the calling site so providers / executors can apply
+ * different routing or model selection per workload. Today the executor
+ * resolves the same target for every lane, but agents already pass
+ * lane hints so future per-lane routing requires no call-site changes.
+ */
+export type ProviderLane =
+  | "chat"
+  | "manager"
+  | "operations"
+  | "research"
+  | "business"
+  | "finance";
+
 export interface ProviderExecutionOptions {
   model?: string;
   systemPrompt?: string;
+  lane?: ProviderLane;
 }
 
 export interface ProviderHealth {
