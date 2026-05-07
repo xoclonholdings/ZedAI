@@ -19,7 +19,8 @@ export type SecurityEventType =
   | "approval.approved"
   | "approval.rejected"
   | "tier.violation"
-  | "tier.block";
+  | "tier.block"
+  | "data.clear_all";
 
 export interface SecurityEvent {
   type: SecurityEventType;

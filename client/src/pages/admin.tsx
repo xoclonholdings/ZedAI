@@ -33,6 +33,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/UseAuth";
 import KnowledgeSettings from "@/components/settings/KnowledgeSettings";
 import RulesetSettings from "@/components/settings/RulesetSettings";
+import AdminSecuritySettings from "@/components/settings/AdminSecuritySettings";
+import ProviderDiagnosticsCard from "@/components/admin/ProviderDiagnosticsCard";
 import zedLogo from "@assets/Zed_logo.png";
 
 type Section = "overview" | "knowledge" | "integrations" | "ruleset" | "approvals" | "logs" | "security";
@@ -345,7 +347,10 @@ export default function Admin() {
               AI Host
             </CardTitle>
             <CardDescription>
-              Colab cannot be started remotely by ZED. Start the notebook yourself, then use this panel to verify the bridge.
+              Verifies the model provider configured by env vars
+              (<code>MODEL_PROVIDER</code>, <code>OPENAI_BASE_URL</code>, <code>OPENAI_API_KEY</code>)
+              by sending a one-token round-trip request. The Provider Routing card on the Overview tab
+              shows what&apos;s actually wired.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -359,24 +364,49 @@ export default function Admin() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Active model: {status?.ollama?.models?.[0] || "none detected"}
+                  Reported models:{" "}
+                  {status?.ollama?.models?.length
+                    ? status.ollama.models.join(", ")
+                    : "none reported by provider"}
                 </p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 p-4 text-xs leading-5 text-muted-foreground">
-                <p>1. Open Colab and run the notebook once.</p>
-                <p>2. Keep the notebook connected while using ZED.</p>
-                <p>3. Use the button below to confirm the bridge is alive.</p>
+                <p className="font-medium text-foreground/80">Common failures:</p>
+                <p>
+                  <strong>HTTP 401</strong> — wrong / missing API key
+                </p>
+                <p>
+                  <strong>HTTP 402</strong> — provider quota / billing issue
+                </p>
+                <p>
+                  <strong>HTTP 404 or 405</strong> — base URL is wrong (must end one segment before{" "}
+                  <code>/chat/completions</code>)
+                </p>
+                <p>
+                  <strong>Invalid URL</strong> — env var contains stray characters like <code>&lt;</code> or quotes
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={testAiHost} disabled={aiHostTest.status === "testing"}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="zed-glass border-white/10"
+                onClick={testAiHost}
+                disabled={aiHostTest.status === "testing"}
+              >
                 <RefreshCw size={14} className={`mr-1 ${aiHostTest.status === "testing" ? "animate-spin" : ""}`} />
-                {aiHostTest.status === "testing" ? "Testing..." : "Test / Reconnect AI Host"}
+                {aiHostTest.status === "testing" ? "Testing..." : "Test AI Host"}
               </Button>
-              {aiHostTest.status !== "idle" && (
-                <p className={`text-xs ${aiHostTest.status === "ok" ? "text-emerald-300" : "text-red-300"}`}>
-                  {aiHostTest.detail}
+              {aiHostTest.status === "ok" && (
+                <p className="text-xs text-emerald-300">
+                  Provider answered: <span className="font-mono">{aiHostTest.detail}</span>
                 </p>
+              )}
+              {aiHostTest.status === "error" && (
+                <pre className="w-full whitespace-pre-wrap break-all rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 font-mono text-[11px] text-red-300">
+                  {aiHostTest.detail}
+                </pre>
               )}
             </div>
           </CardContent>
@@ -547,17 +577,19 @@ export default function Admin() {
               <div className="text-center text-muted-foreground py-12">Loading…</div>
             ) : status ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ProviderDiagnosticsCard />
+
                 <Card className="zed-glass border-white/10">
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Bot size={18} className="text-purple-400" />
-                      AI Host
+                      Provider Health
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-2">
                       <StatusDot online={status.ollama?.status === "online"} />
-                      <span className="text-sm capitalize">{status.ollama?.status}</span>
+                      <span className="text-sm capitalize">{status.ollama?.status || "unknown"}</span>
                       {status.ollama?.provider && (
                         <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]">
                           {status.ollama.provider}
@@ -566,19 +598,27 @@ export default function Admin() {
                     </div>
                     {status.ollama?.models?.length > 0 ? (
                       <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Available models:</p>
-                        {status.ollama.models.map((m: string) => (
-                          <Badge key={m} variant="secondary" className="zed-glass border-white/10 text-xs mr-1">
-                            {m}
-                          </Badge>
-                        ))}
+                        <p className="text-xs text-muted-foreground">Reported models:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {status.ollama.models.map((m: string) => (
+                            <Badge key={m} variant="secondary" className="zed-glass border-white/10 text-xs">
+                              {m}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        No active bridge detected. Start the notebook or model host, then verify it from Integrations.
+                        Provider hasn&apos;t reported any models. If chat is failing, open Integrations → AI Host
+                        and run a test — the resulting error message will tell you exactly what&apos;s wrong.
                       </p>
                     )}
-                    <Button size="sm" variant="outline" className="zed-glass border-white/10" onClick={() => setSection("integrations")}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="zed-glass border-white/10"
+                      onClick={() => setSection("integrations")}
+                    >
                       <Bot size={14} className="mr-1" />
                       Open AI Host Controls
                     </Button>
@@ -869,12 +909,14 @@ export default function Admin() {
             )}
           </>
         )}
-        {/* ── Security Log ──────────────────────────────────── */}
+        {/* ── Security ──────────────────────────────────────── */}
         {section === "security" && (
           <>
-            <div className="flex items-center justify-between">
+            <AdminSecuritySettings />
+
+            <div className="flex items-center justify-between pt-4">
               <div>
-                <h2 className="text-lg font-semibold">Security Log</h2>
+                <h2 className="text-lg font-semibold">Security Event Log</h2>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   Auth events, tier blocks, approvals, and audit trail.
                 </p>

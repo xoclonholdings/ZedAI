@@ -153,3 +153,24 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
     },
   };
 }
+
+/**
+ * Returns the configured default model for the active provider — the
+ * value used when a request doesn't carry a per-lane override. Useful
+ * for diagnostics endpoints and admin UI.
+ */
+export function getActiveProviderDefaultModel(
+  config: ProviderRuntimeConfig = getProviderRuntimeConfig(),
+): string {
+  switch (config.activeProvider) {
+    case "openai":
+      return config.openai.model;
+    case "claude":
+      return config.claude.model;
+    case "claw-temp":
+      return config.clawTemp.model;
+    case "ollama":
+    default:
+      return config.ollama.model;
+  }
+}

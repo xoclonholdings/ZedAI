@@ -10,7 +10,7 @@ import {
   type OllamaMessage,
 } from "./services/Ollama/OllamaService";
 import { getActiveProviderName, getProviderRoutingSummary, getResolvedTargetName } from "./core/providers/provider-executor";
-import { getProviderRuntimeConfig } from "./core/providers/provider-config";
+import { getActiveProviderDefaultModel, getProviderRuntimeConfig } from "./core/providers/provider-config";
 import { buildOllamaPrompt } from "./services/Ollama/OllamaContextBuilder";
 import { setupLocalAuth, isAdmin, isAuthenticated } from "./localAuth";
 import { ManagerAgent } from "./orchestrator/ManagerAgent";
@@ -826,14 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const ollamaHealth = await checkOllamaHealth();
 
-      const model =
-        provider === "ollama"
-          ? config.ollama.model
-          : provider === "openai"
-            ? config.openai.model
-            : provider === "claude"
-              ? config.claude.model
-              : config.clawTemp.model;
+      const model = getActiveProviderDefaultModel(config);
 
       res.json({
         provider,
@@ -844,6 +837,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         is_local: isLocal,
         status: ollamaHealth.status,
         available_models: ollamaHealth.models,
+        lane_models: {
+          chat: config.laneModels.chat || "",
+          manager: config.laneModels.manager || "",
+          operations: config.laneModels.operations || "",
+          research: config.laneModels.research || "",
+          business: config.laneModels.business || "",
+          finance: config.laneModels.finance || "",
+        },
       });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to read runtime status" });
@@ -891,7 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: activeProvider,
           target: getResolvedTargetName({ lane: "chat" }),
           configuredModel:
-            providerConfig.targets[getResolvedTargetName({ lane: "chat" })].model || providerConfig.activeModel,
+            providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig),
           remoteMode: providerConfig.clawTemp.mode,
         },
       providerRouting: routingSummary.routing,
@@ -914,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/knowledge/overview", isAdmin, async (_req, res) => {
     try {
       const settings = await loadAdminSettings();
-      const defaultUserId = settings.managedUsers?.[0]?.id || "admin-user";
+      const defaultUserId = settings.users?.[0]?.id || "admin-user";
       const { MemoryService } = await import("./services/memoryService");
       const [core, project, scratchpad] = await Promise.all([
         MemoryService.getAllCoreMemory(),
@@ -1059,20 +1060,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const health = await checkOllamaHealth();
     const activeProvider = getActiveProviderName({ lane: "chat" });
     const routingSummary = getProviderRoutingSummary();
+    const defaultModel = getActiveProviderDefaultModel(providerConfig);
+    const target = getResolvedTargetName({ lane: "chat" });
 
     res.json({
       activeProvider,
       health,
       config: {
-        model: providerConfig.targets[getResolvedTargetName({ lane: "chat" })].model || providerConfig.activeModel,
+        defaultModel,
+        target,
         ollamaBaseUrl: providerConfig.ollama.baseUrl,
         clawBaseUrl: providerConfig.clawTemp.baseUrl,
         clawMode: providerConfig.clawTemp.mode,
         openaiConfigured: Boolean(providerConfig.openai.apiKey),
         claudeConfigured: Boolean(providerConfig.claude.apiKey),
       },
+      // Per-lane model overrides resolved from MODEL_CHAT / MODEL_OPERATIONS / etc.
+      // Empty string means the lane falls back to the provider's defaultModel.
+      laneModels: {
+        chat: providerConfig.laneModels.chat || "",
+        manager: providerConfig.laneModels.manager || "",
+        operations: providerConfig.laneModels.operations || "",
+        research: providerConfig.laneModels.research || "",
+        business: providerConfig.laneModels.business || "",
+        finance: providerConfig.laneModels.finance || "",
+      },
       routing: routingSummary.routing,
-      targets: routingSummary.targets,
     });
   });
 
