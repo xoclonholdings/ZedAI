@@ -20,6 +20,13 @@ async function ensureDir() {
   await fs.mkdir(HUB_LOG_DIR, { recursive: true });
 }
 
+/**
+ * Runtime log events fired by AdminAlertSender itself. We never re-alert on
+ * these — otherwise an SMTP failure during an alert would queue another
+ * alert that also fails, etc.
+ */
+const ALERT_SUPPRESSION_PREFIX = "alert.";
+
 export async function logRuntimeEvent(entry: Omit<RuntimeLogEntry, "timestamp">) {
   try {
     await ensureDir();
@@ -30,6 +37,23 @@ export async function logRuntimeEvent(entry: Omit<RuntimeLogEntry, "timestamp">)
     await fs.appendFile(RUNTIME_LOG, `${JSON.stringify(payload)}\n`, "utf8");
   } catch (error) {
     console.warn("[RuntimeLogger] Failed to write runtime log:", error);
+  }
+
+  if (entry.level === "error" && !entry.event.startsWith(ALERT_SUPPRESSION_PREFIX)) {
+    // Dynamic import to avoid module-load-time cycles. AdminAlertSender
+    // applies its own 5-minute rate limit per event key.
+    void (async () => {
+      try {
+        const { AdminAlertSender } = await import("./auth/AdminAlertSender");
+        await AdminAlertSender.sendLogAlert({
+          event: entry.event,
+          detail: entry.detail,
+          context: entry.context,
+        });
+      } catch (err) {
+        console.warn("[RuntimeLogger] Error-alert dispatch failed:", err);
+      }
+    })();
   }
 }
 

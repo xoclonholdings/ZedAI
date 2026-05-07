@@ -161,11 +161,22 @@ function mergeSettings(raw: Partial<AdminSettings> | null | undefined): AdminSet
         ...(raw?.integrations?.github || {}),
         hasToken: !!(raw?.integrations?.github?.token || raw?.integrations?.github?.hasToken),
       },
-      email: {
-        ...defaultIntegrations.email,
-        ...(raw?.integrations?.email || {}),
-        hasPassword: !!(raw?.integrations?.email?.password || raw?.integrations?.email?.hasPassword),
-      },
+      email: (() => {
+        const merged = {
+          ...defaultIntegrations.email,
+          ...(raw?.integrations?.email || {}),
+          hasPassword: !!(raw?.integrations?.email?.password || raw?.integrations?.email?.hasPassword),
+        };
+        // Forward-migrate empty fields onto the iCloud / zed-ai.online defaults.
+        // Older files saved blanks for these; we want the canonical sender pre-filled
+        // so the only thing the admin still has to enter is auth username + app password.
+        if (!merged.fromAddress) merged.fromAddress = defaultIntegrations.email.fromAddress;
+        if (!merged.fromName) merged.fromName = defaultIntegrations.email.fromName;
+        if (!merged.smtpHost) merged.smtpHost = defaultIntegrations.email.smtpHost;
+        if (!merged.smtpPort) merged.smtpPort = defaultIntegrations.email.smtpPort;
+        if (!merged.notes) merged.notes = defaultIntegrations.email.notes;
+        return merged;
+      })(),
       telephony: {
         ...defaultIntegrations.telephony,
         ...(raw?.integrations?.telephony || {}),

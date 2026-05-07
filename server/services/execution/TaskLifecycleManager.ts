@@ -190,7 +190,33 @@ export class TaskLifecycleManager {
       context: { task_id, patch },
     });
 
+    // Fire admin alerts on terminal/blocking transitions.
+    if (existing.status !== "complete" && updated.status === "complete") {
+      void this.alertCompleted(updated);
+    }
+    if (existing.status !== "blocked" && updated.status === "blocked") {
+      void this.alertBlocked(updated, log_message || patch.approval_reason || "Task moved to blocked");
+    }
+
     return updated;
+  }
+
+  private static async alertCompleted(task: TaskRecord): Promise<void> {
+    try {
+      const { AdminAlertSender } = await import("../auth/AdminAlertSender");
+      await AdminAlertSender.sendTaskCompleted({ task, result: task.last_result });
+    } catch (err) {
+      console.warn("[TaskLifecycleManager] Completion alert failed:", err);
+    }
+  }
+
+  private static async alertBlocked(task: TaskRecord, reason: string): Promise<void> {
+    try {
+      const { AdminAlertSender } = await import("../auth/AdminAlertSender");
+      await AdminAlertSender.sendTaskBlocked({ task, reason });
+    } catch (err) {
+      console.warn("[TaskLifecycleManager] Blocked alert failed:", err);
+    }
   }
 
   static async appendLog(

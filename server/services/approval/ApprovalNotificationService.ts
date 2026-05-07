@@ -16,6 +16,8 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
 import { logRuntimeEvent } from "../RuntimeLogger";
+import { AdminAlertSender } from "../auth/AdminAlertSender";
+import { TaskLifecycleManager } from "../execution/TaskLifecycleManager";
 
 const NOTIFICATION_STORE_PATH = path.resolve(
   HUB_SHARED_MEMORY_DIR,
@@ -92,6 +94,28 @@ export class ApprovalNotificationService {
 
     store.notifications.push(notification);
     await this.write(store);
+
+    // Email the admin for any approval/manual-handling notification, regardless
+    // of recipient_role — admin@zed-ai.online is the supervisory mailbox even
+    // for user-side approvals. We only skip on review-only notifications.
+    if (
+      input.action_type !== "review_only" &&
+      (input.approval_required ?? true)
+    ) {
+      try {
+        const task = await TaskLifecycleManager.get(input.task_id);
+        if (task) {
+          await AdminAlertSender.sendApprovalNeeded({
+            task,
+            role: input.recipient_role,
+            reason: input.message,
+          });
+        }
+      } catch (err) {
+        // Never let email delivery break the notification write path.
+        console.warn("[ApprovalNotificationService] Email alert failed:", err);
+      }
+    }
 
     await logRuntimeEvent({
       level: "info",
