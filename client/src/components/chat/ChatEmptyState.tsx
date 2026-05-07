@@ -28,15 +28,16 @@ const AGENTS: Record<string, AgentProfile> = {
       "Draft a short status update I can send to the team.",
     ],
   },
-  auto: {
-    label: "Auto Agent",
-    blurb: "Routes your request to the best specialist agent automatically.",
-    accent: "from-cyan-400 via-fuchsia-400 to-amber-300",
-    ringColor: "border-cyan-400/30",
+  finance: {
+    label: "Finance",
+    blurb: "Crypto, forex, trading setups, wealth strategy. Action-gated.",
+    accent: "from-emerald-300 via-emerald-400 to-cyan-400",
+    ringColor: "border-emerald-400/30",
     suggestions: [
-      "Pick the right agent and book a 30-minute call with my contractor.",
-      "Take this email and decide whether to reply, schedule, or escalate.",
-      "Find the cheapest way to cancel my unused subscriptions.",
+      "Walk me through a current BTC swing-trade thesis.",
+      "Compare ETH and SOL on-chain activity over the last week.",
+      "Suggest a conservative risk-managed entry for EUR/USD.",
+      "What's the smartest way to compound idle stablecoin yield?",
     ],
   },
   operations: {
@@ -79,7 +80,7 @@ const AGENTS: Record<string, AgentProfile> = {
 
 function profileFor(mode: ConversationMode, target: AgentTarget): AgentProfile {
   if (mode === "chat") return AGENTS.chat;
-  return AGENTS[target] || AGENTS.auto;
+  return AGENTS[target] || AGENTS.operations;
 }
 
 export default function ChatEmptyState({

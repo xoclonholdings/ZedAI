@@ -48,7 +48,7 @@ export default function ChatArea({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
-  const [agentTarget, setAgentTarget] = useState<AgentTarget>("auto");
+  const [agentTarget, setAgentTarget] = useState<AgentTarget>("operations");
   const [composerValue, setComposerValue] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
@@ -255,7 +255,7 @@ export default function ChatArea({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message, conversationId: convId, agentTarget }),
+        body: JSON.stringify({ message, conversationId: convId, targetAgent: agentTarget }),
       });
 
       const data = await res.json();

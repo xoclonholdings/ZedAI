@@ -19,10 +19,16 @@ type MessageAttachment = {
 };
 
 const FONT_CLASS: Record<NonNullable<ChatMessageProps["fontSize"]>, string> = {
-  small: "text-xs leading-6",
-  medium: "text-sm leading-7",
-  large: "text-base leading-8",
+  small: "text-xs leading-5",
+  medium: "text-sm leading-6",
+  large: "text-base leading-7",
 };
+
+function getFileIcon(mimeType: string) {
+  if (mimeType.startsWith("image/")) return <Image size={12} />;
+  if (mimeType.includes("csv") || mimeType.includes("excel")) return <BarChart size={12} />;
+  return <FileText size={12} />;
+}
 
 export default function ChatMessage({
   message,
@@ -37,87 +43,98 @@ export default function ChatMessage({
     ? ((message.metadata as any).attachments as MessageAttachment[])
     : [];
   const bodyClass = FONT_CLASS[fontSize];
-  const timestamp = message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
-  const rowPadding = compact ? "py-1.5" : "py-3";
-  const metaPadding = compact ? "px-0.5" : "px-1";
-
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <Image size={14} />;
-    if (mimeType.includes('csv') || mimeType.includes('excel')) return <BarChart size={14} />;
-    return <FileText size={14} />;
-  };
+  const timestamp = message.createdAt
+    ? new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : "";
+  const rowPad = compact ? "py-1" : "py-1.5";
+  const avatarSize = compact ? "h-6 w-6" : "h-7 w-7";
 
   if (isUser) {
+    // USER → RIGHT side
     return (
-      <div className={`flex max-w-4xl items-start gap-3 ${rowPadding}`}>
-        <div className="mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5">
-          <User className="text-white" size={18} />
-        </div>
-        <div className="max-w-[72%] space-y-3">
-          <div className={`inline-block max-w-full py-0.5 text-foreground/95 whitespace-pre-wrap ${bodyClass} ${metaPadding}`}>
-            {message.content}
-          </div>
-          <div className={`flex items-center gap-3 text-[11px] text-muted-foreground ${metaPadding}`}>
-            {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
-            {onCopy && (
-              <button type="button" onClick={() => onCopy(message)} className="hover:text-foreground">
-                <Copy size={12} className="mr-1 inline" />
-                Copy
-              </button>
-            )}
-            {onEdit && (
-              <button type="button" onClick={() => onEdit(message)} className="hover:text-foreground">
-                <Pencil size={12} className="mr-1 inline" />
-                Edit
-              </button>
+      <div className={`flex w-full justify-end ${rowPad}`}>
+        <div className="flex max-w-[80%] items-start gap-2 sm:max-w-[72%]">
+          <div className="min-w-0 flex-1">
+            <div
+              className={`inline-block max-w-full whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-gradient-to-r from-purple-600/20 to-pink-600/20 px-3 py-1.5 text-right text-foreground/95 ${bodyClass}`}
+            >
+              {message.content}
+            </div>
+            <div className="mt-0.5 flex items-center justify-end gap-2 text-[10px] text-muted-foreground/70">
+              {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
+              {onCopy && (
+                <button type="button" onClick={() => onCopy(message)} className="inline-flex items-center hover:text-foreground">
+                  <Copy size={10} className="mr-0.5" />
+                  Copy
+                </button>
+              )}
+              {onEdit && (
+                <button type="button" onClick={() => onEdit(message)} className="inline-flex items-center hover:text-foreground">
+                  <Pencil size={10} className="mr-0.5" />
+                  Edit
+                </button>
+              )}
+            </div>
+
+            {attachments.length > 0 && (
+              <div className="mt-1.5 space-y-1 border-r border-cyan-500/20 pr-2">
+                {attachments.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-end gap-2 rounded-md border border-white/10 bg-white/5 px-2 py-1"
+                  >
+                    <Badge variant="outline" className="border-cyan-500/30 px-1 text-[10px] text-cyan-300">
+                      {(file.size / 1024 / 1024).toFixed(1)} MB
+                    </Badge>
+                    <span className="truncate text-[11px] text-foreground">{file.name}</span>
+                    <span className="text-cyan-400">{getFileIcon(file.mimeType)}</span>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
-          {attachments.length > 0 && (
-            <div className="space-y-2 border-l border-cyan-500/20 pl-3">
-              {attachments.map((file, index) => (
-                <div key={index} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
-                  <div className="text-cyan-400">
-                    {getFileIcon(file.mimeType)}
-                  </div>
-                  <span className="truncate text-sm text-foreground">{file.name}</span>
-                  <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-300">
-                    {(file.size / 1024 / 1024).toFixed(1)} MB
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          )}
+          <div
+            className={`mt-0.5 flex ${avatarSize} flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5`}
+          >
+            <User className="text-white" size={14} />
+          </div>
         </div>
       </div>
     );
   }
 
+  // ASSISTANT → LEFT side
   return (
-    <div className={`flex max-w-4xl justify-end ${rowPadding}`}>
-      <div className="max-w-[72%]">
-        <div className="mb-2 flex items-center justify-end gap-2 text-xs">
-          <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-300">
-            <Sparkles size={10} className="mr-1" />
-            Assistant
-          </Badge>
-          <span className="font-semibold uppercase tracking-[0.18em] bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            ZED
-          </span>
+    <div className={`flex w-full justify-start ${rowPad}`}>
+      <div className="flex max-w-[80%] items-start gap-2 sm:max-w-[72%]">
+        <div
+          className={`mt-0.5 flex ${avatarSize} flex-shrink-0 items-center justify-center rounded-full border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20`}
+        >
           <img src={zLogoPath} alt="Z" className="h-3.5 w-3.5" />
         </div>
 
-        <div className={`ml-auto inline-block max-w-full py-0.5 text-foreground/95 whitespace-pre-wrap ${bodyClass} ${metaPadding}`}>
-          {message.content}
-        </div>
-        <div className={`flex items-center justify-end gap-3 text-[11px] text-muted-foreground ${metaPadding}`}>
-          {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
-          {onCopy && (
-            <button type="button" onClick={() => onCopy(message)} className="hover:text-foreground">
-              <Copy size={12} className="mr-1 inline" />
-              Copy
-            </button>
-          )}
+        <div className="min-w-0 flex-1">
+          <div className="mb-0.5 flex items-center gap-1.5 text-[10px]">
+            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text font-semibold uppercase tracking-[0.18em] text-transparent">
+              ZED
+            </span>
+            <Sparkles size={9} className="text-purple-300" />
+          </div>
+          <div
+            className={`inline-block max-w-full whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-white/[0.04] px-3 py-1.5 text-foreground/95 ${bodyClass}`}
+          >
+            {message.content}
+          </div>
+          <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground/70">
+            {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
+            {onCopy && (
+              <button type="button" onClick={() => onCopy(message)} className="inline-flex items-center hover:text-foreground">
+                <Copy size={10} className="mr-0.5" />
+                Copy
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

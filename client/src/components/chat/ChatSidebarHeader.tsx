@@ -1,7 +1,6 @@
 import { X, Plus, Shield, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import LogoutButton from "@/components/auth/LogoutButton";
 import SettingsModal from "@/components/settings/SettingsModal";
 import { useAuth } from "@/components/auth/UseAuth";
 
@@ -45,18 +44,15 @@ export default function ChatSidebarHeader({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <LogoutButton />
-
-          <Button
-            onClick={isMobile ? onClose : onCollapse}
-            variant="ghost"
-            size="sm"
-            className={`${compact ? "w-7 h-7" : "w-8 h-8"} zed-button rounded-xl p-0 text-muted-foreground hover:text-foreground`}
-          >
-            <X size={16} />
-          </Button>
-        </div>
+        <Button
+          onClick={isMobile ? onClose : onCollapse}
+          variant="ghost"
+          size="sm"
+          className={`${compact ? "w-7 h-7" : "w-8 h-8"} zed-button rounded-xl p-0 text-muted-foreground hover:text-foreground`}
+          aria-label="Close sidebar"
+        >
+          <X size={16} />
+        </Button>
       </div>
 
       <Button

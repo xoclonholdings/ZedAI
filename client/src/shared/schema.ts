@@ -1,5 +1,5 @@
 export type ConversationMode = "chat" | "agent";
-export type AgentTarget = "auto" | "operations" | "research" | "business";
+export type AgentTarget = "operations" | "research" | "business" | "finance";
 
 export interface Conversation {
   id: string;

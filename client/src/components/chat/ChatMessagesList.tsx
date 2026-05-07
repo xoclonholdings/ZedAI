@@ -47,7 +47,7 @@ export default function ChatMessagesList({
           Your message was sent. If the response does not appear, refresh the conversation and check Admin logs.
         </div>
       ) : (
-        <div className={`mx-auto max-w-4xl ${compact ? "space-y-1.5 md:space-y-2" : "space-y-3 md:space-y-4"}`}>
+        <div className={`mx-auto max-w-4xl ${compact ? "space-y-0.5" : "space-y-1.5"}`}>
           {messages.map((message) => (
             <ChatMessage
               key={message.id}

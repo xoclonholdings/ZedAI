@@ -206,10 +206,10 @@ export default function ChatControls({
       {currentMode === "agent" && (
         <div className="flex flex-wrap items-center rounded-xl border border-white/10 overflow-hidden zed-glass">
           {[
-            { key: "auto", label: "Auto" },
             { key: "operations", label: "Ops" },
             { key: "research", label: "R&D" },
             { key: "business", label: "Biz" },
+            { key: "finance", label: "Finance" },
           ].map((option) => (
             <button
               key={option.key}

@@ -4,6 +4,7 @@ import yaml from "js-yaml";
 import { OperationsAgent, type AgentRequest, type AgentResponse } from "../agents/operations/OperationsAgent";
 import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/IntelligenceAgent";
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
+import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR } from "../utils/repoPaths";
@@ -24,7 +25,7 @@ interface OrchestratorRequest {
   conversationId?: string;
   context?: Record<string, any>;
   ip?: string;
-  targetAgent?: "auto" | "operations" | "research" | "business";
+  targetAgent?: "operations" | "research" | "business" | "finance";
 }
 
 interface OrchestratorResponse {
@@ -37,7 +38,7 @@ interface OrchestratorResponse {
   metadata?: Record<string, any>;
 }
 
-type AgentName = "OperationsAgent" | "IntelligenceAgent" | "BusinessManagerAgent";
+type AgentName = "OperationsAgent" | "IntelligenceAgent" | "BusinessManagerAgent" | "FinanceAgent";
 
 export class ManagerAgent {
   private static config: HubConfig | null = null;
@@ -130,6 +131,21 @@ export class ManagerAgent {
         };
       }
 
+      case "FinanceAgent": {
+        const resp = await FinanceAgent.process({
+          userId: request.userId,
+          task: request.message,
+          conversationId: request.conversationId,
+          memoryContext: knowledgePrompt,
+        });
+        return {
+          reply: resp.message,
+          agent: resp.agent,
+          requiresApproval: resp.requiresApproval,
+          metadata: { capabilities: resp.capabilities },
+        };
+      }
+
       case "OperationsAgent":
       default: {
         const opReq: AgentRequest = {
@@ -161,14 +177,53 @@ export class ManagerAgent {
   private static selectAgent(
     message: string,
     config: HubConfig,
-    targetAgent: OrchestratorRequest["targetAgent"] = "auto",
+    targetAgent?: OrchestratorRequest["targetAgent"],
   ): AgentName {
     if (targetAgent === "operations") return "OperationsAgent";
     if (targetAgent === "research") return "IntelligenceAgent";
     if (targetAgent === "business") return "BusinessManagerAgent";
+    if (targetAgent === "finance") return "FinanceAgent";
 
     const lower = message.toLowerCase();
     const params = config.parameters || {};
+
+    const financeKeywords = [
+      "crypto",
+      "bitcoin",
+      "btc",
+      "ethereum",
+      "eth",
+      "solana",
+      "sol",
+      "token",
+      "altcoin",
+      "defi",
+      "web3",
+      "nft",
+      "on-chain",
+      "wallet",
+      "forex",
+      "fx",
+      "eurusd",
+      "gbpusd",
+      "usdjpy",
+      "currency pair",
+      "trade",
+      "trading",
+      "long position",
+      "short position",
+      "stop loss",
+      "take profit",
+      "portfolio",
+      "rebalance",
+      "wealth",
+      "compound",
+      "allocation",
+      "yield",
+      "stablecoin",
+    ];
+
+    if (financeKeywords.some((keyword) => lower.includes(keyword))) return "FinanceAgent";
 
     const businessKeywords = [
       "payroll",

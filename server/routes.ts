@@ -711,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/orchestrate", isAuthenticated, async (req: any, res) => {
     try {
-      const { message, conversationId, targetAgent = "auto" } = req.body;
+      const { message, conversationId, targetAgent } = req.body;
       const userId = req.user.claims.sub;
 
       if (!message) return res.status(400).json({ error: "Message required" });
