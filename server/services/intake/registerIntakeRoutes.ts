@@ -20,8 +20,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { isAuthenticated, isAdmin } from "../../localAuth";
 import { ExternalCommandGateway } from "./ExternalCommandGateway";
 import { ChannelContextManager, type ChannelType } from "./ChannelContextManager";
-import { FutureVoiceCommandBridge } from "./FutureVoiceCommandBridge";
-import { FutureMessagingBridge, type MessagingTarget } from "./FutureMessagingBridge";
+import { VoiceCommandBridge } from "./VoiceCommandBridge";
+import { MessagingBridge, type MessagingTarget } from "./MessagingBridge";
 import { logRuntimeEvent } from "../RuntimeLogger";
 
 function userIdFrom(req: any): string | null {
@@ -202,7 +202,7 @@ export function registerIntakeRoutes(app: Express): void {
       if (!from || !body) {
         return res.status(400).json({ error: "from and body are required" });
       }
-      const result = await FutureMessagingBridge.routeIncoming({
+      const result = await MessagingBridge.routeIncoming({
         target: "sms",
         sender_id: from,
         body,
@@ -221,7 +221,7 @@ export function registerIntakeRoutes(app: Express): void {
       if (!target || !from || !body) {
         return res.status(400).json({ error: "target, from, body are required" });
       }
-      const result = await FutureMessagingBridge.routeIncoming({
+      const result = await MessagingBridge.routeIncoming({
         target: target as MessagingTarget,
         sender_id: from,
         body,
@@ -240,7 +240,7 @@ export function registerIntakeRoutes(app: Express): void {
       if (!target || !to || !body) {
         return res.status(400).json({ error: "target, to, body are required" });
       }
-      const result = await FutureMessagingBridge.sendOutbound({
+      const result = await MessagingBridge.sendOutbound({
         target: target as MessagingTarget,
         to,
         body,
@@ -254,7 +254,7 @@ export function registerIntakeRoutes(app: Express): void {
 
   app.get("/api/intake/messaging/compatibility", isAuthenticated, async (_req, res: Response) => {
     try {
-      res.json({ adapters: FutureMessagingBridge.approvalCompatibility() });
+      res.json({ adapters: await MessagingBridge.approvalCompatibility() });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "lookup failed" });
     }
@@ -269,7 +269,7 @@ export function registerIntakeRoutes(app: Express): void {
       if (!transcript || !speaker_id) {
         return res.status(400).json({ error: "transcript and speaker_id are required" });
       }
-      const result = await FutureVoiceCommandBridge.process({
+      const result = await VoiceCommandBridge.process({
         transcript,
         speaker_id,
         confidence: typeof confidence === "number" ? confidence : 1,
@@ -286,7 +286,7 @@ export function registerIntakeRoutes(app: Express): void {
 
   app.get("/api/intake/voice/contract", isAuthenticated, async (_req, res: Response) => {
     try {
-      res.json(FutureVoiceCommandBridge.describeContract());
+      res.json(VoiceCommandBridge.describeContract());
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "lookup failed" });
     }

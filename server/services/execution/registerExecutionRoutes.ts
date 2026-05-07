@@ -138,6 +138,47 @@ export function registerExecutionRoutes(app: Express): void {
     }
   });
 
+  app.post("/api/execution/human-bridge/:id/claim", isAdmin, async (req: any, res: Response) => {
+    try {
+      const claimed_by = req.body?.claimed_by || userIdFrom(req) || "admin";
+      const record = await HumanExecutionBridge.claim(req.params.id, claimed_by, req.body?.notes);
+      if (!record) return res.status(404).json({ error: "record not found" });
+      res.json({ record });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || "claim failed" });
+    }
+  });
+
+  app.post("/api/execution/human-bridge/:id/complete", isAdmin, async (req: any, res: Response) => {
+    try {
+      const record = await HumanExecutionBridge.complete(req.params.id, req.body?.notes);
+      if (!record) return res.status(404).json({ error: "record not found" });
+      res.json({ record });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || "complete failed" });
+    }
+  });
+
+  app.post("/api/execution/human-bridge/:id/abandon", isAdmin, async (req: any, res: Response) => {
+    try {
+      const record = await HumanExecutionBridge.abandon(req.params.id, req.body?.notes);
+      if (!record) return res.status(404).json({ error: "record not found" });
+      res.json({ record });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || "abandon failed" });
+    }
+  });
+
+  app.post("/api/execution/human-bridge/:id/requeue", isAdmin, async (req: any, res: Response) => {
+    try {
+      const record = await HumanExecutionBridge.requeue(req.params.id, req.body?.notes);
+      if (!record) return res.status(404).json({ error: "record not found" });
+      res.json({ record });
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || "requeue failed" });
+    }
+  });
+
   // ─── Approval Layer ──────────────────────────────────────────────────────
 
   app.post("/api/approval/sweep", isAdmin, async (_req, res: Response) => {

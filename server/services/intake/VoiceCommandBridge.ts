@@ -1,19 +1,15 @@
 /**
- * FutureVoiceCommandBridge
+ * VoiceCommandBridge
  *
- * PLACEHOLDER for future real-time voice command intake.
+ * Functional voice command intake. Accepts a transcript (captured by
+ * the browser's Web Speech API or any future ASR provider) and routes
+ * it through ExternalCommandGateway, which produces a real Zed task
+ * with execution plan + approval gating.
  *
- * Defines the interfaces and the routing pipeline so other modules can
- * already depend on the contract today. When a real ASR / wake-word /
- * voice provider is wired in later, only this file's `process()` body
- * needs to be filled out — every downstream service already calls
- * through the public API defined here.
- *
- * NOT IMPLEMENTED:
- *   - audio capture
- *   - speech-to-text
- *   - speaker identification
- *   - real-time turn taking
+ * Audio capture is intentionally out of scope here — it lives in the
+ * client (controls-row mic in ChatControls.tsx posts to /api/intake/voice
+ * which lands on this bridge). When a server-side ASR provider is added
+ * later, it can call into the same `process()` entry point.
  */
 
 import { ExternalCommandGateway, type GatewayResult } from "./ExternalCommandGateway";
@@ -46,7 +42,7 @@ export interface VoiceCommandRoutingResult {
 const MIN_TRANSCRIPT_LENGTH = 2;
 const MIN_CONFIDENCE = 0.4;
 
-export class FutureVoiceCommandBridge {
+export class VoiceCommandBridge {
   private static hooks: VoicePipelineHooks = {};
 
   static registerHooks(hooks: VoicePipelineHooks): void {
@@ -133,4 +129,4 @@ export class FutureVoiceCommandBridge {
   }
 }
 
-export default FutureVoiceCommandBridge;
+export default VoiceCommandBridge;
