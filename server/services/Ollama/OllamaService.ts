@@ -13,14 +13,44 @@ import type { ProviderExecutionOptions, ProviderMessage } from "../../core/provi
 const runtimeConfig = getProviderRuntimeConfig();
 const routingSummary = getProviderRoutingSummary();
 
-console.log(`[OllamaService] Active provider: ${runtimeConfig.activeProvider}`);
-console.log(`[OllamaService] Ollama target: ${runtimeConfig.ollama.baseUrl}`);
+const providerDefaultModel =
+  runtimeConfig.activeProvider === "ollama"
+    ? runtimeConfig.ollama.model
+    : runtimeConfig.activeProvider === "openai"
+      ? runtimeConfig.openai.model
+      : runtimeConfig.activeProvider === "claude"
+        ? runtimeConfig.claude.model
+        : runtimeConfig.clawTemp.model;
+
+const providerTarget =
+  runtimeConfig.activeProvider === "ollama"
+    ? runtimeConfig.ollama.baseUrl
+    : runtimeConfig.activeProvider === "openai"
+      ? runtimeConfig.openai.baseUrl
+      : runtimeConfig.activeProvider === "claude"
+        ? runtimeConfig.claude.baseUrl
+        : runtimeConfig.clawTemp.baseUrl;
+
+console.log(`[boot] active provider: ${runtimeConfig.activeProvider}`);
+console.log(`[boot] target URL:      ${providerTarget || "(none)"}`);
+console.log(`[boot] default model:   ${providerDefaultModel}`);
+
+const lanes = ["chat", "manager", "operations", "research", "business", "finance"] as const;
+const laneRows = lanes
+  .map((lane) => {
+    const override = runtimeConfig.laneModels[lane];
+    return `  ${lane.padEnd(11)} -> ${override || "(default)"}`;
+  })
+  .join("\n");
+console.log(`[boot] per-lane model overrides:\n${laneRows}`);
+
 console.log(
-  `[OllamaService] Routed targets: chat=${routingSummary.routing.chat}, operations=${routingSummary.routing.operations}, business=${routingSummary.routing.business}, finance=${routingSummary.routing.finance}, research=${routingSummary.routing.research}`,
+  `[boot] routing targets:  chat=${routingSummary.routing.chat}, manager=${routingSummary.target}, operations=${routingSummary.routing.operations}, research=${routingSummary.routing.research}, business=${routingSummary.routing.business}, finance=${routingSummary.routing.finance}`,
 );
+
 if (runtimeConfig.clawTemp.baseUrl) {
   console.log(
-    `[OllamaService] Temporary remote runner: ${runtimeConfig.clawTemp.baseUrl} (${runtimeConfig.clawTemp.mode})`,
+    `[boot] legacy remote runner configured: ${runtimeConfig.clawTemp.baseUrl} (${runtimeConfig.clawTemp.mode})`,
   );
 }
 

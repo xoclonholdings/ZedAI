@@ -7,9 +7,9 @@ export interface ProviderMessage {
 
 /**
  * Lanes describe the calling site so providers / executors can apply
- * different routing or model selection per workload. Today the executor
- * resolves the same target for every lane, but agents already pass
- * lane hints so future per-lane routing requires no call-site changes.
+ * different routing or model selection per workload. Lane name flows
+ * through to provider-config.resolveModelForLane(), letting you set
+ * different models per lane via MODEL_CHAT / MODEL_MANAGER / etc.
  */
 export type ProviderLane =
   | "chat"

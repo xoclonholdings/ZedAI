@@ -1,4 +1,4 @@
-import { getProviderRuntimeConfig } from "./provider-config";
+import { getProviderRuntimeConfig, resolveModelForLane } from "./provider-config";
 import { extractAssistantText } from "./provider-helpers";
 import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
@@ -15,12 +15,18 @@ export class OpenAIProvider implements ModelProvider {
     return config;
   }
 
+  private resolveModel(options?: ProviderExecutionOptions): string {
+    const config = this.getConfig();
+    return options?.model || resolveModelForLane(options?.lane, config.model);
+  }
+
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
     return this.executeChat([{ role: "user", content: prompt }], options);
   }
 
   async executeChat(messages: ProviderMessage[], options?: ProviderExecutionOptions): Promise<string> {
     const config = this.ensureConfigured();
+    const model = this.resolveModel(options);
     const response = await fetch(`${config.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -28,13 +34,18 @@ export class OpenAIProvider implements ModelProvider {
         Authorization: `Bearer ${config.apiKey}`,
       },
       body: JSON.stringify({
-        model: options?.model || config.model,
+        model,
         messages: options?.systemPrompt
           ? [{ role: "system", content: options.systemPrompt }, ...messages]
           : messages,
       }),
     });
-    if (!response.ok) throw new Error(`OpenAI error ${response.status}`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(
+        `OpenAI ${response.status}${body ? `: ${body.slice(0, 220)}` : ""}`,
+      );
+    }
     return extractAssistantText(await response.json());
   }
 

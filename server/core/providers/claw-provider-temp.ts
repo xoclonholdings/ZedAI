@@ -1,4 +1,4 @@
-import { getProviderRuntimeConfig } from "./provider-config";
+import { getProviderRuntimeConfig, resolveModelForLane } from "./provider-config";
 import {
   buildPromptFromMessages,
   extractAssistantText,
@@ -36,7 +36,7 @@ export class ClawTempProvider implements ModelProvider {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: options?.model || config.model,
+          model: options?.model || resolveModelForLane(options?.lane, config.model),
           message: userMessage,
           messages,
           system_prompt: options?.systemPrompt,
@@ -46,7 +46,10 @@ export class ClawTempProvider implements ModelProvider {
     );
 
     if (!response.ok) {
-      throw new Error(`Remote inference error ${response.status}`);
+      const body = await response.text().catch(() => "");
+      throw new Error(
+        `Remote inference ${response.status}${body ? `: ${body.slice(0, 220)}` : ""}`,
+      );
     }
 
     return extractAssistantText(await response.json());

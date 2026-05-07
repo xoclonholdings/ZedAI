@@ -1,8 +1,25 @@
 export type ProviderName = "ollama" | "openai" | "claude" | "claw-temp";
 
+export type ProviderLane =
+  | "chat"
+  | "manager"
+  | "operations"
+  | "research"
+  | "business"
+  | "finance";
+
 export interface ProviderRuntimeConfig {
   activeProvider: ProviderName;
   activeModel?: string;
+  /**
+   * Per-lane model overrides. Set via env vars:
+   *   MODEL_CHAT, MODEL_MANAGER, MODEL_OPERATIONS,
+   *   MODEL_RESEARCH, MODEL_BUSINESS, MODEL_FINANCE.
+   * When a lane has no explicit override, the provider falls back to
+   * the per-provider default (OPENAI_MODEL / OLLAMA_MODEL / etc.) and
+   * finally to MODEL_NAME.
+   */
+  laneModels: Partial<Record<ProviderLane, string>>;
   ollama: {
     baseUrl: string;
     model: string;
@@ -43,6 +60,54 @@ function normalizeProviderName(value?: string): ProviderName | null {
   return null;
 }
 
+function laneEnv(lane: ProviderLane): string | undefined {
+  const upper = lane.toUpperCase();
+  return (
+    process.env[`MODEL_${upper}`]?.trim() ||
+    process.env[`LANE_${upper}_MODEL`]?.trim() ||
+    undefined
+  );
+}
+
+function buildLaneModels(): Partial<Record<ProviderLane, string>> {
+  const lanes: ProviderLane[] = [
+    "chat",
+    "manager",
+    "operations",
+    "research",
+    "business",
+    "finance",
+  ];
+  const out: Partial<Record<ProviderLane, string>> = {};
+  for (const lane of lanes) {
+    const value = laneEnv(lane);
+    if (value) out[lane] = value;
+  }
+  return out;
+}
+
+/**
+ * Resolve the model name to use for a given lane. Priority:
+ *   1. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
+ *   2. The provider's own default (OPENAI_MODEL, OLLAMA_MODEL, etc.)
+ *   3. Global MODEL_NAME
+ *   4. The provider's hard-coded fallback.
+ */
+export function resolveModelForLane(
+  lane: ProviderLane | undefined,
+  fallback: string,
+): string {
+  if (lane) {
+    const laneValue = laneEnv(lane);
+    if (laneValue) return laneValue;
+  }
+  return (
+    process.env.MODEL_NAME?.trim() ||
+    process.env.ZED_MODEL_NAME?.trim() ||
+    fallback
+  );
+}
+
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const remoteInferenceUrl = trimTrailingSlash(process.env.REMOTE_INFERENCE_URL || "");
   const remoteInferenceMode = (process.env.REMOTE_INFERENCE_MODE || "ollama").trim().toLowerCase();
@@ -62,6 +127,7 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   return {
     activeProvider,
     activeModel: process.env.MODEL_NAME || process.env.ZED_MODEL_NAME || undefined,
+    laneModels: buildLaneModels(),
     ollama: {
       baseUrl: trimTrailingSlash(process.env.OLLAMA_URL || remoteInferenceUrl || "http://localhost:11434"),
       model: process.env.OLLAMA_MODEL || process.env.MODEL_NAME || "qwen2.5:7b",

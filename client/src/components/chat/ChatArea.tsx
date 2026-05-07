@@ -163,7 +163,12 @@ export default function ChatArea({
       });
 
       if (!res.ok || !res.body) {
-        throw new Error(`HTTP ${res.status}`);
+        const detail = await res.text().catch(() => "");
+        throw new Error(
+          `HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}${
+            detail ? ` — ${detail.slice(0, 200)}` : ""
+          }`,
+        );
       }
 
       const reader = res.body.getReader();
@@ -221,13 +226,18 @@ export default function ChatArea({
       console.error("[Chat] SSE error:", err);
       setStreamingMessage("");
       setIsStreaming(false);
+      const detail = err?.message || "unknown error";
+      const isAuthLike = /HTTP 40[1234]/.test(detail);
+      const friendly = isAuthLike
+        ? `${detail}. Try signing in again — your session may have expired.`
+        : `Chat request failed: ${detail}`;
       setLocalMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}`,
           conversationId: convId,
           role: "assistant",
-          content: "Connection error. Make sure Ollama is running locally.",
+          content: friendly,
           metadata: null,
           createdAt: new Date(),
         },
@@ -258,12 +268,27 @@ export default function ChatArea({
         body: JSON.stringify({ message, conversationId: convId, targetAgent: agentTarget }),
       });
 
-      const data = await res.json();
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+
+      let replyContent: string;
+      if (!res.ok) {
+        const isAuthLike = res.status === 401 || res.status === 403;
+        replyContent = isAuthLike
+          ? `Session expired (HTTP ${res.status}). Please sign in again.`
+          : data?.reply ||
+            data?.error ||
+            `Agent request failed: HTTP ${res.status} ${res.statusText || ""}`.trim();
+      } else {
+        replyContent = data?.reply || data?.error || "No response";
+      }
 
       setLocalMessages((prev) => {
-        const withoutTemp = prev.filter(
-          (m) => m.id !== tempUser.id
-        );
+        const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
         return [
           ...withoutTemp,
           { ...tempUser, id: `user-${Date.now()}` },
@@ -271,8 +296,8 @@ export default function ChatArea({
             id: `agent-${Date.now()}`,
             conversationId: convId,
             role: "assistant" as const,
-            content: data.reply || data.error || "No response",
-            metadata: { agent: data.agent },
+            content: replyContent,
+            metadata: { agent: data?.agent || "ManagerAgent" },
             createdAt: new Date(),
           },
         ];
@@ -282,8 +307,23 @@ export default function ChatArea({
         queryKey: ["/api/conversations", convId, "messages"],
       });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-    } catch (err) {
+    } catch (err: any) {
       console.error("[Agent] Error:", err);
+      setLocalMessages((prev) => {
+        const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
+        return [
+          ...withoutTemp,
+          { ...tempUser, id: `user-${Date.now()}` },
+          {
+            id: `agent-err-${Date.now()}`,
+            conversationId: convId,
+            role: "assistant" as const,
+            content: `Agent request failed: ${err?.message || "network error"}`,
+            metadata: { agent: "ManagerAgent" },
+            createdAt: new Date(),
+          },
+        ];
+      });
     } finally {
       setIsStreaming(false);
     }

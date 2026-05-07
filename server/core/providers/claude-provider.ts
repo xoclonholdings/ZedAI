@@ -1,4 +1,4 @@
-import { getProviderRuntimeConfig } from "./provider-config";
+import { getProviderRuntimeConfig, resolveModelForLane } from "./provider-config";
 import { extractAssistantText } from "./provider-helpers";
 import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
@@ -15,6 +15,11 @@ export class ClaudeProvider implements ModelProvider {
     return config;
   }
 
+  private resolveModel(options?: ProviderExecutionOptions): string {
+    const config = this.getConfig();
+    return options?.model || resolveModelForLane(options?.lane, config.model);
+  }
+
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
     return this.executeChat([{ role: "user", content: prompt }], options);
   }
@@ -29,7 +34,7 @@ export class ClaudeProvider implements ModelProvider {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: options?.model || config.model,
+        model: this.resolveModel(options),
         system: options?.systemPrompt,
         max_tokens: 1024,
         messages: messages
@@ -40,7 +45,10 @@ export class ClaudeProvider implements ModelProvider {
           })),
       }),
     });
-    if (!response.ok) throw new Error(`Claude error ${response.status}`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(`Claude ${response.status}${body ? `: ${body.slice(0, 220)}` : ""}`);
+    }
     return extractAssistantText(await response.json());
   }
 

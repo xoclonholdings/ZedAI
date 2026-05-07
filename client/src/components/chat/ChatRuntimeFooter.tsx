@@ -35,9 +35,21 @@ export default function ChatRuntimeFooter() {
 
   useEffect(() => {
     let cancelled = false;
+    let unauthorized = false;
     const fetchStatus = async () => {
+      if (unauthorized) return;
       try {
         const res = await fetch("/api/system/runtime", { credentials: "include" });
+        if (res.status === 401 || res.status === 403) {
+          // Stop polling — the footer is meaningless when the user
+          // isn't signed in, and 401-spam in the network tab is noisy.
+          unauthorized = true;
+          if (!cancelled) {
+            setStatus(null);
+            setErrored(false);
+          }
+          return;
+        }
         if (!res.ok) throw new Error("status fetch failed");
         const data = (await res.json()) as RuntimeStatus;
         if (!cancelled) {

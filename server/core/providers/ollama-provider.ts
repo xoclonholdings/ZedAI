@@ -1,4 +1,4 @@
-import { getProviderRuntimeConfig } from "./provider-config";
+import { getProviderRuntimeConfig, resolveModelForLane } from "./provider-config";
 import {
   buildPromptFromMessages,
   extractAssistantText,
@@ -7,7 +7,16 @@ import {
 } from "./provider-helpers";
 import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
-async function getAvailableModel(config = getProviderRuntimeConfig()): Promise<string> {
+async function getAvailableModel(
+  options: ProviderExecutionOptions | undefined,
+  config = getProviderRuntimeConfig(),
+): Promise<string> {
+  // Lane override wins over discovery so per-lane model env vars work
+  // even when /api/tags is reachable.
+  const laneOverride = resolveModelForLane(options?.lane, "");
+  if (laneOverride && laneOverride !== config.ollama.fallbackModel) {
+    return laneOverride;
+  }
   try {
     const res = await fetch(`${config.ollama.baseUrl}/api/tags`);
     if (!res.ok) return config.ollama.fallbackModel;
@@ -24,7 +33,7 @@ async function getAvailableModel(config = getProviderRuntimeConfig()): Promise<s
 export class OllamaProvider implements ModelProvider {
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
     const config = getProviderRuntimeConfig();
-    const model = options?.model || (await getAvailableModel(config));
+    const model = options?.model || (await getAvailableModel(options, config));
     const response = await fetch(`${config.ollama.baseUrl}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -36,7 +45,7 @@ export class OllamaProvider implements ModelProvider {
 
   async executeChat(messages: ProviderMessage[], options?: ProviderExecutionOptions): Promise<string> {
     const config = getProviderRuntimeConfig();
-    const model = options?.model || (await getAvailableModel(config));
+    const model = options?.model || (await getAvailableModel(options, config));
     const response = await fetch(`${config.ollama.baseUrl}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -58,7 +67,7 @@ export class OllamaProvider implements ModelProvider {
     onError: (err: Error) => void | Promise<void>,
   ): Promise<void> {
     const config = getProviderRuntimeConfig();
-    const model = options?.model || (await getAvailableModel(config));
+    const model = options?.model || (await getAvailableModel(options, config));
 
     try {
       const response = await fetchWithTimeout(`${config.ollama.baseUrl}/api/chat`, {
