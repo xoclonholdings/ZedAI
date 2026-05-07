@@ -799,6 +799,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  app.get("/api/system/runtime", isAuthenticated, async (_req, res) => {
+    try {
+      const config = getProviderRuntimeConfig();
+      const target = getResolvedTargetName({ lane: "chat" });
+      const provider = getActiveProviderName({ lane: "chat" });
+      const ollamaUrl = config.ollama.baseUrl;
+      const remoteUrl = config.clawTemp.baseUrl;
+      const probeUrl = provider === "claw-temp" ? remoteUrl : ollamaUrl;
+
+      const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(probeUrl);
+      const targetHost = (() => {
+        try {
+          return new URL(probeUrl).host;
+        } catch {
+          return probeUrl;
+        }
+      })();
+      const locationLabel = isLocal
+        ? "Local"
+        : /lightning/i.test(probeUrl)
+          ? "Lightning"
+          : targetHost || "Remote";
+
+      const ollamaHealth = await checkOllamaHealth();
+
+      const model =
+        provider === "ollama"
+          ? config.ollama.model
+          : provider === "openai"
+            ? config.openai.model
+            : provider === "claude"
+              ? config.claude.model
+              : config.clawTemp.model;
+
+      res.json({
+        provider,
+        model,
+        target,
+        target_url: probeUrl,
+        location_label: locationLabel,
+        is_local: isLocal,
+        status: ollamaHealth.status,
+        available_models: ollamaHealth.models,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to read runtime status" });
+    }
+  });
+
   // ─── Voice ────────────────────────────────────────────────────────────────
 
   app.post("/api/voice/transcribe", isAuthenticated, async (req: any, res) => {

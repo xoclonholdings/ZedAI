@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, MessageSquare, Zap } from "lucide-react";
+import { LayoutDashboard, MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
@@ -9,6 +9,7 @@ import { useAuth } from "@/components/auth/UseAuth";
 import ChatSidebarHeader from "./ChatSidebarHeader";
 import ConversationList from "./ConversationList";
 import ChatSidebarUserCard from "./ChatSidebarUserCard";
+import ChatRuntimeFooter from "./ChatRuntimeFooter";
 
 import type { Conversation } from "@shared/schema";
 import type { FilingProject } from "@/pages/chat";
@@ -247,12 +248,7 @@ export default function ChatSidebar({
           Admin Panel
         </Button>
 
-        <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground pt-1">
-          <Zap size={12} className="text-purple-400" />
-          <span>Qwen2.5 via Ollama</span>
-          <div className="w-1 h-1 bg-purple-400 rounded-full" />
-          <span>Local</span>
-        </div>
+        <ChatRuntimeFooter />
       </div>
     </div>
   );

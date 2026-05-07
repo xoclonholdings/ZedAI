@@ -105,35 +105,35 @@ export default function ChatInput({ onSend, isLoading, value, onValueChange, edi
       )}
       <div className="flex items-end gap-2">
         <div className="flex-1 relative">
-        <Textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={isRecording ? "Listening…" : "Type a message…"}
-          rows={1}
-          className={`max-h-[120px] resize-none rounded-2xl border-white/10 bg-black/40 pr-3 text-white overflow-y-auto ${compact ? "min-h-[38px] py-2" : "min-h-[42px] py-2.5"} ${textClass}`}
-          disabled={isLoading}
-        />
-        </div>
-
-        {speechSupported && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={toggleRecording}
+          <Textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={isRecording ? "Listening…" : "Type a message…"}
+            rows={1}
+            className={`max-h-[120px] resize-none rounded-2xl border-white/10 bg-black/40 text-white overflow-y-auto ${
+              speechSupported ? "pr-11" : "pr-3"
+            } ${compact ? "min-h-[38px] py-2" : "min-h-[42px] py-2.5"} ${textClass}`}
             disabled={isLoading}
-            className={`${compact ? "h-9 w-9" : "h-10 w-10"} flex-shrink-0 rounded-xl p-0 transition-colors ${
-              isRecording
-                ? "text-red-400 bg-red-500/10 hover:bg-red-500/20"
-                : "text-muted-foreground hover:text-cyan-400 zed-button"
-            }`}
-            title={isRecording ? "Stop recording" : "Voice input"}
-          >
-            {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-          </Button>
-        )}
+          />
+          {speechSupported && (
+            <button
+              type="button"
+              onClick={toggleRecording}
+              disabled={isLoading}
+              title={isRecording ? "Stop recording" : "Dictate"}
+              aria-label={isRecording ? "Stop recording" : "Dictate"}
+              className={`absolute right-2 bottom-2 flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
+                isRecording
+                  ? "text-red-400 bg-red-500/15 hover:bg-red-500/25"
+                  : "text-muted-foreground hover:text-cyan-400 hover:bg-white/5"
+              } disabled:opacity-40 disabled:pointer-events-none`}
+            >
+              {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          )}
+        </div>
 
         <Button
           onClick={handleSend}

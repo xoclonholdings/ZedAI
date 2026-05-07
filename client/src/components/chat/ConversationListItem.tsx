@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
 import type { Conversation } from "@shared/schema";
 import type { FilingProject } from "@/pages/chat";
@@ -38,108 +37,78 @@ function formatDate(dateInput: string | Date | null | undefined): string {
 
 export default function ConversationListItem({
   conversation,
-  currentProjectId,
-  projects,
   isActive,
   compact = false,
   fontSize = "medium",
   showTimestamp = true,
   onSelect,
   onDelete,
-  onAssignProject,
   onRename,
 }: ConversationListItemProps) {
   const date = conversation.updatedAt || conversation.createdAt;
-  const titleClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
-  const previewClass = fontSize === "small" ? "text-[10px] leading-4" : fontSize === "large" ? "text-xs leading-5" : "text-[11px] leading-4";
+  const titleClass =
+    fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-[13px]";
+  const padY = compact ? "py-1.5" : "py-2";
 
   return (
     <div
-      className={`group relative cursor-pointer rounded-xl p-2.5 transition-all zed-button ${
-        isActive
-          ? "zed-glass border-purple-500/50 shadow-lg shadow-purple-500/20"
-          : "hover:bg-white/5"
-      }`}
+      role="button"
+      tabIndex={0}
       onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`group relative flex cursor-pointer items-center gap-2 rounded-md pl-3 pr-2 ${padY} transition-colors ${
+        isActive
+          ? "bg-white/[0.06] text-white"
+          : "text-foreground/90 hover:bg-white/[0.04]"
+      }`}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <h3 className={`mb-1 truncate font-medium text-foreground ${titleClass}`}>
-            {conversation.title || "New Conversation"}
-          </h3>
+      {isActive && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-r bg-gradient-to-b from-cyan-400 to-fuchsia-500"
+        />
+      )}
 
-          {conversation.preview && (
-            <p className={`mb-2 line-clamp-2 text-muted-foreground ${previewClass}`}>
-              {conversation.preview}
-            </p>
-          )}
+      <span className={`min-w-0 flex-1 truncate ${titleClass}`}>
+        {conversation.title || "New Conversation"}
+      </span>
 
-          <div className="flex items-center justify-between">
-            {showTimestamp ? <span className="text-xs text-muted-foreground">{formatDate(date)}</span> : <span />}
+      {showTimestamp && (
+        <span className="hidden shrink-0 text-[10px] text-muted-foreground/70 group-hover:hidden sm:inline">
+          {formatDate(date)}
+        </span>
+      )}
 
-            <div className="flex items-center gap-2">
-              <select
-                value={currentProjectId || ""}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                onChange={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onAssignProject(e.target.value || null);
-                }}
-                className={`rounded-md border border-white/10 bg-black/50 px-2 text-[10px] text-muted-foreground ${compact ? "py-0.5" : "py-1"}`}
-              >
-                <option value="">Inbox</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-
-              {conversation.mode && (
-                <span
-                  className={`rounded-full px-2 py-1 text-[10px] ${
-                    conversation.mode === "agent"
-                      ? "bg-purple-500/20 text-purple-400"
-                      : "bg-cyan-500/20 text-cyan-400"
-                  }`}
-                >
-                  {conversation.mode}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="ml-2 flex items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onRename();
-            }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/20 h-auto p-1 rounded-lg"
-          >
-            <Pencil size={13} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 hover:bg-red-500/20 h-auto p-1 rounded-lg"
-          >
-            <Trash2 size={14} />
-          </Button>
-        </div>
+      <div className="hidden items-center gap-0.5 group-hover:flex">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRename();
+          }}
+          className="rounded p-1 text-muted-foreground hover:bg-white/10 hover:text-cyan-300"
+          aria-label="Rename conversation"
+        >
+          <Pencil size={12} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="rounded p-1 text-muted-foreground hover:bg-white/10 hover:text-red-400"
+          aria-label="Delete conversation"
+        >
+          <Trash2 size={12} />
+        </button>
       </div>
     </div>
   );

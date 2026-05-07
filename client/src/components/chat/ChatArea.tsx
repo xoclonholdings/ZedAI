@@ -369,6 +369,9 @@ export default function ChatArea({
           compact={compactMessages}
           fontSize={fontSize}
           showTimestamps={showTimestamps}
+          currentMode={currentMode}
+          agentTarget={agentTarget}
+          onSelectSuggestion={(prompt) => setComposerValue(prompt)}
         />
 
         {showFileUpload && conversationId && (
@@ -385,9 +388,9 @@ export default function ChatArea({
               currentMode={currentMode}
               onModeToggle={handleModeToggle}
               onOpenFileUpload={() => setShowFileUpload(true)}
-              onOpenVoice={() => {}}
               agentTarget={agentTarget}
               onAgentTargetChange={setAgentTarget}
+              conversationId={conversationId || null}
             />
             <ChatInput
               onSend={handleSend}
