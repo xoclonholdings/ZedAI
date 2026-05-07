@@ -70,14 +70,23 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
         : "claw-temp"
       : "ollama");
 
-  const activeModel = process.env.MODEL_NAME || process.env.ZED_MODEL_NAME || undefined;
-
   const ollamaModel = process.env.OLLAMA_MODEL || process.env.MODEL_NAME || "qwen2.5:7b";
   const openaiModel = process.env.OPENAI_MODEL || process.env.MODEL_NAME || "gpt-4o-mini";
   const claudeModel =
     process.env.CLAUDE_MODEL || process.env.MODEL_NAME || "claude-3-5-sonnet-latest";
   const clawModel =
     process.env.CLAW_MODEL || process.env.MODEL_NAME || process.env.OLLAMA_MODEL || "qwen2.5:7b";
+
+  const activeModel =
+    process.env.MODEL_NAME ||
+    process.env.ZED_MODEL_NAME ||
+    (activeProvider === "openai"
+      ? openaiModel
+      : activeProvider === "claude"
+        ? claudeModel
+        : activeProvider === "claw-temp"
+          ? clawModel
+          : ollamaModel);
 
   return {
     activeProvider,
@@ -87,6 +96,11 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
       [openaiModel]: { provider: "openai", model: openaiModel },
       [claudeModel]: { provider: "claude", model: claudeModel },
       [clawModel]: { provider: "claw-temp", model: clawModel },
+      [activeModel]: { provider: activeProvider, model: activeModel },
+      ollama: { provider: "ollama", model: ollamaModel },
+      openai: { provider: "openai", model: openaiModel },
+      claude: { provider: "claude", model: claudeModel },
+      "claw-temp": { provider: "claw-temp", model: clawModel },
     },
     ollama: {
       baseUrl: trimTrailingSlash(
