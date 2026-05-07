@@ -4,10 +4,16 @@ import { OpenAIProvider } from "./openai-provider";
 import { OllamaProvider } from "./ollama-provider";
 import { getProviderRuntimeConfig } from "./provider-config";
 import { splitIntoTokens } from "./provider-helpers";
-import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
+import type {
+  ModelProvider,
+  ProviderExecutionOptions,
+  ProviderHealth,
+  ProviderMessage,
+} from "./provider-interface";
 
 function getActiveProvider(): ModelProvider {
   const config = getProviderRuntimeConfig();
+
   switch (config.activeProvider) {
     case "openai":
       return new OpenAIProvider();
@@ -21,11 +27,47 @@ function getActiveProvider(): ModelProvider {
   }
 }
 
-export function getActiveProviderName(): string {
+export function getActiveProviderName(_options?: ProviderExecutionOptions): string {
   return getProviderRuntimeConfig().activeProvider;
 }
 
-export async function executeProviderPrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
+export function getResolvedTargetName(_options?: ProviderExecutionOptions): string {
+  const config = getProviderRuntimeConfig();
+
+  switch (config.activeProvider) {
+    case "openai":
+      return config.openai.model;
+    case "claude":
+      return config.claude.model;
+    case "claw-temp":
+      return config.clawTemp.model;
+    case "ollama":
+    default:
+      return config.ollama.model;
+  }
+}
+
+export function getProviderRoutingSummary() {
+  const config = getProviderRuntimeConfig();
+  const activeProvider = config.activeProvider;
+
+  return {
+    activeProvider,
+    activeModel: getResolvedTargetName(),
+    routing: {
+      chat: activeProvider,
+      operations: activeProvider,
+      business: activeProvider,
+      finance: activeProvider,
+      research: activeProvider,
+    },
+  };
+}
+
+export async function executeProviderPrompt(
+  prompt: string,
+  options?: ProviderExecutionOptions,
+): Promise<string> {
   return getActiveProvider().executePrompt(prompt, options);
 }
 
@@ -61,6 +103,8 @@ export async function streamProviderChat(
   }
 }
 
-export async function checkActiveProviderHealth(): Promise<ProviderHealth> {
+export async function checkActiveProviderHealth(
+  _options?: ProviderExecutionOptions,
+): Promise<ProviderHealth> {
   return getActiveProvider().checkHealth();
 }
