@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
+import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
 
 export interface BusinessManagerRequest {
@@ -127,14 +128,30 @@ ${request.memoryContext ? `\nShared knowledge context:\n${request.memoryContext}
     await this.writeToMemory(request, reply, scope, approval);
     await this.log(request, reply, scope, approval);
 
+    let approvalSuffix = "";
+    if (approval) {
+      try {
+        const registered = await AgentApprovalAdapter.register({
+          user_id: request.userId,
+          conversation_id: request.conversationId || null,
+          message: request.task,
+          draft: reply,
+          agent: "BusinessManagerAgent",
+          capabilities: scope.map(capabilityLabel),
+        });
+        approvalSuffix = `\n\nLogged as task ${registered.task_id} (${registered.approval_status}). Admin will review before any real-world commitment.`;
+      } catch (err) {
+        console.warn("[BusinessManagerAgent] Approval registration failed:", err);
+        approvalSuffix = "\n\nAdmin approval is recommended before any real-world commitment or outbound action.";
+      }
+    }
+
     return {
       agent: "BusinessManagerAgent",
       planned: false,
       capabilities: scope.map(capabilityLabel),
       requiresApproval: approval,
-      message: approval
-        ? `${reply}\n\nAdmin approval is recommended before any real-world commitment or outbound action.`
-        : reply,
+      message: approval ? `${reply}${approvalSuffix}` : reply,
     };
   }
 

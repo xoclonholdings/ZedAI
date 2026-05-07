@@ -1159,87 +1159,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ─── Approval Queue ────────────────────────────────────────────────────────
+  // The legacy approval-queue.json file is no longer written to. The
+  // TaskLifecycleManager + ApprovalDecisionHandler pipeline is the
+  // canonical approval store. These endpoints adapt the new shape into
+  // the historical entry shape so the existing admin UI keeps working
+  // without further changes.
 
-  const APPROVAL_QUEUE_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/approval-queue.json");
   const WORKING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 
-  async function executeApprovedEntry(entry: any): Promise<string> {
+  function legacyEntryShape(task: any) {
+    const draftLog = (task.logs || [])
+      .map((l: any) => l.message || "")
+      .find((m: string) => m.startsWith("Draft from "));
+    const draft = draftLog ? draftLog.replace(/^Draft from [^:]+:\s*/, "") : "";
+    const status =
+      task.approval_status === "approved"
+        ? "approved"
+        : task.approval_status === "rejected"
+          ? "rejected"
+          : "pending";
+    return {
+      id: task.id,
+      timestamp: task.created_at,
+      status,
+      userId: task.user_id,
+      conversationId: task.conversation_id || null,
+      message: task.plan?.summary?.replace(/^\[[^\]]+\]\s*Prepared\s+\w+\s+plan\s+for:\s*/i, "") || "",
+      draft,
+      agent: (task.plan?.summary || "").match(/\[([A-Za-z]+Agent)\]/)?.[1] || "Agent",
+      resolvedAt: task.approved_at || null,
+      rejectionReason: task.approval_status === "rejected" ? task.approval_reason : undefined,
+      approvalStatus: task.approval_status,
+      approvalRole: task.approval_role,
+      approvalReason: task.approval_reason,
+      executionResult: task.last_result?.execution_result || null,
+    };
+  }
+
+  async function postApprovalConfirmationToConversation(task: any): Promise<string> {
     const timestamp = new Date().toISOString();
-    const summary = `\n## [${timestamp}] ✅ APPROVED & EXECUTED — User: ${entry.userId}\n**Request**: ${entry.message}\n**Draft executed**: ${entry.draft}\n`;
+    const message = task.plan?.summary || `Task ${task.id}`;
+    const summary = `\n## [${timestamp}] ✅ APPROVED & EXECUTED — User: ${task.user_id}\n**Request**: ${message}\n`;
     try {
       await fs.appendFile(WORKING_MEMORY_PATH, summary);
     } catch (err) {
       console.warn("[ApprovalExecutor] Working memory write failed:", err);
     }
-    if (entry.conversationId) {
+    if (task.conversation_id) {
       try {
-        const execMessage = `✅ **Action Approved & Executed**\n\nYour request has been reviewed and approved by the admin.\n\n**Request**: ${entry.message}\n\n**Executed draft**:\n${entry.draft}`;
+        const execMessage = `✅ **Action Approved**\n\nYour request has been reviewed and approved by the admin.\n\n**Request**: ${message}`;
         await storage.createMessage(
-          insertMessageSchema.parse({ conversationId: entry.conversationId, role: "assistant", content: execMessage })
+          insertMessageSchema.parse({
+            conversationId: task.conversation_id,
+            role: "assistant",
+            content: execMessage,
+          }),
         );
       } catch (err) {
         console.warn("[ApprovalExecutor] Conversation message failed:", err);
       }
     }
-    return `Executed at ${timestamp}: wrote to working memory${entry.conversationId ? " and posted to conversation" : ""}.`;
+    return `Approved at ${timestamp}${task.conversation_id ? " and posted to conversation" : ""}.`;
   }
 
   app.get("/api/admin/approval-queue", isAdmin, async (_req, res) => {
     try {
-      const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
-      const queue = JSON.parse(raw);
-      res.json(queue);
-    } catch {
-      res.json({ version: "1.0", entries: [] });
+      const { TaskLifecycleManager } = await import("./services/execution/TaskLifecycleManager");
+      const tasks = await TaskLifecycleManager.list();
+      const pendingStates = new Set([
+        "user_required",
+        "admin_required",
+        "manual_handling_required",
+      ]);
+      const interesting = tasks.filter(
+        (t) =>
+          (t.approval_status && pendingStates.has(t.approval_status)) ||
+          t.status === "blocked",
+      );
+      // Include the 10 most recent approved/rejected tasks so admin has context.
+      const recent = tasks
+        .filter((t) => t.approval_status === "approved" || t.approval_status === "rejected")
+        .slice(0, 10);
+      const merged = [...interesting, ...recent];
+      res.json({ version: "2.0", entries: merged.map(legacyEntryShape) });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to read approval queue" });
     }
   });
 
   app.post("/api/admin/approve/:id", isAdmin, async (req: any, res) => {
     const { id } = req.params;
     try {
-      const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
-      const queue = JSON.parse(raw);
-      const entry = queue.entries.find((e: any) => e.id === id);
-      if (!entry) return res.status(404).json({ error: "Entry not found" });
-      entry.status = "approved";
-      entry.resolvedAt = new Date().toISOString();
-
-      // Execute: write to working memory and notify conversation
-      const execResult = await executeApprovedEntry(entry);
-      entry.executionResult = execResult;
-
-      await fs.writeFile(APPROVAL_QUEUE_PATH, JSON.stringify(queue, null, 2));
+      const { ApprovalDecisionHandler } = await import("./services/approval/ApprovalDecisionHandler");
+      const result = await ApprovalDecisionHandler.decide({
+        task_id: id,
+        decided_by: req.user?.claims?.sub || "admin",
+        decider_role: "admin",
+        action: "approve",
+      });
+      if (!result.ok || !result.task) {
+        return res.status(404).json({ error: result.message });
+      }
+      const exec = await postApprovalConfirmationToConversation(result.task);
       await logSecurityEvent({
         type: "approval.approved",
         userId: req.user?.claims?.sub,
-        detail: `Approved & executed: ${entry.message?.slice(0, 80)}`,
+        detail: `Approved task ${id}: ${(result.task.plan?.summary || "").slice(0, 80)}`,
       });
-      res.json({ success: true, entry });
+      res.json({ success: true, entry: { ...legacyEntryShape(result.task), executionResult: exec } });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: err?.message || "Approve failed" });
     }
   });
 
   app.post("/api/admin/reject/:id", isAdmin, async (req: any, res) => {
     const { id } = req.params;
-    const { reason } = req.body;
+    const { reason } = req.body || {};
     try {
-      const raw = await fs.readFile(APPROVAL_QUEUE_PATH, "utf-8");
-      const queue = JSON.parse(raw);
-      const entry = queue.entries.find((e: any) => e.id === id);
-      if (!entry) return res.status(404).json({ error: "Entry not found" });
-      entry.status = "rejected";
-      entry.resolvedAt = new Date().toISOString();
-      entry.rejectionReason = reason || "Rejected by admin";
-      await fs.writeFile(APPROVAL_QUEUE_PATH, JSON.stringify(queue, null, 2));
+      const { ApprovalDecisionHandler } = await import("./services/approval/ApprovalDecisionHandler");
+      const result = await ApprovalDecisionHandler.decide({
+        task_id: id,
+        decided_by: req.user?.claims?.sub || "admin",
+        decider_role: "admin",
+        action: "reject",
+        reason: reason || "Rejected by admin",
+      });
+      if (!result.ok || !result.task) {
+        return res.status(404).json({ error: result.message });
+      }
       await logSecurityEvent({
         type: "approval.rejected",
         userId: req.user?.claims?.sub,
-        detail: `Rejected: ${entry.message?.slice(0, 80)} — Reason: ${entry.rejectionReason}`,
+        detail: `Rejected task ${id}: ${(result.task.plan?.summary || "").slice(0, 80)} — ${reason || "no reason"}`,
       });
-      res.json({ success: true, entry });
+      res.json({ success: true, entry: legacyEntryShape(result.task) });
     } catch (err: any) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: err?.message || "Reject failed" });
     }
   });
 

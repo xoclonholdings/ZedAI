@@ -3,6 +3,7 @@ import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 import { formatResultsForPrompt, webSearch } from "../../services/WebSearchService";
 import { querySimilarResearch, storeResearchBrief } from "../../services/ChromaService";
+import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR, REPO_ROOT } from "../../utils/repoPaths";
 
 const SKILL_PATH = path.resolve(REPO_ROOT, "server/agents/finance/SKILL.md");
@@ -158,13 +159,29 @@ Return a direct operator-style response. Avoid vague motivation language.`.trim(
     await this.writeToMemory(request, reply, scope, approval);
     await this.log(request, reply, scope, approval);
 
+    let approvalSuffix = "";
+    if (approval) {
+      try {
+        const registered = await AgentApprovalAdapter.register({
+          user_id: request.userId,
+          conversation_id: request.conversationId || null,
+          message: request.task,
+          draft: reply,
+          agent: "FinanceAgent",
+          capabilities: scope.map(capabilityLabel),
+        });
+        approvalSuffix = `\n\nLogged as task ${registered.task_id} (${registered.approval_status}). Admin will review before any capital movement or trade action.`;
+      } catch (err) {
+        console.warn("[FinanceAgent] Approval registration failed:", err);
+        approvalSuffix = "\n\nAdministrative approval is recommended before treating this as an execution-ready capital movement or live trade action.";
+      }
+    }
+
     return {
       agent: "FinanceAgent",
       capabilities: scope.map(capabilityLabel),
       requiresApproval: approval,
-      message: approval
-        ? `${reply}\n\nAdministrative approval is recommended before treating this as an execution-ready capital movement or live trade action.`
-        : reply,
+      message: approval ? `${reply}${approvalSuffix}` : reply,
     };
   }
 

@@ -1,14 +1,13 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
-import { logSecurityEvent } from "../../services/SecurityAudit";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
+import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR, REPO_ROOT } from "../../utils/repoPaths";
 
 const SKILL_PATH = path.resolve(REPO_ROOT, "server/agents/operations/SKILL.md");
 const WORKING_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 const EPISODIC_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/email-decisions.json");
-const APPROVAL_QUEUE = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/approval-queue.json");
 const GUIDELINES = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/posting-guidelines.md");
 const LOG_DIR = path.resolve(HUB_LOG_DIR, "operations");
 
@@ -135,31 +134,15 @@ ConversationID: ${request.conversationId || "none"}`.trim();
 
   private static async queueForApproval(request: AgentRequest, draft: string): Promise<void> {
     try {
-      let queue: any = { version: "1.0", entries: [] };
-      try {
-        const raw = await fs.readFile(APPROVAL_QUEUE, "utf-8");
-        queue = JSON.parse(raw);
-      } catch {}
-
-      queue.entries.push({
-        id: `approval-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        status: "pending",
-        userId: request.userId,
-        conversationId: request.conversationId || null,
+      await AgentApprovalAdapter.register({
+        user_id: request.userId,
+        conversation_id: request.conversationId || null,
         message: request.message,
-        draft: draft.slice(0, 700),
+        draft,
         agent: "OperationsAgent",
       });
-
-      await fs.writeFile(APPROVAL_QUEUE, JSON.stringify(queue, null, 2));
-      await logSecurityEvent({
-        type: "approval.queued",
-        userId: request.userId,
-        detail: `Queued for approval: ${request.message.slice(0, 80)}`,
-      });
     } catch (err) {
-      console.warn("[OperationsAgent] Approval queue write failed:", err);
+      console.warn("[OperationsAgent] Approval registration failed:", err);
     }
   }
 

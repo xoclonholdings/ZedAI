@@ -1,0 +1,100 @@
+/**
+ * AgentApprovalAdapter
+ *
+ * One canonical path for the legacy agents (OperationsAgent,
+ * BusinessManagerAgent, FinanceAgent) to register an action that
+ * needs approval. Replaces the per-agent direct writes to
+ * hub/shared-memory/episodic/approval-queue.json so admin sees a
+ * single, unified queue.
+ *
+ * Flow:
+ *   1. Build a TaskExecutionPlan from the agent's draft.
+ *   2. Persist as a TaskRecord via TaskLifecycleManager.
+ *   3. Run ApprovalWatchdog so the right approval_status / role is set
+ *      and the admin notification (and email) is dispatched.
+ *
+ * Returns the task_id so the agent can include it in its response
+ * (e.g. so the user can be told "tracking as task task-abc123").
+ */
+
+import {
+  TaskExecutionEngine,
+  type TaskType,
+} from "../execution/TaskExecutionEngine";
+import { TaskLifecycleManager } from "../execution/TaskLifecycleManager";
+import { ApprovalWatchdog } from "./ApprovalWatchdog";
+import { logSecurityEvent } from "../SecurityAudit";
+
+export type AgentSource =
+  | "OperationsAgent"
+  | "BusinessManagerAgent"
+  | "FinanceAgent"
+  | "IntelligenceAgent";
+
+export interface AgentApprovalInput {
+  user_id: string;
+  conversation_id?: string | null;
+  /** The user's original request that triggered the agent. */
+  message: string;
+  /** The agent's draft / plan output. */
+  draft: string;
+  /** Which agent produced the draft. */
+  agent: AgentSource;
+  /** Hint for plan classification. Optional; auto-derived when omitted. */
+  task_type_hint?: TaskType;
+  /** Free-form capabilities the agent flagged (used for context). */
+  capabilities?: string[];
+}
+
+export interface AgentApprovalResult {
+  task_id: string;
+  approval_status: string | undefined;
+  approval_role: "user" | "admin" | "system" | null | undefined;
+}
+
+export class AgentApprovalAdapter {
+  static async register(input: AgentApprovalInput): Promise<AgentApprovalResult> {
+    const plan = TaskExecutionEngine.prepare({
+      user_request: input.message,
+      context: {
+        agent: input.agent,
+        capabilities: input.capabilities,
+        draft_preview: input.draft.slice(0, 600),
+      },
+    });
+
+    // The plan summary is generic ("Prepared resolve plan for: ...") — we
+    // augment it with the agent name so the admin sees who asked.
+    plan.summary = `[${input.agent}] ${plan.summary}`;
+
+    const task = await TaskLifecycleManager.create({
+      user_id: input.user_id,
+      conversation_id: input.conversation_id ?? null,
+      plan,
+    });
+
+    // Stash the agent's draft as the first log entry for traceability.
+    await TaskLifecycleManager.appendLog(
+      task.id,
+      "info",
+      `Draft from ${input.agent}: ${input.draft.slice(0, 240)}${input.draft.length > 240 ? "…" : ""}`,
+    );
+
+    // Watchdog sets approval_status/role and fires the admin email.
+    const verdict = await ApprovalWatchdog.evaluate(task);
+
+    await logSecurityEvent({
+      type: "approval.queued",
+      userId: input.user_id,
+      detail: `[${input.agent}] task ${task.id} -> ${verdict.approval_status}`,
+    });
+
+    return {
+      task_id: task.id,
+      approval_status: verdict.approval_status,
+      approval_role: verdict.approval_role,
+    };
+  }
+}
+
+export default AgentApprovalAdapter;
