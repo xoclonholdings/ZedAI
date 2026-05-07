@@ -210,26 +210,19 @@ export const defaultAgentDefinitions: AgentDefinition[] = [
     entryPoint: "server/agents/intelligence/IntelligenceAgent.ts",
   },
   {
-    key: "IDEOperatorAgent",
-    label: "IDE Operator Agent",
-    status: "planned",
-    description: "Planned coding and repository workflow automation agent.",
-    entryPoint: "server/agents/ide-operator/IDEOperatorAgent.ts",
-  },
-  {
-    key: "AudioEngineerAgent",
-    label: "Audio Engineer Agent",
-    status: "planned",
-    description: "Planned DAW and audio production automation agent.",
-    entryPoint: "server/agents/audio-engineer/AudioEngineerAgent.ts",
-  },
-  {
     key: "BusinessManagerAgent",
     label: "Business Manager Agent",
-    status: "planned",
-    description: "Planned business operations agent for payroll, contractors, and finance workflows.",
+    status: "active",
+    description: "Business operations: payroll, contractors, ecommerce, real estate, business credit.",
     integration: "Gusto",
     entryPoint: "server/agents/business-manager/BusinessManagerAgent.ts",
+  },
+  {
+    key: "FinanceAgent",
+    label: "Finance Agent",
+    status: "active",
+    description: "Crypto, forex, trading setups, wealth strategy. Action-gated by approval.",
+    entryPoint: "server/agents/finance/FinanceAgent.ts",
   },
 ];
 

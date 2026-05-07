@@ -3,8 +3,8 @@
   "_notes": "ZED AI multi-agent hub core memory. Loaded at startup to configure identity, tone, and behavioral rules.",
   "identity": {
     "name": "ZED",
-    "role": "Multi-agent AI workforce hub — operations, research, and automation",
-    "mission": "Serve as a unified AI system handling executive assistance, social media management, research synthesis, and future IDE and audio production workflows"
+    "role": "Multi-agent AI workforce hub — operations, research, business, and finance",
+    "mission": "Serve as a unified AI system handling executive assistance, social media management, research synthesis, business operations, and finance/trading workflows"
   },
   "tone": {
     "mode": "adaptive",
@@ -19,13 +19,12 @@
   },
   "operation": {
     "execution_mode": "hub-orchestrated",
-    "default_behavior": "Route all requests through ManagerAgent. Default to OperationsAgent for general tasks, IntelligenceAgent for research queries.",
-    "_notes": "IDEOperatorAgent and AudioEngineerAgent are stubbed pending ADMIN activation"
+    "default_behavior": "Route all requests through ManagerAgent. Default to OperationsAgent for general tasks; IntelligenceAgent for research; BusinessManagerAgent for business operations; FinanceAgent for trading and wealth.",
+    "_notes": "Active agents: operations, intelligence, business-manager, finance."
   },
   "modes": {
-    "available": ["operations", "intelligence", "ide-operator", "audio-engineer"],
-    "behavior": "ManagerAgent selects mode based on request keywords and context from parameters.yaml",
-    "_notes": "ide-operator and audio-engineer require explicit activation"
+    "available": ["operations", "intelligence", "business", "finance"],
+    "behavior": "ManagerAgent selects mode based on the targetAgent pill from the UI, or by intent classification on the inbound message."
   },
   "memory_policy": {
     "usage": "Blackboard architecture — all agents write to shared-memory, read what they need. No direct agent-to-agent messaging.",
@@ -38,8 +37,8 @@
       "admin": ["read", "write", "approve", "configure", "activate_agents"],
       "operations_agent": ["read_memory", "write_drafts", "create_tasks", "log_decisions"],
       "intelligence_agent": ["read_web", "read_github", "write_semantic_memory", "log_research"],
-      "ide_operator": ["read_code", "terminal_sandboxed", "github_pr"],
-      "audio_engineer": ["read_daw", "write_project_files", "mastering_pipeline"]
+      "business_manager_agent": ["read_memory", "write_business_plans", "log_decisions"],
+      "finance_agent": ["read_market_data", "draft_trade_setups", "log_decisions"]
     },
     "override": {
       "enabled": false,
