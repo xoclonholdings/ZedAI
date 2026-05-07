@@ -22,6 +22,11 @@ export default function Login() {
   const [adminEmailHint, setAdminEmailHint] = useState<string>("");
   const [deliveryChannel, setDeliveryChannel] = useState<"email" | "server_log" | undefined>();
 
+  // Secure-phrase fallback (for when SMTP / mailbox isn't reachable)
+  const [showPhraseFallback, setShowPhraseFallback] = useState(false);
+  const [securePhrase, setSecurePhrase] = useState("");
+  const [showSecurePhrase, setShowSecurePhrase] = useState(false);
+
   // Shared
   const [useAdminLogin, setUseAdminLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -139,9 +144,38 @@ export default function Login() {
     }
   };
 
+  const handleSecurePhraseLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetMessages();
+    if (!securePhrase.trim()) {
+      setError("Enter the admin secure phrase.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        body: JSON.stringify({ passphrase: securePhrase.trim() }),
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (data.success) {
+        await refresh();
+        return;
+      }
+      setError(data.error || "Invalid secure phrase.");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const switchTab = (toAdmin: boolean) => {
     setUseAdminLogin(toAdmin);
     resetMessages();
+    setShowPhraseFallback(false);
   };
 
   const restartAdminFlow = () => {
@@ -276,7 +310,76 @@ export default function Login() {
                   </p>
                 )}
               </form>
-            ) : (
+            ) : null}
+
+            {useAdminLogin && (
+              <div className="border-t border-white/10 pt-3">
+                {!showPhraseFallback ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPhraseFallback(true);
+                      resetMessages();
+                    }}
+                    className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    Can't access email? Use admin secure phrase
+                  </button>
+                ) : (
+                  <form onSubmit={handleSecurePhraseLogin} className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Secure Phrase</label>
+                      <div className="relative">
+                        <Input
+                          type={showSecurePhrase ? "text" : "password"}
+                          placeholder="Enter admin secure phrase"
+                          value={securePhrase}
+                          onChange={(e) => setSecurePhrase(e.target.value)}
+                          className="zed-input pr-10"
+                          disabled={isLoading}
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecurePhrase(!showSecurePhrase)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label={showSecurePhrase ? "Hide phrase" : "Show phrase"}
+                        >
+                          {showSecurePhrase ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground/80">
+                        Fallback for when email isn't reachable. Same admin session as the email
+                        flow.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="submit"
+                        className="flex-1 zed-gradient text-white hover:zed-gradient-hover"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Verifying…" : "Sign in with phrase"}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPhraseFallback(false);
+                          setSecurePhrase("");
+                          resetMessages();
+                        }}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {!useAdminLogin && (
               <form onSubmit={handleUserLogin} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Username</label>
