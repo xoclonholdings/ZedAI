@@ -941,7 +941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         reply = await generateChatFromOllama([{ role: "user", content: "Reply with READY only." }], undefined, {
-          lane: "admin",
+          lane: "manager",
         });
       } catch (chatError: any) {
         chatStatus = "error";
