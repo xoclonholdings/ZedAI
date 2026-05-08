@@ -10,7 +10,7 @@ export type ProviderLane =
 
 export interface ProviderRuntimeConfig {
   activeProvider: ProviderName;
-  activeModel?: string;
+  activeModel: string;
   /**
    * Per-lane model overrides. Set via env vars:
    *   MODEL_CHAT, MODEL_MANAGER, MODEL_OPERATIONS,
@@ -20,6 +20,13 @@ export interface ProviderRuntimeConfig {
    * finally to MODEL_NAME.
    */
   laneModels: Partial<Record<ProviderLane, string>>;
+  /**
+   * Lookup map from a model string OR a provider name to its
+   * (provider, model) pair. Lets callers ask "which provider serves
+   * model X?" or "what's the canonical model for provider Y?" without
+   * branching on every provider type.
+   */
+  targets: Record<string, { provider: ProviderName; model: string }>;
   ollama: {
     baseUrl: string;
     model: string;
@@ -51,12 +58,20 @@ function trimTrailingSlash(value: string): string {
 
 function normalizeProviderName(value?: string): ProviderName | null {
   const normalized = (value || "").trim().toLowerCase();
+
   if (normalized === "ollama") return "ollama";
   if (normalized === "openai") return "openai";
   if (normalized === "claude" || normalized === "anthropic") return "claude";
-  if (normalized === "claw" || normalized === "claw-temp" || normalized === "colab" || normalized === "remote") {
+
+  if (
+    normalized === "claw" ||
+    normalized === "claw-temp" ||
+    normalized === "colab" ||
+    normalized === "remote"
+  ) {
     return "claw-temp";
   }
+
   return null;
 }
 
@@ -89,9 +104,8 @@ function buildLaneModels(): Partial<Record<ProviderLane, string>> {
 /**
  * Resolve the model name to use for a given lane. Priority:
  *   1. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
- *   2. The provider's own default (OPENAI_MODEL, OLLAMA_MODEL, etc.)
- *   3. Global MODEL_NAME
- *   4. The provider's hard-coded fallback.
+ *   2. Global MODEL_NAME / ZED_MODEL_NAME
+ *   3. The provider's hard-coded fallback.
  */
 export function resolveModelForLane(
   lane: ProviderLane | undefined,
@@ -110,7 +124,9 @@ export function resolveModelForLane(
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const remoteInferenceUrl = trimTrailingSlash(process.env.REMOTE_INFERENCE_URL || "");
-  const remoteInferenceMode = (process.env.REMOTE_INFERENCE_MODE || "ollama").trim().toLowerCase();
+  const remoteInferenceMode = (process.env.REMOTE_INFERENCE_MODE || "ollama")
+    .trim()
+    .toLowerCase();
 
   const configuredProvider =
     normalizeProviderName(process.env.MODEL_PROVIDER) ||
@@ -124,28 +140,63 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
         : "claw-temp"
       : "ollama");
 
+  const ollamaModel = process.env.OLLAMA_MODEL || process.env.MODEL_NAME || "qwen2.5:7b";
+  const openaiModel = process.env.OPENAI_MODEL || process.env.MODEL_NAME || "gpt-4o-mini";
+  const claudeModel =
+    process.env.CLAUDE_MODEL || process.env.MODEL_NAME || "claude-3-5-sonnet-latest";
+  const clawModel =
+    process.env.CLAW_MODEL || process.env.MODEL_NAME || process.env.OLLAMA_MODEL || "qwen2.5:7b";
+
+  const activeModel =
+    process.env.MODEL_NAME ||
+    process.env.ZED_MODEL_NAME ||
+    (activeProvider === "openai"
+      ? openaiModel
+      : activeProvider === "claude"
+        ? claudeModel
+        : activeProvider === "claw-temp"
+          ? clawModel
+          : ollamaModel);
+
   return {
     activeProvider,
-    activeModel: process.env.MODEL_NAME || process.env.ZED_MODEL_NAME || undefined,
+    activeModel,
     laneModels: buildLaneModels(),
+    targets: {
+      [ollamaModel]: { provider: "ollama", model: ollamaModel },
+      [openaiModel]: { provider: "openai", model: openaiModel },
+      [claudeModel]: { provider: "claude", model: claudeModel },
+      [clawModel]: { provider: "claw-temp", model: clawModel },
+      [activeModel]: { provider: activeProvider, model: activeModel },
+      ollama: { provider: "ollama", model: ollamaModel },
+      openai: { provider: "openai", model: openaiModel },
+      claude: { provider: "claude", model: claudeModel },
+      "claw-temp": { provider: "claw-temp", model: clawModel },
+    },
     ollama: {
-      baseUrl: trimTrailingSlash(process.env.OLLAMA_URL || remoteInferenceUrl || "http://localhost:11434"),
-      model: process.env.OLLAMA_MODEL || process.env.MODEL_NAME || "qwen2.5:7b",
+      baseUrl: trimTrailingSlash(
+        process.env.OLLAMA_URL || remoteInferenceUrl || "http://localhost:11434",
+      ),
+      model: ollamaModel,
       fallbackModel: process.env.OLLAMA_FALLBACK_MODEL || "llama3.2",
     },
     openai: {
       baseUrl: trimTrailingSlash(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"),
       apiKey: process.env.OPENAI_API_KEY || "",
-      model: process.env.OPENAI_MODEL || process.env.MODEL_NAME || "gpt-4o-mini",
+      model: openaiModel,
     },
     claude: {
-      baseUrl: trimTrailingSlash(process.env.CLAUDE_BASE_URL || process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1"),
+      baseUrl: trimTrailingSlash(
+        process.env.CLAUDE_BASE_URL ||
+          process.env.ANTHROPIC_BASE_URL ||
+          "https://api.anthropic.com/v1",
+      ),
       apiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || "",
-      model: process.env.CLAUDE_MODEL || process.env.MODEL_NAME || "claude-3-5-sonnet-latest",
+      model: claudeModel,
     },
     clawTemp: {
       baseUrl: trimTrailingSlash(process.env.CLAW_BASE_URL || remoteInferenceUrl || ""),
-      model: process.env.CLAW_MODEL || process.env.MODEL_NAME || process.env.OLLAMA_MODEL || "qwen2.5:7b",
+      model: clawModel,
       chatPath: process.env.CLAW_CHAT_PATH || "/chat",
       healthPath: process.env.CLAW_HEALTH_PATH || "/health",
       timeoutMs: Number(process.env.REMOTE_INFERENCE_TIMEOUT_MS || process.env.CLAW_TIMEOUT_MS || 45000),

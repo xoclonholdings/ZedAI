@@ -4,7 +4,12 @@ import { OpenAIProvider } from "./openai-provider";
 import { OllamaProvider } from "./ollama-provider";
 import { getProviderRuntimeConfig, type ProviderName } from "./provider-config";
 import { splitIntoTokens } from "./provider-helpers";
-import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
+import type {
+  ModelProvider,
+  ProviderExecutionOptions,
+  ProviderHealth,
+  ProviderMessage,
+} from "./provider-interface";
 
 function buildProvider(name: ProviderName): ModelProvider {
   switch (name) {
@@ -29,21 +34,20 @@ export function getActiveProviderName(_options?: ProviderExecutionOptions): stri
 }
 
 /**
- * Returns the URL the active provider will hit for a given lane. Lanes
- * aren't fully implemented yet — they're a forward-looking knob — so
- * the resolved target is currently identical for every lane.
+ * Returns the URL the active provider will hit. Lanes aren't fully
+ * routed yet — they're a forward-looking knob — so the resolved target
+ * URL is currently identical for every lane.
  */
 export function getResolvedTargetName(_options?: ProviderExecutionOptions): string {
   const config = getProviderRuntimeConfig();
   switch (config.activeProvider) {
-    case "ollama":
-      return config.ollama.baseUrl;
     case "openai":
       return config.openai.baseUrl;
     case "claude":
       return config.claude.baseUrl;
     case "claw-temp":
       return config.clawTemp.baseUrl;
+    case "ollama":
     default:
       return config.ollama.baseUrl;
   }
@@ -54,6 +58,7 @@ export function getProviderRoutingSummary() {
   const target = getResolvedTargetName();
   return {
     active: config.activeProvider,
+    activeModel: config.activeModel,
     target,
     routing: {
       chat: target,
@@ -65,7 +70,10 @@ export function getProviderRoutingSummary() {
   };
 }
 
-export async function executeProviderPrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
+export async function executeProviderPrompt(
+  prompt: string,
+  options?: ProviderExecutionOptions,
+): Promise<string> {
   return getActiveProvider().executePrompt(prompt, options);
 }
 
@@ -110,7 +118,7 @@ export async function streamProviderChat(
   }
 
   // Provider doesn't natively support streaming — split a single response
-  // into pseudo-tokens. Same single-attempt semantics: fail surfaces upstream.
+  // into pseudo-tokens. Same single-attempt semantics: failures surface upstream.
   try {
     const reply = await provider.executeChat(messages, options);
     for (const token of splitIntoTokens(reply)) onToken(token);
@@ -120,6 +128,8 @@ export async function streamProviderChat(
   }
 }
 
-export async function checkActiveProviderHealth(_options?: ProviderExecutionOptions): Promise<ProviderHealth> {
+export async function checkActiveProviderHealth(
+  _options?: ProviderExecutionOptions,
+): Promise<ProviderHealth> {
   return getActiveProvider().checkHealth();
 }
