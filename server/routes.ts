@@ -936,29 +936,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/ai-host/test", isAdmin, async (_req, res) => {
     try {
       const health = await checkOllamaHealth();
+      const provider = getActiveProviderName({ lane: "chat" });
+      const target = getResolvedTargetName({ lane: "chat" });
+      const providerConfig = getProviderRuntimeConfig();
+      const model =
+        providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig);
+
       let chatStatus: "ok" | "error" = "ok";
       let reply = "";
       let error = "";
+      let errorKind = "";
+      const startedAt = Date.now();
 
       try {
-        reply = await generateChatFromOllama([{ role: "user", content: "Reply with READY only." }], undefined, {
-          lane: "manager",
-        });
+        reply = await generateChatFromOllama(
+          [{ role: "user", content: "Reply with READY only." }],
+          undefined,
+          { lane: "manager" },
+        );
       } catch (chatError: any) {
         chatStatus = "error";
-        error = chatError?.message || "AI host test failed";
+        // Capture *something* useful even if .message is empty/undefined.
+        const message =
+          (typeof chatError?.message === "string" && chatError.message) ||
+          (typeof chatError === "string" && chatError) ||
+          "";
+        const constructor = chatError?.constructor?.name || "Error";
+        error =
+          message ||
+          (() => {
+            try {
+              return JSON.stringify(chatError);
+            } catch {
+              return String(chatError);
+            }
+          })();
+        errorKind = constructor;
+        // Mirror to runtime log so the Logs tab also shows the failure.
+        await logRuntimeEvent({
+          level: "error",
+          source: "server",
+          event: "admin.ai_host.test_failed",
+          detail: error,
+          context: { provider, target, model, kind: errorKind },
+        });
       }
 
       res.json({
+        provider,
+        target,
+        model,
+        elapsedMs: Date.now() - startedAt,
         health,
         chat: {
           status: chatStatus,
           reply,
           error,
+          errorKind,
         },
       });
     } catch (error: any) {
-      res.status(500).json({ error: error.message || "AI host test failed" });
+      res.status(500).json({
+        error:
+          error?.message ||
+          (() => {
+            try {
+              return JSON.stringify(error);
+            } catch {
+              return String(error);
+            }
+          })(),
+      });
     }
   });
 

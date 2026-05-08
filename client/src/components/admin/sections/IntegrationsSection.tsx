@@ -20,6 +20,7 @@ export default function IntegrationsSection() {
   const [aiHostTest, setAiHostTest] = useState<{
     status: "idle" | "testing" | "ok" | "error";
     detail?: string;
+    payload?: any;
   }>({ status: "idle" });
 
   async function fetchSettings() {
@@ -83,22 +84,40 @@ export default function IntegrationsSection() {
         method: "POST",
         credentials: "include",
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "AI host test failed");
-      if (data.chat?.status === "ok") {
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {}
+      if (!res.ok) {
+        setAiHostTest({
+          status: "error",
+          detail:
+            data?.error ||
+            `HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ""}`,
+          payload: data ?? { http: res.status },
+        });
+        return;
+      }
+      if (data?.chat?.status === "ok") {
         setAiHostTest({
           status: "ok",
           detail: data.chat.reply || "AI host answered successfully.",
+          payload: data,
         });
       } else {
-        setAiHostTest({
-          status: "error",
-          detail: data.chat?.error || "AI host test failed.",
-        });
+        const msg =
+          data?.chat?.error ||
+          data?.error ||
+          "Provider returned an error with no message.";
+        setAiHostTest({ status: "error", detail: msg, payload: data });
       }
       await fetchAiHostStatus();
     } catch (error: any) {
-      setAiHostTest({ status: "error", detail: error.message || "AI host test failed" });
+      setAiHostTest({
+        status: "error",
+        detail: error?.message || String(error) || "Network error",
+        payload: { caught: error?.message || String(error) },
+      });
     }
   }
 
@@ -170,88 +189,84 @@ function AiHostPanel({
   onTest,
 }: {
   status: any;
-  test: { status: "idle" | "testing" | "ok" | "error"; detail?: string };
+  test: {
+    status: "idle" | "testing" | "ok" | "error";
+    detail?: string;
+    payload?: any;
+  };
   onTest: () => void;
 }) {
+  const isOnline = status?.ollama?.status === "online";
+  const providerLabel = status?.ollama?.provider || "—";
+  const models: string[] = status?.ollama?.models || [];
+
   return (
     <Card className="zed-glass border-white/10">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Bot size={16} className="text-purple-300" />
-          AI Host
-        </CardTitle>
-        <CardDescription>
-          Verifies the model provider configured by env vars
-          (<code>MODEL_PROVIDER</code>, <code>OPENAI_BASE_URL</code>, <code>OPENAI_API_KEY</code>)
-          by sending a one-token round-trip request. The Provider Routing card on the Overview
-          tab shows what&apos;s actually wired.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-white/10 bg-black/25 p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <StatusDot online={status?.ollama?.status === "online"} />
-              <span className="text-sm font-medium capitalize">
-                {status?.ollama?.status || "unknown"}
-              </span>
-              <Badge
-                variant="secondary"
-                className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"
-              >
-                {status?.ollama?.provider || "unknown"}
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Reported models:{" "}
-              {status?.ollama?.models?.length
-                ? status.ollama.models.join(", ")
-                : "none reported by provider"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-black/25 p-4 text-xs leading-5 text-muted-foreground">
-            <p className="font-medium text-foreground/80">Common failures:</p>
-            <p>
-              <strong>HTTP 401</strong> — wrong / missing API key
-            </p>
-            <p>
-              <strong>HTTP 402</strong> — provider quota / billing issue
-            </p>
-            <p>
-              <strong>HTTP 404 or 405</strong> — base URL is wrong (must end one segment before{" "}
-              <code>/chat/completions</code>)
-            </p>
-            <p>
-              <strong>Invalid URL</strong> — env var contains stray characters like{" "}
-              <code>&lt;</code> or quotes
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bot size={16} className="text-purple-300" />
+            AI Host
+          </CardTitle>
           <Button
             size="sm"
             variant="outline"
-            className="zed-glass border-white/10"
+            className="zed-glass border-white/10 h-8"
             onClick={onTest}
             disabled={test.status === "testing"}
+            data-testid="aihost-test"
           >
             <RefreshCw
-              size={14}
+              size={13}
               className={`mr-1 ${test.status === "testing" ? "animate-spin" : ""}`}
             />
-            {test.status === "testing" ? "Testing..." : "Test AI Host"}
+            {test.status === "testing" ? "Testing…" : "Test"}
           </Button>
-          {test.status === "ok" && (
-            <p className="text-xs text-emerald-300">
-              Provider answered: <span className="font-mono">{test.detail}</span>
-            </p>
-          )}
-          {test.status === "error" && (
-            <pre className="w-full whitespace-pre-wrap break-all rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 font-mono text-[11px] text-red-300">
-              {test.detail}
-            </pre>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3">
+        <div className="flex items-center gap-2 text-sm">
+          <StatusDot online={isOnline} />
+          <span className="capitalize">{status?.ollama?.status || "unknown"}</span>
+          <Badge
+            variant="secondary"
+            className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"
+          >
+            {providerLabel}
+          </Badge>
+          {models.length > 0 && (
+            <span className="font-mono text-xs text-muted-foreground truncate">
+              {models[0]}
+              {models.length > 1 ? ` +${models.length - 1}` : ""}
+            </span>
           )}
         </div>
+
+        {test.status === "ok" && (
+          <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-200">
+            <span className="font-medium">Provider replied:</span>{" "}
+            <span className="font-mono">{test.detail}</span>
+          </div>
+        )}
+
+        {test.status === "error" && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-200 space-y-2">
+            <pre className="whitespace-pre-wrap break-all font-mono leading-5">
+              {test.detail || "Unknown error"}
+            </pre>
+            {test.payload && (
+              <details>
+                <summary className="cursor-pointer text-[10px] uppercase tracking-[0.18em] text-red-300/80">
+                  raw response
+                </summary>
+                <pre className="mt-1 overflow-x-auto rounded bg-black/40 p-2 text-[10px] text-red-100/80">
+                  {JSON.stringify(test.payload, null, 2)}
+                </pre>
+              </details>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
