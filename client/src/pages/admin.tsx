@@ -75,7 +75,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-white/10 zed-glass px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"

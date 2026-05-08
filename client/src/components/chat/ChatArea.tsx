@@ -421,7 +421,7 @@ export default function ChatArea({
           />
         )}
 
-        <div className="border-t border-white/10 zed-glass p-3 md:p-4 flex-shrink-0 z-10">
+        <div className="border-t border-white/10 zed-glass px-3 pt-3 pb-safe md:px-4 md:pt-4 flex-shrink-0 z-10">
           <div className="max-w-4xl mx-auto">
             <ChatComposer
               value={composerValue}

@@ -489,3 +489,28 @@
     font-size: 16px; /* Prevents zoom on iOS */
   }
 }
+/* iOS safe-area utilities — combine with existing padding so the iPhone
+ * status bar / Dynamic Island don't overlap the top bar, and the home
+ * indicator swipe area doesn't overlap the bottom composer.
+ *
+ * Each rule extends the relevant padding by env(safe-area-inset-*) so
+ * the visual padding is preserved on devices without notches. */
+.pt-safe {
+  padding-top: calc(env(safe-area-inset-top) + 1rem);
+}
+.pt-safe-sm {
+  padding-top: calc(env(safe-area-inset-top) + 0.75rem);
+}
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.75rem);
+}
+.pl-safe {
+  padding-left: calc(env(safe-area-inset-left) + 1rem);
+}
+.pr-safe {
+  padding-right: calc(env(safe-area-inset-right) + 1rem);
+}
+.h-safe-screen {
+  height: 100vh;
+  height: 100dvh;
+}

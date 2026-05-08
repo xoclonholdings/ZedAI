@@ -17,7 +17,11 @@ export default function ChatHeader({
   const titleClass = fontSize === "small" ? "text-base md:text-xl" : fontSize === "large" ? "text-xl md:text-3xl" : "text-lg md:text-2xl";
   const subtitleClass = fontSize === "small" ? "text-[11px] md:text-xs" : fontSize === "large" ? "text-sm md:text-base" : "text-xs md:text-sm";
   return (
-    <div className={`flex items-center justify-between border-b border-white/10 zed-glass relative z-10 flex-shrink-0 ${compact ? "p-3 md:p-4" : "p-4 md:p-6"}`}>
+    <div
+      className={`flex items-center justify-between border-b border-white/10 zed-glass relative z-10 flex-shrink-0 pt-safe ${
+        compact ? "px-3 pb-3 md:px-4 md:pb-4" : "px-4 pb-4 md:px-6 md:pb-6"
+      }`}
+    >
       <div className="flex items-center space-x-3">
         {isMobile && onOpenSidebar && (
           <Button

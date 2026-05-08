@@ -44,7 +44,9 @@ export default function ChatMessagesList({
         />
       ) : messages.length === 0 && !isStreaming ? (
         <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 zed-glass p-4 text-center text-xs text-muted-foreground md:text-sm">
-          Your message was sent. If the response does not appear, refresh the conversation and check Admin logs.
+          Sent. Waiting for the assistant to respond — if nothing arrives in a few seconds,
+          the provider call probably failed. Pull to refresh or open Admin → Logs to see the
+          error.
         </div>
       ) : (
         <div className={`mx-auto max-w-4xl ${compact ? "space-y-0.5" : "space-y-1.5"}`}>
