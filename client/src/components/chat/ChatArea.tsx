@@ -4,9 +4,8 @@ import { notifyMessage } from "@/lib/notify";
 import { useAuth } from "@/components/auth/UseAuth";
 
 import ChatBackground from "./ChatBackground";
-import ChatControls from "./ChatControls";
+import ChatComposer from "./ChatComposer";
 import ChatHeader from "./ChatHeader";
-import ChatInput from "./ChatInput";
 import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
 
@@ -422,23 +421,28 @@ export default function ChatArea({
           />
         )}
 
-        <div className="border-t border-white/10 zed-glass p-4 md:p-6 flex-shrink-0 z-10">
-          <div className="max-w-4xl mx-auto space-y-3">
-            <ChatControls
-              currentMode={currentMode}
-              onModeToggle={handleModeToggle}
-              onOpenFileUpload={() => setShowFileUpload(true)}
-              agentTarget={agentTarget}
-              onAgentTargetChange={setAgentTarget}
-              conversationId={conversationId || null}
-            />
-            <ChatInput
-              onSend={handleSend}
-              isLoading={isStreaming}
+        <div className="border-t border-white/10 zed-glass p-3 md:p-4 flex-shrink-0 z-10">
+          <div className="max-w-4xl mx-auto">
+            <ChatComposer
               value={composerValue}
               onValueChange={setComposerValue}
+              onSend={handleSend}
+              onAbort={() => abortRef.current?.abort()}
+              isStreaming={isStreaming}
+              currentMode={currentMode}
+              onModeChange={handleModeToggle}
+              agentTarget={agentTarget}
+              onAgentTargetChange={setAgentTarget}
+              onOpenFileUpload={() => setShowFileUpload(true)}
               editModeLabel={editingMessageId ? "Editing message draft" : null}
-              onCancelEdit={editingMessageId ? () => { setEditingMessageId(null); setComposerValue(""); } : undefined}
+              onCancelEdit={
+                editingMessageId
+                  ? () => {
+                      setEditingMessageId(null);
+                      setComposerValue("");
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>
