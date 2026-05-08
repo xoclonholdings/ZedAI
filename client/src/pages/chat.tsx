@@ -13,7 +13,15 @@ export type FilingProject = {
 };
 
 export default function Chat() {
-  const { id: conversationId } = useParams<{ id?: string }>();
+  const { id: rawId } = useParams<{ id?: string }>();
+  // Defend against the literal string "undefined" in the URL. Happens
+  // when something upstream does `pushState(\`/chat/${id}\`)` with id
+  // being JS undefined — that produces "/chat/undefined", then
+  // useParams reads back the *string* "undefined". Without this guard,
+  // the messages query fires for /api/conversations/undefined/messages
+  // and 404-spams the runtime log.
+  const conversationId =
+    !rawId || rawId === "undefined" || rawId === "null" ? undefined : rawId;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);

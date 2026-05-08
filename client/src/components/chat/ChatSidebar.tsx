@@ -72,7 +72,9 @@ export default function ChatSidebar({
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      window.history.pushState({}, "", `/chat/${data.id}`);
+      if (data?.id) {
+        window.history.pushState({}, "", `/chat/${data.id}`);
+      }
       if (isMobile && onClose) onClose();
     },
   });
@@ -219,7 +221,9 @@ export default function ChatSidebar({
           currentPath={location}
           selectedProjectId={selectedProjectId}
           onSelect={(id) => {
-            window.history.pushState({}, "", `/chat/${id}`);
+            if (id) {
+              window.history.pushState({}, "", `/chat/${id}`);
+            }
             if (isMobile && onClose) onClose();
           }}
           onDelete={handleDeleteConversation}

@@ -345,6 +345,9 @@ export default function ChatArea({
           body: JSON.stringify({ title: message.slice(0, 50), mode: currentMode }),
         });
         const newConv = await res.json();
+        if (!newConv?.id) {
+          throw new Error("Conversation creation returned no id");
+        }
         convId = newConv.id;
         window.history.pushState({}, "", `/chat/${newConv.id}`);
         queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
@@ -391,7 +394,7 @@ export default function ChatArea({
   }
 
   return (
-    <div className="flex-1 flex h-screen relative overflow-hidden">
+    <div className="flex-1 flex h-safe-screen relative overflow-hidden">
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         <ChatBackground />
 
