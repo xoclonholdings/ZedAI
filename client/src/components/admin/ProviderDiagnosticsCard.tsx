@@ -62,66 +62,62 @@ export default function ProviderDiagnosticsCard() {
     <Card className="zed-glass border-white/10 md:col-span-2">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Activity size={18} className="text-cyan-300" />
-              Provider Routing
-            </CardTitle>
-            <CardDescription>What the live deploy is actually wired to.</CardDescription>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Activity size={18} className="text-cyan-300" />
+            Provider Routing
+          </CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={fetchRuntime}
             disabled={loading}
-            className="zed-button text-muted-foreground hover:text-foreground"
+            className="zed-button text-muted-foreground hover:text-foreground h-7 px-2"
           >
-            <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {error ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 text-xs text-red-300">
-            Could not read runtime status: {error}
+          <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+            {error}
           </div>
         ) : null}
 
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-3">
           <DiagItem
-            icon={<Server size={14} className="text-purple-300" />}
-            label="Active provider"
+            icon={<Server size={13} className="text-purple-300" />}
+            label="Provider"
             value={data?.provider || "—"}
             badge={data?.location_label}
           />
           <DiagItem
-            icon={<Globe size={14} className="text-cyan-300" />}
-            label="Target URL"
+            icon={<Globe size={13} className="text-cyan-300" />}
+            label="Target"
             value={data?.target_url || data?.target || "—"}
             mono
           />
           <DiagItem
-            icon={<Activity size={14} className="text-pink-300" />}
+            icon={<Activity size={13} className="text-pink-300" />}
             label="Default model"
             value={data?.model || "—"}
             mono
           />
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Per-lane model overrides
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
+        <details className="rounded-lg border border-white/10 bg-black/20">
+          <summary className="cursor-pointer px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            Per-lane overrides
+          </summary>
+          <div className="grid gap-1.5 p-2 sm:grid-cols-2">
             {LANE_ORDER.map((lane) => {
               const override = data?.lane_models?.[lane];
               const usingDefault = !override;
               return (
                 <div
                   key={lane}
-                  className="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2 text-xs"
+                  className="flex items-center justify-between rounded-md bg-white/5 px-2.5 py-1.5 text-xs"
                 >
                   <span className="text-muted-foreground">{LANE_LABELS[lane]}</span>
                   <span
@@ -129,19 +125,13 @@ export default function ProviderDiagnosticsCard() {
                       usingDefault ? "text-muted-foreground/60 italic" : "text-foreground"
                     }`}
                   >
-                    {usingDefault ? "(default)" : override}
+                    {usingDefault ? "default" : override}
                   </span>
                 </div>
               );
             })}
           </div>
-          <p className="mt-3 text-[11px] leading-4 text-muted-foreground">
-            Set <code className="rounded bg-white/10 px-1">MODEL_CHAT</code>,{" "}
-            <code className="rounded bg-white/10 px-1">MODEL_OPERATIONS</code>, etc. as env
-            vars to override per lane. Lanes marked <em>(default)</em> use the active
-            provider&apos;s default model.
-          </p>
-        </div>
+        </details>
       </CardContent>
     </Card>
   );
@@ -161,14 +151,14 @@ function DiagItem({
   badge?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/25 p-3">
-      <div className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+    <div className="rounded-lg border border-white/10 bg-black/25 p-2.5">
+      <div className="mb-0.5 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
         {icon}
         {label}
       </div>
       <div className="flex items-center gap-2">
         <span
-          className={`text-sm break-all ${mono ? "font-mono" : ""}`}
+          className={`text-xs break-all ${mono ? "font-mono" : ""}`}
           data-testid={`diag-${label.toLowerCase().replace(/\s+/g, "-")}`}
         >
           {value}
@@ -176,7 +166,7 @@ function DiagItem({
         {badge ? (
           <Badge
             variant="secondary"
-            className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"
+            className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
           >
             {badge}
           </Badge>

@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
 import {
-  Activity,
   AlertCircle,
   Bot,
   CheckCircle,
-  Clock,
+  ClipboardList,
   Database,
-  Edit3,
   FileText,
   RefreshCw,
-  Server,
-  Zap,
+  ShieldCheck,
+  Sparkles,
+  Wrench,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ProviderDiagnosticsCard from "@/components/admin/ProviderDiagnosticsCard";
+import EnvValidatorCard from "@/components/admin/EnvValidatorCard";
 import { StatusDot, type AdminSection } from "@/components/admin/types";
 
 export default function OverviewSection({
@@ -51,206 +51,202 @@ export default function OverviewSection({
   return (
     <>
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Overview</h2>
-          <p className="text-sm text-muted-foreground">
-            Live system health, agent status, and launch controls.
-          </p>
-        </div>
+        <h2 className="text-lg font-semibold">Overview</h2>
         <Button
           variant="ghost"
           size="sm"
           onClick={fetchStatus}
+          disabled={loading}
           className="zed-button text-muted-foreground hover:text-foreground"
         >
-          <RefreshCw size={14} className="mr-1" />
-          Refresh
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
         </Button>
       </div>
 
-      {loading ? (
-        <div className="text-center text-muted-foreground py-12">Loading…</div>
+      <div className="grid grid-cols-2 gap-2">
+        <ActionTile
+          icon={<Bot size={16} className="text-purple-300" />}
+          label="Integrations"
+          subtle="AI host, GitHub, email…"
+          onClick={() => onNavigate("integrations")}
+        />
+        <ActionTile
+          icon={<Database size={16} className="text-cyan-300" />}
+          label="Knowledge"
+          subtle="Memory & sources"
+          onClick={() => onNavigate("knowledge")}
+        />
+        <ActionTile
+          icon={<Wrench size={16} className="text-emerald-300" />}
+          label="Ruleset"
+          subtle="Personality, security, params"
+          onClick={() => onNavigate("ruleset")}
+        />
+        <ActionTile
+          icon={<ClipboardList size={16} className="text-pink-300" />}
+          label={`Approvals${pendingApprovals > 0 ? ` (${pendingApprovals})` : ""}`}
+          subtle="Awaiting your sign-off"
+          onClick={() => onNavigate("approvals")}
+          highlight={pendingApprovals > 0}
+        />
+        <ActionTile
+          icon={<FileText size={16} className="text-yellow-300" />}
+          label="Logs"
+          subtle="Errors & routing"
+          onClick={() => onNavigate("logs")}
+        />
+        <ActionTile
+          icon={<ShieldCheck size={16} className="text-blue-300" />}
+          label="Security"
+          subtle="Auth, env validator, log"
+          onClick={() => onNavigate("security")}
+        />
+      </div>
+
+      {loading && !status ? (
+        <div className="text-center text-muted-foreground py-8 text-sm">Loading status…</div>
       ) : status ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid gap-3 md:grid-cols-2">
           <ProviderDiagnosticsCard />
 
           <Card className="zed-glass border-white/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Bot size={18} className="text-purple-400" />
-                Provider Health
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Sparkles size={14} className="text-purple-300" />
+                Health
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <StatusDot online={status.ollama?.status === "online"} />
-                <span className="text-sm capitalize">{status.ollama?.status || "unknown"}</span>
-                {status.ollama?.provider && (
-                  <Badge
-                    variant="secondary"
-                    className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"
-                  >
-                    {status.ollama.provider}
-                  </Badge>
-                )}
-              </div>
-              {status.ollama?.models?.length > 0 ? (
-                <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground">Reported models:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {status.ollama.models.map((m: string) => (
+            <CardContent className="space-y-2 text-xs">
+              <Row
+                label="Provider"
+                value={
+                  <span className="flex items-center gap-2">
+                    <StatusDot online={status.ollama?.status === "online"} />
+                    <span className="capitalize">{status.ollama?.status || "unknown"}</span>
+                    {status.ollama?.provider && (
                       <Badge
-                        key={m}
                         variant="secondary"
-                        className="zed-glass border-white/10 text-xs"
+                        className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
                       >
-                        {m}
+                        {status.ollama.provider}
                       </Badge>
+                    )}
+                  </span>
+                }
+              />
+              <Row
+                label="Database"
+                value={
+                  <span className="flex items-center gap-2">
+                    <StatusDot online={status.database === "connected"} />
+                    <span className="capitalize">{status.database}</span>
+                  </span>
+                }
+              />
+              <Row
+                label="Active agents"
+                value={
+                  <span className="text-foreground/80">
+                    {activeAgents.length} live · {inactiveAgents.length} planned
+                  </span>
+                }
+              />
+              {activeAgents.length > 0 && (
+                <details className="pt-1">
+                  <summary className="cursor-pointer text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Show roster
+                  </summary>
+                  <div className="mt-2 space-y-1">
+                    {activeAgents.map((a: any) => (
+                      <div
+                        key={a.key || a.label || a}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <CheckCircle size={11} className="text-green-400" />
+                        <span>{a.label || a}</span>
+                      </div>
+                    ))}
+                    {inactiveAgents.map((a: any) => (
+                      <div
+                        key={a.key || a.label || a}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <AlertCircle size={11} className="text-yellow-400" />
+                        <span className="text-muted-foreground">{a.label || a}</span>
+                      </div>
                     ))}
                   </div>
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Provider hasn&apos;t reported any models. If chat is failing, open Integrations
-                  → AI Host and run a test — the resulting error message will tell you exactly
-                  what&apos;s wrong.
-                </p>
+                </details>
               )}
-              <Button
-                size="sm"
-                variant="outline"
-                className="zed-glass border-white/10"
-                onClick={() => onNavigate("integrations")}
-              >
-                <Bot size={14} className="mr-1" />
-                Open AI Host Controls
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="zed-glass border-white/10">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Database size={18} className="text-cyan-400" />
-                Database
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                <StatusDot online={status.database === "connected"} />
-                <span className="text-sm capitalize">{status.database}</span>
-              </div>
-              <p className="text-xs text-muted-foreground">PostgreSQL via Drizzle ORM</p>
-            </CardContent>
-          </Card>
-
-          <Card className="zed-glass border-white/10 md:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Activity size={18} className="text-pink-400" />
-                Agent Orchestrator
-              </CardTitle>
-              <CardDescription>ManagerAgent routing status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Active agents</p>
-                  {activeAgents.map((a: any) => (
-                    <div key={a.key || a.label || a} className="flex items-center gap-2 mb-1">
-                      <CheckCircle size={12} className="text-green-400" />
-                      <span className="text-sm">{a.label || a}</span>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Inactive / planned agents</p>
-                  {inactiveAgents.map((a: any) => (
-                    <div key={a.key || a.label || a} className="flex items-center gap-2 mb-1">
-                      <AlertCircle size={12} className="text-yellow-400" />
-                      <span className="text-sm">{a.label || a}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="zed-glass border-white/10 md:col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Zap size={18} className="text-yellow-400" />
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 pt-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="zed-glass border-white/10"
+                  className="zed-glass border-white/10 h-7 text-xs"
                   onClick={() => onNavigate("integrations")}
                 >
-                  <Bot size={14} className="mr-1" />
-                  Integrations
+                  Test AI host
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="zed-glass border-white/10"
-                  onClick={() => onNavigate("knowledge")}
-                >
-                  <Database size={14} className="mr-1" />
-                  Knowledge
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="zed-glass border-white/10"
-                  onClick={() => onNavigate("ruleset")}
-                >
-                  <Edit3 size={14} className="mr-1" />
-                  Edit Ruleset
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="zed-glass border-white/10"
-                  onClick={() => onNavigate("approvals")}
-                >
-                  <Clock size={14} className="mr-1" />
-                  Approval Queue
-                  {pendingApprovals > 0 && (
-                    <span className="ml-1 text-pink-400">({pendingApprovals})</span>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="zed-glass border-white/10"
-                  onClick={() => onNavigate("logs")}
-                >
-                  <FileText size={14} className="mr-1" />
-                  View Logs
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="zed-glass border-white/10"
+                  className="zed-glass border-white/10 h-7 text-xs"
                   onClick={onOpenChat}
                 >
-                  <Server size={14} className="mr-1" />
-                  Open Chat
+                  Open chat
                 </Button>
               </div>
             </CardContent>
           </Card>
+
+          <div className="md:col-span-2">
+            <EnvValidatorCard />
+          </div>
         </div>
       ) : (
-        <div className="text-center text-muted-foreground py-12">
+        <div className="text-center text-muted-foreground py-8 text-sm">
           Could not fetch system status.
         </div>
       )}
     </>
+  );
+}
+
+function ActionTile({
+  icon,
+  label,
+  subtle,
+  onClick,
+  highlight,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  subtle: string;
+  onClick: () => void;
+  highlight?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-start gap-2 rounded-xl border bg-black/30 px-3 py-2.5 text-left transition-colors hover:bg-white/5 ${
+        highlight ? "border-pink-500/40 bg-pink-500/5" : "border-white/10"
+      }`}
+    >
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium text-foreground">{label}</div>
+        <div className="text-[11px] text-muted-foreground">{subtle}</div>
+      </div>
+    </button>
+  );
+}
+
+function Row({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right">{value}</span>
+    </div>
   );
 }
