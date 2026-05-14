@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import {
   ChevronLeft,
   FileText,
-  Handshake,
+  Users,
   Megaphone,
   Newspaper,
   Rocket,
@@ -34,7 +34,7 @@ interface PublishedFlow {
 const ICON_MAP: Record<string, LucideIcon> = {
   TrendingUp,
   FileText,
-  Handshake,
+  Users,
   Wallet,
   Rocket,
   Megaphone,
