@@ -81,23 +81,17 @@ async function ensureSessionUserInDatabase(req: any) {
   const sessionUser = req.session?.user || {};
   const claims = req.user?.claims || {};
 
-  await db
-    .insert(users)
-    .values({
-      id: sessionUserId,
-      email: sessionUser.email || claims.email || null,
-      firstName: sessionUser.firstName || claims.first_name || claims.firstName || null,
-      lastName: sessionUser.lastName || claims.last_name || claims.lastName || null,
-      profileImageUrl:
-        sessionUser.profileImageUrl ||
-        claims.profile_image_url ||
-        claims.profileImageUrl ||
-        claims.picture ||
-        null,
-    })
-    .onConflictDoUpdate({
-      target: users.id,
-      set: {
+  // The users table has a unique constraint on email; onConflictDoUpdate
+  // here only keys on id, so a row colliding on email (different id, same
+  // email) would throw a unique violation and crash any caller. Wrap in
+  // try/catch so this never breaks /api/conversations creation — the
+  // foreign key only requires the user row exists, not that we just
+  // freshly upserted it. Log the failure so we still see when it happens.
+  try {
+    await db
+      .insert(users)
+      .values({
+        id: sessionUserId,
         email: sessionUser.email || claims.email || null,
         firstName: sessionUser.firstName || claims.first_name || claims.firstName || null,
         lastName: sessionUser.lastName || claims.last_name || claims.lastName || null,
@@ -107,9 +101,35 @@ async function ensureSessionUserInDatabase(req: any) {
           claims.profileImageUrl ||
           claims.picture ||
           null,
-        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: sessionUser.email || claims.email || null,
+          firstName: sessionUser.firstName || claims.first_name || claims.firstName || null,
+          lastName: sessionUser.lastName || claims.last_name || claims.lastName || null,
+          profileImageUrl:
+            sessionUser.profileImageUrl ||
+            claims.profile_image_url ||
+            claims.profileImageUrl ||
+            claims.picture ||
+            null,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (err: any) {
+    void logRuntimeEvent({
+      level: "warn",
+      source: "server",
+      event: "user.upsert.failed",
+      detail: err?.message || String(err),
+      context: {
+        userId: sessionUserId,
+        email: sessionUser.email || claims.email || null,
+        errorKind: err?.constructor?.name,
       },
     });
+  }
 }
 
 async function requireConversation(req: any, res: Response) {
@@ -219,9 +239,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn("[Conversations] Session creation failed (non-fatal):", sessionError);
       }
       res.json(conversation);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to create conversation" });
+    } catch (err: any) {
+      const detail = err?.message || String(err);
+      console.error("[POST /api/conversations] failed:", err);
+      await logRuntimeEvent({
+        level: "error",
+        source: "server",
+        event: "conversation.create.failed",
+        detail,
+        context: {
+          userId: req.user?.claims?.sub,
+          mode: req.body?.mode,
+          errorKind: err?.constructor?.name,
+          stack: err?.stack?.split("\n").slice(0, 4).join(" | "),
+        },
+      });
+      res.status(500).json({ error: detail || "Failed to create conversation" });
     }
   });
 
@@ -799,9 +832,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const config = getProviderRuntimeConfig();
       const target = getResolvedTargetName({ lane: "chat" });
       const provider = getActiveProviderName({ lane: "chat" });
-      const ollamaUrl = config.ollama.baseUrl;
-      const remoteUrl = config.clawTemp.baseUrl;
-      const probeUrl = provider === "claw-temp" ? remoteUrl : ollamaUrl;
+      // probeUrl must reflect the ACTIVE provider's base URL, not always
+      // the Ollama URL — otherwise the admin Provider Routing card shows
+      // "localhost:11434" even when chat actually goes to Lightning/OpenAI.
+      const probeUrl =
+        provider === "openai"
+          ? config.openai.baseUrl
+          : provider === "claude"
+            ? config.claude.baseUrl
+            : provider === "claw-temp"
+              ? config.clawTemp.baseUrl
+              : config.ollama.baseUrl;
 
       const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(probeUrl);
       const targetHost = (() => {
