@@ -80,25 +80,45 @@ async function ensureSessionUserInDatabase(req: any) {
 
   if (!sessionUserId || !sessionUser) return;
 
-  await db
-    .insert(users)
-    .values({
-      id: sessionUserId,
-      email: sessionUser.email || null,
-      firstName: sessionUser.firstName || null,
-      lastName: sessionUser.lastName || null,
-      profileImageUrl: sessionUser.profileImageUrl || null,
-    })
-    .onConflictDoUpdate({
-      target: users.id,
-      set: {
+  // The users table has a unique constraint on email; onConflictDoUpdate
+  // here only keys on id, so a row colliding on email (different id, same
+  // email) would throw a unique violation and crash any caller. Wrap in
+  // try/catch so this never breaks /api/conversations creation — the
+  // foreign key only requires the user row exists, not that we just
+  // freshly upserted it. Log the failure so we still see when it happens.
+  try {
+    await db
+      .insert(users)
+      .values({
+        id: sessionUserId,
         email: sessionUser.email || null,
         firstName: sessionUser.firstName || null,
         lastName: sessionUser.lastName || null,
         profileImageUrl: sessionUser.profileImageUrl || null,
-        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: sessionUser.email || null,
+          firstName: sessionUser.firstName || null,
+          lastName: sessionUser.lastName || null,
+          profileImageUrl: sessionUser.profileImageUrl || null,
+          updatedAt: new Date(),
+        },
+      });
+  } catch (err: any) {
+    void logRuntimeEvent({
+      level: "warn",
+      source: "server",
+      event: "user.upsert.failed",
+      detail: err?.message || String(err),
+      context: {
+        userId: sessionUserId,
+        email: sessionUser.email || null,
+        errorKind: err?.constructor?.name,
       },
     });
+  }
 }
 
 async function requireConversation(req: any, res: Response) {
