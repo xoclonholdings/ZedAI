@@ -1,5 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Mic, MicOff, Paperclip, Send, Square } from "lucide-react";
+import { useLocation } from "wouter";
+import {
+  ArrowUpRight,
+  Check,
+  ChevronDown,
+  Mic,
+  MicOff,
+  Paperclip,
+  Send,
+  Square,
+  Workflow,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth/UseAuth";
@@ -81,6 +92,7 @@ export default function ChatComposer({
   onCancelEdit,
 }: ChatComposerProps) {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const compact = !!user?.personalization?.compactMessages;
   const fontSize =
     (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
@@ -277,6 +289,29 @@ export default function ChatComposer({
                   </button>
                 );
               })}
+
+              <div className="my-1 border-t border-white/10" />
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowLanePicker(false);
+                  navigate("/flows");
+                }}
+                className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-white/5"
+                data-testid="composer-flow-mode"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Workflow size={13} className="text-cyan-300 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-foreground">Flow Mode</div>
+                    <div className="text-[11px] text-muted-foreground leading-tight">
+                      Pick an outcome — agents coordinate the rest.
+                    </div>
+                  </div>
+                </div>
+                <ArrowUpRight size={12} className="text-muted-foreground shrink-0" />
+              </button>
             </div>
           )}
         </div>

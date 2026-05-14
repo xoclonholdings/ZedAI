@@ -12,6 +12,9 @@ import NotFound from "@/pages/not-found";
 import Chat from "@/pages/chat";
 import Login from "@/pages/login";
 import Admin from "@/pages/admin";
+import FlowsPage from "@/pages/flows";
+import FlowDetailPage from "@/pages/flow-detail";
+import { RunsListPage, RunDetailPage } from "@/pages/runs";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -87,6 +90,22 @@ function Router() {
 
       <Route path="/admin">
         {isAuthenticated ? <Admin /> : <Login />}
+      </Route>
+
+      <Route path="/flows">
+        {isAuthenticated ? <FlowsPage /> : <Login />}
+      </Route>
+
+      <Route path="/flows/:id">
+        {isAuthenticated ? <FlowDetailPage /> : <Login />}
+      </Route>
+
+      <Route path="/runs">
+        {isAuthenticated ? <RunsListPage /> : <Login />}
+      </Route>
+
+      <Route path="/runs/:runId">
+        {isAuthenticated ? <RunDetailPage /> : <Login />}
       </Route>
 
       <Route component={NotFound} />
