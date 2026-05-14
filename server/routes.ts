@@ -212,9 +212,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn("[Conversations] Session creation failed (non-fatal):", sessionError);
       }
       res.json(conversation);
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Failed to create conversation" });
+    } catch (err: any) {
+      const detail = err?.message || String(err);
+      console.error("[POST /api/conversations] failed:", err);
+      await logRuntimeEvent({
+        level: "error",
+        source: "server",
+        event: "conversation.create.failed",
+        detail,
+        context: {
+          userId: req.user?.claims?.sub,
+          mode: req.body?.mode,
+          errorKind: err?.constructor?.name,
+          stack: err?.stack?.split("\n").slice(0, 4).join(" | "),
+        },
+      });
+      res.status(500).json({ error: detail || "Failed to create conversation" });
     }
   });
 
@@ -807,9 +820,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const config = getProviderRuntimeConfig();
       const target = getResolvedTargetName({ lane: "chat" });
       const provider = getActiveProviderName({ lane: "chat" });
-      const ollamaUrl = config.ollama.baseUrl;
-      const remoteUrl = config.clawTemp.baseUrl;
-      const probeUrl = provider === "claw-temp" ? remoteUrl : ollamaUrl;
+      // probeUrl must reflect the ACTIVE provider's base URL, not always
+      // the Ollama URL — otherwise the admin Provider Routing card shows
+      // "localhost:11434" even when chat actually goes to Lightning/OpenAI.
+      const probeUrl =
+        provider === "openai"
+          ? config.openai.baseUrl
+          : provider === "claude"
+            ? config.claude.baseUrl
+            : provider === "claw-temp"
+              ? config.clawTemp.baseUrl
+              : config.ollama.baseUrl;
 
       const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(probeUrl);
       const targetHost = (() => {
