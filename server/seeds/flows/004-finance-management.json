@@ -1,0 +1,101 @@
+{
+  "id": "flow-004-finance",
+  "slug": "004-finance-management",
+  "name": "Finance Management Flow",
+  "category": "finance",
+  "description": "Personal and operating-finance discipline: budget, expense control, savings/credit, investing, risk.",
+  "purpose": "Move from ad-hoc financial decisions to a recurring, auditable cycle that protects cash and grows net worth.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance", "business", "research"],
+  "triggerConditions": ["manual", "monthly"],
+  "userFacingLabel": "Financial Planning",
+  "userFacingBlurb": "Budget, expenses, savings, credit, investing — one structured pass.",
+  "icon": "Wallet",
+  "stages": [
+    {
+      "id": "s1-snapshot",
+      "order": 1,
+      "name": "Cash Snapshot",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "outputs": ["kpi_snapshot", "report"],
+      "steps": [
+        { "id": "s1-1", "order": 1, "label": "Pull current balances across accounts" },
+        { "id": "s1-2", "order": 2, "label": "Categorize last 30 days of transactions" },
+        { "id": "s1-3", "order": 3, "label": "Compute income, fixed, variable, savings rate" }
+      ]
+    },
+    {
+      "id": "s2-budget",
+      "order": 2,
+      "name": "Budget & Expense Plan",
+      "assignedAgent": "finance",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["decision_log"],
+      "steps": [
+        { "id": "s2-1", "order": 1, "label": "Set monthly budget per category" },
+        { "id": "s2-2", "order": 2, "label": "Identify expenses to cut or renegotiate" },
+        { "id": "s2-3", "order": 3, "label": "Flag overspending alerts" }
+      ]
+    },
+    {
+      "id": "s3-savings-credit",
+      "order": 3,
+      "name": "Savings & Credit Plan",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "outputs": ["recommendation"],
+      "steps": [
+        { "id": "s3-1", "order": 1, "label": "Set savings target this month" },
+        { "id": "s3-2", "order": 2, "label": "Recommend credit-score actions (utilization, on-time, mix)" },
+        { "id": "s3-3", "order": 3, "label": "Surface refinance / consolidation opportunities" }
+      ]
+    },
+    {
+      "id": "s4-invest",
+      "order": 4,
+      "name": "Investing Opportunities",
+      "assignedAgent": "research",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["recommendation"],
+      "steps": [
+        { "id": "s4-1", "order": 1, "label": "Scan opportunities matching risk profile" },
+        { "id": "s4-2", "order": 2, "label": "Rank by expected return and liquidity" },
+        { "id": "s4-3", "order": 3, "label": "Propose allocation deltas" }
+      ]
+    },
+    {
+      "id": "s5-risk",
+      "order": 5,
+      "name": "Risk Awareness",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s5-1", "order": 1, "label": "Surface concentration risk" },
+        { "id": "s5-2", "order": 2, "label": "Surface insurance gaps" },
+        { "id": "s5-3", "order": 3, "label": "Surface upcoming large outflows" }
+      ]
+    },
+    {
+      "id": "s6-plan",
+      "order": 6,
+      "name": "Forward Plan",
+      "assignedAgent": "finance",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["decision_log", "task_list"],
+      "steps": [
+        { "id": "s6-1", "order": 1, "label": "Document this month's decisions" },
+        { "id": "s6-2", "order": 2, "label": "Set targets for next 30/90 days" },
+        { "id": "s6-3", "order": 3, "label": "Schedule the next review" }
+      ]
+    }
+  ],
+  "createdAt": "2026-05-08T00:00:00.000Z",
+  "updatedAt": "2026-05-08T00:00:00.000Z",
+  "publishedAt": "2026-05-08T00:00:00.000Z"
+}

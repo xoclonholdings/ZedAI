@@ -9,6 +9,7 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
+  Workflow,
   Wrench,
 } from "lucide-react";
 
@@ -64,6 +65,12 @@ export default function OverviewSection({
       </div>
 
       <div className="grid grid-cols-2 gap-2">
+        <ActionTile
+          icon={<Workflow size={16} className="text-cyan-300" />}
+          label="Flows"
+          subtle="Operational pipelines"
+          onClick={() => onNavigate("flows")}
+        />
         <ActionTile
           icon={<Bot size={16} className="text-purple-300" />}
           label="Integrations"

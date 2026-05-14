@@ -1,0 +1,100 @@
+{
+  "id": "flow-007-pr",
+  "slug": "007-public-relations",
+  "name": "Public Relations Flow",
+  "category": "pr",
+  "description": "Develop a PR angle, build the press kit, run outreach, manage response and sentiment.",
+  "purpose": "Treat PR as a discipline — not a one-off press release. Approval gates protect the brand at each commitment point.",
+  "status": "published",
+  "version": 1,
+  "agents": ["research", "content", "business", "operations"],
+  "triggerConditions": ["manual", "on milestone"],
+  "userFacingLabel": "Run PR Campaign",
+  "userFacingBlurb": "Land a story: angle, press kit, outreach, response.",
+  "icon": "Newspaper",
+  "stages": [
+    {
+      "id": "s1-angle",
+      "order": 1,
+      "name": "Story Angle",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s1-1", "order": 1, "label": "Why this story, why now" },
+        { "id": "s1-2", "order": 2, "label": "Which audience cares" },
+        { "id": "s1-3", "order": 3, "label": "Who has covered adjacent angles" }
+      ]
+    },
+    {
+      "id": "s2-narrative",
+      "order": 2,
+      "name": "Narrative & Spokesperson",
+      "assignedAgent": "business",
+      "requiresApproval": true,
+      "approvalRole": "admin",
+      "outputs": ["decision_log"],
+      "steps": [
+        { "id": "s2-1", "order": 1, "label": "Approve narrative arc" },
+        { "id": "s2-2", "order": 2, "label": "Name the spokesperson" },
+        { "id": "s2-3", "order": 3, "label": "Draft talking points" }
+      ]
+    },
+    {
+      "id": "s3-presskit",
+      "order": 3,
+      "name": "Press Kit",
+      "assignedAgent": "content",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["draft", "campaign_plan"],
+      "steps": [
+        { "id": "s3-1", "order": 1, "label": "Press release" },
+        { "id": "s3-2", "order": 2, "label": "Backgrounder / company facts" },
+        { "id": "s3-3", "order": 3, "label": "Quotes + headshots + assets" }
+      ]
+    },
+    {
+      "id": "s4-list",
+      "order": 4,
+      "name": "Reporter List",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "outputs": ["task_list"],
+      "steps": [
+        { "id": "s4-1", "order": 1, "label": "Identify tier-1 reporters covering this beat" },
+        { "id": "s4-2", "order": 2, "label": "Identify tier-2 / trade reporters" },
+        { "id": "s4-3", "order": 3, "label": "Look up correct contact path for each" }
+      ]
+    },
+    {
+      "id": "s5-pitch",
+      "order": 5,
+      "name": "Pitch & Outreach",
+      "assignedAgent": "operations",
+      "requiresApproval": false,
+      "outputs": ["task_list"],
+      "steps": [
+        { "id": "s5-1", "order": 1, "label": "Personalize pitches" },
+        { "id": "s5-2", "order": 2, "label": "Send embargoed previews" },
+        { "id": "s5-3", "order": 3, "label": "Track responses + follow-ups" }
+      ]
+    },
+    {
+      "id": "s6-response",
+      "order": 6,
+      "name": "Response & Sentiment",
+      "assignedAgent": "business",
+      "requiresApproval": false,
+      "outputs": ["kpi_snapshot", "report"],
+      "steps": [
+        { "id": "s6-1", "order": 1, "label": "Monitor coverage" },
+        { "id": "s6-2", "order": 2, "label": "Track sentiment + reach" },
+        { "id": "s6-3", "order": 3, "label": "Handle corrections / follow-on requests" }
+      ]
+    }
+  ],
+  "createdAt": "2026-05-08T00:00:00.000Z",
+  "updatedAt": "2026-05-08T00:00:00.000Z",
+  "publishedAt": "2026-05-08T00:00:00.000Z"
+}

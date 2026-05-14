@@ -1,0 +1,88 @@
+{
+  "id": "flow-002-news-blog",
+  "slug": "002-news-blog-creation",
+  "name": "News & Blog Creation Flow",
+  "category": "content",
+  "description": "Research a topic, plan the angle, draft, edit, and schedule publication across channels.",
+  "purpose": "Produce trustworthy, well-researched written content with a consistent editorial voice and a clean approval gate before publication.",
+  "status": "published",
+  "version": 1,
+  "agents": ["research", "content", "operations"],
+  "triggerConditions": ["manual", "weekly"],
+  "userFacingLabel": "Create Content",
+  "userFacingBlurb": "Research, draft, and publish an article with editorial sign-off.",
+  "icon": "FileText",
+  "stages": [
+    {
+      "id": "s1-topic-intel",
+      "order": 1,
+      "name": "Topic Intelligence",
+      "description": "Pick the angle. Skim what's already been said and find a fresh take.",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s1-1", "order": 1, "label": "Identify the audience and the question they're asking" },
+        { "id": "s1-2", "order": 2, "label": "Scan recent coverage and saturation" },
+        { "id": "s1-3", "order": 3, "label": "Choose the angle that's still underserved" }
+      ]
+    },
+    {
+      "id": "s2-outline",
+      "order": 2,
+      "name": "Outline & Source Plan",
+      "assignedAgent": "research",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["draft"],
+      "steps": [
+        { "id": "s2-1", "order": 1, "label": "Draft outline: hook, body sections, takeaways" },
+        { "id": "s2-2", "order": 2, "label": "List primary sources to cite" },
+        { "id": "s2-3", "order": 3, "label": "Identify quotes, data points, and visuals needed" }
+      ]
+    },
+    {
+      "id": "s3-draft",
+      "order": 3,
+      "name": "First Draft",
+      "assignedAgent": "content",
+      "requiresApproval": false,
+      "outputs": ["draft"],
+      "steps": [
+        { "id": "s3-1", "order": 1, "label": "Write opening hook" },
+        { "id": "s3-2", "order": 2, "label": "Write body with inline citations" },
+        { "id": "s3-3", "order": 3, "label": "Write closing takeaway / CTA" }
+      ]
+    },
+    {
+      "id": "s4-edit",
+      "order": 4,
+      "name": "Editorial Pass",
+      "assignedAgent": "content",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["draft"],
+      "steps": [
+        { "id": "s4-1", "order": 1, "label": "Tighten voice and rhythm" },
+        { "id": "s4-2", "order": 2, "label": "Verify every factual claim is cited" },
+        { "id": "s4-3", "order": 3, "label": "Add headline + meta + social blurb" }
+      ]
+    },
+    {
+      "id": "s5-publish",
+      "order": 5,
+      "name": "Publish & Distribute",
+      "assignedAgent": "operations",
+      "requiresApproval": false,
+      "outputs": ["campaign_plan"],
+      "steps": [
+        { "id": "s5-1", "order": 1, "label": "Schedule publication" },
+        { "id": "s5-2", "order": 2, "label": "Push to mailing list" },
+        { "id": "s5-3", "order": 3, "label": "Queue social posts on each channel" }
+      ]
+    }
+  ],
+  "createdAt": "2026-05-08T00:00:00.000Z",
+  "updatedAt": "2026-05-08T00:00:00.000Z",
+  "publishedAt": "2026-05-08T00:00:00.000Z"
+}
