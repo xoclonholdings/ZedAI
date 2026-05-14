@@ -59,11 +59,7 @@ export class ConversationDatabaseStorage {
     }
   }
 
-  async createConversation(
-    data: InsertConversation
-  ): Promise<Conversation> {
-    const fallbackKey = `conversation_${data.id}`;
-
+  async createConversation(data: InsertConversation): Promise<Conversation> {
     const [conversation] = await db
       .insert(conversations)
       .values(data)
@@ -73,7 +69,11 @@ export class ConversationDatabaseStorage {
       this.generateCacheKey("user_conversations", data.userId)
     );
 
-    await fallbackStorage.store(fallbackKey, conversation);
+    try {
+      await fallbackStorage.store(`conversation_${conversation.id}`, conversation);
+    } catch (error) {
+      console.warn("[CONVO STORAGE] fallback store failed:", error);
+    }
 
     return conversation;
   }
@@ -96,14 +96,22 @@ export class ConversationDatabaseStorage {
         this.generateCacheKey("user_conversations", updated.userId)
       );
 
-      await fallbackStorage.store(fallbackKey, updated);
+      try {
+        await fallbackStorage.store(fallbackKey, updated);
+      } catch (error) {
+        console.warn("[CONVO STORAGE] fallback update store failed:", error);
+      }
     }
 
     return updated;
   }
 
   async deleteConversation(id: string): Promise<boolean> {
-    await fallbackStorage.delete(`conversation_${id}`);
+    try {
+      await fallbackStorage.delete(`conversation_${id}`);
+    } catch (error) {
+      console.warn("[CONVO STORAGE] fallback delete failed:", error);
+    }
 
     const conversation = await this.getConversation(id);
 

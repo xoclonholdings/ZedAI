@@ -76,9 +76,10 @@ async function ensureSessionUserInDatabase(req: any) {
   if (!db) return;
 
   const sessionUserId = req.user?.claims?.sub;
-  const sessionUser = req.session?.user;
+  if (!sessionUserId) return;
 
-  if (!sessionUserId || !sessionUser) return;
+  const sessionUser = req.session?.user || {};
+  const claims = req.user?.claims || {};
 
   // The users table has a unique constraint on email; onConflictDoUpdate
   // here only keys on id, so a row colliding on email (different id, same
@@ -91,18 +92,28 @@ async function ensureSessionUserInDatabase(req: any) {
       .insert(users)
       .values({
         id: sessionUserId,
-        email: sessionUser.email || null,
-        firstName: sessionUser.firstName || null,
-        lastName: sessionUser.lastName || null,
-        profileImageUrl: sessionUser.profileImageUrl || null,
+        email: sessionUser.email || claims.email || null,
+        firstName: sessionUser.firstName || claims.first_name || claims.firstName || null,
+        lastName: sessionUser.lastName || claims.last_name || claims.lastName || null,
+        profileImageUrl:
+          sessionUser.profileImageUrl ||
+          claims.profile_image_url ||
+          claims.profileImageUrl ||
+          claims.picture ||
+          null,
       })
       .onConflictDoUpdate({
         target: users.id,
         set: {
-          email: sessionUser.email || null,
-          firstName: sessionUser.firstName || null,
-          lastName: sessionUser.lastName || null,
-          profileImageUrl: sessionUser.profileImageUrl || null,
+          email: sessionUser.email || claims.email || null,
+          firstName: sessionUser.firstName || claims.first_name || claims.firstName || null,
+          lastName: sessionUser.lastName || claims.last_name || claims.lastName || null,
+          profileImageUrl:
+            sessionUser.profileImageUrl ||
+            claims.profile_image_url ||
+            claims.profileImageUrl ||
+            claims.picture ||
+            null,
           updatedAt: new Date(),
         },
       });
@@ -114,7 +125,7 @@ async function ensureSessionUserInDatabase(req: any) {
       detail: err?.message || String(err),
       context: {
         userId: sessionUserId,
-        email: sessionUser.email || null,
+        email: sessionUser.email || claims.email || null,
         errorKind: err?.constructor?.name,
       },
     });
@@ -154,8 +165,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
     next();
   });
-
-  // ─── Auth ────────────────────────────────────────────────────────────────
 
   app.get("/api/me", (req, res) => {
     const session = (req as any).session;
@@ -197,8 +206,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error.message || "Failed to update personalization" });
     }
   });
-
-  // ─── Conversations ────────────────────────────────────────────────────────
 
   app.get("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
@@ -528,8 +535,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ─── Messages ─────────────────────────────────────────────────────────────
-
   app.get("/api/conversations/:id/messages", isAuthenticated, async (req: any, res) => {
     try {
       const conversation = await requireConversation(req, res);
@@ -542,7 +547,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // SSE streaming chat endpoint
   app.post("/api/conversations/:id/messages", isAuthenticated, async (req: any, res) => {
     try {
       const conversationId = req.params.id;
@@ -569,18 +573,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Save user message
       const userMessage = await storage.createMessage(
         insertMessageSchema.parse({ conversationId, role: "user", content })
       );
 
-      // Build chat history for context
       const history = await storage.getMessagesByConversation(conversationId);
       const ollamaMessages: OllamaMessage[] = history
         .slice(-20)
         .map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-      // Load rules from core memory if present, then inject hub memory
       let systemPrompt: string | undefined;
       try {
         const mem = await storage.getCoreMemoryByKey("system_prompt");
@@ -610,7 +611,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (stream) {
-        // SSE streaming response
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
@@ -618,7 +618,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         let fullResponse = "";
 
-        // Send user message first so client can render it
         res.write(`data: ${JSON.stringify({ type: "user_message", message: userMessage })}\n\n`);
 
         await streamChatFromOllama(
@@ -664,7 +663,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { lane: "chat" },
         );
       } else {
-        // Non-streaming fallback
         let aiText: string;
         try {
           aiText = await generateChatFromOllama(ollamaMessages, systemPrompt, { lane: "chat" });
@@ -690,8 +688,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
-
-  // ─── Files ────────────────────────────────────────────────────────────────
 
   app.get("/api/conversations/:id/files", isAuthenticated, async (req: any, res) => {
     try {
@@ -743,8 +739,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ─── Agent Orchestration ──────────────────────────────────────────────────
-
   app.post("/api/orchestrate", isAuthenticated, async (req: any, res) => {
     try {
       const { message, conversationId, targetAgent } = req.body;
@@ -752,7 +746,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!message) return res.status(400).json({ error: "Message required" });
 
-      // Save user message to DB if we have a conversation
       if (conversationId) {
         await storage.createMessage(
           insertMessageSchema.parse({ conversationId, role: "user", content: message })
@@ -784,7 +777,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      // Save agent response
       if (conversationId) {
         await storage.createMessage(
           insertMessageSchema.parse({
@@ -893,18 +885,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ─── Voice ────────────────────────────────────────────────────────────────
-
   app.post("/api/voice/transcribe", isAuthenticated, async (req: any, res) => {
-    // Web Speech API handles transcription on the client side for now
-    // This endpoint is a placeholder for future Whisper integration
     res.json({
       transcript: "",
       note: "Server-side transcription requires Whisper. Using browser Speech API instead.",
     });
   });
-
-  // ─── Admin ────────────────────────────────────────────────────────────────
 
   app.get("/api/admin/system-status", isAdmin, async (_req, res) => {
     const ollama = await checkOllamaHealth();
@@ -927,16 +913,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       return agent;
     });
-      res.json({
-        system: "ZED",
-        ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
-        aiHost: {
-          provider: activeProvider,
-          target: getResolvedTargetName({ lane: "chat" }),
-          configuredModel:
-            providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig),
-          remoteMode: providerConfig.clawTemp.mode,
-        },
+    res.json({
+      system: "ZED",
+      ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
+      aiHost: {
+        provider: activeProvider,
+        target: getResolvedTargetName({ lane: "chat" }),
+        configuredModel:
+          providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig),
+        remoteMode: providerConfig.clawTemp.mode,
+      },
       providerRouting: routingSummary.routing,
       database: isDatabaseHealthy ? "connected" : "offline",
       orchestrator: {
@@ -998,7 +984,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       } catch (chatError: any) {
         chatStatus = "error";
-        // Capture *something* useful even if .message is empty/undefined.
         const message =
           (typeof chatError?.message === "string" && chatError.message) ||
           (typeof chatError === "string" && chatError) ||
@@ -1014,7 +999,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           })();
         errorKind = constructor;
-        // Mirror to runtime log so the Logs tab also shows the failure.
         await logRuntimeEvent({
           level: "error",
           source: "server",
@@ -1165,8 +1149,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         openaiConfigured: Boolean(providerConfig.openai.apiKey),
         claudeConfigured: Boolean(providerConfig.claude.apiKey),
       },
-      // Per-lane model overrides resolved from MODEL_CHAT / MODEL_OPERATIONS / etc.
-      // Empty string means the lane falls back to the provider's defaultModel.
       laneModels: {
         chat: providerConfig.laneModels.chat || "",
         manager: providerConfig.laneModels.manager || "",
@@ -1178,8 +1160,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       routing: routingSummary.routing,
     });
   });
-
-  // ─── Flows ────────────────────────────────────────────────────────────
 
   app.get("/api/admin/flows", isAdmin, async (req: any, res) => {
     const includeArchived = String(req.query.includeArchived || "") === "true";
@@ -1226,10 +1206,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(flow);
   });
 
-  // User-facing: only published flows visible
   app.get("/api/flows", isAuthenticated, async (_req, res) => {
     const flows = await FlowStore.listPublished();
-    // Trim to a lighter shape for the front-facing picker
     res.json({
       flows: flows.map((f) => ({
         id: f.id,
@@ -1253,9 +1231,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(flow);
   });
 
-  // Stubbed run lifecycle — creates a queued FlowRun. The execution
-  // engine that actually dispatches each stage to its agent + writes
-  // outputs into context lands in a follow-up commit.
   app.post("/api/flows/:id/run", isAuthenticated, async (req: any, res) => {
     const flow = await FlowStore.getDefinition(req.params.id);
     if (!flow || flow.status !== "published") {
@@ -1298,7 +1273,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const trimmed = (k: string) => (env[k] ?? "").trim();
     const present = (k: string) => trimmed(k).length > 0;
 
-    // ── Provider selection ──
     const provider = (env.MODEL_PROVIDER || "").trim().toLowerCase();
     if (!provider) {
       checks.push({
@@ -1322,7 +1296,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
-    // ── URL validators (catch literal angle brackets, quotes, trailing slashes etc.) ──
     function checkUrl(name: string, expectedSuffix?: string) {
       const raw = trimmed(name);
       if (!raw) return null as EnvCheck | null;
@@ -1375,7 +1348,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
     }
 
-    // ── Provider-specific required vars ──
     if (provider === "openai") {
       if (!present("OPENAI_API_KEY")) {
         checks.push({
@@ -1432,7 +1404,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (urlCheck) checks.push(urlCheck);
     }
 
-    // ── Lane overrides (informational only) ──
     const lanes = ["CHAT", "MANAGER", "OPERATIONS", "RESEARCH", "BUSINESS", "FINANCE"];
     const overrideCount = lanes.filter((lane) => present(`MODEL_${lane}`)).length;
     if (overrideCount > 0) {
@@ -1443,7 +1414,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
-    // ── Session secret strength ──
     const sessionSecret = trimmed("SESSION_SECRET");
     if (!sessionSecret) {
       checks.push({
@@ -1480,7 +1450,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
-    // ── Database URL ──
     const dbUrl = trimmed("DATABASE_URL");
     if (!dbUrl) {
       checks.push({
@@ -1512,7 +1481,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
 
-    // ── Admin auth ──
     if (!present("ZED_ADMIN_USERNAME")) {
       checks.push({
         name: "ZED_ADMIN_USERNAME",
@@ -1552,11 +1520,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
 
-    // ── Frontend URL (for magic-link redirects, CORS) ──
     const frontendUrlCheck = checkUrl("FRONTEND_URL");
     if (frontendUrlCheck) checks.push(frontendUrlCheck);
 
-    // ── Optional integrations: only flag if a key was partially set ──
     if (present("BRAVE_SEARCH_API_KEY")) {
       checks.push({
         name: "BRAVE_SEARCH_API_KEY",
@@ -1599,7 +1565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Invalid filename" });
     }
     try {
-      yaml.load(content); // validate YAML
+      yaml.load(content);
       await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
       await fs.writeFile(path.join(HUB_CONFIG_DIR, filename), content, "utf-8");
       ManagerAgent.flushConfig();
@@ -1661,13 +1627,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error.message || "Failed to write client log" });
     }
   });
-
-  // ─── Approval Queue ────────────────────────────────────────────────────────
-  // The legacy approval-queue.json file is no longer written to. The
-  // TaskLifecycleManager + ApprovalDecisionHandler pipeline is the
-  // canonical approval store. These endpoints adapt the new shape into
-  // the historical entry shape so the existing admin UI keeps working
-  // without further changes.
 
   const WORKING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 
@@ -1740,7 +1699,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (t.approval_status && pendingStates.has(t.approval_status)) ||
           t.status === "blocked",
       );
-      // Include the 10 most recent approved/rejected tasks so admin has context.
       const recent = tasks
         .filter((t) => t.approval_status === "approved" || t.approval_status === "rejected")
         .slice(0, 10);
@@ -1807,7 +1765,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ events });
   });
 
-  // Legacy endpoint
   app.get("/api/admin/system-test", async (_req, res) => {
     const ollama = await checkOllamaHealth();
     res.json({
@@ -1818,8 +1775,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       database: isDatabaseHealthy ? "connected" : "offline",
     });
   });
-
-  // ─── Simple chat (no conversation context) ────────────────────────────────
 
   app.post("/api/chat", async (req, res) => {
     try {
@@ -1835,14 +1790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Additive: register execution / approval / workflow / operational endpoints.
-  // No existing routes are touched; UI is unchanged. See
-  // server/services/execution/registerExecutionRoutes.ts.
   registerExecutionRoutes(app);
-
-  // Additive: register universal external command intake endpoints
-  // (app_chat, voice, sms, whatsapp, email, webhook, api). See
-  // server/services/intake/registerIntakeRoutes.ts.
   registerIntakeRoutes(app);
 
   const httpServer = createServer(app);
