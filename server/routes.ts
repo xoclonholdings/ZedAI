@@ -21,6 +21,7 @@ import { KnowledgeService } from "./services/KnowledgeService";
 import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationService";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
+import { FlowStore } from "./services/FlowStore";
 import { registerExecutionRoutes } from "./services/execution/registerExecutionRoutes";
 import { registerIntakeRoutes } from "./services/intake/registerIntakeRoutes";
 import fs from "fs/promises";
@@ -1135,6 +1136,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
       routing: routingSummary.routing,
     });
+  });
+
+  // ─── Flows ────────────────────────────────────────────────────────────
+
+  app.get("/api/admin/flows", isAdmin, async (req: any, res) => {
+    const includeArchived = String(req.query.includeArchived || "") === "true";
+    const flows = await FlowStore.listDefinitions({ includeArchived });
+    res.json({ flows });
+  });
+
+  app.get("/api/admin/flows/:id", isAdmin, async (req, res) => {
+    const flow = await FlowStore.getDefinition(req.params.id);
+    if (!flow) return res.status(404).json({ error: "Not found" });
+    res.json(flow);
+  });
+
+  app.post("/api/admin/flows", isAdmin, async (req, res) => {
+    try {
+      const flow = await FlowStore.createDefinition(req.body);
+      res.json(flow);
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || "Failed to create flow" });
+    }
+  });
+
+  app.put("/api/admin/flows/:id", isAdmin, async (req, res) => {
+    const flow = await FlowStore.updateDefinition(req.params.id, req.body);
+    if (!flow) return res.status(404).json({ error: "Not found" });
+    res.json(flow);
+  });
+
+  app.post("/api/admin/flows/:id/publish", isAdmin, async (req, res) => {
+    const flow = await FlowStore.publishDefinition(req.params.id);
+    if (!flow) return res.status(404).json({ error: "Not found" });
+    res.json(flow);
+  });
+
+  app.post("/api/admin/flows/:id/archive", isAdmin, async (req, res) => {
+    const flow = await FlowStore.archiveDefinition(req.params.id);
+    if (!flow) return res.status(404).json({ error: "Not found" });
+    res.json(flow);
+  });
+
+  app.post("/api/admin/flows/:id/duplicate", isAdmin, async (req, res) => {
+    const flow = await FlowStore.duplicateDefinition(req.params.id);
+    if (!flow) return res.status(404).json({ error: "Not found" });
+    res.json(flow);
+  });
+
+  // User-facing: only published flows visible
+  app.get("/api/flows", isAuthenticated, async (_req, res) => {
+    const flows = await FlowStore.listPublished();
+    // Trim to a lighter shape for the front-facing picker
+    res.json({
+      flows: flows.map((f) => ({
+        id: f.id,
+        slug: f.slug,
+        name: f.name,
+        category: f.category,
+        userFacingLabel: f.userFacingLabel,
+        userFacingBlurb: f.userFacingBlurb,
+        icon: f.icon,
+        stageCount: f.stages.length,
+        agents: f.agents,
+      })),
+    });
+  });
+
+  app.get("/api/flows/:id", isAuthenticated, async (req, res) => {
+    const flow = await FlowStore.getDefinition(req.params.id);
+    if (!flow || flow.status !== "published") {
+      return res.status(404).json({ error: "Not found" });
+    }
+    res.json(flow);
+  });
+
+  // Stubbed run lifecycle — creates a queued FlowRun. The execution
+  // engine that actually dispatches each stage to its agent + writes
+  // outputs into context lands in a follow-up commit.
+  app.post("/api/flows/:id/run", isAuthenticated, async (req: any, res) => {
+    const flow = await FlowStore.getDefinition(req.params.id);
+    if (!flow || flow.status !== "published") {
+      return res.status(404).json({ error: "Not found" });
+    }
+    const run = await FlowStore.startRun({
+      flow,
+      userId: req.user?.claims?.sub || "anonymous",
+      conversationId: req.body?.conversationId,
+      context: req.body?.context,
+    });
+    res.json(run);
+  });
+
+  app.get("/api/flows/runs", isAuthenticated, async (req: any, res) => {
+    const runs = await FlowStore.listRuns({
+      userId: req.user?.claims?.sub,
+      limit: 50,
+    });
+    res.json({ runs });
+  });
+
+  app.get("/api/flows/runs/:runId", isAuthenticated, async (req, res) => {
+    const run = await FlowStore.getRun(req.params.runId);
+    if (!run) return res.status(404).json({ error: "Not found" });
+    res.json(run);
   });
 
   app.get("/api/admin/env-validate", isAdmin, async (_req, res) => {

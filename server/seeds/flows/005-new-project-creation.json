@@ -1,0 +1,87 @@
+{
+  "id": "flow-005-new-project",
+  "slug": "005-new-project-creation",
+  "name": "New Project Creation Flow",
+  "category": "project",
+  "description": "Move from an R&D-discovered opportunity to a scoped, staffed project with a kickoff plan.",
+  "purpose": "Translate an idea or discovery into a concrete project: scope, success criteria, owner, milestones, and the smallest first deliverable.",
+  "status": "published",
+  "version": 1,
+  "agents": ["research", "business", "operations"],
+  "triggerConditions": ["manual", "on new opportunity"],
+  "userFacingLabel": "Launch Something",
+  "userFacingBlurb": "Turn an idea into a real project with scope, owner, and first milestone.",
+  "icon": "Rocket",
+  "stages": [
+    {
+      "id": "s1-discovery",
+      "order": 1,
+      "name": "Discovery & Hypothesis",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s1-1", "order": 1, "label": "Describe the opportunity in one paragraph" },
+        { "id": "s1-2", "order": 2, "label": "State the hypothesis we're testing" },
+        { "id": "s1-3", "order": 3, "label": "Define the success signal" }
+      ]
+    },
+    {
+      "id": "s2-scope",
+      "order": 2,
+      "name": "Scope & Success Criteria",
+      "assignedAgent": "business",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["decision_log"],
+      "steps": [
+        { "id": "s2-1", "order": 1, "label": "List what's in scope" },
+        { "id": "s2-2", "order": 2, "label": "List what's explicitly out of scope" },
+        { "id": "s2-3", "order": 3, "label": "Quantify success" }
+      ]
+    },
+    {
+      "id": "s3-mvd",
+      "order": 3,
+      "name": "Minimum Viable Deliverable",
+      "assignedAgent": "operations",
+      "requiresApproval": false,
+      "outputs": ["task_list"],
+      "steps": [
+        { "id": "s3-1", "order": 1, "label": "Describe the smallest possible first deliverable" },
+        { "id": "s3-2", "order": 2, "label": "Sequence the work to get there" },
+        { "id": "s3-3", "order": 3, "label": "Identify blockers / dependencies" }
+      ]
+    },
+    {
+      "id": "s4-staffing",
+      "order": 4,
+      "name": "Staffing & Tools",
+      "assignedAgent": "operations",
+      "requiresApproval": true,
+      "approvalRole": "admin",
+      "outputs": ["task_list"],
+      "steps": [
+        { "id": "s4-1", "order": 1, "label": "Name the project owner" },
+        { "id": "s4-2", "order": 2, "label": "Name contributing agents and humans" },
+        { "id": "s4-3", "order": 3, "label": "Pick the tools / integrations needed" }
+      ]
+    },
+    {
+      "id": "s5-kickoff",
+      "order": 5,
+      "name": "Kickoff",
+      "assignedAgent": "operations",
+      "requiresApproval": false,
+      "outputs": ["task_list"],
+      "steps": [
+        { "id": "s5-1", "order": 1, "label": "Schedule kickoff" },
+        { "id": "s5-2", "order": 2, "label": "Set a 30-day check-in" },
+        { "id": "s5-3", "order": 3, "label": "Open the working doc / project channel" }
+      ]
+    }
+  ],
+  "createdAt": "2026-05-08T00:00:00.000Z",
+  "updatedAt": "2026-05-08T00:00:00.000Z",
+  "publishedAt": "2026-05-08T00:00:00.000Z"
+}

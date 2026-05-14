@@ -1,0 +1,113 @@
+{
+  "id": "flow-001-revenue",
+  "slug": "001-revenue-intelligence",
+  "name": "Revenue Intelligence Flow",
+  "category": "revenue",
+  "description": "Turn research/opportunity data into revenue-generating operational systems using the 80/20 leverage principle.",
+  "purpose": "Identify the highest-leverage commercial opportunities, design the offer + funnel, prioritize the work, ship it, and iterate on KPIs.",
+  "status": "published",
+  "version": 1,
+  "agents": ["research", "business", "finance", "content"],
+  "triggerConditions": ["manual"],
+  "userFacingLabel": "Build Revenue",
+  "userFacingBlurb": "Find the highest-leverage way to turn an idea into income.",
+  "icon": "TrendingUp",
+  "stages": [
+    {
+      "id": "s1-opportunity-detection",
+      "order": 1,
+      "name": "Opportunity Detection",
+      "description": "Scan the market for demand signals, pain, and underserved gaps.",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s1-1", "order": 1, "label": "Analyze market demand", "automationKey": "research.market_demand" },
+        { "id": "s1-2", "order": 2, "label": "Identify pain points and desires" },
+        { "id": "s1-3", "order": 3, "label": "Analyze competitors" },
+        { "id": "s1-4", "order": 4, "label": "Identify underserved gaps" }
+      ]
+    },
+    {
+      "id": "s2-offer-intelligence",
+      "order": 2,
+      "name": "Offer Intelligence",
+      "description": "Translate the opportunity into a positioned offer with urgency and hooks.",
+      "assignedAgent": "business",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["draft", "decision_log"],
+      "steps": [
+        { "id": "s2-1", "order": 1, "label": "Refine positioning" },
+        { "id": "s2-2", "order": 2, "label": "Determine offer structure" },
+        { "id": "s2-3", "order": 3, "label": "Identify emotional hooks" },
+        { "id": "s2-4", "order": 4, "label": "Set urgency / timing" }
+      ]
+    },
+    {
+      "id": "s3-pareto",
+      "order": 3,
+      "name": "80/20 Prioritization",
+      "description": "Rank every possible action by revenue impact. Cut the low-value work.",
+      "assignedAgent": "business",
+      "requiresApproval": false,
+      "outputs": ["task_list"],
+      "steps": [
+        { "id": "s3-1", "order": 1, "label": "Score every possible action by revenue impact" },
+        { "id": "s3-2", "order": 2, "label": "Eliminate low-leverage tasks" },
+        { "id": "s3-3", "order": 3, "label": "Sequence the top 20% for execution" }
+      ]
+    },
+    {
+      "id": "s4-funnel",
+      "order": 4,
+      "name": "Funnel System Creation",
+      "description": "Design the assets that move prospects to revenue.",
+      "assignedAgent": "content",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["funnel", "campaign_plan"],
+      "steps": [
+        { "id": "s4-1", "order": 1, "label": "Landing page recommendations" },
+        { "id": "s4-2", "order": 2, "label": "Onboarding flow recommendations" },
+        { "id": "s4-3", "order": 3, "label": "Generate trust articles" },
+        { "id": "s4-4", "order": 4, "label": "Generate email sequence" },
+        { "id": "s4-5", "order": 5, "label": "Referral / reward suggestions" }
+      ]
+    },
+    {
+      "id": "s5-revops",
+      "order": 5,
+      "name": "Revenue Operations",
+      "description": "Schedule, assign, approve, ship.",
+      "assignedAgent": "operations",
+      "requiresApproval": true,
+      "approvalRole": "admin",
+      "outputs": ["task_list", "kpi_snapshot"],
+      "steps": [
+        { "id": "s5-1", "order": 1, "label": "Assign tasks to owners" },
+        { "id": "s5-2", "order": 2, "label": "Request approvals for execution" },
+        { "id": "s5-3", "order": 3, "label": "Schedule rollout" },
+        { "id": "s5-4", "order": 4, "label": "Define KPIs to track" },
+        { "id": "s5-5", "order": 5, "label": "Monitor early performance" }
+      ]
+    },
+    {
+      "id": "s6-optimize",
+      "order": 6,
+      "name": "Optimization Loop",
+      "description": "Read the numbers, adjust positioning and funnels.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "outputs": ["recommendation", "report"],
+      "steps": [
+        { "id": "s6-1", "order": 1, "label": "Analyze performance against KPIs" },
+        { "id": "s6-2", "order": 2, "label": "Recommend improvements" },
+        { "id": "s6-3", "order": 3, "label": "Adjust positioning and funnels" }
+      ]
+    }
+  ],
+  "createdAt": "2026-05-08T00:00:00.000Z",
+  "updatedAt": "2026-05-08T00:00:00.000Z",
+  "publishedAt": "2026-05-08T00:00:00.000Z"
+}

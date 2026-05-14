@@ -13,6 +13,7 @@ import {
 
 export type AdminSection =
   | "overview"
+  | "flows"
   | "knowledge"
   | "integrations"
   | "ruleset"

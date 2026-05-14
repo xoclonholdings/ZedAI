@@ -9,6 +9,7 @@ import KnowledgeSettings from "@/components/settings/KnowledgeSettings";
 import RulesetSettings from "@/components/settings/RulesetSettings";
 import AdminNav from "@/components/admin/AdminNav";
 import OverviewSection from "@/components/admin/sections/OverviewSection";
+import FlowsSection from "@/components/admin/sections/FlowsSection";
 import IntegrationsSection from "@/components/admin/sections/IntegrationsSection";
 import ApprovalsSection from "@/components/admin/sections/ApprovalsSection";
 import LogsSection from "@/components/admin/sections/LogsSection";
@@ -109,6 +110,7 @@ export default function Admin() {
             pendingApprovals={pendingCount}
           />
         )}
+        {section === "flows" && <FlowsSection />}
         {section === "knowledge" && <KnowledgeSettings />}
         {section === "integrations" && <IntegrationsSection />}
         {section === "ruleset" && <RulesetSettings />}

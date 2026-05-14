@@ -5,6 +5,7 @@ import type { AdminSection, AdminNavTab } from "./types";
 
 const TABS: AdminNavTab[] = [
   { id: "overview", label: "Overview" },
+  { id: "flows", label: "Flows" },
   { id: "knowledge", label: "Knowledge" },
   { id: "integrations", label: "Integrations" },
   { id: "ruleset", label: "Ruleset" },

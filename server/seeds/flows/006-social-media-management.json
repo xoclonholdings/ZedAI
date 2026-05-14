@@ -1,0 +1,100 @@
+{
+  "id": "flow-006-social",
+  "slug": "006-social-media-management",
+  "name": "Social Media Management Flow",
+  "category": "social",
+  "description": "Plan, produce, schedule, and measure social content across channels with a single weekly rhythm.",
+  "purpose": "Replace one-off posting with a repeatable weekly social cycle that compounds reach and stays on-brand.",
+  "status": "published",
+  "version": 1,
+  "agents": ["research", "content", "operations", "business"],
+  "triggerConditions": ["manual", "weekly"],
+  "userFacingLabel": "Improve Social Presence",
+  "userFacingBlurb": "A weekly social cadence: plan, produce, schedule, measure.",
+  "icon": "Megaphone",
+  "stages": [
+    {
+      "id": "s1-listen",
+      "order": 1,
+      "name": "Audience Listening",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s1-1", "order": 1, "label": "Read top-performing posts in this niche this week" },
+        { "id": "s1-2", "order": 2, "label": "Note trending formats and hooks" },
+        { "id": "s1-3", "order": 3, "label": "Capture audience questions / objections" }
+      ]
+    },
+    {
+      "id": "s2-plan",
+      "order": 2,
+      "name": "Weekly Content Plan",
+      "assignedAgent": "business",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["campaign_plan"],
+      "steps": [
+        { "id": "s2-1", "order": 1, "label": "Pick 3-5 themes for the week" },
+        { "id": "s2-2", "order": 2, "label": "Match each theme to a channel + format" },
+        { "id": "s2-3", "order": 3, "label": "Set CTAs and conversion targets" }
+      ]
+    },
+    {
+      "id": "s3-produce",
+      "order": 3,
+      "name": "Produce Posts",
+      "assignedAgent": "content",
+      "requiresApproval": false,
+      "outputs": ["draft"],
+      "steps": [
+        { "id": "s3-1", "order": 1, "label": "Draft each post with hook, body, CTA" },
+        { "id": "s3-2", "order": 2, "label": "Generate variations for A/B tests" },
+        { "id": "s3-3", "order": 3, "label": "Attach images / media specs" }
+      ]
+    },
+    {
+      "id": "s4-review",
+      "order": 4,
+      "name": "Editorial Review",
+      "assignedAgent": "content",
+      "requiresApproval": true,
+      "approvalRole": "user",
+      "outputs": ["draft"],
+      "steps": [
+        { "id": "s4-1", "order": 1, "label": "Brand voice + tone check" },
+        { "id": "s4-2", "order": 2, "label": "Compliance / claims check" },
+        { "id": "s4-3", "order": 3, "label": "Final copy lock" }
+      ]
+    },
+    {
+      "id": "s5-schedule",
+      "order": 5,
+      "name": "Schedule & Publish",
+      "assignedAgent": "operations",
+      "requiresApproval": false,
+      "outputs": ["task_list"],
+      "steps": [
+        { "id": "s5-1", "order": 1, "label": "Schedule posts across channels" },
+        { "id": "s5-2", "order": 2, "label": "Cross-post / repurpose" },
+        { "id": "s5-3", "order": 3, "label": "Notify owners for live engagement" }
+      ]
+    },
+    {
+      "id": "s6-measure",
+      "order": 6,
+      "name": "Measure & Iterate",
+      "assignedAgent": "business",
+      "requiresApproval": false,
+      "outputs": ["kpi_snapshot", "recommendation"],
+      "steps": [
+        { "id": "s6-1", "order": 1, "label": "Pull post performance" },
+        { "id": "s6-2", "order": 2, "label": "Identify winning hooks/formats" },
+        { "id": "s6-3", "order": 3, "label": "Update next week's plan" }
+      ]
+    }
+  ],
+  "createdAt": "2026-05-08T00:00:00.000Z",
+  "updatedAt": "2026-05-08T00:00:00.000Z",
+  "publishedAt": "2026-05-08T00:00:00.000Z"
+}

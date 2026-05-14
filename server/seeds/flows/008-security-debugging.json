@@ -1,0 +1,100 @@
+{
+  "id": "flow-008-security",
+  "slug": "008-security-debugging",
+  "name": "Security & Debugging Flow",
+  "category": "security",
+  "description": "Triage an incident or bug, reproduce it, contain it, fix it, document it, and harden against recurrence.",
+  "purpose": "Apply incident-response discipline to both security events and production bugs — clear stages, audit trail, root-cause requirement.",
+  "status": "published",
+  "version": 1,
+  "agents": ["security", "operations", "research"],
+  "triggerConditions": ["manual", "on error event"],
+  "userFacingLabel": "Security Audit",
+  "userFacingBlurb": "Triage and fix a security event or production bug, end-to-end.",
+  "icon": "ShieldAlert",
+  "stages": [
+    {
+      "id": "s1-triage",
+      "order": 1,
+      "name": "Triage",
+      "assignedAgent": "security",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s1-1", "order": 1, "label": "Capture the symptom + affected surface" },
+        { "id": "s1-2", "order": 2, "label": "Classify severity (P0 / P1 / P2)" },
+        { "id": "s1-3", "order": 3, "label": "Notify the owners" }
+      ]
+    },
+    {
+      "id": "s2-reproduce",
+      "order": 2,
+      "name": "Reproduce",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "outputs": ["report"],
+      "steps": [
+        { "id": "s2-1", "order": 1, "label": "Minimum reproduction steps" },
+        { "id": "s2-2", "order": 2, "label": "Confirm scope (who's affected, how often)" },
+        { "id": "s2-3", "order": 3, "label": "Pull relevant log lines + traces" }
+      ]
+    },
+    {
+      "id": "s3-contain",
+      "order": 3,
+      "name": "Contain",
+      "assignedAgent": "security",
+      "requiresApproval": true,
+      "approvalRole": "admin",
+      "outputs": ["decision_log", "task_list"],
+      "steps": [
+        { "id": "s3-1", "order": 1, "label": "Decide on stop-the-bleed action (rollback, feature flag, rate limit, block)" },
+        { "id": "s3-2", "order": 2, "label": "Apply the containment" },
+        { "id": "s3-3", "order": 3, "label": "Verify containment held" }
+      ]
+    },
+    {
+      "id": "s4-fix",
+      "order": 4,
+      "name": "Root-Cause Fix",
+      "assignedAgent": "operations",
+      "requiresApproval": true,
+      "approvalRole": "admin",
+      "outputs": ["draft", "task_list"],
+      "steps": [
+        { "id": "s4-1", "order": 1, "label": "Identify the root cause (not just the symptom)" },
+        { "id": "s4-2", "order": 2, "label": "Write the fix + test that proves it" },
+        { "id": "s4-3", "order": 3, "label": "Ship through approval queue" }
+      ]
+    },
+    {
+      "id": "s5-postmortem",
+      "order": 5,
+      "name": "Postmortem",
+      "assignedAgent": "security",
+      "requiresApproval": false,
+      "outputs": ["decision_log", "report"],
+      "steps": [
+        { "id": "s5-1", "order": 1, "label": "Timeline: detection → containment → fix → recovery" },
+        { "id": "s5-2", "order": 2, "label": "What went wrong, what went right, blameless" },
+        { "id": "s5-3", "order": 3, "label": "Lessons learned + follow-up items" }
+      ]
+    },
+    {
+      "id": "s6-harden",
+      "order": 6,
+      "name": "Harden",
+      "assignedAgent": "security",
+      "requiresApproval": false,
+      "outputs": ["task_list", "recommendation"],
+      "steps": [
+        { "id": "s6-1", "order": 1, "label": "Add a guard / alert that would have caught this earlier" },
+        { "id": "s6-2", "order": 2, "label": "Update runbook / docs" },
+        { "id": "s6-3", "order": 3, "label": "Schedule the follow-up review" }
+      ]
+    }
+  ],
+  "createdAt": "2026-05-08T00:00:00.000Z",
+  "updatedAt": "2026-05-08T00:00:00.000Z",
+  "publishedAt": "2026-05-08T00:00:00.000Z"
+}
