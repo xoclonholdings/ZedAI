@@ -64,7 +64,12 @@ export default function ChatSidebarUserCard({
             )}
           </div>
 
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+          {/* Anchor the tooltip to the avatar's left edge so it grows
+              rightward into the sidebar rather than getting clipped on
+              the left by the sidebar's overflow boundary. Hidden on
+              mobile where hover isn't meaningful and the camera badge
+              already signals upload. */}
+          <div className="hidden md:block absolute -top-8 left-0 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
             Click to upload photo
           </div>
         </div>
