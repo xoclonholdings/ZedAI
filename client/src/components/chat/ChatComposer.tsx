@@ -229,7 +229,7 @@ export default function ChatComposer({
           <button
             type="button"
             onClick={() => setShowLanePicker((v) => !v)}
-            className={`flex h-9 items-center gap-1.5 rounded-xl border border-white/10 px-2.5 text-xs font-medium transition-colors max-w-[40%] ${
+            className={`flex h-9 items-center gap-1.5 rounded-xl border border-white/10 px-2.5 text-xs font-medium transition-colors max-w-[140px] ${
               currentMode === "agent"
                 ? "bg-purple-500/15 text-purple-100 hover:bg-purple-500/25"
                 : "bg-white/5 text-foreground hover:bg-white/10"
@@ -241,7 +241,7 @@ export default function ChatComposer({
             {currentMode === "agent" && (
               <img src={zLogoPath} alt="" className="h-3 w-3 shrink-0" />
             )}
-            <span className="truncate">
+            <span className="truncate min-w-0">
               {currentMode === "agent" ? activeLane.label : "Chat"}
             </span>
             <ChevronDown size={12} className="opacity-70 shrink-0" />
