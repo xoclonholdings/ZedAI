@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Copy, Pencil, User, FileText, Image, BarChart, Sparkles } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 import type { Message } from "@shared/schema";
 
@@ -122,9 +124,81 @@ export default function ChatMessage({
             <Sparkles size={9} className="text-purple-300" />
           </div>
           <div
-            className={`inline-block max-w-full whitespace-pre-wrap rounded-2xl rounded-tl-sm bg-white/[0.04] px-3 py-1.5 text-foreground/95 ${bodyClass}`}
+            className={`zed-markdown inline-block max-w-full rounded-2xl rounded-tl-sm bg-white/[0.04] px-3 py-2 text-foreground/95 ${bodyClass}`}
           >
-            {message.content}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              // Pre-strip literal "<br>" tags the model emits (Lightning's
+              // gpt-oss-20b often produces them despite being inside markdown).
+              components={{
+                p: ({ children }) => <p className="my-1.5 first:mt-0 last:mb-0">{children}</p>,
+                ul: ({ children }) => <ul className="my-1.5 list-disc pl-5 space-y-0.5">{children}</ul>,
+                ol: ({ children }) => <ol className="my-1.5 list-decimal pl-5 space-y-0.5">{children}</ol>,
+                li: ({ children }) => <li className="leading-6">{children}</li>,
+                strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                em: ({ children }) => <em className="italic">{children}</em>,
+                code: ({ className, children, ...props }) => {
+                  const isInline = !className?.includes("language-");
+                  return isInline ? (
+                    <code className="rounded bg-white/10 px-1 py-0.5 text-[0.85em] font-mono" {...props}>
+                      {children}
+                    </code>
+                  ) : (
+                    <code className={`${className || ""} block font-mono text-[0.85em]`} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                pre: ({ children }) => (
+                  <pre className="my-2 overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-2.5 text-[0.85em]">
+                    {children}
+                  </pre>
+                ),
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-300 underline-offset-2 hover:underline"
+                  >
+                    {children}
+                  </a>
+                ),
+                h1: ({ children }) => <h1 className="my-2 text-base font-semibold">{children}</h1>,
+                h2: ({ children }) => <h2 className="my-2 text-[15px] font-semibold">{children}</h2>,
+                h3: ({ children }) => <h3 className="my-1.5 text-sm font-semibold">{children}</h3>,
+                h4: ({ children }) => <h4 className="my-1.5 text-sm font-semibold">{children}</h4>,
+                blockquote: ({ children }) => (
+                  <blockquote className="my-2 border-l-2 border-purple-500/40 pl-3 text-foreground/80">
+                    {children}
+                  </blockquote>
+                ),
+                hr: () => <hr className="my-3 border-white/10" />,
+                table: ({ children }) => (
+                  <div className="my-2 overflow-x-auto">
+                    <table className="min-w-full border-collapse text-[0.9em]">{children}</table>
+                  </div>
+                ),
+                thead: ({ children }) => <thead className="border-b border-white/15">{children}</thead>,
+                tbody: ({ children }) => <tbody>{children}</tbody>,
+                tr: ({ children }) => <tr className="border-b border-white/5 last:border-b-0">{children}</tr>,
+                th: ({ children }) => (
+                  <th className="px-2 py-1.5 text-left text-[0.85em] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-2 py-1.5 align-top text-foreground/90">{children}</td>
+                ),
+              }}
+            >
+              {/* Strip literal <br> / <br/> / <br /> tags before parsing — the
+                  model emits them inside markdown rows even though markdown
+                  newlines / list items would render the same break. */}
+              {(message.content || "")
+                .replace(/<br\s*\/?>/gi, "\n")
+                .replace(/&lt;br\s*\/?&gt;/gi, "\n")}
+            </ReactMarkdown>
           </div>
           <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground/70">
             {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
