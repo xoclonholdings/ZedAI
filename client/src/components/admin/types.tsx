@@ -2,6 +2,7 @@ import {
   Activity,
   Bot,
   GitBranch,
+  Globe,
   Mail,
   Phone,
   Shield,
@@ -26,6 +27,7 @@ export type IntegrationKey =
   | "businessOperations"
   | "github"
   | "email"
+  | "google"
   | "telephony"
   | "firewall"
   | "gusto"
@@ -53,8 +55,13 @@ export const integrationMeta: Record<
   },
   email: {
     label: "Email",
-    description: "Executive assistant mail lane and sender identity.",
+    description: "Outbound senders. Multiple SMTP / IMAP accounts.",
     icon: Mail,
+  },
+  google: {
+    label: "Google",
+    description: "Gmail, Calendar, Drive. Multiple accounts.",
+    icon: Globe,
   },
   telephony: {
     label: "Telephony",
