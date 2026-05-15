@@ -22,6 +22,11 @@ import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationServ
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
 import { FlowStore } from "./services/FlowStore";
+import {
+  executeFlowRun,
+  approveCurrentStage,
+  rejectCurrentStage,
+} from "./services/flow/FlowExecutor";
 import { registerExecutionRoutes } from "./services/execution/registerExecutionRoutes";
 import { registerIntakeRoutes } from "./services/intake/registerIntakeRoutes";
 import fs from "fs/promises";
@@ -1267,7 +1272,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       conversationId: req.body?.conversationId,
       context: req.body?.context,
     });
+    // Kick off async execution. Don't block the response — the UI will
+    // poll the run detail endpoint to observe progress.
+    void executeFlowRun(run.id);
     res.json(run);
+  });
+
+  app.post("/api/flows/runs/:runId/approve", isAuthenticated, async (req, res) => {
+    const run = await approveCurrentStage(req.params.runId, req.body?.note);
+    if (!run) return res.status(404).json({ error: "Run not found or not pending approval" });
+    res.json(run);
+  });
+
+  app.post("/api/flows/runs/:runId/reject", isAuthenticated, async (req, res) => {
+    const run = await rejectCurrentStage(req.params.runId, req.body?.reason);
+    if (!run) return res.status(404).json({ error: "Run not found or not pending approval" });
+    res.json(run);
+  });
+
+  app.post("/api/flows/runs/:runId/resume", isAuthenticated, async (req, res) => {
+    // Manual nudge if a run got stuck (e.g. process restarted mid-execution).
+    const run = await FlowStore.getRun(req.params.runId);
+    if (!run) return res.status(404).json({ error: "Not found" });
+    void executeFlowRun(req.params.runId);
+    res.json({ ok: true, runId: req.params.runId });
   });
 
   app.get("/api/admin/env-validate", isAdmin, async (_req, res) => {

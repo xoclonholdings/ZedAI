@@ -10,6 +10,9 @@ import {
   Workflow,
 } from "lucide-react";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +49,16 @@ const STAGE_TONE: Record<FlowStageRunStatus, string> = {
   skipped: "text-muted-foreground/60",
   failed: "text-red-300",
 };
+
+/** Convert "s1-opportunity-detection" → "Opportunity Detection". */
+function prettifyStageId(id: string): string {
+  return id
+    .replace(/^s\d+-/, "")
+    .split("-")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ")
+    .trim();
+}
 
 export function RunsListPage() {
   const [, navigate] = useLocation();
@@ -147,6 +160,7 @@ export function RunDetailPage() {
   const [run, setRun] = useState<FlowRun | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionPending, setActionPending] = useState<"approve" | "reject" | null>(null);
 
   async function fetchRun() {
     if (!runId) return;
@@ -163,10 +177,64 @@ export function RunDetailPage() {
     }
   }
 
+  async function approve() {
+    if (!runId) return;
+    setActionPending("approve");
+    try {
+      const res = await fetch(`/api/flows/runs/${runId}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await fetchRun();
+    } catch (e: any) {
+      setError(e?.message || "Failed to approve");
+    } finally {
+      setActionPending(null);
+    }
+  }
+
+  async function reject() {
+    if (!runId) return;
+    const reason = window.prompt("Reason for rejecting? (optional)") ?? "";
+    setActionPending("reject");
+    try {
+      const res = await fetch(`/api/flows/runs/${runId}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await fetchRun();
+    } catch (e: any) {
+      setError(e?.message || "Failed to reject");
+    } finally {
+      setActionPending(null);
+    }
+  }
+
   useEffect(() => {
     void fetchRun();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runId]);
+
+  // Poll while the run is still progressing
+  useEffect(() => {
+    if (!run) return;
+    const live =
+      run.status === "queued" ||
+      run.status === "running" ||
+      run.status === "awaiting_approval";
+    if (!live) return;
+    const interval = window.setInterval(() => {
+      void fetchRun();
+    }, 3000);
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.status]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -230,20 +298,55 @@ export function RunDetailPage() {
               <p className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 Stages
               </p>
+              {run.status === "awaiting_approval" && (
+                <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-3 space-y-2">
+                  <p className="text-sm font-medium text-purple-200">
+                    This stage requires your approval before the next stage can run.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={approve}
+                      disabled={actionPending !== null}
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {actionPending === "approve" ? "Approving…" : "Approve & continue"}
+                    </Button>
+                    <Button
+                      onClick={reject}
+                      disabled={actionPending !== null}
+                      variant="outline"
+                      className="zed-glass border-red-500/40 text-red-200"
+                    >
+                      {actionPending === "reject" ? "Rejecting…" : "Reject"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 {run.stageRuns.map((sr, idx) => {
                   const Icon = STAGE_ICON[sr.status];
                   const tone = STAGE_TONE[sr.status];
+                  const stageName = prettifyStageId(sr.stageId);
+                  const output =
+                    typeof sr.output === "string"
+                      ? sr.output
+                      : sr.output
+                        ? JSON.stringify(sr.output, null, 2)
+                        : null;
                   return (
                     <Card key={sr.stageId} className="zed-glass border-white/10">
-                      <CardContent className="p-3 space-y-1">
+                      <CardContent className="p-3 space-y-1.5">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-[10px] text-muted-foreground">
                             {String(idx + 1).padStart(2, "0")}
                           </span>
-                          <Icon size={13} className={`shrink-0 ${tone}`} />
+                          <Icon
+                            size={13}
+                            className={`shrink-0 ${tone} ${sr.status === "running" ? "animate-spin" : ""}`}
+                          />
                           <span className={`text-sm font-medium flex-1 truncate ${tone}`}>
-                            {sr.stageId}
+                            {stageName}
                           </span>
                           <Badge
                             variant="secondary"
@@ -259,6 +362,18 @@ export function RunDetailPage() {
                         )}
                         {sr.error && (
                           <p className="text-[11px] text-red-300 leading-5">{sr.error}</p>
+                        )}
+                        {output && sr.status === "completed" && (
+                          <details className="pt-1">
+                            <summary className="cursor-pointer text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground">
+                              View output
+                            </summary>
+                            <div className="mt-2 rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-6 zed-markdown">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {output}
+                              </ReactMarkdown>
+                            </div>
+                          </details>
                         )}
                       </CardContent>
                     </Card>
