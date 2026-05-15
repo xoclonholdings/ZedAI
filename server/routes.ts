@@ -118,15 +118,23 @@ async function ensureSessionUserInDatabase(req: any) {
         },
       });
   } catch (err: any) {
+    // DrizzleQueryError wraps the real postgres error in .cause. Pull it
+    // out so we see the actual code (e.g. 23505 = unique_violation) and
+    // constraint name instead of just the SQL text.
+    const cause: any = err?.cause || err?.original || err;
     void logRuntimeEvent({
       level: "warn",
       source: "server",
       event: "user.upsert.failed",
-      detail: err?.message || String(err),
+      detail: cause?.message || err?.message || String(err),
       context: {
         userId: sessionUserId,
         email: sessionUser.email || claims.email || null,
         errorKind: err?.constructor?.name,
+        pgCode: cause?.code,
+        pgConstraint: cause?.constraint,
+        pgDetail: cause?.detail,
+        pgTable: cause?.table,
       },
     });
   }
