@@ -229,7 +229,7 @@ export default function ChatComposer({
           <button
             type="button"
             onClick={() => setShowLanePicker((v) => !v)}
-            className={`flex h-9 items-center gap-1.5 rounded-xl border border-white/10 px-3 text-xs font-medium transition-colors ${
+            className={`flex h-9 items-center gap-1.5 rounded-xl border border-white/10 px-2.5 text-xs font-medium transition-colors max-w-[40%] ${
               currentMode === "agent"
                 ? "bg-purple-500/15 text-purple-100 hover:bg-purple-500/25"
                 : "bg-white/5 text-foreground hover:bg-white/10"
@@ -239,12 +239,12 @@ export default function ChatComposer({
             data-testid="composer-lane-chip"
           >
             {currentMode === "agent" && (
-              <img src={zLogoPath} alt="" className="h-3 w-3" />
+              <img src={zLogoPath} alt="" className="h-3 w-3 shrink-0" />
             )}
-            <span className="whitespace-nowrap">
-              {currentMode === "agent" ? `Agent · ${activeLane.label}` : "Chat"}
+            <span className="truncate">
+              {currentMode === "agent" ? activeLane.label : "Chat"}
             </span>
-            <ChevronDown size={12} className="opacity-70" />
+            <ChevronDown size={12} className="opacity-70 shrink-0" />
           </button>
 
           {showLanePicker && (
@@ -317,7 +317,7 @@ export default function ChatComposer({
         </div>
 
         {/* Textarea + inline dictate mic */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative min-w-0">
           <Textarea
             ref={textareaRef}
             value={value}
