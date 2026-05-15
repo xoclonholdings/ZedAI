@@ -1223,6 +1223,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // ⚠️ /api/flows/runs and /api/flows/runs/:runId MUST be registered
+  // before /api/flows/:id, otherwise Express matches "runs" as the :id
+  // parameter and the runs list 404s.
+  app.get("/api/flows/runs", isAuthenticated, async (req: any, res) => {
+    const runs = await FlowStore.listRuns({
+      userId: req.user?.claims?.sub,
+      limit: 50,
+    });
+    res.json({ runs });
+  });
+
+  app.get("/api/flows/runs/:runId", isAuthenticated, async (req, res) => {
+    const run = await FlowStore.getRun(req.params.runId);
+    if (!run) return res.status(404).json({ error: "Not found" });
+    res.json(run);
+  });
+
   app.get("/api/flows/:id", isAuthenticated, async (req, res) => {
     const flow = await FlowStore.getDefinition(req.params.id);
     if (!flow || flow.status !== "published") {
@@ -1242,20 +1259,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       conversationId: req.body?.conversationId,
       context: req.body?.context,
     });
-    res.json(run);
-  });
-
-  app.get("/api/flows/runs", isAuthenticated, async (req: any, res) => {
-    const runs = await FlowStore.listRuns({
-      userId: req.user?.claims?.sub,
-      limit: 50,
-    });
-    res.json({ runs });
-  });
-
-  app.get("/api/flows/runs/:runId", isAuthenticated, async (req, res) => {
-    const run = await FlowStore.getRun(req.params.runId);
-    if (!run) return res.status(404).json({ error: "Not found" });
     res.json(run);
   });
 
