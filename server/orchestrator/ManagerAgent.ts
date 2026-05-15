@@ -92,6 +92,7 @@ export class ManagerAgent {
               lane: "manager",
             })
           ).prompt;
+
     const agent = await this.selectAgent(request.message, config, request.targetAgent);
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await this.logRouting(request, agent);
@@ -104,7 +105,7 @@ export class ManagerAgent {
         const researchReq: ResearchRequest = {
           userId: request.userId,
           query: request.message,
-          depth: request.message.length > 100 ? "deep" : "shallow",
+          depth: this.isWebLookupIntent(request.message) || request.message.length > 100 ? "deep" : "shallow",
           conversationId: request.conversationId,
           memoryContext: knowledgePrompt,
         };
@@ -122,7 +123,7 @@ export class ManagerAgent {
           memoryContext: knowledgePrompt,
         });
         return {
-          reply: resp.message,
+          reply: filterOutputForTier3(resp.message),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
           metadata: {
@@ -141,7 +142,7 @@ export class ManagerAgent {
           memoryContext: knowledgePrompt,
         });
         return {
-          reply: resp.message,
+          reply: filterOutputForTier3(resp.message),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
           metadata: { capabilities: resp.capabilities },
@@ -181,26 +182,66 @@ export class ManagerAgent {
     config: HubConfig,
     targetAgent?: OrchestratorRequest["targetAgent"],
   ): Promise<AgentName> {
-    // Explicit user pick from the UI pill always wins.
+    // Web / URL inspection is a capability intent, not a personality lane.
+    // Route it to IntelligenceAgent even if the user currently has another lane selected.
+    if (this.isWebLookupIntent(message)) {
+      await logRuntimeEvent({
+        level: "info",
+        source: "server",
+        event: "manager.route.web_intent",
+        detail: "Web / URL lookup intent routed to IntelligenceAgent",
+      });
+      return "IntelligenceAgent";
+    }
+
+    // Explicit user pick from the UI pill wins after capability routing.
     if (targetAgent === "operations") return "OperationsAgent";
     if (targetAgent === "research") return "IntelligenceAgent";
     if (targetAgent === "business") return "BusinessManagerAgent";
     if (targetAgent === "finance") return "FinanceAgent";
 
-    // LLM intent classifier — primary path.
     const classified = await this.classifyWithLlm(message);
     if (classified) return classified;
 
-    // Keyword matcher — deterministic fallback when the LLM is offline,
-    // returns garbage, or rate-limits us.
     return this.classifyWithKeywords(message, config);
   }
 
-  /**
-   * One-shot LLM intent classifier. Asks the active model to pick exactly
-   * one agent label and parses the response. Returns null when the call
-   * fails or the response can't be mapped to a known agent.
-   */
+  private static isWebLookupIntent(message: string): boolean {
+    const lower = message.toLowerCase();
+
+    const hasUrl =
+      /\bhttps?:\/\/[^\s)]+/i.test(message) ||
+      /\bwww\.[^\s)]+/i.test(message) ||
+      /\b[a-z0-9-]+(\.[a-z0-9-]+)+\/?[^\s)]*/i.test(message);
+
+    const webIntentPhrases = [
+      "visit",
+      "open this site",
+      "open the site",
+      "go to",
+      "browse",
+      "inspect",
+      "check this site",
+      "check the site",
+      "look at this site",
+      "look up",
+      "search web",
+      "search the web",
+      "google",
+      "latest",
+      "current",
+      "news",
+      "what does this website",
+      "analyze this website",
+      "audit this website",
+      "review this website",
+      "summarize this page",
+      "summarize this website",
+    ];
+
+    return hasUrl || webIntentPhrases.some((phrase) => lower.includes(phrase));
+  }
+
   private static async classifyWithLlm(message: string): Promise<AgentName | null> {
     const trimmed = message.trim();
     if (!trimmed) return null;
@@ -210,9 +251,11 @@ export class ManagerAgent {
       "Choose exactly one agent for the user's message based on the descriptions below.",
       "",
       "operations  — calendar, email drafting, scheduling, voicemail, posts, invoices, cancellations, bookings, generic personal assistant work.",
-      "research    — explanations, market scans, trend summaries, comparisons, deep research, 'what is / how does / latest news' questions.",
+      "research    — external websites, URLs, browsing requests, latest/current information, explanations, market scans, trend summaries, comparisons, deep research, 'what is / how does / latest news' questions.",
       "business    — payroll, contractors, ecommerce/dropshipping, real estate, business credit, acquisitions, business operations.",
       "finance     — crypto, forex, trading setups, position management, wealth planning, yield, portfolio strategy.",
+      "",
+      "Important: Any request containing a URL, website, browse, visit, inspect, current, latest, or news intent must route to research.",
       "",
       "Reply with EXACTLY one lowercase label: operations | research | business | finance.",
       "Do not include punctuation, quotes, or explanations.",
@@ -259,13 +302,11 @@ export class ManagerAgent {
     }
   }
 
-  /**
-   * Deterministic keyword-based fallback. Identical to the previous
-   * routing rules; kept so a flaky LLM never breaks the chat.
-   */
   private static classifyWithKeywords(message: string, config: HubConfig): AgentName {
     const lower = message.toLowerCase();
     const params = config.parameters || {};
+
+    if (this.isWebLookupIntent(message)) return "IntelligenceAgent";
 
     const financeKeywords = [
       "crypto",
@@ -374,9 +415,15 @@ export class ManagerAgent {
       "summarize",
       "what are",
       "latest",
+      "current",
       "current events",
       "happening in",
       "tell me about",
+      "website",
+      "url",
+      "browse",
+      "visit",
+      "inspect",
     ];
 
     if (researchKeywords.some((keyword) => lower.includes(keyword))) return "IntelligenceAgent";
@@ -385,8 +432,22 @@ export class ManagerAgent {
   }
 
   private static formatBrief(brief: any): string {
-    const findings = brief.keyFindings.map((finding: string) => `- ${finding}`).join("\n");
-    return `**Research Brief: ${brief.topic}**\n\n**Confidence**: ${brief.confidence}\n\n**Key Findings**:\n${findings}\n\n**Implications**: ${brief.implications}\n\n**Recommended Action**: ${brief.recommendedAction}`;
+    const keyFindings = Array.isArray(brief?.keyFindings) ? brief.keyFindings : [];
+    const findings =
+      keyFindings.length > 0
+        ? keyFindings.map((finding: string) => `- ${finding}`).join("\n")
+        : "- No key findings returned.";
+
+    return `**Research Brief: ${brief?.topic || "Research"}**
+
+**Confidence**: ${brief?.confidence || "unknown"}
+
+**Key Findings**:
+${findings}
+
+**Implications**: ${brief?.implications || "No implications returned."}
+
+**Recommended Action**: ${brief?.recommendedAction || "No recommended action returned."}`;
   }
 
   static flushConfig(): void {
