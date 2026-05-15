@@ -71,22 +71,36 @@ export interface GustoIntegrationSettings {
   notes: string;
 }
 
-export interface GitHubIntegrationSettings {
-  enabled: boolean;
-  status: "planned" | "configured" | "active";
-  apiBaseUrl: string;
+export interface GitHubAccount {
+  id: string;
+  label: string;
   owner: string;
   repo: string;
   defaultBranch: string;
   token: string;
   hasToken?: boolean;
+}
+
+export interface GitHubIntegrationSettings {
+  enabled: boolean;
+  status: "planned" | "configured" | "active";
+  apiBaseUrl: string;
+  /** Multi-account: list of repositories the integration tracks. */
+  accounts: GitHubAccount[];
+  /** Legacy fields preserved for backward-compat during migration.
+   *  Newly-saved data should use `accounts` instead. */
+  owner?: string;
+  repo?: string;
+  defaultBranch?: string;
+  token?: string;
+  hasToken?: boolean;
   notes: string;
 }
 
-export interface EmailIntegrationSettings {
-  enabled: boolean;
-  status: "planned" | "configured" | "active";
-  provider: "smtp" | "gmail" | "outlook" | "custom";
+export interface EmailAccount {
+  id: string;
+  label: string;
+  provider: "smtp" | "gmail" | "outlook" | "icloud" | "custom";
   fromName: string;
   fromAddress: string;
   smtpHost: string;
@@ -94,6 +108,43 @@ export interface EmailIntegrationSettings {
   username: string;
   password: string;
   hasPassword?: boolean;
+}
+
+export interface EmailIntegrationSettings {
+  enabled: boolean;
+  status: "planned" | "configured" | "active";
+  accounts: EmailAccount[];
+  /** Legacy fields preserved for backward-compat. */
+  provider?: "smtp" | "gmail" | "outlook" | "custom";
+  fromName?: string;
+  fromAddress?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  username?: string;
+  password?: string;
+  hasPassword?: boolean;
+  notes: string;
+}
+
+export interface GoogleAccount {
+  id: string;
+  label: string;
+  /** The Google account's primary email. */
+  email: string;
+  /** OAuth client (created in Google Cloud Console). */
+  clientId: string;
+  clientSecret: string;
+  /** Long-lived refresh token obtained via initial OAuth consent. */
+  refreshToken: string;
+  hasCredentials?: boolean;
+  /** Scopes enabled — e.g. "gmail.send", "gmail.readonly", "calendar". */
+  scopes: string[];
+}
+
+export interface GoogleIntegrationSettings {
+  enabled: boolean;
+  status: "planned" | "configured" | "active";
+  accounts: GoogleAccount[];
   notes: string;
 }
 
@@ -141,6 +192,7 @@ export interface IntegrationsSettings {
   gusto: GustoIntegrationSettings;
   github: GitHubIntegrationSettings;
   email: EmailIntegrationSettings;
+  google: GoogleIntegrationSettings;
   telephony: TelephonyIntegrationSettings;
   firewall: FirewallIntegrationSettings;
   businessOperations: BusinessOperationsSettings;
@@ -241,26 +293,23 @@ export const defaultIntegrations: IntegrationsSettings = {
     enabled: false,
     status: "planned",
     apiBaseUrl: "https://api.github.com",
-    owner: "",
-    repo: "",
-    defaultBranch: "main",
-    token: "",
-    hasToken: false,
-    notes: "GitHub integration for repository status, pull requests, issues, and future IDE/operator workflows.",
+    accounts: [],
+    notes:
+      "GitHub integration for repository status, pull requests, issues, and future IDE/operator workflows. Add one entry per repository you want ZED to access.",
   },
   email: {
     enabled: false,
     status: "planned",
-    provider: "smtp",
-    fromName: "ZED",
-    fromAddress: "zed@zed-ai.online",
-    smtpHost: "smtp.mail.me.com",
-    smtpPort: 587,
-    username: "",
-    password: "",
-    hasPassword: false,
+    accounts: [],
     notes:
-      "iCloud Custom Email Domain. Sender: zed@zed-ai.online (must be a verified custom-domain alias on the iCloud Apple ID). Auth username is the iCloud primary email; password must be an app-specific password generated at appleid.apple.com. DKIM/SPF records for zed-ai.online live in Netlify DNS. Set 'enabled' to true once the app password is saved.",
+      "Outbound email lanes. Add one account per sending identity (e.g. an iCloud custom-domain alias, a Gmail SMTP credential, etc.). Each account holds its own SMTP host, port, username, and app password.",
+  },
+  google: {
+    enabled: false,
+    status: "planned",
+    accounts: [],
+    notes:
+      "Google account integration for Gmail, Calendar, and Drive access. Add one account per Google identity. Each account needs an OAuth client (from Google Cloud Console) plus a refresh token obtained via the initial consent flow.",
   },
   telephony: {
     enabled: false,

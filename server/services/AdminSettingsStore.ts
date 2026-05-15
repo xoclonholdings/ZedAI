@@ -156,25 +156,94 @@ function mergeSettings(raw: Partial<AdminSettings> | null | undefined): AdminSet
         ...defaultIntegrations.gusto,
         ...(raw?.integrations?.gusto || {}),
       },
-      github: {
-        ...defaultIntegrations.github,
-        ...(raw?.integrations?.github || {}),
-        hasToken: !!(raw?.integrations?.github?.token || raw?.integrations?.github?.hasToken),
-      },
+      github: (() => {
+        const merged = {
+          ...defaultIntegrations.github,
+          ...(raw?.integrations?.github || {}),
+          accounts: Array.isArray(raw?.integrations?.github?.accounts)
+            ? raw!.integrations!.github!.accounts!
+            : [],
+          hasToken: !!(raw?.integrations?.github?.token || raw?.integrations?.github?.hasToken),
+        };
+        // Migrate legacy single-repo fields → first account, if no
+        // accounts have been saved yet but legacy fields are populated.
+        if (
+          merged.accounts.length === 0 &&
+          (raw?.integrations?.github?.owner || raw?.integrations?.github?.repo)
+        ) {
+          merged.accounts = [
+            {
+              id: "github-account-primary",
+              label: `${raw?.integrations?.github?.owner || ""}/${raw?.integrations?.github?.repo || ""}`,
+              owner: raw?.integrations?.github?.owner || "",
+              repo: raw?.integrations?.github?.repo || "",
+              defaultBranch: raw?.integrations?.github?.defaultBranch || "main",
+              token: raw?.integrations?.github?.token || "",
+              hasToken: !!raw?.integrations?.github?.token,
+            },
+          ];
+        }
+        // Per-account hasToken flag.
+        merged.accounts = merged.accounts.map((acc: any) => ({
+          ...acc,
+          hasToken: !!(acc?.token || acc?.hasToken),
+        }));
+        return merged;
+      })(),
       email: (() => {
         const merged = {
           ...defaultIntegrations.email,
           ...(raw?.integrations?.email || {}),
-          hasPassword: !!(raw?.integrations?.email?.password || raw?.integrations?.email?.hasPassword),
+          accounts: Array.isArray(raw?.integrations?.email?.accounts)
+            ? raw!.integrations!.email!.accounts!
+            : [],
+          hasPassword: !!(
+            raw?.integrations?.email?.password || raw?.integrations?.email?.hasPassword
+          ),
         };
-        // Forward-migrate empty fields onto the iCloud / zed-ai.online defaults.
-        // Older files saved blanks for these; we want the canonical sender pre-filled
-        // so the only thing the admin still has to enter is auth username + app password.
-        if (!merged.fromAddress) merged.fromAddress = defaultIntegrations.email.fromAddress;
-        if (!merged.fromName) merged.fromName = defaultIntegrations.email.fromName;
-        if (!merged.smtpHost) merged.smtpHost = defaultIntegrations.email.smtpHost;
-        if (!merged.smtpPort) merged.smtpPort = defaultIntegrations.email.smtpPort;
+        // Migrate legacy single-sender fields → first account.
+        if (
+          merged.accounts.length === 0 &&
+          (raw?.integrations?.email?.fromAddress || raw?.integrations?.email?.username)
+        ) {
+          merged.accounts = [
+            {
+              id: "email-account-primary",
+              label: raw?.integrations?.email?.fromAddress || "Primary sender",
+              provider: raw?.integrations?.email?.provider || "smtp",
+              fromName: raw?.integrations?.email?.fromName || "ZED",
+              fromAddress: raw?.integrations?.email?.fromAddress || "",
+              smtpHost: raw?.integrations?.email?.smtpHost || "smtp.mail.me.com",
+              smtpPort: raw?.integrations?.email?.smtpPort || 587,
+              username: raw?.integrations?.email?.username || "",
+              password: raw?.integrations?.email?.password || "",
+              hasPassword: !!raw?.integrations?.email?.password,
+            },
+          ];
+        }
+        merged.accounts = merged.accounts.map((acc: any) => ({
+          ...acc,
+          hasPassword: !!(acc?.password || acc?.hasPassword),
+        }));
         if (!merged.notes) merged.notes = defaultIntegrations.email.notes;
+        return merged;
+      })(),
+      google: (() => {
+        const merged = {
+          ...defaultIntegrations.google,
+          ...(raw?.integrations?.google || {}),
+          accounts: Array.isArray(raw?.integrations?.google?.accounts)
+            ? raw!.integrations!.google!.accounts!
+            : [],
+        };
+        merged.accounts = merged.accounts.map((acc: any) => ({
+          ...acc,
+          scopes: Array.isArray(acc?.scopes) ? acc.scopes : [],
+          hasCredentials: !!(
+            (acc?.clientId && acc?.clientSecret && acc?.refreshToken) ||
+            acc?.hasCredentials
+          ),
+        }));
         return merged;
       })(),
       telephony: {
@@ -525,11 +594,30 @@ export async function getPublicAdminSettings() {
         ...settings.integrations.github,
         token: "",
         hasToken: !!settings.integrations.github.token,
+        accounts: (settings.integrations.github.accounts || []).map((acc) => ({
+          ...acc,
+          token: "",
+          hasToken: !!acc.token,
+        })),
       },
       email: {
         ...settings.integrations.email,
         password: "",
         hasPassword: !!settings.integrations.email.password,
+        accounts: (settings.integrations.email.accounts || []).map((acc) => ({
+          ...acc,
+          password: "",
+          hasPassword: !!acc.password,
+        })),
+      },
+      google: {
+        ...settings.integrations.google,
+        accounts: (settings.integrations.google.accounts || []).map((acc) => ({
+          ...acc,
+          clientSecret: "",
+          refreshToken: "",
+          hasCredentials: !!(acc.clientId && acc.clientSecret && acc.refreshToken),
+        })),
       },
       telephony: {
         ...settings.integrations.telephony,
