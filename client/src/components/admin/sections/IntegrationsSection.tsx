@@ -29,6 +29,19 @@ interface IntegrationsSettings {
 /** Which integrations now use the multi-account pattern. */
 const ACCOUNT_INTEGRATIONS = new Set<IntegrationKey>(["github", "email", "google"]);
 
+interface CustomIntegrationField {
+  key: string;
+  value: string;
+  isSecret?: boolean;
+}
+interface CustomIntegrationDraft {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+  fields: CustomIntegrationField[];
+}
+
 export default function IntegrationsSection() {
   const [draft, setDraft] = useState<IntegrationsSettings | null>(null);
   const [active, setActive] = useState<IntegrationKey>("aiHost");
@@ -210,6 +223,32 @@ export default function IntegrationsSection() {
         <div className="text-center text-muted-foreground py-8 text-sm">Loading…</div>
       ) : active === "aiHost" ? (
         <AiHostPanel status={aiHostStatus} test={aiHostTest} onTest={testAiHost} />
+      ) : active === "custom" ? (
+        <CustomIntegrationsPanel
+          items={(draft?.custom || []) as CustomIntegrationDraft[]}
+          onChange={(items) =>
+            setDraft((prev: any) => ({ ...prev, custom: items }))
+          }
+          onSave={async () => {
+            setSaveStatus("saving");
+            try {
+              const res = await fetch("/api/admin/settings/integrations", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ custom: draft?.custom || [] }),
+              });
+              if (!res.ok) throw new Error("save failed");
+              const updated = await res.json();
+              setDraft((prev: any) => ({ ...prev, custom: updated.custom || [] }));
+              setSaveStatus("saved");
+              setTimeout(() => setSaveStatus("idle"), 2000);
+            } catch {
+              setSaveStatus("error");
+            }
+          }}
+          saveStatus={saveStatus}
+        />
       ) : ACCOUNT_INTEGRATIONS.has(active) ? (
         <MultiAccountPanel
           integrationKey={active}
@@ -905,6 +944,264 @@ function AiHostPanel({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function CustomIntegrationsPanel({
+  items,
+  onChange,
+  onSave,
+  saveStatus,
+}: {
+  items: CustomIntegrationDraft[];
+  onChange: (items: CustomIntegrationDraft[]) => void;
+  onSave: () => void;
+  saveStatus: SaveStatus;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  function addIntegration() {
+    const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const next = [
+      ...items,
+      { id, label: "New integration", description: "", enabled: false, fields: [] },
+    ];
+    onChange(next);
+    setExpanded(id);
+  }
+
+  function patch(id: string, p: Partial<CustomIntegrationDraft>) {
+    onChange(items.map((c) => (c.id === id ? { ...c, ...p } : c)));
+  }
+
+  function removeIntegration(id: string) {
+    if (!window.confirm("Remove this integration?")) return;
+    onChange(items.filter((c) => c.id !== id));
+    if (expanded === id) setExpanded(null);
+  }
+
+  function addField(id: string) {
+    const item = items.find((c) => c.id === id);
+    if (!item) return;
+    patch(id, { fields: [...(item.fields || []), { key: "", value: "", isSecret: false }] });
+  }
+
+  function patchField(id: string, idx: number, p: Partial<CustomIntegrationField>) {
+    const item = items.find((c) => c.id === id);
+    if (!item) return;
+    const fields = (item.fields || []).map((f, i) => (i === idx ? { ...f, ...p } : f));
+    patch(id, { fields });
+  }
+
+  function removeField(id: string, idx: number) {
+    const item = items.find((c) => c.id === id);
+    if (!item) return;
+    patch(id, { fields: (item.fields || []).filter((_, i) => i !== idx) });
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2.5">
+        <span className="text-sm text-muted-foreground">
+          {items.length} custom integration{items.length === 1 ? "" : "s"}
+        </span>
+        <Button
+          size="sm"
+          onClick={addIntegration}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-8"
+        >
+          <Plus size={13} className="mr-1" />
+          Add integration
+        </Button>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-xl border border-white/10 bg-black/20 p-6 text-center">
+          <p className="text-sm">No custom integrations yet</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Define one when you have a service ZED should know about — e.g. a webhook, a
+            scraper, a third-party API.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {items.map((c) => (
+            <div key={c.id} className="rounded-xl border border-white/10 bg-black/30">
+              <button
+                type="button"
+                onClick={() => setExpanded(expanded === c.id ? null : c.id)}
+                className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
+              >
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                  {c.enabled ? (
+                    <CheckCircle2 size={14} className="text-emerald-300" />
+                  ) : (
+                    <XCircle size={14} className="text-muted-foreground/70" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{c.label || "Untitled"}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {c.fields.length} field{c.fields.length === 1 ? "" : "s"}
+                    {c.description ? ` · ${c.description}` : ""}
+                  </div>
+                </div>
+                <Pencil size={13} className="text-muted-foreground" />
+              </button>
+
+              {expanded === c.id && (
+                <div className="space-y-2.5 border-t border-white/10 px-3 pt-2.5 pb-3">
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <FieldRow label="Label">
+                      <Input
+                        value={c.label}
+                        onChange={(e) => patch(c.id, { label: e.target.value })}
+                        className="border-white/10 bg-black/30 text-sm h-9"
+                        placeholder="My webhook"
+                      />
+                    </FieldRow>
+                    <FieldRow label="Enabled">
+                      <button
+                        type="button"
+                        onClick={() => patch(c.id, { enabled: !c.enabled })}
+                        className="flex h-9 items-center gap-2 rounded-md border border-white/10 bg-black/30 px-2 text-xs"
+                      >
+                        <span
+                          className={`flex h-4 w-7 items-center rounded-full p-0.5 ${
+                            c.enabled
+                              ? "justify-end bg-emerald-500/60"
+                              : "justify-start bg-white/15"
+                          }`}
+                        >
+                          <span className="h-3 w-3 rounded-full bg-white" />
+                        </span>
+                        <span>{c.enabled ? "On" : "Off"}</span>
+                      </button>
+                    </FieldRow>
+                  </div>
+                  <FieldRow label="Description">
+                    <Input
+                      value={c.description}
+                      onChange={(e) => patch(c.id, { description: e.target.value })}
+                      className="border-white/10 bg-black/30 text-sm h-9"
+                      placeholder="What ZED should know about this integration"
+                    />
+                  </FieldRow>
+
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        Fields
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => addField(c.id)}
+                        className="h-7 text-xs text-cyan-300 hover:text-cyan-200"
+                      >
+                        <Plus size={12} className="mr-1" />
+                        Add field
+                      </Button>
+                    </div>
+                    {(c.fields || []).length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground/70 italic">
+                        No fields yet
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {(c.fields || []).map((f, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-1.5 rounded-md bg-white/5 px-2 py-1.5"
+                          >
+                            <Input
+                              value={f.key}
+                              onChange={(e) =>
+                                patchField(c.id, idx, { key: e.target.value })
+                              }
+                              className="border-white/10 bg-black/30 text-xs h-8 w-32 font-mono"
+                              placeholder="key"
+                            />
+                            <Input
+                              type={f.isSecret ? "password" : "text"}
+                              value={f.value}
+                              onChange={(e) =>
+                                patchField(c.id, idx, { value: e.target.value })
+                              }
+                              className="border-white/10 bg-black/30 text-xs h-8 flex-1"
+                              placeholder={f.isSecret ? "secret value" : "value"}
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                patchField(c.id, idx, { isSecret: !f.isSecret })
+                              }
+                              className={`rounded-md border px-1.5 py-1 text-[9px] uppercase tracking-[0.16em] transition-colors ${
+                                f.isSecret
+                                  ? "border-yellow-500/40 bg-yellow-500/10 text-yellow-200"
+                                  : "border-white/10 bg-black/20 text-muted-foreground"
+                              }`}
+                              title="Toggle secret"
+                            >
+                              {f.isSecret ? "secret" : "plain"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeField(c.id, idx)}
+                              className="text-muted-foreground hover:text-red-300"
+                              aria-label="Remove field"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center pt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeIntegration(c.id)}
+                      className="text-red-300 hover:text-red-200 hover:bg-red-500/10 h-7 text-xs"
+                    >
+                      <Trash2 size={12} className="mr-1" />
+                      Remove integration
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setExpanded(null)}
+                      className="h-7 text-xs"
+                    >
+                      <X size={12} className="mr-1" />
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Button
+        onClick={onSave}
+        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+      >
+        {saveStatus === "saving"
+          ? "Saving…"
+          : saveStatus === "saved"
+            ? "Saved"
+            : saveStatus === "error"
+              ? "Save failed"
+              : "Save"}
+      </Button>
     </div>
   );
 }
