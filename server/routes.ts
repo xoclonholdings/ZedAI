@@ -41,15 +41,8 @@ import {
   updatePersonalizationSettings,
 } from "./services/AdminSettingsStore";
 import { getUserPersonalization, saveUserPersonalization } from "./services/UserPersonalizationStore";
-import {
-  addProjectSource,
-  assignConversationToProject,
-  createProject,
-  getProject,
-  listProjects,
-  removeProjectSource,
-  updateProjectInstructions,
-} from "./services/ProjectFilingStore";
+import { registerProjectRoutes } from "./routes-modules/projects";
+import { registerDiagnosticsRoutes } from "./routes-modules/diagnostics";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repoPaths";
 
 import {
@@ -377,16 +370,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/projects", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const projects = await listProjects(userId);
-      res.json({ projects });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to fetch projects" });
-    }
-  });
-
   app.get("/api/knowledge/context", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
@@ -588,102 +571,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const project = await createProject(userId, req.body?.name || "");
-      res.json({ project });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to create project" });
-    }
-  });
-
-  app.get("/api/projects/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const project = await getProject(req.user.claims.sub, req.params.id);
-      if (!project) return res.status(404).json({ error: "Project not found" });
-      res.json(project);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to load project" });
-    }
-  });
-
-  // Per-project system instructions — injected into the agent context
-  // for any conversation filed under this project.
-  app.put("/api/projects/:id/instructions", isAuthenticated, async (req: any, res) => {
-    try {
-      const project = await updateProjectInstructions(
-        req.user.claims.sub,
-        req.params.id,
-        String(req.body?.instructions || ""),
-      );
-      res.json({ project });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update instructions" });
-    }
-  });
-
-  // Add a source (file URL, pasted URL, or text snippet) to a project.
-  // Multipart upload sub-route accepts file=<File>, label, notes; the
-  // file lands at /uploads and the served URL becomes source.url.
-  app.post(
-    "/api/projects/:id/sources",
-    isAuthenticated,
-    upload.single("file"),
-    async (req: any, res) => {
-      try {
-        const userId = req.user.claims.sub;
-        const projectId = req.params.id;
-        const file = req.file as Express.Multer.File | undefined;
-        const label =
-          (req.body?.label && String(req.body.label).trim()) ||
-          (file?.originalname ? path.basename(file.originalname) : "Source");
-        const url = file
-          ? `/uploads/${path.basename(file.path)}`
-          : req.body?.url
-            ? String(req.body.url)
-            : undefined;
-        const text = req.body?.text ? String(req.body.text) : undefined;
-        const notes = req.body?.notes ? String(req.body.notes) : undefined;
-        const source = await addProjectSource(userId, projectId, {
-          label,
-          url,
-          text,
-          notes,
-        });
-        res.json({ source });
-      } catch (error: any) {
-        res.status(400).json({ error: error.message || "Failed to add source" });
-      }
-    },
-  );
-
-  app.delete(
-    "/api/projects/:id/sources/:sourceId",
-    isAuthenticated,
-    async (req: any, res) => {
-      try {
-        const project = await removeProjectSource(
-          req.user.claims.sub,
-          req.params.id,
-          req.params.sourceId,
-        );
-        res.json({ project });
-      } catch (error: any) {
-        res.status(400).json({ error: error.message || "Failed to remove source" });
-      }
-    },
-  );
-
-  app.put("/api/conversations/:id/project", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const projects = await assignConversationToProject(userId, req.params.id, req.body?.projectId ?? null);
-      res.json({ projects });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to assign conversation to project" });
-    }
-  });
+  // ── Projects (CRUD + instructions + sources + conversation assignment) ─
+  // Extracted to routes-modules/projects.ts.
+  registerProjectRoutes(app);
 
   app.get("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
     try {
@@ -1101,116 +991,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/system/runtime", isAuthenticated, async (_req, res) => {
-    try {
-      const config = getProviderRuntimeConfig();
-      const target = getResolvedTargetName({ lane: "chat" });
-      const provider = getActiveProviderName({ lane: "chat" });
-      // probeUrl must reflect the ACTIVE provider's base URL, not always
-      // the Ollama URL — otherwise the admin Provider Routing card shows
-      // "localhost:11434" even when chat actually goes to Lightning/OpenAI.
-      const probeUrl =
-        provider === "openai"
-          ? config.openai.baseUrl
-          : provider === "claude"
-            ? config.claude.baseUrl
-            : provider === "claw-temp"
-              ? config.clawTemp.baseUrl
-              : config.ollama.baseUrl;
-
-      const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(probeUrl);
-      const targetHost = (() => {
-        try {
-          return new URL(probeUrl).host;
-        } catch {
-          return probeUrl;
-        }
-      })();
-      const locationLabel = isLocal
-        ? "Local"
-        : /lightning/i.test(probeUrl)
-          ? "Lightning"
-          : targetHost || "Remote";
-
-      const ollamaHealth = await checkOllamaHealth();
-
-      const model = getActiveProviderDefaultModel(config);
-
-      res.json({
-        provider,
-        model,
-        target,
-        target_url: probeUrl,
-        location_label: locationLabel,
-        is_local: isLocal,
-        status: ollamaHealth.status,
-        available_models: ollamaHealth.models,
-        lane_models: {
-          chat: config.laneModels.chat || "",
-          manager: config.laneModels.manager || "",
-          operations: config.laneModels.operations || "",
-          research: config.laneModels.research || "",
-          business: config.laneModels.business || "",
-          finance: config.laneModels.finance || "",
-        },
-      });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || "Failed to read runtime status" });
-    }
-  });
-
   app.post("/api/voice/transcribe", isAuthenticated, async (req: any, res) => {
     res.json({
       transcript: "",
       note: "Server-side transcription requires Whisper. Using browser Speech API instead.",
-    });
-  });
-
-  app.get("/api/admin/system-status", isAdmin, async (_req, res) => {
-    const ollama = await checkOllamaHealth();
-    const providerConfig = getProviderRuntimeConfig();
-    const activeProvider = getActiveProviderName({ lane: "chat" });
-    const routingSummary = getProviderRoutingSummary();
-    const settings = await getPublicAdminSettings();
-    const github = await checkGitHubIntegrationStatus();
-    const firewall = await getFirewallIntegrationStatus();
-    const normalizedAgents = settings.agents.map((agent) => {
-      if (agent.key === "BusinessManagerAgent") {
-        const isBusinessReady = settings.integrations.businessOperations.enabled;
-        return {
-          ...agent,
-          status: isBusinessReady ? "active" : "planned",
-          description: isBusinessReady
-            ? "Business Manager lane is enabled through Business Operations."
-            : agent.description,
-        };
-      }
-      return agent;
-    });
-    res.json({
-      system: "ZED",
-      ollama: { status: ollama.status, models: ollama.models, provider: ollama.provider || "ollama" },
-      aiHost: {
-        provider: activeProvider,
-        target: getResolvedTargetName({ lane: "chat" }),
-        configuredModel:
-          providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig),
-        remoteMode: providerConfig.clawTemp.mode,
-      },
-      providerRouting: routingSummary.routing,
-      database: isDatabaseHealthy ? "connected" : "offline",
-      orchestrator: {
-        status: "operational",
-        active: normalizedAgents.filter((agent) => agent.status === "active"),
-        planned: normalizedAgents.filter((agent) => agent.status === "planned"),
-      },
-      integrations: settings.integrations,
-      github,
-      firewall,
-      auth: {
-        adminUsername: settings.auth.adminUsername,
-        requireSecureCookies: settings.auth.requireSecureCookies,
-      },
     });
   });
 
@@ -1403,41 +1187,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(ruleset);
   });
 
-  app.get("/api/admin/provider-diagnostics", isAdmin, async (_req, res) => {
-    const providerConfig = getProviderRuntimeConfig();
-    const health = await checkOllamaHealth();
-    const activeProvider = getActiveProviderName({ lane: "chat" });
-    const routingSummary = getProviderRoutingSummary();
-    const defaultModel = getActiveProviderDefaultModel(providerConfig);
-    const target = getResolvedTargetName({ lane: "chat" });
-
-    res.json({
-      activeProvider,
-      health,
-      config: {
-        defaultModel,
-        target,
-        ollamaBaseUrl: providerConfig.ollama.baseUrl,
-        clawBaseUrl: providerConfig.clawTemp.baseUrl,
-        clawMode: providerConfig.clawTemp.mode,
-        openaiConfigured: Boolean(providerConfig.openai.apiKey),
-        claudeConfigured: Boolean(providerConfig.claude.apiKey),
-      },
-      laneModels: {
-        chat: providerConfig.laneModels.chat || "",
-        manager: providerConfig.laneModels.manager || "",
-        operations: providerConfig.laneModels.operations || "",
-        research: providerConfig.laneModels.research || "",
-        business: providerConfig.laneModels.business || "",
-        finance: providerConfig.laneModels.finance || "",
-      },
-      routing: routingSummary.routing,
-    });
-  });
+  // ── Diagnostics (admin status snapshot + provider routing + runtime) ─
+  // Extracted to routes-modules/diagnostics.ts. Database health is
+  // mutated by the boot pipeline, so we pass a getter callback.
+  registerDiagnosticsRoutes(app, { isDatabaseHealthy: () => isDatabaseHealthy });
 
   // ── Flows (admin CRUD + user-facing + run lifecycle) ──────────────
-  // Extracted to server/routes-modules/flows.ts. Route-order requirement
-  // (/api/flows/runs before /api/flows/:id) is preserved inside the module.
+  // Route-order requirement (/api/flows/runs before /api/flows/:id) is
+  // preserved inside the module.
   registerFlowRoutes(app);
 
   // Env validator — pure logic in services/EnvValidator.ts, thin route
