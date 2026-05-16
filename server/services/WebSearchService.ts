@@ -1,6 +1,3 @@
-const BRAVE_API_KEY = process.env.BRAVE_SEARCH_API_KEY;
-const SERPER_API_KEY = process.env.SERPER_API_KEY;
-
 export interface SearchResult {
   title: string;
   url: string;
@@ -15,17 +12,50 @@ export interface SearchResponse {
   note?: string;
 }
 
+function getBraveApiKey(): string {
+  return (process.env.BRAVE_SEARCH_API_KEY || "").trim();
+}
+
+function getSerperApiKey(): string {
+  return (process.env.SERPER_API_KEY || "").trim();
+}
+
+export function getWebSearchStatus() {
+  const braveKey = getBraveApiKey();
+  const serperKey = getSerperApiKey();
+
+  return {
+    braveConfigured: braveKey.length > 0,
+    braveKeyLength: braveKey.length,
+    serperConfigured: serperKey.length > 0,
+    serperKeyLength: serperKey.length,
+  };
+}
+
 async function searchBrave(query: string, count = 5): Promise<SearchResult[]> {
+  const braveKey = getBraveApiKey();
+
+  if (!braveKey) {
+    throw new Error("BRAVE_SEARCH_API_KEY not visible to server runtime.");
+  }
+
   const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=${count}`;
+
   const res = await fetch(url, {
     headers: {
       Accept: "application/json",
       "Accept-Encoding": "gzip",
-      "X-Subscription-Token": BRAVE_API_KEY!,
+      "X-Subscription-Token": braveKey,
     },
   });
-  if (!res.ok) throw new Error(`Brave API ${res.status}`);
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Brave API ${res.status}${detail ? `: ${detail.slice(0, 160)}` : ""}`);
+  }
+
   const data = await res.json();
+
   return (data.web?.results || []).slice(0, count).map((r: any) => ({
     title: r.title || "",
     url: r.url || "",
@@ -35,16 +65,28 @@ async function searchBrave(query: string, count = 5): Promise<SearchResult[]> {
 }
 
 async function searchSerper(query: string, count = 5): Promise<SearchResult[]> {
+  const serperKey = getSerperApiKey();
+
+  if (!serperKey) {
+    throw new Error("SERPER_API_KEY not visible to server runtime.");
+  }
+
   const res = await fetch("https://google.serper.dev/search", {
     method: "POST",
     headers: {
-      "X-API-KEY": SERPER_API_KEY!,
+      "X-API-KEY": serperKey,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ q: query, num: count }),
   });
-  if (!res.ok) throw new Error(`Serper API ${res.status}`);
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Serper API ${res.status}${detail ? `: ${detail.slice(0, 160)}` : ""}`);
+  }
+
   const data = await res.json();
+
   return (data.organic || []).slice(0, count).map((r: any) => ({
     title: r.title || "",
     url: r.link || "",
@@ -54,7 +96,10 @@ async function searchSerper(query: string, count = 5): Promise<SearchResult[]> {
 }
 
 export async function webSearch(query: string, count = 5): Promise<SearchResponse> {
-  if (BRAVE_API_KEY) {
+  const braveKey = getBraveApiKey();
+  const serperKey = getSerperApiKey();
+
+  if (braveKey) {
     try {
       const results = await searchBrave(query, count);
       console.log(`[WebSearch] Brave returned ${results.length} results for: ${query}`);
@@ -64,7 +109,7 @@ export async function webSearch(query: string, count = 5): Promise<SearchRespons
     }
   }
 
-  if (SERPER_API_KEY) {
+  if (serperKey) {
     try {
       const results = await searchSerper(query, count);
       console.log(`[WebSearch] Serper returned ${results.length} results for: ${query}`);
@@ -74,12 +119,14 @@ export async function webSearch(query: string, count = 5): Promise<SearchRespons
     }
   }
 
-  console.log("[WebSearch] No API keys configured — returning offline note");
+  console.log("[WebSearch] No API keys visible to runtime — returning offline note");
+
   return {
     results: [],
     query,
     source: "none",
-    note: "Web search unavailable: no BRAVE_SEARCH_API_KEY or SERPER_API_KEY configured. Analysis based on model knowledge only.",
+    note:
+      "Web search unavailable: BRAVE_SEARCH_API_KEY and SERPER_API_KEY are not visible to the server runtime. Analysis based on model knowledge only.",
   };
 }
 
@@ -89,12 +136,14 @@ export function formatResultsForPrompt(response: SearchResponse): string {
   }
 
   const lines = [`**Live Web Search Results** (via ${response.source}) for: "${response.query}"\n`];
+
   for (const r of response.results) {
     lines.push(`• **${r.title}**\n  ${r.snippet}\n  Source: ${r.url}`);
   }
+
   return lines.join("\n");
 }
 
 export function webSearchAvailable(): boolean {
-  return Boolean(BRAVE_API_KEY || SERPER_API_KEY);
+  return Boolean(getBraveApiKey() || getSerperApiKey());
 }
