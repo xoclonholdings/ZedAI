@@ -24,6 +24,7 @@ export type AdminSection =
 
 export type IntegrationKey =
   | "aiHost"
+  | "custom"
   | "businessOperations"
   | "github"
   | "email"
@@ -42,6 +43,11 @@ export const integrationMeta: Record<
     label: "AI Host",
     description: "Active model provider health and connection test.",
     icon: Bot,
+  },
+  custom: {
+    label: "Custom",
+    description: "Add your own integrations with arbitrary fields.",
+    icon: Sparkles,
   },
   businessOperations: {
     label: "Business Manager",
