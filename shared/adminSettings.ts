@@ -209,6 +209,31 @@ export interface IntegrationsSettings {
     status: "planned" | "browser-only" | "active";
     provider: string;
   };
+  /** Admin-defined integrations. Each entry is an arbitrary integration
+   *  with named fields the user gives it. They surface in the ZED
+   *  context (so the model knows the tool exists) but ZED can only
+   *  ACT through them once a flow / agent is wired to consume the
+   *  fields. */
+  custom: CustomIntegration[];
+}
+
+export interface CustomIntegrationField {
+  /** Field name shown in the form (e.g. "API key", "Webhook URL"). */
+  key: string;
+  /** Value the admin enters. */
+  value: string;
+  /** If true, the value is masked in the public response and the
+   *  context builder doesn't reveal it. */
+  isSecret?: boolean;
+}
+
+export interface CustomIntegration {
+  id: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+  /** Free-form fields the admin defined. */
+  fields: CustomIntegrationField[];
 }
 
 export interface AdminSettings {
@@ -361,4 +386,5 @@ export const defaultIntegrations: IntegrationsSettings = {
     status: "browser-only",
     provider: "Browser Speech API",
   },
+  custom: [],
 };

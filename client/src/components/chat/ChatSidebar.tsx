@@ -52,6 +52,38 @@ export default function ChatSidebar({
 }: ChatSidebarProps) {
   const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPicture(true);
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+      const res = await fetch("/api/me/avatar", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status}${body ? ` — ${body.slice(0, 160)}` : ""}`);
+      }
+      // Force /api/me to refetch so the new profileImageUrl flows
+      // through useAuth and the avatar updates immediately.
+      await queryClient.invalidateQueries({ queryKey: ["/api/me"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    } catch (err: any) {
+      console.error("[avatar] upload failed:", err);
+      window.alert(err?.message || "Avatar upload failed");
+    } finally {
+      setIsUploadingPicture(false);
+      // Reset the input so re-selecting the same file still triggers onChange
+      e.target.value = "";
+    }
+  }
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user, logout } = useAuth() as { user?: LocalUser; logout: () => Promise<void> };
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -234,8 +266,8 @@ export default function ChatSidebar({
 
       <ChatSidebarUserCard
         user={user}
-        isUploadingPicture={false}
-        onUpload={() => {}}
+        isUploadingPicture={isUploadingPicture}
+        onUpload={handleAvatarUpload}
         onLogout={handleLogout}
         isLoggingOut={isLoggingOut}
       />

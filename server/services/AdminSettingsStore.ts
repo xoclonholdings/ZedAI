@@ -268,6 +268,21 @@ function mergeSettings(raw: Partial<AdminSettings> | null | undefined): AdminSet
         ...defaultIntegrations.voiceTranscription,
         ...(raw?.integrations?.voiceTranscription || {}),
       },
+      custom: Array.isArray((raw?.integrations as any)?.custom)
+        ? ((raw?.integrations as any).custom as any[]).map((c) => ({
+            id: c?.id || `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            label: c?.label || "Custom integration",
+            description: c?.description || "",
+            enabled: !!c?.enabled,
+            fields: Array.isArray(c?.fields)
+              ? c.fields.map((f: any) => ({
+                  key: f?.key || "",
+                  value: f?.value || "",
+                  isSecret: !!f?.isSecret,
+                }))
+              : [],
+          }))
+        : [],
     },
     users: normalizeUsers(auth, raw?.users),
   };
@@ -619,6 +634,12 @@ export async function getPublicAdminSettings() {
           hasCredentials: !!(acc.clientId && acc.clientSecret && acc.refreshToken),
         })),
       },
+      custom: (settings.integrations.custom || []).map((c) => ({
+        ...c,
+        fields: (c.fields || []).map((f) =>
+          f.isSecret ? { ...f, value: f.value ? "•••••• (set)" : "" } : f,
+        ),
+      })),
       telephony: {
         ...settings.integrations.telephony,
         apiKey: "",
