@@ -4,6 +4,7 @@ import yaml from "js-yaml";
 
 import { HUB_CONFIG_DIR } from "../utils/repoPaths";
 import { loadAdminSettings } from "./AdminSettingsStore";
+import { listProjects } from "./ProjectFilingStore";
 
 /**
  * Builds the "live admin context" that gets injected into ZED's system
@@ -24,7 +25,16 @@ interface BuiltContext {
     enabledIntegrations: string[];
     customIntegrations: string[];
     parametersCount: number;
+    projectInstructions?: boolean;
+    projectSourceCount?: number;
   };
+}
+
+interface AdminContextOptions {
+  /** When a conversation belongs to a project, pass userId + conversationId
+   *  so the builder can pull in that project's instructions + sources. */
+  userId?: string;
+  conversationId?: string;
 }
 
 async function loadYamlFile(file: string): Promise<any | null> {
@@ -60,7 +70,9 @@ function summarizeRecord(value: any, depth = 0): string {
   return "";
 }
 
-export async function buildZedAdminContext(): Promise<BuiltContext> {
+export async function buildZedAdminContext(
+  opts: AdminContextOptions = {},
+): Promise<BuiltContext> {
   const meta: BuiltContext["meta"] = {
     rulesetFiles: [],
     enabledIntegrations: [],
@@ -206,8 +218,46 @@ export async function buildZedAdminContext(): Promise<BuiltContext> {
     /* non-fatal */
   }
 
-  // ── 3. Personalization (display name, voice etc.) ──────────────────
-  // Per-call personalization is already injected by the route handler.
+  // ── 3. Project context (instructions + sources) ───────────────────
+  // If this call is on a conversation filed under a project, pull the
+  // project's instructions and source list into the prompt. This is
+  // what makes "Sources" and "Instructions" in the admin / project
+  // UI actually flow into the AI on every call.
+  if (opts.userId && opts.conversationId) {
+    try {
+      const projects = await listProjects(opts.userId);
+      const project = projects.find((p) =>
+        (p.conversationIds || []).includes(opts.conversationId!),
+      );
+      if (project) {
+        const projectSections: string[] = [`## PROJECT: ${project.name}`];
+        if (project.instructions?.trim()) {
+          projectSections.push(
+            `### Project instructions (follow these for any response on this conversation):\n${project.instructions.trim()}`,
+          );
+          meta.projectInstructions = true;
+        }
+        if (project.sources && project.sources.length > 0) {
+          const sourceLines = project.sources.map((s) => {
+            const parts = [`• ${s.label}`];
+            if (s.url) parts.push(`url: ${s.url}`);
+            if (s.text) parts.push(`text:\n${s.text}`);
+            if (s.notes) parts.push(`(notes: ${s.notes})`);
+            return parts.join("\n  ");
+          });
+          projectSections.push(
+            `### Project sources (reference these when relevant):\n${sourceLines.join("\n")}`,
+          );
+          meta.projectSourceCount = project.sources.length;
+        }
+        if (projectSections.length > 1) {
+          sections.push(projectSections.join("\n\n"));
+        }
+      }
+    } catch {
+      /* non-fatal */
+    }
+  }
 
   const text = sections.join("\n\n");
   return { text, meta };
