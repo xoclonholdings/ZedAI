@@ -271,6 +271,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Avatar upload — accepts a single image, stores under /uploads,
+  // sets the user's profileImageUrl, and refreshes the session.user
+  // so the next /api/me call returns the new URL.
+  app.post(
+    "/api/me/avatar",
+    isAuthenticated,
+    upload.single("photo"),
+    async (req: any, res) => {
+      try {
+        const file = req.file as Express.Multer.File | undefined;
+        if (!file) return res.status(400).json({ error: "No photo uploaded" });
+        if (!file.mimetype?.startsWith("image/")) {
+          return res.status(400).json({ error: "Photo must be an image" });
+        }
+        const userId = req.user?.claims?.sub;
+        if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+        // The file is on disk in uploads/. Build a URL that serves it
+        // back via the existing /uploads static route.
+        const publicUrl = `/uploads/${path.basename(file.path)}`;
+
+        // Persist on the users table if Drizzle is up.
+        try {
+          if (db) {
+            await db
+              .insert(users)
+              .values({ id: userId, profileImageUrl: publicUrl })
+              .onConflictDoUpdate({
+                target: users.id,
+                set: { profileImageUrl: publicUrl, updatedAt: new Date() },
+              });
+          }
+        } catch (dbErr: any) {
+          void logRuntimeEvent({
+            level: "warn",
+            source: "server",
+            event: "avatar.db_update_failed",
+            detail: dbErr?.message || String(dbErr),
+            context: { userId },
+          });
+        }
+
+        // Update the live session so the next /api/me reflects it
+        // without requiring a logout/login.
+        if (req.session?.user) {
+          req.session.user.profileImageUrl = publicUrl;
+        }
+
+        res.json({ profileImageUrl: publicUrl });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || "Avatar upload failed" });
+      }
+    },
+  );
+
   app.get("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
