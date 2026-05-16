@@ -15,6 +15,7 @@ import Admin from "@/pages/admin";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
+import ProjectDetailPage from "@/pages/project-detail";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -106,6 +107,10 @@ function Router() {
 
       <Route path="/runs/:runId">
         {isAuthenticated ? <RunDetailPage /> : <Login />}
+      </Route>
+
+      <Route path="/projects/:id">
+        {isAuthenticated ? <ProjectDetailPage /> : <Login />}
       </Route>
 
       <Route component={NotFound} />

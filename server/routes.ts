@@ -868,7 +868,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Pull the admin-defined ruleset + active integrations into the
         // system prompt so ZED actually USES what's in the admin panel
         // instead of just storing it.
-        const adminCtx = await buildZedAdminContext();
+        const adminCtx = await buildZedAdminContext({
+          userId: req.user?.claims?.sub,
+          conversationId,
+        });
         systemPrompt = [
           ZED_IDENTITY_PROMPT,
           systemPrompt || "",

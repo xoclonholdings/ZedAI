@@ -232,17 +232,33 @@ export default function ChatSidebar({
             </button>
 
             {projects.map((project) => (
-              <button
+              <div
                 key={project.id}
-                onClick={() => onSelectProject(project.id)}
-                className={`w-full rounded-xl border px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left transition-all ${
+                className={`flex items-stretch gap-1 rounded-xl border ${
                   selectedProjectId === project.id
-                    ? "border-cyan-400/40 bg-white/10 text-white"
-                    : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
+                    ? "border-cyan-400/40 bg-white/10"
+                    : "border-white/10 bg-black/20"
                 }`}
               >
-                {project.name}
-              </button>
+                <button
+                  onClick={() => onSelectProject(project.id)}
+                  className={`flex-1 px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left ${
+                    selectedProjectId === project.id
+                      ? "text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {project.name}
+                </button>
+                <button
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                  className="px-2 text-muted-foreground hover:text-cyan-300"
+                  aria-label="Project settings"
+                  title="Project settings & sources"
+                >
+                  ⚙
+                </button>
+              </div>
             ))}
           </div>
         </div>
