@@ -46,9 +46,13 @@ import {
 } from "./services/AdminSettingsStore";
 import { getUserPersonalization, saveUserPersonalization } from "./services/UserPersonalizationStore";
 import {
+  addProjectSource,
   assignConversationToProject,
   createProject,
+  getProject,
   listProjects,
+  removeProjectSource,
+  updateProjectInstructions,
 } from "./services/ProjectFilingStore";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repoPaths";
 
@@ -597,6 +601,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error.message || "Failed to create project" });
     }
   });
+
+  app.get("/api/projects/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const project = await getProject(req.user.claims.sub, req.params.id);
+      if (!project) return res.status(404).json({ error: "Project not found" });
+      res.json(project);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to load project" });
+    }
+  });
+
+  // Per-project system instructions — injected into the agent context
+  // for any conversation filed under this project.
+  app.put("/api/projects/:id/instructions", isAuthenticated, async (req: any, res) => {
+    try {
+      const project = await updateProjectInstructions(
+        req.user.claims.sub,
+        req.params.id,
+        String(req.body?.instructions || ""),
+      );
+      res.json({ project });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update instructions" });
+    }
+  });
+
+  // Add a source (file URL, pasted URL, or text snippet) to a project.
+  // Multipart upload sub-route accepts file=<File>, label, notes; the
+  // file lands at /uploads and the served URL becomes source.url.
+  app.post(
+    "/api/projects/:id/sources",
+    isAuthenticated,
+    upload.single("file"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const projectId = req.params.id;
+        const file = req.file as Express.Multer.File | undefined;
+        const label =
+          (req.body?.label && String(req.body.label).trim()) ||
+          (file?.originalname ? path.basename(file.originalname) : "Source");
+        const url = file
+          ? `/uploads/${path.basename(file.path)}`
+          : req.body?.url
+            ? String(req.body.url)
+            : undefined;
+        const text = req.body?.text ? String(req.body.text) : undefined;
+        const notes = req.body?.notes ? String(req.body.notes) : undefined;
+        const source = await addProjectSource(userId, projectId, {
+          label,
+          url,
+          text,
+          notes,
+        });
+        res.json({ source });
+      } catch (error: any) {
+        res.status(400).json({ error: error.message || "Failed to add source" });
+      }
+    },
+  );
+
+  app.delete(
+    "/api/projects/:id/sources/:sourceId",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const project = await removeProjectSource(
+          req.user.claims.sub,
+          req.params.id,
+          req.params.sourceId,
+        );
+        res.json({ project });
+      } catch (error: any) {
+        res.status(400).json({ error: error.message || "Failed to remove source" });
+      }
+    },
+  );
 
   app.put("/api/conversations/:id/project", isAuthenticated, async (req: any, res) => {
     try {

@@ -4,12 +4,31 @@ import { randomUUID } from "crypto";
 
 import { HUB_CONFIG_DIR } from "../utils/repoPaths";
 
+export interface ProjectSource {
+  id: string;
+  /** A short label the user gives the source ("Brand voice doc"). */
+  label: string;
+  /** Either an uploaded file URL (/uploads/...) OR a raw URL pasted by the user. */
+  url?: string;
+  /** Optional pasted text — for short snippets that don't need a file. */
+  text?: string;
+  /** Free-form note shown alongside the source in the UI. */
+  notes?: string;
+  /** ISO timestamp of when it was added. */
+  addedAt: string;
+}
+
 export interface FilingProject {
   id: string;
   userId: string;
   name: string;
   color: string;
   conversationIds: string[];
+  /** Per-project system prompt — gets injected into agent context when
+   *  a conversation is filed under this project. */
+  instructions?: string;
+  /** Files / URLs / snippets the project wants the agents to reference. */
+  sources?: ProjectSource[];
   createdAt: string;
   updatedAt: string;
 }
@@ -73,6 +92,73 @@ export async function createProject(userId: string, name: string) {
   };
 
   state.projects.push(project);
+  await writeState(state);
+  return project;
+}
+
+export async function getProject(userId: string, projectId: string) {
+  const state = await readState();
+  return state.projects.find(
+    (project) => project.userId === userId && project.id === projectId,
+  );
+}
+
+export async function updateProjectInstructions(
+  userId: string,
+  projectId: string,
+  instructions: string,
+) {
+  const state = await readState();
+  const project = state.projects.find(
+    (p) => p.userId === userId && p.id === projectId,
+  );
+  if (!project) throw new Error("Project not found");
+  project.instructions = (instructions || "").slice(0, 8000);
+  project.updatedAt = new Date().toISOString();
+  await writeState(state);
+  return project;
+}
+
+export async function addProjectSource(
+  userId: string,
+  projectId: string,
+  source: Omit<ProjectSource, "id" | "addedAt">,
+) {
+  const state = await readState();
+  const project = state.projects.find(
+    (p) => p.userId === userId && p.id === projectId,
+  );
+  if (!project) throw new Error("Project not found");
+  if (!source.label?.trim()) throw new Error("Source label is required");
+  if (!source.url && !source.text) {
+    throw new Error("Source must have either a url or text");
+  }
+  const entry: ProjectSource = {
+    id: randomUUID(),
+    label: source.label.trim().slice(0, 80),
+    url: source.url || undefined,
+    text: source.text ? source.text.slice(0, 16000) : undefined,
+    notes: source.notes ? source.notes.slice(0, 500) : undefined,
+    addedAt: new Date().toISOString(),
+  };
+  project.sources = [...(project.sources || []), entry];
+  project.updatedAt = entry.addedAt;
+  await writeState(state);
+  return entry;
+}
+
+export async function removeProjectSource(
+  userId: string,
+  projectId: string,
+  sourceId: string,
+) {
+  const state = await readState();
+  const project = state.projects.find(
+    (p) => p.userId === userId && p.id === projectId,
+  );
+  if (!project) throw new Error("Project not found");
+  project.sources = (project.sources || []).filter((s) => s.id !== sourceId);
+  project.updatedAt = new Date().toISOString();
   await writeState(state);
   return project;
 }
