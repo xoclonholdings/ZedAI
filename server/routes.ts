@@ -43,6 +43,8 @@ import {
 import { getUserPersonalization, saveUserPersonalization } from "./services/UserPersonalizationStore";
 import { registerProjectRoutes } from "./routes-modules/projects";
 import { registerDiagnosticsRoutes } from "./routes-modules/diagnostics";
+import { registerAiHostTestRoute } from "./routes-modules/ai-host-test";
+import { registerRulesetRoutes } from "./routes-modules/ruleset";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repoPaths";
 
 import {
@@ -1019,80 +1021,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/ai-host/test", isAdmin, async (_req, res) => {
-    try {
-      const health = await checkOllamaHealth();
-      const provider = getActiveProviderName({ lane: "chat" });
-      const target = getResolvedTargetName({ lane: "chat" });
-      const providerConfig = getProviderRuntimeConfig();
-      const model =
-        providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig);
-
-      let chatStatus: "ok" | "error" = "ok";
-      let reply = "";
-      let error = "";
-      let errorKind = "";
-      const startedAt = Date.now();
-
-      try {
-        reply = await generateChatFromOllama(
-          [{ role: "user", content: "Reply with READY only." }],
-          undefined,
-          { lane: "manager" },
-        );
-      } catch (chatError: any) {
-        chatStatus = "error";
-        const message =
-          (typeof chatError?.message === "string" && chatError.message) ||
-          (typeof chatError === "string" && chatError) ||
-          "";
-        const constructor = chatError?.constructor?.name || "Error";
-        error =
-          message ||
-          (() => {
-            try {
-              return JSON.stringify(chatError);
-            } catch {
-              return String(chatError);
-            }
-          })();
-        errorKind = constructor;
-        await logRuntimeEvent({
-          level: "error",
-          source: "server",
-          event: "admin.ai_host.test_failed",
-          detail: error,
-          context: { provider, target, model, kind: errorKind },
-        });
-      }
-
-      res.json({
-        provider,
-        target,
-        model,
-        elapsedMs: Date.now() - startedAt,
-        health,
-        chat: {
-          status: chatStatus,
-          reply,
-          error,
-          errorKind,
-        },
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        error:
-          error?.message ||
-          (() => {
-            try {
-              return JSON.stringify(error);
-            } catch {
-              return String(error);
-            }
-          })(),
-      });
-    }
-  });
+  // AI host connectivity test — extracted to routes-modules/ai-host-test.ts
+  registerAiHostTestRoute(app);
 
   app.get("/api/admin/settings", isAdmin, async (_req, res) => {
     const settings = await getPublicAdminSettings();
@@ -1174,18 +1104,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/ruleset", isAdmin, async (_req, res) => {
-    const files = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
-    const ruleset: Record<string, string> = {};
-    for (const f of files) {
-      try {
-        ruleset[f] = await fs.readFile(path.join(HUB_CONFIG_DIR, f), "utf-8");
-      } catch {
-        ruleset[f] = "";
-      }
-    }
-    res.json(ruleset);
-  });
+  // Ruleset YAML CRUD (raw + structured) — extracted to routes-modules/ruleset.ts.
+  // ManagerAgent cache flush happens inside the module on every write.
+  registerRulesetRoutes(app);
 
   // ── Diagnostics (admin status snapshot + provider routing + runtime) ─
   // Extracted to routes-modules/diagnostics.ts. Database health is
@@ -1200,55 +1121,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Env validator — pure logic in services/EnvValidator.ts, thin route
   // wrapper in routes-modules/env-validate.ts.
   registerEnvValidateRoute(app);
-
-  app.get("/api/admin/ruleset/structured", isAdmin, async (_req, res) => {
-    const files = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
-    const ruleset: Record<string, any> = {};
-    for (const f of files) {
-      try {
-        const raw = await fs.readFile(path.join(HUB_CONFIG_DIR, f), "utf-8");
-        ruleset[f] = yaml.load(raw) || {};
-      } catch {
-        ruleset[f] = {};
-      }
-    }
-    res.json(ruleset);
-  });
-
-  app.post("/api/admin/ruleset", isAdmin, async (req: any, res) => {
-    const { filename, content } = req.body;
-    const allowed = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
-    if (!allowed.includes(filename)) {
-      return res.status(400).json({ error: "Invalid filename" });
-    }
-    try {
-      yaml.load(content);
-      await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
-      await fs.writeFile(path.join(HUB_CONFIG_DIR, filename), content, "utf-8");
-      ManagerAgent.flushConfig();
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(400).json({ error: err.message });
-    }
-  });
-
-  app.post("/api/admin/ruleset/structured", isAdmin, async (req: any, res) => {
-    const { filename, content } = req.body;
-    const allowed = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
-    if (!allowed.includes(filename)) {
-      return res.status(400).json({ error: "Invalid filename" });
-    }
-    try {
-      const serialized = yaml.dump(content || {}, { noRefs: true, lineWidth: 120, sortKeys: false });
-      yaml.load(serialized);
-      await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
-      await fs.writeFile(path.join(HUB_CONFIG_DIR, filename), serialized, "utf-8");
-      ManagerAgent.flushConfig();
-      res.json({ success: true });
-    } catch (err: any) {
-      res.status(400).json({ error: err.message });
-    }
-  });
 
   app.get("/api/admin/logs", isAdmin, async (_req, res) => {
     try {
