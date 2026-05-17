@@ -45,6 +45,9 @@ import { registerProjectRoutes } from "./routes-modules/projects";
 import { registerDiagnosticsRoutes } from "./routes-modules/diagnostics";
 import { registerAiHostTestRoute } from "./routes-modules/ai-host-test";
 import { registerRulesetRoutes } from "./routes-modules/ruleset";
+import { registerAdminSettingsRoutes } from "./routes-modules/admin-settings";
+import { registerAdminLogsRoutes } from "./routes-modules/admin-logs";
+import { registerApprovalRoutes } from "./routes-modules/approvals";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repoPaths";
 
 import {
@@ -1024,85 +1027,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI host connectivity test — extracted to routes-modules/ai-host-test.ts
   registerAiHostTestRoute(app);
 
-  app.get("/api/admin/settings", isAdmin, async (_req, res) => {
-    const settings = await getPublicAdminSettings();
-    res.json(settings);
-  });
-
-  app.put("/api/admin/settings/app", isAdmin, async (req, res) => {
-    try {
-      const appSettings = await updateAppSettings(req.body || {});
-      res.json(appSettings);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update app settings" });
-    }
-  });
-
-  app.post("/api/admin/settings/app/reset", isAdmin, async (_req, res) => {
-    try {
-      const settings = await resetAppSettings();
-      res.json(settings);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to reset app settings" });
-    }
-  });
-
-  app.put("/api/admin/settings/personalization", isAdmin, async (req, res) => {
-    try {
-      const personalization = await updatePersonalizationSettings(req.body || {});
-      res.json(personalization);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update personalization" });
-    }
-  });
-
-  app.put("/api/admin/settings/integrations", isAdmin, async (req, res) => {
-    try {
-      await updateIntegrationSettings(req.body || {});
-      const settings = await getPublicAdminSettings();
-      res.json(settings.integrations);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update integrations" });
-    }
-  });
-
-  app.get("/api/admin/integrations/github/status", isAdmin, async (_req, res) => {
-    const status = await checkGitHubIntegrationStatus();
-    res.json(status);
-  });
-
-  app.get("/api/admin/integrations/github/readout", isAdmin, async (_req, res) => {
-    const readout = await getGitHubRepoReadout();
-    res.json(readout);
-  });
-
-  app.get("/api/admin/integrations/firewall/status", isAdmin, async (_req, res) => {
-    const status = await getFirewallIntegrationStatus();
-    res.json(status);
-  });
-
-  app.get("/api/admin/users", isAdmin, async (_req, res) => {
-    const users = await listManagedUsers();
-    res.json({ users });
-  });
-
-  app.post("/api/admin/users", isAdmin, async (req, res) => {
-    try {
-      const users = await createManagedUser(req.body || {});
-      res.json({ users });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to create user" });
-    }
-  });
-
-  app.patch("/api/admin/users/:id", isAdmin, async (req, res) => {
-    try {
-      const users = await updateManagedUser(req.params.id, req.body || {});
-      res.json({ users });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update user" });
-    }
-  });
+  // Admin settings (app prefs, personalization, integrations, managed
+  // users, integration status probes) — routes-modules/admin-settings.ts
+  registerAdminSettingsRoutes(app);
 
   // Ruleset YAML CRUD (raw + structured) — extracted to routes-modules/ruleset.ts.
   // ManagerAgent cache flush happens inside the module on every write.
@@ -1122,177 +1049,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // wrapper in routes-modules/env-validate.ts.
   registerEnvValidateRoute(app);
 
-  app.get("/api/admin/logs", isAdmin, async (_req, res) => {
-    try {
-      await fs.mkdir(HUB_LOG_DIR, { recursive: true });
-      const files = await fs.readdir(HUB_LOG_DIR);
-      const recent = files.sort().slice(-3);
-      const entries: string[] = [];
-      for (const f of recent) {
-        try {
-          const content = await fs.readFile(path.join(HUB_LOG_DIR, f), "utf-8");
-          entries.push(...content.trim().split("\n").filter(Boolean));
-        } catch {}
-      }
-      const runtime = await getRecentRuntimeEvents(100);
-      res.json({ entries: entries.slice(-100), runtime });
-    } catch {
-      res.json({ entries: [], runtime: [] });
-    }
-  });
+  // Admin logs + client-log ingest + security log — routes-modules/admin-logs.ts
+  registerAdminLogsRoutes(app);
 
-  app.post("/api/client-log", async (req, res) => {
-    try {
-      const { level = "error", event = "client.error", detail, context } = req.body || {};
-      await logRuntimeEvent({
-        level,
-        source: "client",
-        event,
-        detail,
-        context,
-      });
-      res.json({ ok: true });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to write client log" });
-    }
-  });
-
-  const WORKING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
-
-  function legacyEntryShape(task: any) {
-    const draftLog = (task.logs || [])
-      .map((l: any) => l.message || "")
-      .find((m: string) => m.startsWith("Draft from "));
-    const draft = draftLog ? draftLog.replace(/^Draft from [^:]+:\s*/, "") : "";
-    const status =
-      task.approval_status === "approved"
-        ? "approved"
-        : task.approval_status === "rejected"
-          ? "rejected"
-          : "pending";
-    return {
-      id: task.id,
-      timestamp: task.created_at,
-      status,
-      userId: task.user_id,
-      conversationId: task.conversation_id || null,
-      message: task.plan?.summary?.replace(/^\[[^\]]+\]\s*Prepared\s+\w+\s+plan\s+for:\s*/i, "") || "",
-      draft,
-      agent: (task.plan?.summary || "").match(/\[([A-Za-z]+Agent)\]/)?.[1] || "Agent",
-      resolvedAt: task.approved_at || null,
-      rejectionReason: task.approval_status === "rejected" ? task.approval_reason : undefined,
-      approvalStatus: task.approval_status,
-      approvalRole: task.approval_role,
-      approvalReason: task.approval_reason,
-      executionResult: task.last_result?.execution_result || null,
-    };
-  }
-
-  async function postApprovalConfirmationToConversation(task: any): Promise<string> {
-    const timestamp = new Date().toISOString();
-    const message = task.plan?.summary || `Task ${task.id}`;
-    const summary = `\n## [${timestamp}] ✅ APPROVED & EXECUTED — User: ${task.user_id}\n**Request**: ${message}\n`;
-    try {
-      await fs.appendFile(WORKING_MEMORY_PATH, summary);
-    } catch (err) {
-      console.warn("[ApprovalExecutor] Working memory write failed:", err);
-    }
-    if (task.conversation_id) {
-      try {
-        const execMessage = `✅ **Action Approved**\n\nYour request has been reviewed and approved by the admin.\n\n**Request**: ${message}`;
-        await storage.createMessage(
-          insertMessageSchema.parse({
-            conversationId: task.conversation_id,
-            role: "assistant",
-            content: execMessage,
-          }),
-        );
-      } catch (err) {
-        console.warn("[ApprovalExecutor] Conversation message failed:", err);
-      }
-    }
-    return `Approved at ${timestamp}${task.conversation_id ? " and posted to conversation" : ""}.`;
-  }
-
-  app.get("/api/admin/approval-queue", isAdmin, async (_req, res) => {
-    try {
-      const { TaskLifecycleManager } = await import("./services/execution/TaskLifecycleManager");
-      const tasks = await TaskLifecycleManager.list();
-      const pendingStates = new Set([
-        "user_required",
-        "admin_required",
-        "manual_handling_required",
-      ]);
-      const interesting = tasks.filter(
-        (t) =>
-          (t.approval_status && pendingStates.has(t.approval_status)) ||
-          t.status === "blocked",
-      );
-      const recent = tasks
-        .filter((t) => t.approval_status === "approved" || t.approval_status === "rejected")
-        .slice(0, 10);
-      const merged = [...interesting, ...recent];
-      res.json({ version: "2.0", entries: merged.map(legacyEntryShape) });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || "Failed to read approval queue" });
-    }
-  });
-
-  app.post("/api/admin/approve/:id", isAdmin, async (req: any, res) => {
-    const { id } = req.params;
-    try {
-      const { ApprovalDecisionHandler } = await import("./services/approval/ApprovalDecisionHandler");
-      const result = await ApprovalDecisionHandler.decide({
-        task_id: id,
-        decided_by: req.user?.claims?.sub || "admin",
-        decider_role: "admin",
-        action: "approve",
-      });
-      if (!result.ok || !result.task) {
-        return res.status(404).json({ error: result.message });
-      }
-      const exec = await postApprovalConfirmationToConversation(result.task);
-      await logSecurityEvent({
-        type: "approval.approved",
-        userId: req.user?.claims?.sub,
-        detail: `Approved task ${id}: ${(result.task.plan?.summary || "").slice(0, 80)}`,
-      });
-      res.json({ success: true, entry: { ...legacyEntryShape(result.task), executionResult: exec } });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || "Approve failed" });
-    }
-  });
-
-  app.post("/api/admin/reject/:id", isAdmin, async (req: any, res) => {
-    const { id } = req.params;
-    const { reason } = req.body || {};
-    try {
-      const { ApprovalDecisionHandler } = await import("./services/approval/ApprovalDecisionHandler");
-      const result = await ApprovalDecisionHandler.decide({
-        task_id: id,
-        decided_by: req.user?.claims?.sub || "admin",
-        decider_role: "admin",
-        action: "reject",
-        reason: reason || "Rejected by admin",
-      });
-      if (!result.ok || !result.task) {
-        return res.status(404).json({ error: result.message });
-      }
-      await logSecurityEvent({
-        type: "approval.rejected",
-        userId: req.user?.claims?.sub,
-        detail: `Rejected task ${id}: ${(result.task.plan?.summary || "").slice(0, 80)} — ${reason || "no reason"}`,
-      });
-      res.json({ success: true, entry: legacyEntryShape(result.task) });
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || "Reject failed" });
-    }
-  });
-
-  app.get("/api/admin/security-log", isAdmin, async (_req, res) => {
-    const events = await getRecentSecurityEvents(100);
-    res.json({ events });
-  });
+  // Approvals (queue + approve/:id + reject/:id, with the legacy entry
+  // shape + working-memory + conversation-confirmation helpers) —
+  // routes-modules/approvals.ts
+  registerApprovalRoutes(app);
 
   app.get("/api/admin/system-test", async (_req, res) => {
     const ollama = await checkOllamaHealth();
