@@ -48,6 +48,9 @@ import { registerRulesetRoutes } from "./routes-modules/ruleset";
 import { registerAdminSettingsRoutes } from "./routes-modules/admin-settings";
 import { registerAdminLogsRoutes } from "./routes-modules/admin-logs";
 import { registerApprovalRoutes } from "./routes-modules/approvals";
+import { registerMeRoutes } from "./routes-modules/me";
+import { registerKnowledgeRoutes } from "./routes-modules/knowledge";
+import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-and-misc";
 import { HUB_CONFIG_DIR, HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "./utils/repoPaths";
 
 import {
@@ -228,101 +231,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  app.get("/api/me", (req, res) => {
-    const session = (req as any).session;
-    if (session?.userId && session?.user) {
-      void getUserPersonalization(session.userId)
-        .then((personalization) => {
-          res.json({
-            user: {
-              ...session.user,
-              displayName: personalization.displayName,
-              personalization,
-            },
-          });
-        })
-        .catch(() => {
-          res.json({ user: session.user });
-        });
-      return;
-    }
-    return res.json({ user: null });
-  });
-
-  app.get("/api/settings/personalization", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const personalization = await getUserPersonalization(userId);
-      res.json(personalization);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to fetch personalization" });
-    }
-  });
-
-  app.put("/api/settings/personalization", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const personalization = await saveUserPersonalization(userId, req.body || {});
-      res.json(personalization);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update personalization" });
-    }
-  });
-
-  // Avatar upload — accepts a single image, stores under /uploads,
-  // sets the user's profileImageUrl, and refreshes the session.user
-  // so the next /api/me call returns the new URL.
-  app.post(
-    "/api/me/avatar",
-    isAuthenticated,
-    upload.single("photo"),
-    async (req: any, res) => {
-      try {
-        const file = req.file as Express.Multer.File | undefined;
-        if (!file) return res.status(400).json({ error: "No photo uploaded" });
-        if (!file.mimetype?.startsWith("image/")) {
-          return res.status(400).json({ error: "Photo must be an image" });
-        }
-        const userId = req.user?.claims?.sub;
-        if (!userId) return res.status(401).json({ error: "Unauthorized" });
-
-        // The file is on disk in uploads/. Build a URL that serves it
-        // back via the existing /uploads static route.
-        const publicUrl = `/uploads/${path.basename(file.path)}`;
-
-        // Persist on the users table if Drizzle is up.
-        try {
-          if (db) {
-            await db
-              .insert(users)
-              .values({ id: userId, profileImageUrl: publicUrl })
-              .onConflictDoUpdate({
-                target: users.id,
-                set: { profileImageUrl: publicUrl, updatedAt: new Date() },
-              });
-          }
-        } catch (dbErr: any) {
-          void logRuntimeEvent({
-            level: "warn",
-            source: "server",
-            event: "avatar.db_update_failed",
-            detail: dbErr?.message || String(dbErr),
-            context: { userId },
-          });
-        }
-
-        // Update the live session so the next /api/me reflects it
-        // without requiring a logout/login.
-        if (req.session?.user) {
-          req.session.user.profileImageUrl = publicUrl;
-        }
-
-        res.json({ profileImageUrl: publicUrl });
-      } catch (err: any) {
-        res.status(500).json({ error: err?.message || "Avatar upload failed" });
-      }
-    },
-  );
+  // Session-scoped current-user surfaces (identity, personalization,
+  // avatar upload) — routes-modules/me.ts
+  registerMeRoutes(app);
 
   app.get("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
@@ -375,206 +286,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/knowledge/context", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const query = String(req.query.q || "").trim();
-      if (!query) return res.status(400).json({ error: "Query required" });
 
-      const hubMemory = await injectMemory("KnowledgeContext", { includeFoundation: true }).catch(() => ({ formatted: "" }));
-      const knowledge = await KnowledgeService.buildContext({
-        userId,
-        query,
-        conversationId: typeof req.query.conversationId === "string" ? req.query.conversationId : undefined,
-        lane: "admin",
-        injectedMemory: hubMemory.formatted,
-        includeAdminFoundation: true,
-      });
-
-      res.json(knowledge);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to build knowledge context" });
-    }
-  });
-
-  app.get("/api/knowledge/search", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const query = String(req.query.q || "").trim();
-      if (!query) return res.status(400).json({ error: "Query required" });
-
-      const results = await KnowledgeService.search({
-        userId,
-        query,
-        conversationId: typeof req.query.conversationId === "string" ? req.query.conversationId : undefined,
-      });
-
-      res.json(results);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Knowledge search failed" });
-    }
-  });
-
-  app.get("/api/knowledge/project-memory", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { MemoryService } = await import("./services/memoryService");
-      const items = await MemoryService.getProjectMemory(userId);
-      res.json({ items });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to fetch project memory" });
-    }
-  });
-
-  app.get("/api/knowledge/personal-base", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { MemoryService } = await import("./services/memoryService");
-      const items = await MemoryService.getProjectMemory(userId);
-      const item =
-        items.find((entry) => (entry.type || "").toLowerCase() === "profile" && entry.isActive !== false) ||
-        items.find((entry) => (entry.type || "").toLowerCase() === "profile") ||
-        null;
-      res.json({ item });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to fetch personal base memory" });
-    }
-  });
-
-  app.get("/api/knowledge/core-memory", isAdmin, async (_req: any, res) => {
-    try {
-      const { MemoryService } = await import("./services/memoryService");
-      const items = await MemoryService.getAllCoreMemory();
-      res.json({ items });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to fetch core memory" });
-    }
-  });
-
-  app.put("/api/knowledge/core-memory/:key", isAdmin, async (req: any, res) => {
-    try {
-      const { MemoryService } = await import("./services/memoryService");
-      const item = await MemoryService.setCoreMemory({
-        key: req.params.key,
-        value: String(req.body?.value || ""),
-        description: req.body?.description || "",
-        adminOnly: req.body?.adminOnly ?? true,
-      });
-      res.json({ item });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update core memory" });
-    }
-  });
-
-  app.post("/api/knowledge/project-memory", isAuthenticated, async (req: any, res) => {
-    try {
-      await ensureSessionUserInDatabase(req);
-      const userId = req.user.claims.sub;
-      const { MemoryService } = await import("./services/memoryService");
-      const item = await MemoryService.createProjectMemory(
-        insertProjectMemorySchema.parse({
-          userId,
-          name: req.body?.name || "Untitled knowledge item",
-          description: req.body?.description || "",
-          content: req.body?.content || "",
-          type: req.body?.type || "context",
-          isActive: req.body?.isActive ?? true,
-        }),
-      );
-      res.json({ item });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to create project memory" });
-    }
-  });
-
-  app.put("/api/knowledge/personal-base", isAuthenticated, async (req: any, res) => {
-    try {
-      await ensureSessionUserInDatabase(req);
-      const userId = req.user.claims.sub;
-      const { MemoryService } = await import("./services/memoryService");
-      const existing = (await MemoryService.getProjectMemory(userId)).find(
-        (entry) => (entry.type || "").toLowerCase() === "profile",
-      );
-
-      const payload = {
-        userId,
-        name: req.body?.name || "Personal Base Memory",
-        description: req.body?.description || "User-owned profile, preferences, goals, and working context.",
-        content: req.body?.content || "",
-        type: "profile",
-        isActive: req.body?.isActive ?? true,
-      };
-
-      const item = existing
-        ? await MemoryService.updateProjectMemory(existing.id, payload)
-        : await MemoryService.createProjectMemory(insertProjectMemorySchema.parse(payload));
-
-      res.json({ item });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to save personal base memory" });
-    }
-  });
-
-  app.patch("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const { MemoryService } = await import("./services/memoryService");
-      const item = await MemoryService.updateProjectMemory(req.params.id, req.body || {});
-      res.json({ item });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to update project memory" });
-    }
-  });
-
-  app.delete("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const { MemoryService } = await import("./services/memoryService");
-      const success = await MemoryService.deleteProjectMemory(req.params.id);
-      res.json({ success });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to delete project memory" });
-    }
-  });
-
-  app.get("/api/knowledge/scratchpad", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { MemoryService } = await import("./services/memoryService");
-      const items = await MemoryService.getScratchpadMemory(userId);
-      res.json({ items });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to fetch scratchpad memory" });
-    }
-  });
-
-  app.post("/api/knowledge/scratchpad", isAuthenticated, async (req: any, res) => {
-    try {
-      await ensureSessionUserInDatabase(req);
-      const userId = req.user.claims.sub;
-      const { MemoryService } = await import("./services/memoryService");
-      const item = await MemoryService.createScratchpadMemory(
-        insertScratchpadMemorySchema.parse({
-          userId,
-          conversationId: req.body?.conversationId || null,
-          content: req.body?.content || "",
-          tags: Array.isArray(req.body?.tags) ? req.body.tags : [],
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        }),
-      );
-      res.json({ item });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to create scratchpad memory" });
-    }
-  });
-
-  app.delete("/api/knowledge/scratchpad/:id", isAuthenticated, async (req: any, res) => {
-    try {
-      const { MemoryService } = await import("./services/memoryService");
-      const success = await MemoryService.deleteScratchpadMemory(req.params.id);
-      res.json({ success });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to delete scratchpad memory" });
-    }
-  });
+  // Knowledge / memory endpoints — routes-modules/knowledge.ts
+  registerKnowledgeRoutes(app);
 
   // ── Projects (CRUD + instructions + sources + conversation assignment) ─
   // Extracted to routes-modules/projects.ts.
@@ -908,120 +622,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/orchestrate", isAuthenticated, async (req: any, res) => {
-    try {
-      const { message, conversationId, targetAgent } = req.body;
-      const userId = req.user.claims.sub;
-
-      if (!message) return res.status(400).json({ error: "Message required" });
-
-      if (conversationId) {
-        await storage.createMessage(
-          insertMessageSchema.parse({ conversationId, role: "user", content: message })
-        );
-      }
-
-      const ip = req.ip || "";
-      const knowledge = await KnowledgeService.buildContext({
-        userId,
-        query: message,
-        conversationId,
-        lane: "manager",
-        injectedMemory: (
-          await injectMemory("ManagerAgent", { includeFoundation: !!req.user?.claims?.isAdmin }).catch(() => ({ formatted: "" }))
-        ).formatted,
-        includeAdminFoundation: !!req.user?.claims?.isAdmin,
-      });
-
-      const response = await ManagerAgent.route({
-        userId,
-        message,
-        conversationId,
-        ip,
-        targetAgent,
-        context: {
-          ...(req.body?.context || {}),
-          knowledgePrompt: knowledge.prompt,
-          isAdmin: Boolean(req.user?.claims?.isAdmin),
-        },
-      });
-
-      if (conversationId) {
-        await storage.createMessage(
-          insertMessageSchema.parse({
-            conversationId,
-            role: "assistant",
-            content: response.reply,
-            metadata: { agent: response.agent, requiresApproval: response.requiresApproval },
-          })
-        );
-      }
-
-      res.json(response);
-    } catch (error) {
-      console.error("[Orchestrator] Error:", error);
-      const detail =
-        error instanceof Error && error.message
-          ? error.message
-          : "The selected agent is temporarily unavailable.";
-      res.json({
-        error: "Orchestration failed",
-        reply: `Agent lane unavailable right now: ${detail}`,
-        agent: "ManagerAgent",
-      });
-    }
-  });
-
-  app.get("/api/orchestrate/status", async (_req, res) => {
-    const settings = await getPublicAdminSettings();
-    const normalizedAgents = settings.agents.map((agent) => {
-      if (agent.key === "BusinessManagerAgent") {
-        const isBusinessReady = settings.integrations.businessOperations.enabled;
-        return {
-          ...agent,
-          status: isBusinessReady ? "active" : "planned",
-          description: isBusinessReady
-            ? "Business operations lane is enabled for commerce, property, credit, and planning workflows."
-            : agent.description,
-        };
-      }
-      return agent;
-    });
-    res.json({
-      orchestrator: "ManagerAgent",
-      active_agents: normalizedAgents.filter((agent) => agent.status === "active"),
-      planned_agents: normalizedAgents.filter((agent) => agent.status === "planned"),
-      integrations: settings.integrations,
-      status: "operational",
-    });
-  });
-
-  app.post("/api/voice/transcribe", isAuthenticated, async (req: any, res) => {
-    res.json({
-      transcript: "",
-      note: "Server-side transcription requires Whisper. Using browser Speech API instead.",
-    });
-  });
-
-  app.get("/api/admin/knowledge/overview", isAdmin, async (_req, res) => {
-    try {
-      const settings = await loadAdminSettings();
-      const defaultUserId = settings.users?.[0]?.id || "admin-user";
-      const { MemoryService } = await import("./services/memoryService");
-      const [core, project, scratchpad] = await Promise.all([
-        MemoryService.getAllCoreMemory(),
-        MemoryService.getProjectMemory(defaultUserId).catch(() => []),
-        MemoryService.getScratchpadMemory(defaultUserId).catch(() => []),
-      ]);
-
-      res.json({
-        coreCount: core.length,
-        projectCount: project.length,
-        scratchpadCount: scratchpad.length,
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message || "Failed to load knowledge overview" });
-    }
+  // Orchestrator + voice stub + admin knowledge overview — packed
+  // together in routes-modules/orchestrate-and-misc.ts because each
+  // handler is small and they share dependencies (KnowledgeService,
+  // ManagerAgent, AdminSettingsStore).
+  registerOrchestrateAndMiscRoutes(app, {
+    isDatabaseHealthy: () => isDatabaseHealthy,
   });
 
   // AI host connectivity test — extracted to routes-modules/ai-host-test.ts
@@ -1056,31 +662,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // shape + working-memory + conversation-confirmation helpers) —
   // routes-modules/approvals.ts
   registerApprovalRoutes(app);
-
-  app.get("/api/admin/system-test", async (_req, res) => {
-    const ollama = await checkOllamaHealth();
-    res.json({
-      system: "ZED",
-      ai: getActiveProviderName({ lane: "chat" }),
-      target: getResolvedTargetName({ lane: "chat" }),
-      ollama: ollama.status,
-      database: isDatabaseHealthy ? "connected" : "offline",
-    });
-  });
-
-  app.post("/api/chat", async (req, res) => {
-    try {
-      const { message } = req.body;
-      if (!message) return res.status(400).json({ error: "Message required" });
-      const prompt = buildOllamaPrompt(message);
-      const options = { lane: "chat" as const };
-      const reply = await generateFromOllama(prompt, options);
-      res.json({ reply, provider: getActiveProviderName(options), target: getResolvedTargetName(options) });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Chat failed", reply: "Error processing request" });
-    }
-  });
 
   registerExecutionRoutes(app);
   registerIntakeRoutes(app);
