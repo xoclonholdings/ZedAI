@@ -1,40 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import {
-  ChevronLeft,
-  ExternalLink,
-  FileText,
-  Link as LinkIcon,
-  Loader2,
-  Plus,
-  Save,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { ChevronLeft, Plus, Save } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-interface ProjectSource {
-  id: string;
-  label: string;
-  url?: string;
-  text?: string;
-  notes?: string;
-  addedAt: string;
-}
-
-interface ProjectDetail {
-  id: string;
-  name: string;
-  color: string;
-  conversationIds: string[];
-  instructions?: string;
-  sources?: ProjectSource[];
-}
+import { AddSourceCard } from "./project-detail/AddSourceCard";
+import { SourceCard } from "./project-detail/SourceCard";
+import type { ProjectDetail } from "./project-detail/types";
 
 export default function ProjectDetailPage() {
   const [, navigate] = useLocation();
@@ -45,13 +19,6 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [addOpen, setAddOpen] = useState(false);
-  const [addMode, setAddMode] = useState<"file" | "url" | "text">("file");
-  const [pendingLabel, setPendingLabel] = useState("");
-  const [pendingUrl, setPendingUrl] = useState("");
-  const [pendingText, setPendingText] = useState("");
-  const [pendingNotes, setPendingNotes] = useState("");
-  const [addingSource, setAddingSource] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function fetchProject() {
     if (!id) return;
@@ -96,57 +63,6 @@ export default function ProjectDetailPage() {
     }
   }
 
-  async function addSource() {
-    if (!id) return;
-    setAddingSource(true);
-    try {
-      let res: Response;
-      if (addMode === "file") {
-        const file = fileInputRef.current?.files?.[0];
-        if (!file) {
-          throw new Error("Pick a file first");
-        }
-        const fd = new FormData();
-        fd.append("file", file);
-        if (pendingLabel) fd.append("label", pendingLabel);
-        if (pendingNotes) fd.append("notes", pendingNotes);
-        res = await fetch(`/api/projects/${id}/sources`, {
-          method: "POST",
-          credentials: "include",
-          body: fd,
-        });
-      } else {
-        const payload: any = {
-          label: pendingLabel || (addMode === "url" ? pendingUrl : "Snippet"),
-          notes: pendingNotes || undefined,
-        };
-        if (addMode === "url") payload.url = pendingUrl;
-        if (addMode === "text") payload.text = pendingText;
-        res = await fetch(`/api/projects/${id}/sources`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        });
-      }
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}${body ? ` — ${body.slice(0, 160)}` : ""}`);
-      }
-      setAddOpen(false);
-      setPendingLabel("");
-      setPendingUrl("");
-      setPendingText("");
-      setPendingNotes("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      await fetchProject();
-    } catch (e: any) {
-      setError(e?.message || "Failed to add source");
-    } finally {
-      setAddingSource(false);
-    }
-  }
-
   async function removeSource(sourceId: string) {
     if (!id || !window.confirm("Remove this source?")) return;
     try {
@@ -183,9 +99,7 @@ export default function ProjectDetailPage() {
               style={{ backgroundColor: project.color }}
             />
           )}
-          <span className="font-medium truncate max-w-[55vw]">
-            {project?.name || "Project"}
-          </span>
+          <span className="font-medium truncate max-w-[55vw]">{project?.name || "Project"}</span>
         </div>
         <span className="w-10" />
       </div>
@@ -205,7 +119,6 @@ export default function ProjectDetailPage() {
           </div>
         ) : (
           <>
-            {/* Instructions */}
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -239,7 +152,6 @@ export default function ProjectDetailPage() {
               </p>
             </section>
 
-            {/* Sources */}
             <section className="space-y-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -256,76 +168,12 @@ export default function ProjectDetailPage() {
               </div>
 
               {addOpen && (
-                <Card className="zed-glass border-white/10">
-                  <CardContent className="p-3 space-y-2.5">
-                    <div className="flex gap-1.5">
-                      {(["file", "url", "text"] as const).map((m) => (
-                        <button
-                          key={m}
-                          type="button"
-                          onClick={() => setAddMode(m)}
-                          className={`flex-1 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
-                            addMode === m
-                              ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
-                              : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          {m === "file" ? "File" : m === "url" ? "URL" : "Text"}
-                        </button>
-                      ))}
-                    </div>
-                    <Input
-                      value={pendingLabel}
-                      onChange={(e) => setPendingLabel(e.target.value)}
-                      className="zed-glass border-white/10 h-9 text-sm"
-                      placeholder="Label (e.g. Brand voice doc)"
-                    />
-                    {addMode === "file" && (
-                      <Input
-                        ref={fileInputRef}
-                        type="file"
-                        className="zed-glass border-white/10 text-xs"
-                      />
-                    )}
-                    {addMode === "url" && (
-                      <Input
-                        value={pendingUrl}
-                        onChange={(e) => setPendingUrl(e.target.value)}
-                        className="zed-glass border-white/10 h-9 text-sm font-mono"
-                        placeholder="https://…"
-                      />
-                    )}
-                    {addMode === "text" && (
-                      <Textarea
-                        value={pendingText}
-                        onChange={(e) => setPendingText(e.target.value)}
-                        rows={5}
-                        className="zed-glass border-white/10 text-sm"
-                        placeholder="Paste a snippet the agents should know about…"
-                      />
-                    )}
-                    <Input
-                      value={pendingNotes}
-                      onChange={(e) => setPendingNotes(e.target.value)}
-                      className="zed-glass border-white/10 h-9 text-sm"
-                      placeholder="Notes (optional)"
-                    />
-                    <Button
-                      onClick={addSource}
-                      disabled={addingSource}
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                    >
-                      {addingSource ? (
-                        <Loader2 size={14} className="mr-2 animate-spin" />
-                      ) : addMode === "file" ? (
-                        <Upload size={14} className="mr-2" />
-                      ) : (
-                        <Plus size={14} className="mr-2" />
-                      )}
-                      Add source
-                    </Button>
-                  </CardContent>
-                </Card>
+                <AddSourceCard
+                  projectId={id!}
+                  onAdded={fetchProject}
+                  onError={setError}
+                  onCancel={() => setAddOpen(false)}
+                />
               )}
 
               {sources.length === 0 ? (
@@ -335,59 +183,11 @@ export default function ProjectDetailPage() {
               ) : (
                 <div className="space-y-1.5">
                   {sources.map((source) => (
-                    <Card key={source.id} className="zed-glass border-white/10">
-                      <CardContent className="p-3">
-                        <div className="flex items-start gap-2">
-                          <span className="mt-0.5 shrink-0">
-                            {source.url ? (
-                              <LinkIcon size={13} className="text-cyan-300" />
-                            ) : (
-                              <FileText size={13} className="text-purple-300" />
-                            )}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium truncate">
-                                {source.label}
-                              </span>
-                              {source.url && (
-                                <a
-                                  href={source.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-cyan-300 hover:text-cyan-200"
-                                >
-                                  <ExternalLink size={11} />
-                                </a>
-                              )}
-                            </div>
-                            {source.url && (
-                              <p className="text-[11px] font-mono text-muted-foreground truncate">
-                                {source.url}
-                              </p>
-                            )}
-                            {source.text && (
-                              <p className="text-[11px] text-muted-foreground/90 line-clamp-2 leading-5 mt-0.5">
-                                {source.text}
-                              </p>
-                            )}
-                            {source.notes && (
-                              <p className="text-[11px] italic text-muted-foreground/80 mt-0.5">
-                                {source.notes}
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeSource(source.id)}
-                            className="text-muted-foreground hover:text-red-300 shrink-0"
-                            aria-label="Remove source"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <SourceCard
+                      key={source.id}
+                      source={source}
+                      onRemove={() => removeSource(source.id)}
+                    />
                   ))}
                 </div>
               )}
