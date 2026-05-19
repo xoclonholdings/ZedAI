@@ -3,7 +3,6 @@ import {
   ChevronRight,
   Brain,
   Lock,
-  Shield,
   SlidersHorizontal,
   User,
   Users,
@@ -41,12 +40,6 @@ const menuItems = [
     label: "Security",
     icon: Lock,
     color: "text-red-400",
-  },
-  {
-    key: "integrations",
-    label: "Integrations",
-    icon: Shield,
-    color: "text-pink-400",
   },
   {
     key: "archived",

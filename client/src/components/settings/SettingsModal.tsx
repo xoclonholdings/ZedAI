@@ -16,7 +16,6 @@ import { useAppSettings } from "@/hooks/useAppSettings";
 import { useAuth } from "@/components/auth/UseAuth";
 import AdminSecuritySettings from "./AdminSecuritySettings";
 import DataControlsSettings from "./DataControlsSettings";
-import IntegrationSettings from "./IntegrationSettings";
 import MyMemorySettings from "./MyMemorySettings";
 import NotificationsSettings from "./NotificationsSettings";
 import PersonalizationSettings from "./PersonalizationSettings";
@@ -165,13 +164,6 @@ export default function SettingsModal() {
             <div>
               <BackButton />
               <AdminSecuritySettings />
-            </div>
-          )}
-
-          {activeSection === "integrations" && (
-            <div>
-              <BackButton />
-              <IntegrationSettings />
             </div>
           )}
 
