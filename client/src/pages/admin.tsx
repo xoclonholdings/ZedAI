@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
 import KnowledgeSettings from "@/components/settings/KnowledgeSettings";
-import RulesetSettings from "@/components/settings/RulesetSettings";
 import AdminNav from "@/components/admin/AdminNav";
 import OverviewSection from "@/components/admin/sections/OverviewSection";
 import FlowsSection from "@/components/admin/sections/FlowsSection";
 import IntegrationsSection from "@/components/admin/sections/IntegrationsSection";
+import RulesetSection from "@/components/admin/sections/RulesetSection";
 import ApprovalsSection from "@/components/admin/sections/ApprovalsSection";
 import LogsSection from "@/components/admin/sections/LogsSection";
 import SecuritySection from "@/components/admin/sections/SecuritySection";
@@ -113,7 +113,7 @@ export default function Admin() {
         {section === "flows" && <FlowsSection />}
         {section === "knowledge" && <KnowledgeSettings />}
         {section === "integrations" && <IntegrationsSection />}
-        {section === "ruleset" && <RulesetSettings />}
+        {section === "ruleset" && <RulesetSection />}
         {section === "approvals" && (
           <ApprovalsSection
             approvals={approvals}
