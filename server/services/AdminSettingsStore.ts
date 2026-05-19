@@ -1,330 +1,47 @@
-import fs from "fs/promises";
-import path from "path";
-import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
-
 import type {
-  AdminSettings,
   AppSettings,
-  AuthSettings,
   IntegrationsSettings,
-  ManagedUser,
   PersonalizationSettings,
-  PublicManagedUser,
 } from "../../shared/adminSettings";
 import {
-  defaultAgentDefinitions,
   defaultAppSettings,
-  defaultIntegrations,
   defaultPersonalizationSettings,
 } from "../../shared/adminSettings";
-import { HUB_CONFIG_DIR } from "../utils/repoPaths";
 
-const SETTINGS_PATH = path.join(HUB_CONFIG_DIR, "admin-settings.json");
-const REQUIRED_PRODUCTION_ENV_VARS = [
-  "ZED_ADMIN_USERNAME",
-  "ZED_ADMIN_SECURE_PHRASE",
-  "ZED_ADMIN_PASSWORD",
-  "SESSION_SECRET",
-] as const;
+import { updateAdminSettings } from "./admin-settings/io";
 
-function nowIso() {
-  return new Date().toISOString();
-}
+/**
+ * Admin settings entry point. The store is split into focused modules
+ * under ./admin-settings/:
+ *
+ *   env.ts             — env probes + production-required vars
+ *   auth-helpers.ts    — password hashing, default admin user,
+ *                        sanitize/normalize helpers
+ *   mergeSettings.ts   — load-time defaults + legacy → multi-account
+ *                        migration for github/email/google
+ *   io.ts              — loadAdminSettings + updateAdminSettings (the
+ *                        read-modify-write primitive used by everything
+ *                        below)
+ *   userCrud.ts        — managed-user CRUD + authentication
+ *   publicMasking.ts   — getPublicAdminSettings (strips secrets for
+ *                        the admin UI)
+ *
+ * This file keeps the small update wrappers and re-exports the rest
+ * so existing import paths (`from "../services/AdminSettingsStore"`)
+ * continue to work without callsite changes.
+ */
 
-function isProductionEnvironment() {
-  return process.env.NODE_ENV === "production";
-}
-
-function requireProductionEnv(name: (typeof REQUIRED_PRODUCTION_ENV_VARS)[number]) {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`${name} must be set in production`);
-  }
-  return value;
-}
-
-function getEnvOrDevelopmentDefault(name: string, developmentDefault: string) {
-  const value = process.env[name]?.trim();
-  if (value) {
-    return value;
-  }
-
-  if (isProductionEnvironment()) {
-    throw new Error(`${name} must be set in production`);
-  }
-
-  return developmentDefault;
-}
-
-function defaultAuthSettings(): AuthSettings {
-  return {
-    adminUsername: getEnvOrDevelopmentDefault("ZED_ADMIN_USERNAME", "LocalAdmin"),
-    securePhrase: getEnvOrDevelopmentDefault("ZED_ADMIN_SECURE_PHRASE", "LOCAL-DEV-SECURE-PHRASE"),
-    sessionTimeoutMinutes: 45,
-    maxFailedAttempts: 3,
-    lockoutDurationMinutes: 15,
-    requireSecureCookies: process.env.NODE_ENV === "production",
-    sessionSecret: isProductionEnvironment()
-      ? requireProductionEnv("SESSION_SECRET")
-      : process.env.SESSION_SECRET || randomBytes(24).toString("hex"),
-  };
-}
-
-function hashPassword(password: string, salt = randomBytes(16).toString("hex")) {
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return { passwordHash: hash, passwordSalt: salt };
-}
-
-function verifyPassword(password: string, passwordHash?: string, passwordSalt?: string) {
-  if (!passwordHash || !passwordSalt) return false;
-  const incoming = scryptSync(password, passwordSalt, 64);
-  const stored = Buffer.from(passwordHash, "hex");
-  return incoming.length === stored.length && timingSafeEqual(incoming, stored);
-}
-
-function createDefaultAdminUser(auth: AuthSettings): ManagedUser {
-  const timestamp = nowIso();
-  const bootstrapPassword = getEnvOrDevelopmentDefault("ZED_ADMIN_PASSWORD", "LocalDevPassword!234");
-  return {
-    id: "user_admin",
-    username: auth.adminUsername,
-    email: "admin@zed-ai.online",
-    firstName: "ZED",
-    lastName: "Admin",
-    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=zed-admin",
-    isAdmin: true,
-    isActive: true,
-    ...hashPassword(bootstrapPassword),
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-}
-
-function sanitizeUser(user: ManagedUser): PublicManagedUser {
-  const { passwordHash: _passwordHash, passwordSalt: _passwordSalt, ...safe } = user;
-  return safe;
-}
-
-function normalizeUsers(auth: AuthSettings, users: ManagedUser[] | undefined): ManagedUser[] {
-  const existing = Array.isArray(users) ? users : [];
-  const admin = existing.find((user) => user.isAdmin) || createDefaultAdminUser(auth);
-
-  const adminUpdated = {
-    ...admin,
-    username: auth.adminUsername,
-    // Force the admin email to the hardcoded canonical value so older
-    // settings files (admin@zed-ai.local) get migrated forward without
-    // an explicit migration script.
-    email: "admin@zed-ai.online",
-    updatedAt: admin.updatedAt || nowIso(),
-  };
-
-  const others = existing
-    .filter((user) => user.id !== adminUpdated.id)
-    .map((user) => ({
-      ...user,
-      isAdmin: false,
-      isActive: user.isActive !== false,
-      createdAt: user.createdAt || nowIso(),
-      updatedAt: user.updatedAt || nowIso(),
-    }));
-
-  return [adminUpdated, ...others];
-}
-
-function mergeSettings(raw: Partial<AdminSettings> | null | undefined): AdminSettings {
-  const auth = {
-    ...defaultAuthSettings(),
-    ...(raw?.auth || {}),
-  };
-
-  return {
-    auth,
-    app: {
-      ...defaultAppSettings,
-      ...(raw?.app || {}),
-    },
-    personalization: {
-      ...defaultPersonalizationSettings,
-      ...(raw?.personalization || {}),
-    },
-    agents: raw?.agents?.length ? raw.agents : defaultAgentDefinitions,
-    integrations: {
-      ...defaultIntegrations,
-      ...(raw?.integrations || {}),
-      gusto: {
-        ...defaultIntegrations.gusto,
-        ...(raw?.integrations?.gusto || {}),
-      },
-      github: (() => {
-        const merged = {
-          ...defaultIntegrations.github,
-          ...(raw?.integrations?.github || {}),
-          accounts: Array.isArray(raw?.integrations?.github?.accounts)
-            ? raw!.integrations!.github!.accounts!
-            : [],
-          hasToken: !!(raw?.integrations?.github?.token || raw?.integrations?.github?.hasToken),
-        };
-        // Migrate legacy single-repo fields → first account, if no
-        // accounts have been saved yet but legacy fields are populated.
-        if (
-          merged.accounts.length === 0 &&
-          (raw?.integrations?.github?.owner || raw?.integrations?.github?.repo)
-        ) {
-          merged.accounts = [
-            {
-              id: "github-account-primary",
-              label: `${raw?.integrations?.github?.owner || ""}/${raw?.integrations?.github?.repo || ""}`,
-              owner: raw?.integrations?.github?.owner || "",
-              repo: raw?.integrations?.github?.repo || "",
-              defaultBranch: raw?.integrations?.github?.defaultBranch || "main",
-              token: raw?.integrations?.github?.token || "",
-              hasToken: !!raw?.integrations?.github?.token,
-            },
-          ];
-        }
-        // Per-account hasToken flag.
-        merged.accounts = merged.accounts.map((acc: any) => ({
-          ...acc,
-          hasToken: !!(acc?.token || acc?.hasToken),
-        }));
-        return merged;
-      })(),
-      email: (() => {
-        const merged = {
-          ...defaultIntegrations.email,
-          ...(raw?.integrations?.email || {}),
-          accounts: Array.isArray(raw?.integrations?.email?.accounts)
-            ? raw!.integrations!.email!.accounts!
-            : [],
-          hasPassword: !!(
-            raw?.integrations?.email?.password || raw?.integrations?.email?.hasPassword
-          ),
-        };
-        // Migrate legacy single-sender fields → first account.
-        if (
-          merged.accounts.length === 0 &&
-          (raw?.integrations?.email?.fromAddress || raw?.integrations?.email?.username)
-        ) {
-          merged.accounts = [
-            {
-              id: "email-account-primary",
-              label: raw?.integrations?.email?.fromAddress || "Primary sender",
-              provider: raw?.integrations?.email?.provider || "smtp",
-              fromName: raw?.integrations?.email?.fromName || "ZED",
-              fromAddress: raw?.integrations?.email?.fromAddress || "",
-              smtpHost: raw?.integrations?.email?.smtpHost || "smtp.mail.me.com",
-              smtpPort: raw?.integrations?.email?.smtpPort || 587,
-              username: raw?.integrations?.email?.username || "",
-              password: raw?.integrations?.email?.password || "",
-              hasPassword: !!raw?.integrations?.email?.password,
-            },
-          ];
-        }
-        merged.accounts = merged.accounts.map((acc: any) => ({
-          ...acc,
-          hasPassword: !!(acc?.password || acc?.hasPassword),
-        }));
-        if (!merged.notes) merged.notes = defaultIntegrations.email.notes;
-        return merged;
-      })(),
-      google: (() => {
-        const merged = {
-          ...defaultIntegrations.google,
-          ...(raw?.integrations?.google || {}),
-          accounts: Array.isArray(raw?.integrations?.google?.accounts)
-            ? raw!.integrations!.google!.accounts!
-            : [],
-        };
-        merged.accounts = merged.accounts.map((acc: any) => ({
-          ...acc,
-          scopes: Array.isArray(acc?.scopes) ? acc.scopes : [],
-          hasCredentials: !!(
-            (acc?.clientId && acc?.clientSecret && acc?.refreshToken) ||
-            acc?.hasCredentials
-          ),
-        }));
-        return merged;
-      })(),
-      telephony: {
-        ...defaultIntegrations.telephony,
-        ...(raw?.integrations?.telephony || {}),
-        hasApiKey: !!(raw?.integrations?.telephony?.apiKey || raw?.integrations?.telephony?.hasApiKey),
-      },
-      firewall: {
-        ...defaultIntegrations.firewall,
-        ...(raw?.integrations?.firewall || {}),
-        hasAuthToken: !!(raw?.integrations?.firewall?.authToken || raw?.integrations?.firewall?.hasAuthToken),
-      },
-      businessOperations: {
-        ...defaultIntegrations.businessOperations,
-        ...(raw?.integrations?.businessOperations || {}),
-      },
-      kalshi: {
-        ...defaultIntegrations.kalshi,
-        ...(raw?.integrations?.kalshi || {}),
-      },
-      voiceTranscription: {
-        ...defaultIntegrations.voiceTranscription,
-        ...(raw?.integrations?.voiceTranscription || {}),
-      },
-      custom: Array.isArray((raw?.integrations as any)?.custom)
-        ? ((raw?.integrations as any).custom as any[]).map((c) => ({
-            id: c?.id || `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            label: c?.label || "Custom integration",
-            description: c?.description || "",
-            enabled: !!c?.enabled,
-            fields: Array.isArray(c?.fields)
-              ? c.fields.map((f: any) => ({
-                  key: f?.key || "",
-                  value: f?.value || "",
-                  isSecret: !!f?.isSecret,
-                }))
-              : [],
-          }))
-        : [],
-    },
-    users: normalizeUsers(auth, raw?.users),
-  };
-}
-
-async function writeSettings(settings: AdminSettings) {
-  await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
-  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), "utf-8");
-}
-
-function assertProductionEnvConfiguration() {
-  if (!isProductionEnvironment()) {
-    return;
-  }
-
-  for (const name of REQUIRED_PRODUCTION_ENV_VARS) {
-    requireProductionEnv(name);
-  }
-}
-
-export async function loadAdminSettings(): Promise<AdminSettings> {
-  assertProductionEnvConfiguration();
-  try {
-    const raw = await fs.readFile(SETTINGS_PATH, "utf-8");
-    const settings = mergeSettings(JSON.parse(raw));
-    await writeSettings(settings);
-    return settings;
-  } catch {
-    const settings = mergeSettings(undefined);
-    await writeSettings(settings);
-    return settings;
-  }
-}
-
-export async function updateAdminSettings(
-  updater: (current: AdminSettings) => AdminSettings | Promise<AdminSettings>,
-) {
-  const current = await loadAdminSettings();
-  const next = mergeSettings(await updater(current));
-  await writeSettings(next);
-  return next;
-}
+export { loadAdminSettings, updateAdminSettings } from "./admin-settings/io";
+export { getPublicAdminSettings } from "./admin-settings/publicMasking";
+export {
+  authenticateManagedUser,
+  createManagedUser,
+  findAdminUser,
+  listManagedUsers,
+  updateAuthSettings,
+  updateCurrentUserCredentials,
+  updateManagedUser,
+} from "./admin-settings/userCrud";
 
 export async function updateAppSettings(nextApp: Partial<AppSettings>) {
   const settings = await updateAdminSettings((current) => ({
@@ -343,7 +60,9 @@ export async function resetAppSettings() {
   return { app: settings.app, personalization: settings.personalization };
 }
 
-export async function updatePersonalizationSettings(nextPersonalization: Partial<PersonalizationSettings>) {
+export async function updatePersonalizationSettings(
+  nextPersonalization: Partial<PersonalizationSettings>,
+) {
   const settings = await updateAdminSettings((current) => ({
     ...current,
     personalization: { ...current.personalization, ...nextPersonalization },
@@ -351,7 +70,16 @@ export async function updatePersonalizationSettings(nextPersonalization: Partial
   return settings.personalization;
 }
 
-export async function updateIntegrationSettings(nextIntegrations: Partial<IntegrationsSettings>) {
+/**
+ * Integration update needs special care because each integration has
+ * secrets stored on the server: incoming patches that don't include
+ * the secret field should *preserve* the stored value, not blank it.
+ * Without this guard, the UI sending back a masked "" would erase
+ * the real token/password.
+ */
+export async function updateIntegrationSettings(
+  nextIntegrations: Partial<IntegrationsSettings>,
+) {
   const settings = await updateAdminSettings((current) => ({
     ...current,
     integrations: {
@@ -382,7 +110,8 @@ export async function updateIntegrationSettings(nextIntegrations: Partial<Integr
         ...(nextIntegrations.telephony || {}),
         apiKey:
           nextIntegrations.telephony && "apiKey" in nextIntegrations.telephony
-            ? nextIntegrations.telephony.apiKey || current.integrations.telephony.apiKey
+            ? nextIntegrations.telephony.apiKey ||
+              current.integrations.telephony.apiKey
             : current.integrations.telephony.apiKey,
       },
       firewall: {
@@ -390,7 +119,8 @@ export async function updateIntegrationSettings(nextIntegrations: Partial<Integr
         ...(nextIntegrations.firewall || {}),
         authToken:
           nextIntegrations.firewall && "authToken" in nextIntegrations.firewall
-            ? nextIntegrations.firewall.authToken || current.integrations.firewall.authToken
+            ? nextIntegrations.firewall.authToken ||
+              current.integrations.firewall.authToken
             : current.integrations.firewall.authToken,
       },
       businessOperations: {
@@ -408,249 +138,4 @@ export async function updateIntegrationSettings(nextIntegrations: Partial<Integr
     },
   }));
   return settings.integrations;
-}
-
-export async function updateAuthSettings(nextAuth: Partial<AuthSettings>) {
-  const settings = await updateAdminSettings((current) => {
-    const sanitized = Object.fromEntries(
-      Object.entries(nextAuth).filter(([, value]) => value !== undefined && value !== null && value !== ""),
-    ) as Partial<AuthSettings>;
-    const auth = {
-      ...current.auth,
-      ...sanitized,
-    };
-    return {
-      ...current,
-      auth,
-      users: current.users.map((user) =>
-        user.isAdmin
-          ? {
-              ...user,
-              username: auth.adminUsername,
-              updatedAt: nowIso(),
-            }
-          : user,
-      ),
-    };
-  });
-  return settings.auth;
-}
-
-export async function listManagedUsers() {
-  const settings = await loadAdminSettings();
-  return settings.users.map(sanitizeUser);
-}
-
-export async function createManagedUser(input: {
-  username: string;
-  password: string;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-}) {
-  const settings = await updateAdminSettings((current) => {
-    const timestamp = nowIso();
-    const normalizedUsername = input.username.trim();
-
-    if (!normalizedUsername) {
-      throw new Error("Username is required");
-    }
-    if (!input.password || input.password.length < 8) {
-      throw new Error("Password must be at least 8 characters long");
-    }
-
-    if (current.users.some((user) => user.username.toLowerCase() === normalizedUsername.toLowerCase())) {
-      throw new Error("Username already exists");
-    }
-
-    const nextUser: ManagedUser = {
-      id: `user_${randomBytes(6).toString("hex")}`,
-      username: normalizedUsername,
-      email: input.email?.trim() || `${normalizedUsername.toLowerCase()}@zed-ai.local`,
-      firstName: input.firstName?.trim() || normalizedUsername,
-      lastName: input.lastName?.trim() || "User",
-      profileImageUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedUsername)}`,
-      isAdmin: false,
-      isActive: true,
-      ...hashPassword(input.password),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-
-    return {
-      ...current,
-      users: [...current.users, nextUser],
-    };
-  });
-
-  return settings.users.map(sanitizeUser);
-}
-
-export async function updateManagedUser(
-  userId: string,
-  updates: {
-    username?: string;
-    password?: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    isActive?: boolean;
-  },
-) {
-  const settings = await updateAdminSettings((current) => {
-    const target = current.users.find((user) => user.id === userId);
-    if (!target) {
-      throw new Error("User not found");
-    }
-    if (target.isAdmin && updates.isActive === false) {
-      throw new Error("Admin user cannot be disabled");
-    }
-
-    const username = updates.username?.trim();
-    if (
-      username &&
-      current.users.some((user) => user.id !== userId && user.username.toLowerCase() === username.toLowerCase())
-    ) {
-      throw new Error("Username already exists");
-    }
-    if (updates.password && updates.password.length < 8) {
-      throw new Error("Password must be at least 8 characters long");
-    }
-
-    return {
-      ...current,
-      users: current.users.map((user) => {
-        if (user.id !== userId) return user;
-        const next = {
-          ...user,
-          username: username || user.username,
-          email: updates.email?.trim() ?? user.email,
-          firstName: updates.firstName?.trim() ?? user.firstName,
-          lastName: updates.lastName?.trim() ?? user.lastName,
-          isActive: updates.isActive ?? user.isActive,
-          updatedAt: nowIso(),
-        };
-        if (updates.password) {
-          Object.assign(next, hashPassword(updates.password));
-        }
-        return next;
-      }),
-    };
-  });
-
-  return settings.users.map(sanitizeUser);
-}
-
-export async function findAdminUser() {
-  const settings = await loadAdminSettings();
-  const admin = settings.users.find((user) => user.isAdmin);
-  return admin ? sanitizeUser(admin) : null;
-}
-
-export async function authenticateManagedUser(input: {
-  username?: string;
-  password?: string;
-  passphrase?: string;
-}) {
-  const settings = await loadAdminSettings();
-  const adminUser = settings.users.find((user) => user.isAdmin);
-
-  if (input.passphrase && adminUser && input.passphrase === settings.auth.securePhrase) {
-    return sanitizeUser(adminUser);
-  }
-
-  if (!input.username || !input.password) {
-    return null;
-  }
-
-  const user = settings.users.find(
-    (entry) => entry.username.toLowerCase() === input.username?.trim().toLowerCase(),
-  );
-
-  if (!user || !user.isActive) {
-    return null;
-  }
-
-  if (!verifyPassword(input.password, user.passwordHash, user.passwordSalt)) {
-    return null;
-  }
-
-  return sanitizeUser(user);
-}
-
-export async function updateCurrentUserCredentials(userId: string, input: { username?: string; password?: string }) {
-  const settings = await updateAdminSettings((current) => ({
-    ...current,
-    users: current.users.map((user) => {
-      if (user.id !== userId) return user;
-      const next = {
-        ...user,
-        username: input.username?.trim() || user.username,
-        updatedAt: nowIso(),
-      };
-      if (input.password) {
-        Object.assign(next, hashPassword(input.password));
-      }
-      return next;
-    }),
-  }));
-
-  const updated = settings.users.find((user) => user.id === userId);
-  return updated ? sanitizeUser(updated) : null;
-}
-
-export async function getPublicAdminSettings() {
-  const settings = await loadAdminSettings();
-  return {
-    ...settings,
-    integrations: {
-      ...settings.integrations,
-      github: {
-        ...settings.integrations.github,
-        token: "",
-        hasToken: !!settings.integrations.github.token,
-        accounts: (settings.integrations.github.accounts || []).map((acc) => ({
-          ...acc,
-          token: "",
-          hasToken: !!acc.token,
-        })),
-      },
-      email: {
-        ...settings.integrations.email,
-        password: "",
-        hasPassword: !!settings.integrations.email.password,
-        accounts: (settings.integrations.email.accounts || []).map((acc) => ({
-          ...acc,
-          password: "",
-          hasPassword: !!acc.password,
-        })),
-      },
-      google: {
-        ...settings.integrations.google,
-        accounts: (settings.integrations.google.accounts || []).map((acc) => ({
-          ...acc,
-          clientSecret: "",
-          refreshToken: "",
-          hasCredentials: !!(acc.clientId && acc.clientSecret && acc.refreshToken),
-        })),
-      },
-      custom: (settings.integrations.custom || []).map((c) => ({
-        ...c,
-        fields: (c.fields || []).map((f) =>
-          f.isSecret ? { ...f, value: f.value ? "•••••• (set)" : "" } : f,
-        ),
-      })),
-      telephony: {
-        ...settings.integrations.telephony,
-        apiKey: "",
-        hasApiKey: !!settings.integrations.telephony.apiKey,
-      },
-      firewall: {
-        ...settings.integrations.firewall,
-        authToken: "",
-        hasAuthToken: !!settings.integrations.firewall.authToken,
-      },
-    },
-    users: settings.users.map(sanitizeUser),
-  };
 }
