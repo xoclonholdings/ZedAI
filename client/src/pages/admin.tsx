@@ -5,8 +5,8 @@ import { ChevronLeft, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
-import KnowledgeSettings from "@/components/settings/KnowledgeSettings";
 import AdminNav from "@/components/admin/AdminNav";
+import KnowledgeSection from "@/components/admin/sections/KnowledgeSection";
 import OverviewSection from "@/components/admin/sections/OverviewSection";
 import FlowsSection from "@/components/admin/sections/FlowsSection";
 import IntegrationsSection from "@/components/admin/sections/IntegrationsSection";
@@ -111,7 +111,7 @@ export default function Admin() {
           />
         )}
         {section === "flows" && <FlowsSection />}
-        {section === "knowledge" && <KnowledgeSettings />}
+        {section === "knowledge" && <KnowledgeSection />}
         {section === "integrations" && <IntegrationsSection />}
         {section === "ruleset" && <RulesetSection />}
         {section === "approvals" && (
