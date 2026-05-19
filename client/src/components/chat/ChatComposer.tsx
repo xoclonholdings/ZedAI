@@ -1,21 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
-import {
-  ArrowUpRight,
-  Check,
-  ChevronDown,
-  Mic,
-  MicOff,
-  Paperclip,
-  Send,
-  Square,
-  Workflow,
-} from "lucide-react";
+import { useEffect, useRef } from "react";
+import { Mic, MicOff, Paperclip, Send, Square } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth/UseAuth";
-import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 import type { AgentTarget, ConversationMode } from "@shared/schema";
+
+import { LanePicker } from "./chat-composer/LanePicker";
+import { useDictation } from "./chat-composer/useDictation";
 
 interface ChatComposerProps {
   value: string;
@@ -37,46 +29,6 @@ interface ChatComposerProps {
   onCancelEdit?: () => void;
 }
 
-type LaneOption = {
-  key: "chat" | AgentTarget;
-  mode: ConversationMode;
-  agent?: AgentTarget;
-  label: string;
-  blurb: string;
-};
-
-const LANE_OPTIONS: LaneOption[] = [
-  { key: "chat", mode: "chat", label: "Chat", blurb: "Direct conversation, no orchestration." },
-  {
-    key: "operations",
-    mode: "agent",
-    agent: "operations",
-    label: "Operations",
-    blurb: "Day-to-day ops, scheduling, routing.",
-  },
-  {
-    key: "research",
-    mode: "agent",
-    agent: "research",
-    label: "R&D",
-    blurb: "Research, intelligence, synthesis.",
-  },
-  {
-    key: "business",
-    mode: "agent",
-    agent: "business",
-    label: "Business",
-    blurb: "Commerce, property, planning.",
-  },
-  {
-    key: "finance",
-    mode: "agent",
-    agent: "finance",
-    label: "Finance",
-    blurb: "Money, payroll, markets.",
-  },
-];
-
 export default function ChatComposer({
   value,
   onValueChange,
@@ -92,7 +44,6 @@ export default function ChatComposer({
   onCancelEdit,
 }: ChatComposerProps) {
   const { user } = useAuth();
-  const [, navigate] = useLocation();
   const compact = !!user?.personalization?.compactMessages;
   const fontSize =
     (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
@@ -103,17 +54,8 @@ export default function ChatComposer({
         ? "text-base leading-7"
         : "text-sm leading-6";
 
-  const [isDictating, setIsDictating] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const [showLanePicker, setShowLanePicker] = useState(false);
-  const recognitionRef = useRef<any>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const lanePickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setSpeechSupported(!!SR);
-  }, []);
+  const dictation = useDictation(onValueChange);
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -121,18 +63,6 @@ export default function ChatComposer({
     ta.style.height = "auto";
     ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
   }, [value]);
-
-  // Close lane picker when clicking outside
-  useEffect(() => {
-    if (!showLanePicker) return;
-    const handler = (e: MouseEvent) => {
-      if (!lanePickerRef.current?.contains(e.target as Node)) {
-        setShowLanePicker(false);
-      }
-    };
-    window.addEventListener("mousedown", handler);
-    return () => window.removeEventListener("mousedown", handler);
-  }, [showLanePicker]);
 
   const trimmed = value.trim();
   const canSend = trimmed.length > 0 && !isStreaming;
@@ -148,45 +78,6 @@ export default function ChatComposer({
       e.preventDefault();
       handleSend();
     }
-  }
-
-  function toggleDictation() {
-    if (!speechSupported) return;
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (isDictating) {
-      try {
-        recognitionRef.current?.stop();
-      } catch {}
-      setIsDictating(false);
-      return;
-    }
-    const recog = new SR();
-    recog.continuous = false;
-    recog.interimResults = true;
-    recog.lang = "en-US";
-    recog.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map((r: any) => r[0].transcript)
-        .join("");
-      onValueChange(transcript);
-    };
-    recog.onend = () => setIsDictating(false);
-    recog.onerror = () => setIsDictating(false);
-    recognitionRef.current = recog;
-    recog.start();
-    setIsDictating(true);
-  }
-
-  const activeLane =
-    currentMode === "chat"
-      ? LANE_OPTIONS[0]
-      : LANE_OPTIONS.find((l) => l.agent === agentTarget) || LANE_OPTIONS[1];
-
-  function pickLane(opt: LaneOption) {
-    if (opt.mode !== currentMode) onModeChange(opt.mode);
-    if (opt.mode === "agent" && opt.agent) onAgentTargetChange(opt.agent);
-    setShowLanePicker(false);
-    textareaRef.current?.focus();
   }
 
   return (
@@ -211,7 +102,6 @@ export default function ChatComposer({
           compact ? "px-2 py-1.5" : "px-2.5 py-2"
         }`}
       >
-        {/* Attach */}
         <Button
           type="button"
           variant="ghost"
@@ -224,131 +114,47 @@ export default function ChatComposer({
           <Paperclip size={16} />
         </Button>
 
-        {/* Lane chip */}
-        <div ref={lanePickerRef} className="relative shrink-0 self-end">
-          <button
-            type="button"
-            onClick={() => setShowLanePicker((v) => !v)}
-            className={`flex h-9 items-center gap-1.5 rounded-xl border border-white/10 px-2.5 text-xs font-medium transition-colors max-w-[140px] ${
-              currentMode === "agent"
-                ? "bg-purple-500/15 text-purple-100 hover:bg-purple-500/25"
-                : "bg-white/5 text-foreground hover:bg-white/10"
-            }`}
-            aria-haspopup="menu"
-            aria-expanded={showLanePicker}
-            data-testid="composer-lane-chip"
-          >
-            {currentMode === "agent" && (
-              <img src={zLogoPath} alt="" className="h-3 w-3 shrink-0" />
-            )}
-            <span className="truncate min-w-0">
-              {currentMode === "agent" ? activeLane.label : "Chat"}
-            </span>
-            <ChevronDown size={12} className="opacity-70 shrink-0" />
-          </button>
+        <LanePicker
+          currentMode={currentMode}
+          agentTarget={agentTarget}
+          onPick={(opt) => {
+            if (opt.mode !== currentMode) onModeChange(opt.mode);
+            if (opt.mode === "agent" && opt.agent) onAgentTargetChange(opt.agent);
+            textareaRef.current?.focus();
+          }}
+        />
 
-          {showLanePicker && (
-            <div
-              role="menu"
-              className="absolute bottom-full left-0 z-30 mb-2 w-60 rounded-xl border border-white/10 bg-black/95 p-1 shadow-2xl backdrop-blur"
-            >
-              {LANE_OPTIONS.map((opt) => {
-                const isActive =
-                  (opt.mode === "chat" && currentMode === "chat") ||
-                  (opt.mode === "agent" &&
-                    currentMode === "agent" &&
-                    opt.agent === agentTarget);
-                return (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => pickLane(opt)}
-                    className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
-                      isActive ? "bg-white/10" : "hover:bg-white/5"
-                    }`}
-                  >
-                    <div
-                      className={`mt-0.5 h-4 w-4 shrink-0 rounded border ${
-                        isActive
-                          ? "border-cyan-400/60 bg-cyan-400/20"
-                          : "border-white/15 bg-transparent"
-                      }`}
-                    >
-                      {isActive && (
-                        <Check size={10} className="m-auto mt-0.5 text-cyan-200" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-foreground">
-                        {opt.mode === "agent" ? `Agent · ${opt.label}` : opt.label}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground leading-tight">
-                        {opt.blurb}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-
-              <div className="my-1 border-t border-white/10" />
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowLanePicker(false);
-                  navigate("/flows");
-                }}
-                className="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-white/5"
-                data-testid="composer-flow-mode"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <Workflow size={13} className="text-cyan-300 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-xs font-medium text-foreground">Flow Mode</div>
-                    <div className="text-[11px] text-muted-foreground leading-tight">
-                      Pick an outcome — agents coordinate the rest.
-                    </div>
-                  </div>
-                </div>
-                <ArrowUpRight size={12} className="text-muted-foreground shrink-0" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Textarea + inline dictate mic */}
         <div className="flex-1 relative min-w-0">
           <Textarea
             ref={textareaRef}
             value={value}
             onChange={(e) => onValueChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isDictating ? "Listening…" : "Message Zed"}
+            placeholder={dictation.isDictating ? "Listening…" : "Message Zed"}
             rows={1}
             className={`max-h-[140px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
-              speechSupported ? "pr-9" : "pr-2"
+              dictation.speechSupported ? "pr-9" : "pr-2"
             } ${compact ? "min-h-[36px] py-1.5" : "min-h-[40px] py-2"} ${textClass}`}
             disabled={isStreaming}
           />
-          {speechSupported && (
+          {dictation.speechSupported && (
             <button
               type="button"
-              onClick={toggleDictation}
+              onClick={dictation.toggle}
               disabled={isStreaming}
-              title={isDictating ? "Stop dictation" : "Dictate"}
-              aria-label={isDictating ? "Stop dictation" : "Dictate"}
+              title={dictation.isDictating ? "Stop dictation" : "Dictate"}
+              aria-label={dictation.isDictating ? "Stop dictation" : "Dictate"}
               className={`absolute right-1 bottom-1.5 flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                isDictating
+                dictation.isDictating
                   ? "text-red-300 bg-red-500/15 hover:bg-red-500/25"
                   : "text-muted-foreground hover:text-cyan-300 hover:bg-white/5"
               } disabled:opacity-40 disabled:pointer-events-none`}
             >
-              {isDictating ? <MicOff size={15} /> : <Mic size={15} />}
+              {dictation.isDictating ? <MicOff size={15} /> : <Mic size={15} />}
             </button>
           )}
         </div>
 
-        {/* Send / Stop */}
         {isStreaming && onAbort ? (
           <Button
             type="button"
