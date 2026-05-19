@@ -1,189 +1,22 @@
-import { useEffect, useState } from "react";
-import { Eye, EyeOff, KeyRound, Mail, Sparkles, User } from "lucide-react";
+import { useState } from "react";
 
 import { useAuth } from "@/components/auth/UseAuth";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { zedLogoSrc } from "@/lib/zedLogo";
 
-type AdminStep = "enter_email" | "enter_code";
+import { AdminEmailForm } from "./login/AdminEmailForm";
+import { SecurePhraseForm } from "./login/SecurePhraseForm";
+import { UserLoginForm } from "./login/UserLoginForm";
 
 export default function Login() {
-  // User login (non-admin) state
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-
-  // Admin email + OTP state
-  const [adminStep, setAdminStep] = useState<AdminStep>("enter_email");
-  const [adminEmail, setAdminEmail] = useState("");
-  const [adminCode, setAdminCode] = useState("");
-  const [adminEmailHint, setAdminEmailHint] = useState<string>("");
-  const [deliveryChannel, setDeliveryChannel] = useState<"email" | "server_log" | undefined>();
-
-  // Secure-phrase fallback (for when SMTP / mailbox isn't reachable)
-  const [showPhraseFallback, setShowPhraseFallback] = useState(false);
-  const [securePhrase, setSecurePhrase] = useState("");
-  const [showSecurePhrase, setShowSecurePhrase] = useState(false);
-
-  // Shared
   const [useAdminLogin, setUseAdminLogin] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [info, setInfo] = useState("");
-
+  const [showPhraseFallback, setShowPhraseFallback] = useState(false);
   const { refresh } = useAuth() as { refresh: () => Promise<void> };
 
-  useEffect(() => {
-    let cancelled = false;
-    void fetch("/api/admin/login/email", { credentials: "include" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled && data?.adminEmail) setAdminEmailHint(data.adminEmail);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const resetMessages = () => {
-    setError("");
-    setInfo("");
-  };
-
-  const handleRequestCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    resetMessages();
-    if (!adminEmail.trim()) {
-      setError("Enter the admin email.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/admin/login/request-code", {
-        method: "POST",
-        body: JSON.stringify({ email: adminEmail.trim() }),
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setError(data.error || "Could not request a code.");
-        return;
-      }
-      setDeliveryChannel(data.delivery_channel);
-      setInfo(
-        data.delivery_channel === "server_log"
-          ? "Code generated. Email isn't configured — check the server log to retrieve it."
-          : data.message ||
-              "If that email is recognized, a sign-in code has been sent. Enter it below.",
-      );
-      setAdminStep("enter_code");
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    resetMessages();
-    if (!adminCode.trim()) {
-      setError("Enter the code from your email.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/admin/login/verify-code", {
-        method: "POST",
-        body: JSON.stringify({ email: adminEmail.trim(), code: adminCode.trim() }),
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        await refresh();
-        return;
-      }
-      setError(data.error || "Invalid or expired code.");
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUserLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    resetMessages();
-    if (!username.trim() || !password.trim()) {
-      setError("Enter a username and password.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        body: JSON.stringify({ username: username.trim(), password }),
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        await refresh();
-        return;
-      }
-      setError(data.error || "Access denied.");
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSecurePhraseLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    resetMessages();
-    if (!securePhrase.trim()) {
-      setError("Enter the admin secure phrase.");
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/login", {
-        method: "POST",
-        body: JSON.stringify({ passphrase: securePhrase.trim() }),
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        await refresh();
-        return;
-      }
-      setError(data.error || "Invalid secure phrase.");
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const switchTab = (toAdmin: boolean) => {
+  function switchTab(toAdmin: boolean) {
     setUseAdminLogin(toAdmin);
-    resetMessages();
     setShowPhraseFallback(false);
-  };
-
-  const restartAdminFlow = () => {
-    setAdminStep("enter_email");
-    setAdminCode("");
-    setDeliveryChannel(undefined);
-    resetMessages();
-  };
+  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black p-4">
@@ -226,225 +59,28 @@ export default function Login() {
               </button>
             </div>
 
-            {useAdminLogin ? (
-              <form
-                onSubmit={adminStep === "enter_email" ? handleRequestCode : handleVerifyCode}
-                className="space-y-4"
-              >
-                {adminStep === "enter_email" ? (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Admin Email</label>
-                    <div className="relative">
-                      <Input
-                        type="email"
-                        placeholder={adminEmailHint || "admin@zed-ai.online"}
-                        value={adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
-                        className="zed-input pl-10"
-                        disabled={isLoading}
-                        autoFocus
-                      />
-                      <Mail
-                        size={16}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      We'll email a one-time sign-in code.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Sign-in Code</label>
-                    <div className="relative">
-                      <Input
-                        inputMode="numeric"
-                        autoComplete="one-time-code"
-                        placeholder="6-digit code"
-                        value={adminCode}
-                        onChange={(e) => setAdminCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                        className="zed-input pl-10 tracking-widest text-center text-lg"
-                        disabled={isLoading}
-                        autoFocus
-                      />
-                      <KeyRound
-                        size={16}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={restartAdminFlow}
-                      className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                    >
-                      Use a different email or request a new code
-                    </button>
-                  </div>
-                )}
-
-                {info && <p className="text-sm text-cyan-300">{info}</p>}
-                {error && <p className="text-sm text-red-400">{error}</p>}
-
-                <Button
-                  type="submit"
-                  className="w-full zed-gradient text-white hover:zed-gradient-hover"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      <span>{adminStep === "enter_email" ? "Sending..." : "Verifying..."}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <Sparkles size={16} />
-                      <span>{adminStep === "enter_email" ? "Send sign-in code" : "Verify and sign in"}</span>
-                    </div>
-                  )}
-                </Button>
-
-                {deliveryChannel === "server_log" && adminStep === "enter_code" && (
-                  <p className="text-xs text-amber-300">
-                    Email delivery is not configured on this deploy. Retrieve the code from the
-                    server log.
-                  </p>
-                )}
-              </form>
-            ) : null}
+            {useAdminLogin && <AdminEmailForm onSuccess={refresh} />}
 
             {useAdminLogin && (
               <div className="border-t border-white/10 pt-3">
                 {!showPhraseFallback ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowPhraseFallback(true);
-                      resetMessages();
-                    }}
+                    onClick={() => setShowPhraseFallback(true)}
                     className="text-xs text-muted-foreground underline-offset-2 hover:underline"
                   >
                     Can't access email? Use admin secure phrase
                   </button>
                 ) : (
-                  <form onSubmit={handleSecurePhraseLogin} className="space-y-3">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Secure Phrase</label>
-                      <div className="relative">
-                        <Input
-                          type={showSecurePhrase ? "text" : "password"}
-                          placeholder="Enter admin secure phrase"
-                          value={securePhrase}
-                          onChange={(e) => setSecurePhrase(e.target.value)}
-                          className="zed-input pr-10"
-                          disabled={isLoading}
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowSecurePhrase(!showSecurePhrase)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          aria-label={showSecurePhrase ? "Hide phrase" : "Show phrase"}
-                        >
-                          {showSecurePhrase ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                      <p className="text-xs text-muted-foreground/80">
-                        Fallback for when email isn't reachable. Same admin session as the email
-                        flow.
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="submit"
-                        className="flex-1 zed-gradient text-white hover:zed-gradient-hover"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? "Verifying…" : "Sign in with phrase"}
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowPhraseFallback(false);
-                          setSecurePhrase("");
-                          resetMessages();
-                        }}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                  <SecurePhraseForm
+                    onSuccess={refresh}
+                    onCancel={() => setShowPhraseFallback(false)}
+                  />
                 )}
               </div>
             )}
 
-            {!useAdminLogin && (
-              <form onSubmit={handleUserLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Username</label>
-                  <div className="relative">
-                    <Input
-                      placeholder="Enter username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="zed-input pl-10"
-                      disabled={isLoading}
-                      autoFocus
-                    />
-                    <User
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Password</label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="zed-input pl-10 pr-10"
-                      disabled={isLoading}
-                    />
-                    <KeyRound
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                {error && <p className="text-sm text-red-400">{error}</p>}
-
-                <Button
-                  type="submit"
-                  className="w-full zed-gradient text-white hover:zed-gradient-hover"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      <span>Verifying...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <Sparkles size={16} />
-                      <span>Sign In</span>
-                    </div>
-                  )}
-                </Button>
-              </form>
-            )}
+            {!useAdminLogin && <UserLoginForm onSuccess={refresh} />}
           </CardContent>
         </Card>
       </div>
