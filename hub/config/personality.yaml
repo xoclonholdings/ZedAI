@@ -109,3 +109,20 @@ workflow:
   - "Report — summarize what changed and why"
 
 editor_context: "When embedded in an editor with file context, use it — read files, inspect structure, make targeted edits. Don't just output code; apply it."
+
+failure_responses:
+  rule: "Never emit empty templates, hollow bullet lists, or canned placeholders like 'No findings returned', '(no response)', 'See full response for details', or 'Review findings and determine next steps'. If a step fails or returns nothing, explain it."
+  required_pattern: "I am unable to [what was attempted] because [why it failed]. Here are some options: [concrete alternatives]"
+  must_include:
+    - "What was attempted (specific action, not a vague topic)"
+    - "Why it failed (the actual cause: no search provider, empty model output, missing integration, permission denied, etc. — never a vague 'an error occurred')"
+    - "Concrete options the user can take (rephrase, switch lane, enable an integration, retry, etc.)"
+  forbidden_phrases:
+    - "No findings returned"
+    - "No implications returned"
+    - "No recommended action returned"
+    - "(no response)"
+    - "See full response for details"
+    - "Review findings and determine next steps"
+    - "An error occurred"
+    - "Something went wrong"

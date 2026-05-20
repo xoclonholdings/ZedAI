@@ -26,6 +26,19 @@ export interface ResearchBrief {
   recommendedAction: string;
   sources: string[];
   agent: "IntelligenceAgent";
+  /** Diagnostic context so callers can explain (rather than paper over)
+   *  thin or empty briefs to the user. */
+  diagnostics?: {
+    /** Total web search results across all expanded queries. */
+    searchResultsCount: number;
+    /** Source label of the primary search (brave/serper/none). */
+    searchSource: "brave" | "serper" | "none";
+    /** Raw model output length, in chars (0 = model produced nothing). */
+    rawOutputLength: number;
+    /** True when the structured BRIEF / KEY_FINDINGS / etc. markers
+     *  were found in the model output. */
+    parsedStructured: boolean;
+  };
 }
 
 export class IntelligenceAgent {
@@ -119,7 +132,16 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
       { lane: "research" },
     );
 
-    const brief = this.parseBrief(request.query, rawReply, primarySearch.source);
+    const totalSearchResults = searchResponses.reduce(
+      (sum, r) => sum + (r.results?.length || 0),
+      0,
+    );
+    const brief = this.parseBrief(
+      request.query,
+      rawReply,
+      primarySearch.source,
+      totalSearchResults,
+    );
     brief.sources.push(`Expanded keyword search: ${expandedQueries.join(" | ")}`);
 
     await storeResearchBrief(brief);
@@ -139,27 +161,37 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
     );
   }
 
-  private static parseBrief(query: string, raw: string, searchSource: string): ResearchBrief {
+  private static parseBrief(
+    query: string,
+    raw: string,
+    searchSource: "brave" | "serper" | "none",
+    searchResultsCount: number,
+  ): ResearchBrief {
     const lines = raw.split("\n");
     const keyFindings: string[] = [];
     let inFindings = false;
     let implications = "";
     let recommendedAction = "";
     let confidence: "high" | "medium" | "low" = "medium";
+    let sawStructuredMarker = false;
 
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith("CONFIDENCE:")) {
+        sawStructuredMarker = true;
         const val = trimmed.split(":")[1]?.trim().toLowerCase();
         if (val === "high" || val === "low") confidence = val;
       } else if (trimmed.startsWith("KEY_FINDINGS:")) {
+        sawStructuredMarker = true;
         inFindings = true;
       } else if (inFindings && trimmed.startsWith("-")) {
         keyFindings.push(trimmed.slice(1).trim());
       } else if (trimmed.startsWith("IMPLICATIONS:")) {
+        sawStructuredMarker = true;
         inFindings = false;
         implications = trimmed.slice("IMPLICATIONS:".length).trim();
       } else if (trimmed.startsWith("RECOMMENDED_ACTION:")) {
+        sawStructuredMarker = true;
         recommendedAction = trimmed.slice("RECOMMENDED_ACTION:".length).trim();
       } else if (implications && !trimmed.startsWith("RECOMMENDED_ACTION")) {
         implications += " " + trimmed;
@@ -174,11 +206,17 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
       topic: query,
       date: new Date().toISOString(),
       confidence,
-      keyFindings: keyFindings.length > 0 ? keyFindings : [raw.slice(0, 300)],
-      implications: implications || "See full response for details.",
-      recommendedAction: recommendedAction || "Review findings and determine next steps.",
+      keyFindings,
+      implications,
+      recommendedAction,
       sources,
       agent: "IntelligenceAgent",
+      diagnostics: {
+        searchResultsCount,
+        searchSource,
+        rawOutputLength: raw?.length || 0,
+        parsedStructured: sawStructuredMarker && keyFindings.length > 0,
+      },
     };
   }
 

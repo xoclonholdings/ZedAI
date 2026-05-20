@@ -687,11 +687,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             targetAgent: "research",
             context: { isAdmin },
           });
+          const emptyReplyFallback = [
+            `I am unable to answer **"${content.slice(0, 200)}"** right now because the routed agent returned no content.`,
+            "",
+            "Here are some options:",
+            "- Retry the same message — transient model or network errors are the most common cause",
+            "- Switch the lane (top-right of the composer) from **Chat** to a specific agent like **R&D** or **Operations** and resend",
+            "- Open Admin → Logs to inspect the failure, then enable a web search provider in Admin → Integrations if live data is required",
+          ].join("\n");
           const aiMessage = await storage.createMessage(
             insertMessageSchema.parse({
               conversationId,
               role: "assistant",
-              content: result.reply || "(no response)",
+              content: result.reply?.trim() || emptyReplyFallback,
             }),
           );
           await KnowledgeService.persistInteraction({

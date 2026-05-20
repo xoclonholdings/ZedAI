@@ -433,21 +433,55 @@ export class ManagerAgent {
 
   private static formatBrief(brief: any): string {
     const keyFindings = Array.isArray(brief?.keyFindings) ? brief.keyFindings : [];
-    const findings =
-      keyFindings.length > 0
-        ? keyFindings.map((finding: string) => `- ${finding}`).join("\n")
-        : "- No key findings returned.";
+    const implications = (brief?.implications || "").trim();
+    const recommendedAction = (brief?.recommendedAction || "").trim();
+    const topic = brief?.topic || "your request";
+    const diagnostics = brief?.diagnostics || {};
 
-    return `**Research Brief: ${brief?.topic || "Research"}**
+    // When the research pipeline produced nothing real, explain what
+    // happened and what the user can do — never paper over with
+    // "No key findings returned." or "See full response for details."
+    if (keyFindings.length === 0 && !implications && !recommendedAction) {
+      const { searchResultsCount = 0, searchSource = "none", rawOutputLength = 0 } = diagnostics;
 
-**Confidence**: ${brief?.confidence || "unknown"}
+      let reason: string;
+      if (searchSource === "none") {
+        reason = "no web search provider is configured, so I could not fetch live information";
+      } else if (searchResultsCount === 0) {
+        reason = `the ${searchSource} web search returned no results for "${topic}"`;
+      } else if (rawOutputLength === 0) {
+        reason = "the local model returned an empty response";
+      } else {
+        reason = "the local model returned content I couldn't parse into a structured brief";
+      }
 
-**Key Findings**:
-${findings}
+      const options = [
+        "Rephrase the request with more specific keywords or context",
+        "Switch the lane to **Chat** if you want a direct conversational answer instead of a research brief",
+        "Open Admin → Integrations and enable a web search provider (Brave or Serper) if live data is needed",
+      ];
 
-**Implications**: ${brief?.implications || "No implications returned."}
+      return [
+        `I am unable to produce a research brief on **${topic}** because ${reason}.`,
+        "",
+        "Here are some options:",
+        ...options.map((o) => `- ${o}`),
+      ].join("\n");
+    }
 
-**Recommended Action**: ${brief?.recommendedAction || "No recommended action returned."}`;
+    // We have at least some real content. Render only the sections
+    // that actually have content — no empty placeholders.
+    const sections: string[] = [`**Research Brief: ${topic}**`];
+    if (brief?.confidence) sections.push(`**Confidence**: ${brief.confidence}`);
+    if (keyFindings.length > 0) {
+      sections.push(
+        `**Key Findings**:\n${keyFindings.map((f: string) => `- ${f}`).join("\n")}`,
+      );
+    }
+    if (implications) sections.push(`**Implications**: ${implications}`);
+    if (recommendedAction) sections.push(`**Recommended Action**: ${recommendedAction}`);
+
+    return sections.join("\n\n");
   }
 
   static flushConfig(): void {
