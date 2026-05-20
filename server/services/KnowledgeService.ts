@@ -1,237 +1,97 @@
-import fs from "fs/promises";
-import path from "path";
-import yaml from "js-yaml";
 import { MemoryService } from "./memoryService";
-import { addToCollection, queryCollection, type VectorEntry } from "./ChromaService";
-import { retrieveFoundationMemoryWithTrace, type FoundationTraceItem } from "./FoundationMemoryService";
-import { HUB_CONFIG_DIR } from "../utils/repoPaths";
+import { addToCollection, queryCollection } from "./ChromaService";
+import { retrieveFoundationMemoryWithTrace } from "./FoundationMemoryService";
 
-type KnowledgeLane =
-  | "chat"
-  | "manager"
-  | "operations"
-  | "business"
-  | "research"
-  | "admin";
+import {
+  dedupeRetrievedMemory,
+  formatCoreMemory,
+  formatRetrievedMemory,
+} from "./knowledge-service/formatting";
+import {
+  extractKeywords,
+  safeExcerpt,
+  scoreProjectMemory,
+  scoreScratchpadMemory,
+} from "./knowledge-service/scoring";
+import { loadRulesetMemory } from "./knowledge-service/sources";
+import {
+  CORE_PRIORITY_KEYS,
+  LANE_DIRECTIVES,
+  PERSONAL_MEMORY_TYPES,
+  type BuildKnowledgeContextParams,
+  type KnowledgeContext,
+  type KnowledgeSearchResult,
+  type PersistInteractionParams,
+} from "./knowledge-service/types";
 
-type BuildKnowledgeContextParams = {
-  userId: string;
-  query: string;
-  conversationId?: string;
-  lane?: KnowledgeLane;
-  injectedMemory?: string;
-  includeAdminFoundation?: boolean;
-};
+export type { KnowledgeContext } from "./knowledge-service/types";
 
-export type KnowledgeContext = {
-  prompt: string;
-  foundation: string;
-  foundationTrace: FoundationTraceItem[];
-  core: string;
-  ruleset: string;
-  project: string;
-  scratchpad: string;
-  retrieved: string;
-  counts: {
-    core: number;
-    ruleset: number;
-    project: number;
-    scratchpad: number;
-    retrieved: number;
-  };
-};
-
-type PersistInteractionParams = {
-  userId: string;
-  conversationId?: string;
-  userContent: string;
-  assistantContent: string;
-  tags?: string[];
-};
-
-type KnowledgeSearchResult = {
-  foundation: string;
-  foundationTrace: FoundationTraceItem[];
-  core: string;
-  project: Array<{ id: string; name: string; description: string | null; excerpt: string }>;
-  scratchpad: Array<{ id: string; excerpt: string; tags: string[] }>;
-  retrieved: Array<{ id: string; source: string; excerpt: string }>;
-};
-
-const CORE_PRIORITY_KEYS = [
-  "foundation_profile",
-  "identity",
-  "tone",
-  "operation",
-  "modes",
-  "memory_policy",
-  "instruction_model",
-  "tool_policy",
-  "risk_model",
-  "rules",
-  "default_context",
-] as const;
-
-const PERSONAL_MEMORY_TYPES = new Set(["profile", "identity", "preferences", "goals"]);
-
-const LANE_DIRECTIVES: Record<KnowledgeLane, string> = {
-  chat:
-    "Answer as ZED using the supplied knowledge context first. Prefer specific, decisive answers over generic filler. Do not ask the user to repeat information already present in memory unless it is conflicting or missing a critical detail.",
-  manager:
-    "Use the shared knowledge stack to route intelligently. Favor the lane that best matches the goal and the known business context. Do not over-route into generic research if the knowledge context already provides the answer.",
-  operations:
-    "Prefer execution-ready outputs that reflect known brand, operating rules, and prior decisions. Use the knowledge context directly when it contains the sender identity, project context, or operating preferences.",
-  business:
-    "Ground strategy in the known business foundation, project memory, and rules before generating new recommendations. Avoid boilerplate when the venture or goals are already known.",
-  research:
-    "Use internal foundation and project knowledge as the baseline, then layer retrieved or searched evidence on top. If internal knowledge conflicts with external signals, say so clearly.",
-  admin:
-    "Summarize the knowledge system faithfully and prefer direct excerpts over speculation.",
-};
-
-function normalizeText(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9\s-]/g, " ");
-}
-
-function extractKeywords(query: string): string[] {
-  return Array.from(
-    new Set(
-      normalizeText(query)
-        .split(/\s+/)
-        .map((part) => part.trim())
-        .filter((part) => part.length >= 3),
-    ),
-  ).slice(0, 12);
-}
-
-function scoreText(text: string, keywords: string[]): number {
-  const haystack = normalizeText(text);
-  return keywords.reduce((score, keyword) => score + (haystack.includes(keyword) ? 1 : 0), 0);
-}
-
-function scoreProjectMemory(
-  entry: { name: string; description: string | null; content: string; type?: string | null },
-  keywords: string[],
-): number {
-  return (
-    (PERSONAL_MEMORY_TYPES.has((entry.type || "").toLowerCase()) ? 5 : 0) +
-    scoreText(entry.name, keywords) * 4 +
-    scoreText(entry.description || "", keywords) * 2 +
-    scoreText(entry.type || "", keywords) * 2 +
-    scoreText(entry.content, keywords)
-  );
-}
-
-function scoreScratchpadMemory(
-  entry: { content: string; tags?: string[] | null; conversationId?: string | null },
-  keywords: string[],
-  conversationId?: string,
-): number {
-  return (
-    scoreText(entry.content, keywords) * 2 +
-    scoreText((entry.tags || []).join(" "), keywords) * 3 +
-    (conversationId && entry.conversationId === conversationId ? 5 : 0)
-  );
-}
-
-function safeExcerpt(text: string, max = 320): string {
-  const compact = text.replace(/\s+/g, " ").trim();
-  if (compact.length <= max) return compact;
-  return `${compact.slice(0, max - 1)}…`;
-}
-
-function parseCoreValue(value: string): string {
-  try {
-    const parsed = JSON.parse(value);
-    if (typeof parsed === "string") return parsed;
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    return value;
-  }
-}
-
-function formatCoreMemory(entries: Array<{ key: string; value: string }>): string {
-  if (entries.length === 0) return "";
-
-  return entries
-    .map((entry) => `### ${entry.key}\n${safeExcerpt(parseCoreValue(entry.value), 700)}`)
-    .join("\n\n");
-}
-
-function formatRetrievedMemory(entries: VectorEntry[]): string {
-  if (entries.length === 0) return "";
-
-  return entries
-    .map((entry, index) => {
-      const source =
-        typeof entry.metadata?.topic === "string"
-          ? String(entry.metadata.topic)
-          : typeof entry.metadata?.conversationId === "string"
-            ? `conversation ${String(entry.metadata.conversationId).slice(0, 8)}`
-            : "memory";
-      return `### Retrieved Memory ${index + 1} (${source})\n${safeExcerpt(entry.document, 380)}`;
-    })
-    .join("\n\n");
-}
-
-function dedupeRetrievedMemory(entries: VectorEntry[]): VectorEntry[] {
-  const seen = new Set<string>();
-  const output: VectorEntry[] = [];
-
-  for (const entry of entries) {
-    const key = safeExcerpt(entry.document, 180).toLowerCase();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    output.push(entry);
-  }
-
-  return output;
-}
-
-async function loadRulesetMemory(): Promise<Array<{ key: string; value: string }>> {
-  const files = ["personality.yaml", "security.yaml", "parameters.yaml", "access.yaml"];
-  const results: Array<{ key: string; value: string }> = [];
-
-  for (const file of files) {
-    try {
-      const content = await fs.readFile(path.join(HUB_CONFIG_DIR, file), "utf-8");
-      const parsed = yaml.load(content);
-      results.push({
-        key: file.replace(".yaml", ""),
-        value: typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2),
-      });
-    } catch {}
-  }
-
-  return results;
-}
-
+/**
+ * Knowledge orchestration — pulls together core memory, ruleset
+ * YAMLs, foundation knowledge, project memory, scratchpad, and
+ * vector-store retrieval into a single per-lane system-prompt
+ * fragment.
+ *
+ * Helpers live under ./knowledge-service/:
+ *   types.ts       request/response shapes + CORE_PRIORITY_KEYS,
+ *                  PERSONAL_MEMORY_TYPES, LANE_DIRECTIVES
+ *   scoring.ts     extractKeywords + per-source scoring
+ *   formatting.ts  parseCoreValue + format* + dedupeRetrievedMemory
+ *   sources.ts     loadRulesetMemory (reads the four YAMLs)
+ */
 export class KnowledgeService {
   static async buildContext(params: BuildKnowledgeContextParams): Promise<KnowledgeContext> {
     const lane = params.lane || "chat";
     const keywords = extractKeywords(params.query);
 
-    await MemoryService.resetScratchpadMemory().catch(() => {});
+    // Trim expired scratchpad entries before reading — best-effort,
+    // failures here just mean we read a slightly larger working set.
+    await MemoryService.resetScratchpadMemory().catch(() => {
+      /* see comment above */
+    });
 
-    const [allCoreMemory, rulesetMemory, allProjectMemory, allScratchpadMemory, episodic, semantic, foundationResult] =
-      await Promise.all([
-        MemoryService.getAllCoreMemory(),
-        loadRulesetMemory(),
-        MemoryService.getProjectMemory(params.userId),
-        MemoryService.getScratchpadMemory(params.userId),
-        queryCollection("episodic", params.query, 3),
-        queryCollection("semantic", params.query, 4),
-        retrieveFoundationMemoryWithTrace(params.query, { enabled: params.includeAdminFoundation === true }),
-      ]);
+    const [
+      allCoreMemory,
+      rulesetMemory,
+      allProjectMemory,
+      allScratchpadMemory,
+      episodic,
+      semantic,
+      foundationResult,
+    ] = await Promise.all([
+      MemoryService.getAllCoreMemory(),
+      loadRulesetMemory(),
+      MemoryService.getProjectMemory(params.userId),
+      MemoryService.getScratchpadMemory(params.userId),
+      queryCollection("episodic", params.query, 3),
+      queryCollection("semantic", params.query, 4),
+      retrieveFoundationMemoryWithTrace(params.query, {
+        enabled: params.includeAdminFoundation === true,
+      }),
+    ]);
     const foundation = foundationResult.content;
     const foundationTrace = foundationResult.trace;
 
+    // Keep only the priority keys, ordered as declared in CORE_PRIORITY_KEYS.
     const relevantCoreMemory = allCoreMemory
-      .filter((entry) => CORE_PRIORITY_KEYS.includes(entry.key as (typeof CORE_PRIORITY_KEYS)[number]))
-      .sort((a, b) => CORE_PRIORITY_KEYS.indexOf(a.key as (typeof CORE_PRIORITY_KEYS)[number]) - CORE_PRIORITY_KEYS.indexOf(b.key as (typeof CORE_PRIORITY_KEYS)[number]));
+      .filter((entry) =>
+        CORE_PRIORITY_KEYS.includes(entry.key as (typeof CORE_PRIORITY_KEYS)[number]),
+      )
+      .sort(
+        (a, b) =>
+          CORE_PRIORITY_KEYS.indexOf(a.key as (typeof CORE_PRIORITY_KEYS)[number]) -
+          CORE_PRIORITY_KEYS.indexOf(b.key as (typeof CORE_PRIORITY_KEYS)[number]),
+      );
 
+    // Personal-type project memory is always included (capped at 3),
+    // independent of keyword score — these are the "always-on" facts
+    // about the user.
     const personalProjectMemory = allProjectMemory
-      .filter((entry) => PERSONAL_MEMORY_TYPES.has((entry.type || "").toLowerCase()) && entry.isActive !== false)
+      .filter(
+        (entry) =>
+          PERSONAL_MEMORY_TYPES.has((entry.type || "").toLowerCase()) &&
+          entry.isActive !== false,
+      )
       .slice(0, 3);
 
     const relevantProjectMemory = allProjectMemory
@@ -240,22 +100,39 @@ export class KnowledgeService {
         score: scoreProjectMemory(entry, keywords),
       }))
       .filter((item) => item.score > 0 || keywords.length === 0)
-      .sort((a, b) => b.score - a.score || Number(new Date(b.entry.updatedAt)) - Number(new Date(a.entry.updatedAt)))
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          Number(new Date(b.entry.updatedAt)) - Number(new Date(a.entry.updatedAt)),
+      )
       .slice(0, 4)
       .map((item) => item.entry);
 
     const mergedProjectMemory = Array.from(
-      new Map([...personalProjectMemory, ...relevantProjectMemory].map((entry) => [entry.id, entry])).values(),
+      new Map(
+        [...personalProjectMemory, ...relevantProjectMemory].map((entry) => [entry.id, entry]),
+      ).values(),
     ).slice(0, 5);
 
     const relevantScratchpad = allScratchpadMemory
-      .filter((entry) => !params.conversationId || !entry.conversationId || entry.conversationId === params.conversationId)
+      .filter(
+        (entry) =>
+          !params.conversationId ||
+          !entry.conversationId ||
+          entry.conversationId === params.conversationId,
+      )
       .map((entry) => ({
         entry,
         score: scoreScratchpadMemory(entry, keywords, params.conversationId),
       }))
-      .filter((item) => item.score > 0 || item.entry.conversationId === params.conversationId)
-      .sort((a, b) => b.score - a.score || Number(new Date(b.entry.createdAt)) - Number(new Date(a.entry.createdAt)))
+      .filter(
+        (item) => item.score > 0 || item.entry.conversationId === params.conversationId,
+      )
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          Number(new Date(b.entry.createdAt)) - Number(new Date(a.entry.createdAt)),
+      )
       .slice(0, 5)
       .map((item) => item.entry);
 
@@ -271,7 +148,9 @@ export class KnowledgeService {
         ? mergedProjectMemory
             .map(
               (entry) =>
-                `### ${entry.name}\nType: ${entry.type}\n${entry.description ? `Description: ${entry.description}\n` : ""}${safeExcerpt(entry.content, 700)}`,
+                `### ${entry.name}\nType: ${entry.type}\n${
+                  entry.description ? `Description: ${entry.description}\n` : ""
+                }${safeExcerpt(entry.content, 700)}`,
             )
             .join("\n\n")
         : "";
@@ -281,7 +160,9 @@ export class KnowledgeService {
         ? relevantScratchpad
             .map(
               (entry, index) =>
-                `### Working Memory ${index + 1}${entry.tags?.length ? ` [${entry.tags.join(", ")}]` : ""}\n${safeExcerpt(entry.content, 320)}`,
+                `### Working Memory ${index + 1}${
+                  entry.tags?.length ? ` [${entry.tags.join(", ")}]` : ""
+                }\n${safeExcerpt(entry.content, 320)}`,
             )
             .join("\n\n")
         : "";
@@ -356,7 +237,12 @@ export class KnowledgeService {
         .slice(0, 6)
         .map(({ score: _score, ...entry }) => entry),
       scratchpad: scratchpadMemory
-        .filter((entry) => !params.conversationId || !entry.conversationId || entry.conversationId === params.conversationId)
+        .filter(
+          (entry) =>
+            !params.conversationId ||
+            !entry.conversationId ||
+            entry.conversationId === params.conversationId,
+        )
         .map((entry) => ({
           id: entry.id,
           excerpt: safeExcerpt(entry.content, 220),
@@ -380,6 +266,12 @@ export class KnowledgeService {
     };
   }
 
+  /**
+   * Save a user/assistant turn into the vector stores (episodic +
+   * semantic) and a short scratchpad note. Uses `Promise.allSettled`
+   * because losing one store shouldn't block the others — partial
+   * persistence is better than none.
+   */
   static async persistInteraction(params: PersistInteractionParams): Promise<void> {
     const timestamp = new Date().toISOString();
     const document = `User: ${params.userContent}\nAssistant: ${params.assistantContent}`;
