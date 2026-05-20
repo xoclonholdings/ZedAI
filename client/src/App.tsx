@@ -56,28 +56,22 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
   }
 }
 
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center no-flash">
-      <div className="text-center">
-        <div className="mb-6">
-          <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-purple-500 via-cyan-500 to-pink-500 animate-pulse" />
-        </div>
-        <div className="bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-400 bg-clip-text text-xl font-medium text-transparent">
-          ZED
-        </div>
-        <div className="mt-2 text-sm text-gray-400">Loading...</div>
-      </div>
-    </div>
-  );
-}
-
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+  // Intentionally do NOT block on isLoading here. On a cold mount,
+  // /api/me can take a long time when Render's container is waking
+  // up — gating the whole UI behind that fetch made the app feel
+  // dead for several seconds on every relaunch. Instead we render
+  // routes immediately:
+  //
+  //   - Unauthenticated user (the common case when launching from
+  //     the home-screen shortcut): sees Login right away.
+  //   - Previously-signed-in user: briefly sees Login, then auth
+  //     resolves in the background and the route re-renders into
+  //     Chat/Admin/etc.
+  //
+  // Either way the user gets actionable content immediately
+  // instead of a spinner.
+  const { isAuthenticated } = useAuth();
 
   return (
     <Switch>
