@@ -22,6 +22,7 @@ import { getFirewallIntegrationStatus } from "./services/FirewallIntegrationServ
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "./services/GitHubIntegrationService";
 import { getRecentRuntimeEvents, logRuntimeEvent } from "./services/RuntimeLogger";
 import { buildZedAdminContext } from "./services/ZedContextBuilder";
+import { fetchWebContext } from "./services/WebContextService";
 import { registerFlowRoutes } from "./routes-modules/flows";
 import { registerEnvValidateRoute } from "./routes-modules/env-validate";
 import { registerExecutionRoutes } from "./services/execution/registerExecutionRoutes";
@@ -157,50 +158,6 @@ async function requireConversation(req: any, res: Response) {
     return null;
   }
   return conversation;
-}
-
-/**
- * Detect when a chat-mode message is actually a web lookup / research
- * intent and should be routed through ManagerAgent → IntelligenceAgent
- * (which has web search) instead of plain chat streaming.
- *
- * Catches:
- *  - http(s):// URLs
- *  - www. URLs
- *  - bare domains (any.tld pattern like zwap.online)
- *  - verbs / phrases that imply browsing or fresh research
- */
-function isWebLookupIntent(message: string): boolean {
-  if (!message) return false;
-  const text = message.toLowerCase();
-
-  // URLs / domains
-  if (/\bhttps?:\/\/\S+/i.test(message)) return true;
-  if (/\bwww\.\S+/i.test(message)) return true;
-  // bare domains: word.tld where tld is 2–24 alphabetic chars
-  if (/\b[a-z0-9-]+\.[a-z]{2,24}(?:\/\S*)?\b/i.test(message)) {
-    // Avoid false positives on filenames like "file.txt" or version numbers
-    // by requiring the TLD half to be at least 2 chars AND the segment to
-    // not be a common file extension.
-    const fileExt = /\.(txt|md|pdf|png|jpe?g|gif|webp|json|ya?ml|csv|xlsx?|docx?|mp[34]|wav|zip|tar|gz)\b/i;
-    if (!fileExt.test(message)) return true;
-  }
-
-  // Intent phrases
-  const phrases = [
-    "visit", "browse", "inspect", "check this site", "check the site",
-    "look up", "lookup", "search the web", "web search", "google this",
-    "latest", "current", "today's", "news on", "news about", "what's new",
-    "analyze this website", "audit this website", "review this website",
-    "summarize this page", "summarize this site", "summarize the page",
-    "scrape", "crawl", "fetch the page", "read this page", "open the url",
-    "look at the link",
-  ];
-  for (const p of phrases) {
-    if (text.includes(p)) return true;
-  }
-
-  return false;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -668,78 +625,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         insertMessageSchema.parse({ conversationId, role: "user", content })
       );
 
-      // ── Web lookup short-circuit ────────────────────────────────────
-      // If the user's message contains a URL or web-research intent,
-      // route it through ManagerAgent → IntelligenceAgent (which has
-      // WebSearchService wired) instead of plain chat streaming.
-      // Otherwise ZED replies "I cannot browse" because the chat lane
-      // has no tool access. Agent-mode requests already go via
-      // /api/orchestrate; this catches chat-mode requests that need
-      // the same routing.
-      if (isWebLookupIntent(content)) {
-        try {
-          const isAdmin = !!req.user?.claims?.isAdmin;
-          const result = await ManagerAgent.route({
-            userId: req.user?.claims?.sub || "unknown",
-            message: content,
-            conversationId,
-            ip: req.ip || "",
-            targetAgent: "research",
-            context: { isAdmin },
-          });
-          const emptyReplyFallback = [
-            `I am unable to answer **"${content.slice(0, 200)}"** right now because the routed agent returned no content.`,
-            "",
-            "Here are some options:",
-            "- Retry the same message — transient model or network errors are the most common cause",
-            "- Switch the lane (top-right of the composer) from **Chat** to a specific agent like **R&D** or **Operations** and resend",
-            "- Open Admin → Logs to inspect the failure, then enable a web search provider in Admin → Integrations if live data is required",
-          ].join("\n");
-          const aiMessage = await storage.createMessage(
-            insertMessageSchema.parse({
-              conversationId,
-              role: "assistant",
-              content: result.reply?.trim() || emptyReplyFallback,
-            }),
-          );
-          await KnowledgeService.persistInteraction({
-            userId: req.user?.claims?.sub || "unknown",
-            conversationId,
-            userContent: content,
-            assistantContent: aiMessage.content,
-            tags: ["chat", "web", "research"],
-          });
-          if (stream) {
-            res.setHeader("Content-Type", "text/event-stream");
-            res.setHeader("Cache-Control", "no-cache");
-            res.setHeader("Connection", "keep-alive");
-            res.setHeader("X-Accel-Buffering", "no");
-            res.write(
-              `data: ${JSON.stringify({ type: "user_message", message: userMessage })}\n\n`,
-            );
-            res.write(
-              `data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`,
-            );
-            res.end();
-          } else {
-            res.json({ userMessage, aiMessage });
-          }
-          return;
-        } catch (webErr: any) {
-          // If the web lookup path itself blows up, fall through to the
-          // normal chat path so the user still gets *some* reply rather
-          // than a 500. The runtime log captures the failure.
+      // ── Universal web context fetch ─────────────────────────────────
+      // Any URL or web-research intent in the user's message triggers
+      // a web search whose results are injected into the chat system
+      // prompt below. The chat lane stays the chat lane — we don't
+      // hijack it into a "Research Brief" wrapper. The model just
+      // gets the live page data as context and answers conversationally.
+      let webContextBlock = "";
+      try {
+        const webCtx = await fetchWebContext(content);
+        if (webCtx.triggered) {
+          webContextBlock = webCtx.text;
           void logRuntimeEvent({
-            level: "error",
+            level: "info",
             source: "server",
-            event: "chat.web_lookup.failed",
-            detail: webErr?.message || String(webErr),
-            context: {
-              conversationId,
-              errorKind: webErr?.constructor?.name,
-            },
+            event: "chat.web_context.fetched",
+            detail: `queries=${webCtx.queries.length} results=${webCtx.resultCount}`,
+            context: { conversationId, lane: "chat" },
           });
         }
+      } catch (webErr: any) {
+        void logRuntimeEvent({
+          level: "error",
+          source: "server",
+          event: "chat.web_context.failed",
+          detail: webErr?.message || String(webErr),
+          context: { conversationId, errorKind: webErr?.constructor?.name },
+        });
       }
 
       const history = await storage.getMessagesByConversation(conversationId);
@@ -776,6 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           systemPrompt || "",
           adminCtx.text,
           knowledge.prompt,
+          webContextBlock,
         ]
           .filter(Boolean)
           .join("\n\n");

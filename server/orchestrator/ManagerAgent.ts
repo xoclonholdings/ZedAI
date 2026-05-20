@@ -6,6 +6,7 @@ import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
+import { fetchWebContext } from "../services/WebContextService";
 import { generateChatFromOllama } from "../services/Ollama/OllamaService";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
@@ -97,6 +98,38 @@ export class ManagerAgent {
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await this.logRouting(request, agent);
 
+    // Fetch live web context for any URL / web-intent message and stitch
+    // it onto the agent's memoryContext. IntelligenceAgent runs its own
+    // deeper search inside research(), so we skip it there to avoid
+    // duplicate work.
+    let webContextText = "";
+    if (agent !== "IntelligenceAgent") {
+      try {
+        const webCtx = await fetchWebContext(request.message);
+        if (webCtx.triggered) {
+          webContextText = webCtx.text;
+          await logRuntimeEvent({
+            level: "info",
+            source: "server",
+            event: "manager.web_context.fetched",
+            detail: `agent=${agent} queries=${webCtx.queries.length} results=${webCtx.resultCount}`,
+            context: { conversationId: request.conversationId },
+          });
+        }
+      } catch (err: any) {
+        await logRuntimeEvent({
+          level: "error",
+          source: "server",
+          event: "manager.web_context.failed",
+          detail: err?.message || String(err),
+          context: { conversationId: request.conversationId, agent },
+        });
+      }
+    }
+    const agentMemoryContext = webContextText
+      ? [knowledgePrompt, webContextText].filter(Boolean).join("\n\n")
+      : knowledgePrompt;
+
     let reply: string;
     let extra: Partial<OrchestratorResponse> = {};
 
@@ -105,7 +138,7 @@ export class ManagerAgent {
         const researchReq: ResearchRequest = {
           userId: request.userId,
           query: request.message,
-          depth: this.isWebLookupIntent(request.message) || request.message.length > 100 ? "deep" : "shallow",
+          depth: request.message.length > 100 ? "deep" : "shallow",
           conversationId: request.conversationId,
           memoryContext: knowledgePrompt,
         };
@@ -120,7 +153,7 @@ export class ManagerAgent {
           userId: request.userId,
           task: request.message,
           conversationId: request.conversationId,
-          memoryContext: knowledgePrompt,
+          memoryContext: agentMemoryContext,
         });
         return {
           reply: filterOutputForTier3(resp.message),
@@ -139,7 +172,7 @@ export class ManagerAgent {
           userId: request.userId,
           task: request.message,
           conversationId: request.conversationId,
-          memoryContext: knowledgePrompt,
+          memoryContext: agentMemoryContext,
         });
         return {
           reply: filterOutputForTier3(resp.message),
@@ -156,7 +189,7 @@ export class ManagerAgent {
           message: request.message,
           conversationId: request.conversationId,
           context: request.context,
-          memoryContext: knowledgePrompt,
+          memoryContext: agentMemoryContext,
         };
         const opResp: AgentResponse = await OperationsAgent.process(opReq);
         reply = opResp.reply;
@@ -182,19 +215,10 @@ export class ManagerAgent {
     config: HubConfig,
     targetAgent?: OrchestratorRequest["targetAgent"],
   ): Promise<AgentName> {
-    // Web / URL inspection is a capability intent, not a personality lane.
-    // Route it to IntelligenceAgent even if the user currently has another lane selected.
-    if (this.isWebLookupIntent(message)) {
-      await logRuntimeEvent({
-        level: "info",
-        source: "server",
-        event: "manager.route.web_intent",
-        detail: "Web / URL lookup intent routed to IntelligenceAgent",
-      });
-      return "IntelligenceAgent";
-    }
-
-    // Explicit user pick from the UI pill wins after capability routing.
+    // The user's explicit lane pick is always honored. URLs no longer
+    // hijack into IntelligenceAgent — instead, WebContextService runs
+    // for every lane and injects live results, so Operations / Business
+    // / Finance / Chat can all answer URL-bearing questions natively.
     if (targetAgent === "operations") return "OperationsAgent";
     if (targetAgent === "research") return "IntelligenceAgent";
     if (targetAgent === "business") return "BusinessManagerAgent";
@@ -305,8 +329,6 @@ export class ManagerAgent {
   private static classifyWithKeywords(message: string, config: HubConfig): AgentName {
     const lower = message.toLowerCase();
     const params = config.parameters || {};
-
-    if (this.isWebLookupIntent(message)) return "IntelligenceAgent";
 
     const financeKeywords = [
       "crypto",
