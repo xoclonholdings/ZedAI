@@ -1,77 +1,43 @@
-import fs from "fs/promises";
-import path from "path";
-import yaml from "js-yaml";
 import { OperationsAgent, type AgentRequest, type AgentResponse } from "../agents/operations/OperationsAgent";
 import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/IntelligenceAgent";
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
-import { generateChatFromOllama } from "../services/Ollama/OllamaService";
-import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
-import { HUB_CONFIG_DIR, HUB_LOG_DIR } from "../utils/repoPaths";
 
-const CONFIG_DIR = HUB_CONFIG_DIR;
-const LOG_DIR = HUB_LOG_DIR;
+import { flushHubConfig, loadHubConfig } from "./manager-agent/config";
+import { isWebLookupIntent, selectAgent } from "./manager-agent/agent-selection";
+import { formatBrief } from "./manager-agent/format";
+import { logRouting } from "./manager-agent/routing-log";
+import type {
+  OrchestratorRequest,
+  OrchestratorResponse,
+} from "./manager-agent/types";
 
-interface HubConfig {
-  personality: any;
-  security: any;
-  parameters: any;
-  access: any;
-}
-
-interface OrchestratorRequest {
-  userId: string;
-  message: string;
-  conversationId?: string;
-  context?: Record<string, any>;
-  ip?: string;
-  targetAgent?: "operations" | "research" | "business" | "finance";
-}
-
-interface OrchestratorResponse {
-  reply: string;
-  agent: string;
-  requiresApproval?: boolean;
-  pendingApproval?: string;
-  blocked?: boolean;
-  tier?: number;
-  metadata?: Record<string, any>;
-}
-
-type AgentName = "OperationsAgent" | "IntelligenceAgent" | "BusinessManagerAgent" | "FinanceAgent";
-
+/**
+ * Front door for every agent-mode message. Walks tier enforcement,
+ * builds the knowledge context, picks a lane, dispatches to the
+ * right agent, and normalizes the response back into the shared
+ * OrchestratorResponse shape that conversations-send.ts and
+ * orchestrate-and-misc.ts both speak.
+ *
+ * The actual dispatching pieces live in ./manager-agent/:
+ *   types.ts            — request/response shapes + AgentName
+ *   config.ts           — YAML ruleset cache (load + flush)
+ *   agent-selection.ts  — web-intent detection, LLM classifier,
+ *                         keyword classifier, selectAgent()
+ *   format.ts           — formatBrief for research replies
+ *   routing-log.ts      — daily append-only routing log
+ */
 export class ManagerAgent {
-  private static config: HubConfig | null = null;
-
-  static async loadConfig(): Promise<HubConfig> {
-    if (this.config) return this.config;
-
-    const loadYaml = async (filename: string) => {
-      try {
-        const raw = await fs.readFile(path.join(CONFIG_DIR, filename), "utf-8");
-        return yaml.load(raw) as any;
-      } catch {
-        console.warn(`[ManagerAgent] Could not load ${filename}, using defaults`);
-        return {};
-      }
-    };
-
-    this.config = {
-      personality: await loadYaml("personality.yaml"),
-      security: await loadYaml("security.yaml"),
-      parameters: await loadYaml("parameters.yaml"),
-      access: await loadYaml("access.yaml"),
-    };
-
-    return this.config;
-  }
-
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
-    const config = await this.loadConfig();
+    const config = await loadHubConfig();
 
-    const tierCheck = await checkTiers(request.message, request.userId, request.ip || "unknown");
+    const tierCheck = await checkTiers(
+      request.message,
+      request.userId,
+      request.ip || "unknown",
+    );
     if (tierCheck.blocked) {
       return {
         reply: tierCheck.reply,
@@ -81,6 +47,9 @@ export class ManagerAgent {
       };
     }
 
+    // Knowledge context can be supplied by the caller (routes-modules
+    // do this so they can also feed it into the chat-mode prompt) or
+    // built fresh here from KnowledgeService.
     const knowledgePrompt =
       typeof request.context?.knowledgePrompt === "string"
         ? request.context.knowledgePrompt
@@ -93,9 +62,9 @@ export class ManagerAgent {
             })
           ).prompt;
 
-    const agent = await this.selectAgent(request.message, config, request.targetAgent);
+    const agent = await selectAgent(request.message, config, request.targetAgent);
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
-    await this.logRouting(request, agent);
+    await logRouting(request, agent);
 
     let reply: string;
     let extra: Partial<OrchestratorResponse> = {};
@@ -105,12 +74,15 @@ export class ManagerAgent {
         const researchReq: ResearchRequest = {
           userId: request.userId,
           query: request.message,
-          depth: this.isWebLookupIntent(request.message) || request.message.length > 100 ? "deep" : "shallow",
+          depth:
+            isWebLookupIntent(request.message) || request.message.length > 100
+              ? "deep"
+              : "shallow",
           conversationId: request.conversationId,
           memoryContext: knowledgePrompt,
         };
         const brief = await IntelligenceAgent.research(researchReq);
-        reply = this.formatBrief(brief);
+        reply = formatBrief(brief);
         extra = { metadata: { brief } };
         break;
       }
@@ -177,298 +149,8 @@ export class ManagerAgent {
     };
   }
 
-  private static async selectAgent(
-    message: string,
-    config: HubConfig,
-    targetAgent?: OrchestratorRequest["targetAgent"],
-  ): Promise<AgentName> {
-    // Web / URL inspection is a capability intent, not a personality lane.
-    // Route it to IntelligenceAgent even if the user currently has another lane selected.
-    if (this.isWebLookupIntent(message)) {
-      await logRuntimeEvent({
-        level: "info",
-        source: "server",
-        event: "manager.route.web_intent",
-        detail: "Web / URL lookup intent routed to IntelligenceAgent",
-      });
-      return "IntelligenceAgent";
-    }
-
-    // Explicit user pick from the UI pill wins after capability routing.
-    if (targetAgent === "operations") return "OperationsAgent";
-    if (targetAgent === "research") return "IntelligenceAgent";
-    if (targetAgent === "business") return "BusinessManagerAgent";
-    if (targetAgent === "finance") return "FinanceAgent";
-
-    const classified = await this.classifyWithLlm(message);
-    if (classified) return classified;
-
-    return this.classifyWithKeywords(message, config);
-  }
-
-  private static isWebLookupIntent(message: string): boolean {
-    const lower = message.toLowerCase();
-
-    const hasUrl =
-      /\bhttps?:\/\/[^\s)]+/i.test(message) ||
-      /\bwww\.[^\s)]+/i.test(message) ||
-      /\b[a-z0-9-]+(\.[a-z0-9-]+)+\/?[^\s)]*/i.test(message);
-
-    const webIntentPhrases = [
-      "visit",
-      "open this site",
-      "open the site",
-      "go to",
-      "browse",
-      "inspect",
-      "check this site",
-      "check the site",
-      "look at this site",
-      "look up",
-      "search web",
-      "search the web",
-      "google",
-      "latest",
-      "current",
-      "news",
-      "what does this website",
-      "analyze this website",
-      "audit this website",
-      "review this website",
-      "summarize this page",
-      "summarize this website",
-    ];
-
-    return hasUrl || webIntentPhrases.some((phrase) => lower.includes(phrase));
-  }
-
-  private static async classifyWithLlm(message: string): Promise<AgentName | null> {
-    const trimmed = message.trim();
-    if (!trimmed) return null;
-
-    const systemPrompt = [
-      "You are a routing classifier for the ZED multi-agent system.",
-      "Choose exactly one agent for the user's message based on the descriptions below.",
-      "",
-      "operations  — calendar, email drafting, scheduling, voicemail, posts, invoices, cancellations, bookings, generic personal assistant work.",
-      "research    — external websites, URLs, browsing requests, latest/current information, explanations, market scans, trend summaries, comparisons, deep research, 'what is / how does / latest news' questions.",
-      "business    — payroll, contractors, ecommerce/dropshipping, real estate, business credit, acquisitions, business operations.",
-      "finance     — crypto, forex, trading setups, position management, wealth planning, yield, portfolio strategy.",
-      "",
-      "Important: Any request containing a URL, website, browse, visit, inspect, current, latest, or news intent must route to research.",
-      "",
-      "Reply with EXACTLY one lowercase label: operations | research | business | finance.",
-      "Do not include punctuation, quotes, or explanations.",
-    ].join("\n");
-
-    try {
-      const reply = await generateChatFromOllama(
-        [{ role: "user", content: trimmed.slice(0, 1200) }],
-        systemPrompt,
-        { lane: "manager" },
-      );
-      const label = (reply || "").trim().toLowerCase().replace(/[^a-z]/g, "");
-      const map: Record<string, AgentName> = {
-        operations: "OperationsAgent",
-        research: "IntelligenceAgent",
-        business: "BusinessManagerAgent",
-        finance: "FinanceAgent",
-      };
-      const picked = map[label];
-      if (!picked) {
-        await logRuntimeEvent({
-          level: "warn",
-          source: "server",
-          event: "manager.classify.unmapped",
-          detail: `Classifier returned unmapped label: ${(reply || "").slice(0, 60)}`,
-        });
-        return null;
-      }
-      await logRuntimeEvent({
-        level: "info",
-        source: "server",
-        event: "manager.classify.ok",
-        detail: `Classifier picked ${picked}`,
-      });
-      return picked;
-    } catch (err: any) {
-      await logRuntimeEvent({
-        level: "warn",
-        source: "server",
-        event: "manager.classify.failed",
-        detail: err?.message || String(err),
-      });
-      return null;
-    }
-  }
-
-  private static classifyWithKeywords(message: string, config: HubConfig): AgentName {
-    const lower = message.toLowerCase();
-    const params = config.parameters || {};
-
-    if (this.isWebLookupIntent(message)) return "IntelligenceAgent";
-
-    const financeKeywords = [
-      "crypto",
-      "bitcoin",
-      "btc",
-      "ethereum",
-      "eth",
-      "solana",
-      "sol",
-      "token",
-      "altcoin",
-      "defi",
-      "web3",
-      "nft",
-      "on-chain",
-      "wallet",
-      "forex",
-      "fx",
-      "eurusd",
-      "gbpusd",
-      "usdjpy",
-      "currency pair",
-      "trade",
-      "trading",
-      "long position",
-      "short position",
-      "stop loss",
-      "take profit",
-      "portfolio",
-      "rebalance",
-      "wealth",
-      "compound",
-      "allocation",
-      "yield",
-      "stablecoin",
-    ];
-
-    if (financeKeywords.some((keyword) => lower.includes(keyword))) return "FinanceAgent";
-
-    const businessKeywords = [
-      "payroll",
-      "gusto",
-      "contractor",
-      "employee",
-      "onboarding",
-      "benefits",
-      "reimbursement",
-      "w-2",
-      "1099",
-      "business manager",
-      "dropshipping",
-      "ecommerce",
-      "business credit",
-      "property",
-      "real estate",
-      "acquisition",
-      "deal flow",
-      "underwriting",
-    ];
-
-    if (businessKeywords.some((keyword) => lower.includes(keyword))) return "BusinessManagerAgent";
-
-    const opsKeywords = [
-      "calendar",
-      "schedule",
-      "reschedule",
-      "meeting",
-      "appointment",
-      "email",
-      "send email",
-      "draft email",
-      "reply to",
-      "task",
-      "todo",
-      "to-do",
-      "to do",
-      "remind me",
-      "post to",
-      "post on",
-      "publish",
-      "tweet",
-      "draft post",
-      "send invoice",
-      "invoice",
-      "cancel",
-      "book ",
-      "call",
-      "voicemail",
-      "phone",
-    ];
-
-    if (opsKeywords.some((keyword) => lower.includes(keyword))) return "OperationsAgent";
-
-    const researchKeywords: string[] = params.agent_routing?.research_keywords || [
-      "research",
-      "find information",
-      "analyze",
-      "trend",
-      "market",
-      "github",
-      "news",
-      "what is",
-      "how does",
-      "who is",
-      "explain",
-      "summarize",
-      "what are",
-      "latest",
-      "current",
-      "current events",
-      "happening in",
-      "tell me about",
-      "website",
-      "url",
-      "browse",
-      "visit",
-      "inspect",
-    ];
-
-    if (researchKeywords.some((keyword) => lower.includes(keyword))) return "IntelligenceAgent";
-
-    return "OperationsAgent";
-  }
-
-  private static formatBrief(brief: any): string {
-    const keyFindings = Array.isArray(brief?.keyFindings) ? brief.keyFindings : [];
-    const findings =
-      keyFindings.length > 0
-        ? keyFindings.map((finding: string) => `- ${finding}`).join("\n")
-        : "- No key findings returned.";
-
-    return `**Research Brief: ${brief?.topic || "Research"}**
-
-**Confidence**: ${brief?.confidence || "unknown"}
-
-**Key Findings**:
-${findings}
-
-**Implications**: ${brief?.implications || "No implications returned."}
-
-**Recommended Action**: ${brief?.recommendedAction || "No recommended action returned."}`;
-  }
-
+  /** Drop the cached YAML ruleset so the next request reloads from disk. */
   static flushConfig(): void {
-    this.config = null;
-    console.log("[ManagerAgent] Config cache flushed; will reload from disk on next request");
-  }
-
-  private static async logRouting(request: OrchestratorRequest, agent: AgentName): Promise<void> {
-    try {
-      await fs.mkdir(LOG_DIR, { recursive: true });
-      const date = new Date().toISOString().split("T")[0];
-      const logFile = path.join(LOG_DIR, `routing-${date}.log`);
-      const entry =
-        JSON.stringify({
-          timestamp: new Date().toISOString(),
-          userId: request.userId,
-          agent,
-          messageLength: request.message.length,
-          conversationId: request.conversationId,
-        }) + "\n";
-      await fs.appendFile(logFile, entry);
-    } catch {}
+    flushHubConfig();
   }
 }
