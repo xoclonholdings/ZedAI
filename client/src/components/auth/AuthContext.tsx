@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
+import { apiFetch, readJsonResponse } from "@/lib/apiClient";
+
 type AuthUser = {
   id?: string;
   username: string;
@@ -35,13 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function checkSession() {
     try {
-      const res = await fetch("/api/me", {
-        credentials: "include",
-        cache: "no-store",
-      });
-      const data = await res.json();
+      const res = await apiFetch("/api/me");
+      const data = await readJsonResponse(res);
       setUser(data?.user ?? null);
-    } catch {
+    } catch (_error) {
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -50,11 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      await fetch("/api/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch {}
+      await apiFetch("/api/logout", { method: "POST" });
+    } catch (_error) {
+      // Logout should still clear local UI state if the API is unreachable.
+    }
     setUser(null);
   }
 
