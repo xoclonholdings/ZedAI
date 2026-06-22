@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/UseAuth";
 import { AuthProvider } from "@/components/auth/AuthContext";
+import { installApiFetchPatch } from "@/lib/apiClient";
 import { logClientRuntime } from "@/lib/runtimeLogger";
 import NotFound from "@/pages/not-found";
 import Chat from "@/pages/chat";
@@ -16,6 +17,8 @@ import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
+
+installApiFetchPatch();
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {
@@ -57,20 +60,6 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function Router() {
-  // Intentionally do NOT block on isLoading here. On a cold mount,
-  // /api/me can take a long time when Render's container is waking
-  // up — gating the whole UI behind that fetch made the app feel
-  // dead for several seconds on every relaunch. Instead we render
-  // routes immediately:
-  //
-  //   - Unauthenticated user (the common case when launching from
-  //     the home-screen shortcut): sees Login right away.
-  //   - Previously-signed-in user: briefly sees Login, then auth
-  //     resolves in the background and the route re-renders into
-  //     Chat/Admin/etc.
-  //
-  // Either way the user gets actionable content immediately
-  // instead of a spinner.
   const { isAuthenticated } = useAuth();
 
   return (
