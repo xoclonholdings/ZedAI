@@ -4,6 +4,7 @@ import { isAdmin, isAuthenticated } from "../localAuth";
 import { storage } from "../storage/databaseStorage";
 import { insertMessageSchema } from "../../shared/schema";
 import { ManagerAgent } from "../orchestrator/ManagerAgent";
+import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
 import { KnowledgeService } from "../services/KnowledgeService";
 import { injectMemory } from "../services/MemoryInjector";
 import {
@@ -27,7 +28,7 @@ import {
  * AdminSettingsStore).
  *
  * Endpoints:
- *   POST /api/orchestrate           Agent-mode chat dispatch via ManagerAgent
+ *   POST /api/orchestrate           Autonomous ZED dispatch through ZCOS
  *   GET  /api/orchestrate/status    Active vs planned agents + integrations
  *   POST /api/voice/transcribe      Stub for future Whisper integration
  *   GET  /api/admin/knowledge/overview  Counts for the admin Knowledge tab
@@ -68,7 +69,7 @@ export function registerOrchestrateAndMiscRoutes(
         includeAdminFoundation: !!req.user?.claims?.isAdmin,
       });
 
-      const response = await ManagerAgent.route({
+      const response = await ZedAutonomousOrchestrator.route({
         userId,
         message,
         conversationId,
@@ -90,6 +91,8 @@ export function registerOrchestrateAndMiscRoutes(
             metadata: {
               agent: response.agent,
               requiresApproval: response.requiresApproval,
+              autonomous: response.metadata?.autonomous,
+              flowRecommendation: response.metadata?.flowRecommendation,
             },
           }),
         );
@@ -104,7 +107,7 @@ export function registerOrchestrateAndMiscRoutes(
           : "The selected agent is temporarily unavailable.";
       res.json({
         error: "Orchestration failed",
-        reply: `Agent lane unavailable right now: ${detail}`,
+        reply: `ZED orchestration is unavailable right now: ${detail}`,
         agent: "ManagerAgent",
       });
     }
