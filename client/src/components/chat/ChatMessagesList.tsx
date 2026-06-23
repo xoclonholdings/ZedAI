@@ -1,6 +1,6 @@
 import ChatEmptyState from "./ChatEmptyState";
 import ChatMessage from "./ChatMessage";
-import type { AgentTarget, ConversationMode, Message } from "@shared/schema";
+import type { Message } from "@shared/schema";
 
 interface ChatMessagesListProps {
   messages: Message[];
@@ -13,8 +13,6 @@ interface ChatMessagesListProps {
   compact?: boolean;
   fontSize?: "small" | "medium" | "large";
   showTimestamps?: boolean;
-  currentMode: ConversationMode;
-  agentTarget: AgentTarget;
   onSelectSuggestion: (prompt: string) => void;
 }
 
@@ -40,8 +38,6 @@ export default function ChatMessagesList({
   compact = false,
   fontSize = "medium",
   showTimestamps = false,
-  currentMode,
-  agentTarget,
   onSelectSuggestion,
 }: ChatMessagesListProps) {
   const hasStreamingContent = Boolean(isStreaming && streamingMessage?.trim());
@@ -56,11 +52,7 @@ export default function ChatMessagesList({
       }`}
     >
       {messages.length === 0 && !isStreaming && !hasStartedTyping ? (
-        <ChatEmptyState
-          currentMode={currentMode}
-          agentTarget={agentTarget}
-          onSelectSuggestion={onSelectSuggestion}
-        />
+        <ChatEmptyState onSelectSuggestion={onSelectSuggestion} />
       ) : messages.length === 0 && !isStreaming ? (
         <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 zed-glass p-4 text-center text-xs text-muted-foreground md:text-sm">
           Sent. Waiting for the assistant to respond. If nothing arrives in a few seconds,
