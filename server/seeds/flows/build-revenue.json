@@ -1,0 +1,63 @@
+{
+  "id": "flow-build-revenue",
+  "slug": "build-revenue",
+  "name": "Build Revenue",
+  "category": "business",
+  "description": "Find the fastest realistic revenue path, prioritize the 80/20 work, and prepare an execution plan.",
+  "purpose": "Support business execution, offer intelligence, launch planning, positioning, and revenue modeling.",
+  "status": "published",
+  "version": 1,
+  "agents": ["business", "finance", "operations"],
+  "triggerConditions": ["manual", "weekly"],
+  "stages": [
+    {
+      "id": "stage-revenue-diagnosis",
+      "order": 1,
+      "name": "Revenue Diagnosis",
+      "description": "Clarify the current circumstances, constraints, assets, and fastest viable revenue paths.",
+      "assignedAgent": "business",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-current-state", "order": 1, "label": "Summarize current assets, constraints, and revenue channels from context." },
+        { "id": "step-fast-paths", "order": 2, "label": "Identify fastest realistic revenue paths." },
+        { "id": "step-8020", "order": 3, "label": "Apply 80/20 prioritization to find the highest-leverage path." }
+      ],
+      "outputs": ["recommendation", "report"]
+    },
+    {
+      "id": "stage-risk-model",
+      "order": 2,
+      "name": "Risk and Capital Model",
+      "description": "Model effort, cash needs, risk, upside, and invalidation points.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-capital-needs", "order": 1, "label": "Estimate capital, time, and tool requirements." },
+        { "id": "step-scenarios", "order": 2, "label": "Create base, conservative, and upside scenarios." },
+        { "id": "step-invalidation", "order": 3, "label": "Define invalidation points and risk controls." }
+      ],
+      "outputs": ["recommendation", "kpi_snapshot"]
+    },
+    {
+      "id": "stage-execution-plan",
+      "order": 3,
+      "name": "Execution Plan",
+      "description": "Convert the selected path into tasks, owner actions, and approval gates.",
+      "assignedAgent": "operations",
+      "requiresApproval": true,
+      "approvalRole": "admin",
+      "steps": [
+        { "id": "step-task-list", "order": 1, "label": "Build a task list for the selected revenue path." },
+        { "id": "step-approval-gates", "order": 2, "label": "Mark any spending, publishing, outreach, or production actions that require approval." },
+        { "id": "step-first-action", "order": 3, "label": "Define the first action to execute after approval." }
+      ],
+      "outputs": ["task_list", "decision_log", "report"]
+    }
+  ],
+  "userFacingLabel": "Build Revenue",
+  "userFacingBlurb": "Find the fastest viable revenue path and turn it into an approved execution plan.",
+  "icon": "TrendingUp",
+  "createdAt": "2026-06-23T00:00:00.000Z",
+  "updatedAt": "2026-06-23T00:00:00.000Z",
+  "publishedAt": "2026-06-23T00:00:00.000Z"
+}
