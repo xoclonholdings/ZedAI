@@ -4,9 +4,7 @@ import { Mic, MicOff, Paperclip, Send, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/components/auth/UseAuth";
-import type { AgentTarget, ConversationMode } from "@shared/schema";
 
-import { LanePicker } from "./chat-composer/LanePicker";
 import { useDictation } from "./chat-composer/useDictation";
 
 interface ChatComposerProps {
@@ -16,12 +14,6 @@ interface ChatComposerProps {
   onAbort?: () => void;
 
   isStreaming?: boolean;
-
-  currentMode: ConversationMode;
-  onModeChange: (mode: ConversationMode) => void;
-
-  agentTarget: AgentTarget;
-  onAgentTargetChange: (target: AgentTarget) => void;
 
   onOpenFileUpload: () => void;
 
@@ -35,10 +27,6 @@ export default function ChatComposer({
   onSend,
   onAbort,
   isStreaming,
-  currentMode,
-  onModeChange,
-  agentTarget,
-  onAgentTargetChange,
   onOpenFileUpload,
   editModeLabel,
   onCancelEdit,
@@ -108,7 +96,7 @@ export default function ChatComposer({
             value={value}
             onChange={(e) => onValueChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={dictation.isDictating ? "Listening…" : "Message Zed"}
+            placeholder={dictation.isDictating ? "Listening..." : "Message Zed"}
             rows={1}
             className={`block w-full max-h-[150px] resize-none overflow-y-auto border-0 bg-transparent px-2 text-left shadow-none outline-none placeholder:text-left focus-visible:ring-0 focus-visible:ring-offset-0 ${
               compact ? "min-h-[38px] py-1.5" : "min-h-[44px] py-2"
@@ -129,16 +117,6 @@ export default function ChatComposer({
           >
             <Paperclip size={16} />
           </Button>
-
-          <LanePicker
-            currentMode={currentMode}
-            agentTarget={agentTarget}
-            onPick={(opt) => {
-              if (opt.mode !== currentMode) onModeChange(opt.mode);
-              if (opt.mode === "agent" && opt.agent) onAgentTargetChange(opt.agent);
-              textareaRef.current?.focus();
-            }}
-          />
 
           <div className="flex-1" />
 
