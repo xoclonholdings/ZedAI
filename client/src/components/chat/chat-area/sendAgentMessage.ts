@@ -6,18 +6,17 @@ import type { AgentTarget, Message } from "@shared/schema";
 interface SendAgentMessageArgs {
   message: string;
   convId: string;
-  agentTarget: AgentTarget;
+  agentTarget?: AgentTarget;
   setIsStreaming: Dispatch<SetStateAction<boolean>>;
   setLocalMessages: Dispatch<SetStateAction<Message[]>>;
   queryClient: QueryClient;
 }
 
 /**
- * Agent-mode dispatch: posts to /api/orchestrate and appends the
- * full reply when it comes back. No streaming — ManagerAgent returns
- * a single response with the agent label in metadata. On failure,
- * a synthetic assistant reply explains what went wrong (auth vs
- * network vs other) so the conversation surface never dead-ends.
+ * Primary ZED dispatch: posts to /api/orchestrate and lets the server
+ * select agents, tools, memory, approvals, and optional flow suggestions.
+ * A legacy agentTarget can still be supplied by older surfaces, but the
+ * main chat UI intentionally omits it so users talk to ZED, not lanes.
  */
 export async function sendAgentMessage({
   message,
@@ -40,11 +39,14 @@ export async function sendAgentMessage({
   setLocalMessages((prev) => [...prev, tempUser]);
 
   try {
+    const payload: Record<string, unknown> = { message, conversationId: convId };
+    if (agentTarget) payload.targetAgent = agentTarget;
+
     const res = await fetch("/api/orchestrate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ message, conversationId: convId, targetAgent: agentTarget }),
+      body: JSON.stringify(payload),
     });
 
     let data: any;
@@ -61,7 +63,7 @@ export async function sendAgentMessage({
         ? `Session expired (HTTP ${res.status}). Please sign in again.`
         : data?.reply ||
           data?.error ||
-          `Agent request failed: HTTP ${res.status} ${res.statusText || ""}`.trim();
+          `ZED request failed: HTTP ${res.status} ${res.statusText || ""}`.trim();
     } else {
       replyContent = data?.reply || data?.error || "No response";
     }
@@ -87,7 +89,7 @@ export async function sendAgentMessage({
     });
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
   } catch (err: any) {
-    console.error("[Agent] Error:", err);
+    console.error("[ZED] Error:", err);
     setLocalMessages((prev) => {
       const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
       return [
@@ -97,7 +99,7 @@ export async function sendAgentMessage({
           id: `agent-err-${Date.now()}`,
           conversationId: convId,
           role: "assistant" as const,
-          content: `Agent request failed: ${err?.message || "network error"}`,
+          content: `ZED request failed: ${err?.message || "network error"}`,
           metadata: { agent: "ManagerAgent" },
           createdAt: new Date(),
         },
