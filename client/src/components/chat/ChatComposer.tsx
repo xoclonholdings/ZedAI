@@ -61,7 +61,7 @@ export default function ChatComposer({
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 140) + "px";
+    ta.style.height = Math.min(ta.scrollHeight, 150) + "px";
   }, [value]);
 
   const trimmed = value.trim();
@@ -98,33 +98,11 @@ export default function ChatComposer({
       )}
 
       <div
-        className={`flex items-end gap-2 rounded-2xl border border-white/10 bg-black/40 ${
+        className={`rounded-2xl border border-white/10 bg-black/40 ${
           compact ? "px-2 py-1.5" : "px-2.5 py-2"
         }`}
       >
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onOpenFileUpload}
-          className="h-9 w-9 shrink-0 self-end rounded-xl text-muted-foreground hover:text-purple-300"
-          title="Attach a file"
-          aria-label="Attach a file"
-        >
-          <Paperclip size={16} />
-        </Button>
-
-        <LanePicker
-          currentMode={currentMode}
-          agentTarget={agentTarget}
-          onPick={(opt) => {
-            if (opt.mode !== currentMode) onModeChange(opt.mode);
-            if (opt.mode === "agent" && opt.agent) onAgentTargetChange(opt.agent);
-            textareaRef.current?.focus();
-          }}
-        />
-
-        <div className="flex-1 relative min-w-0">
+        <div className="min-w-0">
           <Textarea
             ref={textareaRef}
             value={value}
@@ -132,51 +110,80 @@ export default function ChatComposer({
             onKeyDown={handleKeyDown}
             placeholder={dictation.isDictating ? "Listening…" : "Message Zed"}
             rows={1}
-            className={`max-h-[140px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 ${
-              dictation.speechSupported ? "pr-9" : "pr-2"
-            } ${compact ? "min-h-[36px] py-1.5" : "min-h-[40px] py-2"} ${textClass}`}
+            className={`block w-full max-h-[150px] resize-none overflow-y-auto border-0 bg-transparent px-2 text-left shadow-none outline-none placeholder:text-left focus-visible:ring-0 focus-visible:ring-offset-0 ${
+              compact ? "min-h-[38px] py-1.5" : "min-h-[44px] py-2"
+            } ${textClass}`}
             disabled={isStreaming}
           />
+        </div>
+
+        <div className="mt-2 flex w-full items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onOpenFileUpload}
+            className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground hover:text-purple-300"
+            title="Attach a file"
+            aria-label="Attach a file"
+          >
+            <Paperclip size={16} />
+          </Button>
+
+          <LanePicker
+            currentMode={currentMode}
+            agentTarget={agentTarget}
+            onPick={(opt) => {
+              if (opt.mode !== currentMode) onModeChange(opt.mode);
+              if (opt.mode === "agent" && opt.agent) onAgentTargetChange(opt.agent);
+              textareaRef.current?.focus();
+            }}
+          />
+
+          <div className="flex-1" />
+
           {dictation.speechSupported && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               onClick={dictation.toggle}
               disabled={isStreaming}
               title={dictation.isDictating ? "Stop dictation" : "Dictate"}
               aria-label={dictation.isDictating ? "Stop dictation" : "Dictate"}
-              className={`absolute right-1 bottom-1.5 flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
+              className={`h-9 w-9 shrink-0 rounded-xl ${
                 dictation.isDictating
-                  ? "text-red-300 bg-red-500/15 hover:bg-red-500/25"
-                  : "text-muted-foreground hover:text-cyan-300 hover:bg-white/5"
-              } disabled:opacity-40 disabled:pointer-events-none`}
+                  ? "bg-red-500/15 text-red-300 hover:bg-red-500/25"
+                  : "text-muted-foreground hover:bg-white/5 hover:text-cyan-300"
+              } disabled:pointer-events-none disabled:opacity-40`}
             >
               {dictation.isDictating ? <MicOff size={15} /> : <Mic size={15} />}
-            </button>
+            </Button>
+          )}
+
+          {isStreaming && onAbort ? (
+            <Button
+              type="button"
+              onClick={onAbort}
+              className="h-9 w-9 shrink-0 rounded-xl bg-white/10 p-0 text-foreground hover:bg-white/20"
+              title="Stop generation"
+              aria-label="Stop generation"
+            >
+              <Square size={14} className="fill-current" />
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleSend}
+              disabled={!canSend}
+              className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-0 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
+              title="Send (Enter)"
+              aria-label="Send message"
+            >
+              <Send size={15} />
+            </Button>
           )}
         </div>
-
-        {isStreaming && onAbort ? (
-          <Button
-            type="button"
-            onClick={onAbort}
-            className="h-9 w-9 shrink-0 self-end rounded-xl bg-white/10 p-0 text-foreground hover:bg-white/20"
-            title="Stop generation"
-            aria-label="Stop generation"
-          >
-            <Square size={14} className="fill-current" />
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            onClick={handleSend}
-            disabled={!canSend}
-            className="h-9 w-9 shrink-0 self-end rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-0 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
-            title="Send (Enter)"
-            aria-label="Send message"
-          >
-            <Send size={15} />
-          </Button>
-        )}
       </div>
     </div>
   );
