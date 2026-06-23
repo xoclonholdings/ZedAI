@@ -69,7 +69,7 @@ export class IntelligenceAgent {
     try {
       this.skill = await fs.readFile(SKILL_PATH, "utf-8");
     } catch {
-      this.skill = "Intelligence Agent: Research, analyze, and synthesize information. Produce structured briefs with findings, confidence levels, and actionable recommendations.";
+      this.skill = "Intelligence Agent: research, analyze, and synthesize information into clear, useful, mobile-readable answers with concrete next steps.";
     }
     return this.skill;
   }
@@ -86,7 +86,7 @@ export class IntelligenceAgent {
 
     const priorResearch = await querySimilarResearch(request.query, 2);
     const priorBlock = priorResearch
-      ? `\n\n## Prior Research (from semantic memory)\n${priorResearch}`
+      ? `\n\n## Prior context from memory\n${priorResearch}`
       : "";
     const memoryBlock = request.memoryContext
       ? `\n\n${request.memoryContext}`
@@ -94,24 +94,24 @@ export class IntelligenceAgent {
 
     const systemPrompt = `${skill}${memoryBlock}${priorBlock}
 
-## Current Research Task
+## Current request
 Query: ${request.query}
 Depth: ${request.depth || "shallow"}
 User: ${request.userId}
 
 ${searchBlock}
 
-When supplied knowledge context contains foundation, project, or retrieved memory, use it directly and reference it in the findings instead of ignoring it.
+Use supplied project memory when it is relevant. Keep the answer compact and mobile-readable. Do not use tables unless explicitly requested.
 
-Always produce output in this exact format:
-BRIEF: [topic summary]
-CONFIDENCE: [high|medium|low]
-KEY_FINDINGS:
-- finding 1
-- finding 2
-- finding 3
-IMPLICATIONS: [what this means for the user]
-RECOMMENDED_ACTION: [what to do next]`.trim();
+Return this internal parse format exactly so the app can render it naturally:
+SUBJECT: [short topic]
+SOURCE_STRENGTH: [high|medium|low]
+POINTS:
+- point 1
+- point 2
+- point 3
+MEANING: [what this means for the user]
+NEXT_STEP: [specific thing to do next]`.trim();
 
     const rawReply = await generateChatFromOllama(
       [{ role: "user", content: request.query }],
@@ -132,9 +132,9 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
     return generateChatFromOllama(
       [{
         role: "user",
-        content: `Synthesize the following documents about "${topic}" into a concise research brief:\n\n${documents.join("\n\n---\n\n")}`,
+        content: `Synthesize these documents about "${topic}" into a clear, concise answer:\n\n${documents.join("\n\n---\n\n")}`,
       }],
-      "You are a research synthesis expert. Be analytical, cite sources, flag speculation. Lead with the most important finding.",
+      "Lead with the most important point. Use natural headings only if they help. Avoid report labels, confidence labels, and dense tables.",
       { lane: "research" },
     );
   }
@@ -149,34 +149,34 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.startsWith("CONFIDENCE:")) {
+      if (trimmed.startsWith("SOURCE_STRENGTH:")) {
         const val = trimmed.split(":")[1]?.trim().toLowerCase();
         if (val === "high" || val === "low") confidence = val;
-      } else if (trimmed.startsWith("KEY_FINDINGS:")) {
+      } else if (trimmed.startsWith("POINTS:")) {
         inFindings = true;
       } else if (inFindings && trimmed.startsWith("-")) {
         keyFindings.push(trimmed.slice(1).trim());
-      } else if (trimmed.startsWith("IMPLICATIONS:")) {
+      } else if (trimmed.startsWith("MEANING:")) {
         inFindings = false;
-        implications = trimmed.slice("IMPLICATIONS:".length).trim();
-      } else if (trimmed.startsWith("RECOMMENDED_ACTION:")) {
-        recommendedAction = trimmed.slice("RECOMMENDED_ACTION:".length).trim();
-      } else if (implications && !trimmed.startsWith("RECOMMENDED_ACTION")) {
+        implications = trimmed.slice("MEANING:".length).trim();
+      } else if (trimmed.startsWith("NEXT_STEP:")) {
+        recommendedAction = trimmed.slice("NEXT_STEP:".length).trim();
+      } else if (implications && !trimmed.startsWith("NEXT_STEP")) {
         implications += " " + trimmed;
       }
     }
 
     const sources: string[] = [];
     if (searchSource !== "none") sources.push(`Web search via ${searchSource}`);
-    sources.push("Ollama local model synthesis");
+    sources.push("Configured model synthesis");
 
     return {
       topic: query,
       date: new Date().toISOString(),
       confidence,
       keyFindings: keyFindings.length > 0 ? keyFindings : [raw.slice(0, 300)],
-      implications: implications || "See full response for details.",
-      recommendedAction: recommendedAction || "Review findings and determine next steps.",
+      implications: implications || "The source context was limited, so this should be treated as a starting point rather than a final answer.",
+      recommendedAction: recommendedAction || "Give me one more constraint or target, and I can turn this into a cleaner action plan.",
       sources,
       agent: "IntelligenceAgent",
     };
@@ -191,8 +191,8 @@ RECOMMENDED_ACTION: [what to do next]`.trim();
         timestamp: new Date().toISOString(),
         userId: request.userId,
         query: request.query,
-        confidence: brief.confidence,
-        findingsCount: brief.keyFindings.length,
+        sourceStrength: brief.confidence,
+        pointsCount: brief.keyFindings.length,
         sources: brief.sources,
       }) + "\n";
       await fs.appendFile(logFile, entry);
