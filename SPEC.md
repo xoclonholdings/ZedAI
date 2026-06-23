@@ -362,9 +362,9 @@ The backend is deployed to Render; configuration lives in the Render dashboard
 The following locations are legacy reference material and should not be treated as canonical without verification:
 
 - `zed-docs/`
+- `docs/legacy/Agentic_Guide.md`
 - `docs/legacy/Agentic_Guide_Add_On.md`
 - `docs/legacy/SKILL.md`
-- `Agentic_Guide.md`
 - agent-specific skill markdown under `server/agents/**`
 
 If one of those files conflicts with this spec or the code, the code and `SPEC.md` win.
