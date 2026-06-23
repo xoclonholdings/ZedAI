@@ -1,35 +1,44 @@
 /**
- * Flow Builder type system.
+ * ZCOS Flow type system.
  *
- * Flows are operational execution pipelines that route work between
- * existing agents (Operations / Research / Business / Finance / etc.).
- * They are NOT chat conversations — they coordinate agents, tasks,
- * approvals, outputs, and automations into reusable templates.
+ * ZED renders and launches flows. ZCOS owns execution state, run lifecycle,
+ * approvals, outputs, errors, memory artifacts, and reports.
  *
  * Hierarchy:
- *   FlowDefinition  (the template — versioned, editable by admins)
+ *   FlowDefinition  (template — versioned, editable by admins)
  *     └─ FlowStage  (ordered group of work, may have approval gate)
- *          └─ FlowStep  (a single action within a stage)
+ *          └─ FlowStep  (single action within a stage)
  *
- *   FlowRun         (an instance of a FlowDefinition in execution)
+ *   FlowRun         (one execution instance)
  *     └─ FlowStageRun  (run-state for each stage)
  */
 
 export type FlowStatus = "draft" | "published" | "archived";
 
 export type FlowCategory =
-  | "revenue"
+  | "business"
+  | "research"
   | "content"
-  | "partnership"
+  | "learning"
+  | "product"
+  | "development"
+  | "marketing"
+  | "sales"
   | "finance"
+  | "operations"
+  | "personal_development"
+  | "planning"
+  | "strategy"
+  | "execution"
+  | "revenue"
+  | "partnership"
   | "project"
   | "social"
   | "pr"
   | "security"
-  | "operations"
   | "custom";
 
-/** Lane key used by ManagerAgent + agents. Mirrors ProviderLane in server/. */
+/** Lane key used by ManagerAgent + providers. */
 export type FlowAgentKey =
   | "operations"
   | "research"
@@ -54,8 +63,7 @@ export interface FlowStep {
   order: number;
   label: string;
   detail?: string;
-  /** Optional hook string — when execution engine routes this step, it
-   *  looks up a handler keyed by automationKey. Empty = manual. */
+  /** Optional hook string for future typed handlers. Empty = model/manual stage. */
   automationKey?: string;
 }
 
@@ -64,14 +72,10 @@ export interface FlowStage {
   order: number;
   name: string;
   description?: string;
-  /** Which agent lane is responsible. Empty = manual stage. */
   assignedAgent?: FlowAgentKey;
-  /** Must a human sign off before the run advances past this stage? */
   requiresApproval: boolean;
-  /** Whose signature is required — defaults to "user" if requiresApproval. */
   approvalRole?: "user" | "admin";
   steps: FlowStep[];
-  /** Output types this stage produces, for downstream stages to consume. */
   outputs?: FlowOutputType[];
 }
 
@@ -85,27 +89,16 @@ export interface FlowDefinition {
 
   status: FlowStatus;
   version: number;
-
-  /** Which agent lanes participate. Stage-level assignedAgent values must
-   *  be a subset of this list. */
   agents: FlowAgentKey[];
-
-  /** Plain-string trigger conditions (e.g. "manual", "weekly", "on new lead").
-   *  Stored as strings for now; execution engine interprets later. */
   triggerConditions: string[];
-
   stages: FlowStage[];
 
-  /** What the front-facing user picks. Should read like an outcome, not a
-   *  process — e.g. "Build Revenue", "Launch Something". */
   userFacingLabel: string;
   userFacingBlurb: string;
-  /** Optional lucide-react icon name for the front-facing tile. */
   icon?: string;
 
   createdAt: string;
   updatedAt: string;
-  /** ISO timestamp when first published. */
   publishedAt?: string;
 }
 
@@ -125,14 +118,44 @@ export type FlowStageRunStatus =
   | "skipped"
   | "failed";
 
+export interface FlowApprovalRecord {
+  id: string;
+  stageId: string;
+  status: "pending" | "approved" | "rejected" | "expired";
+  role: "user" | "admin";
+  requestedAt: string;
+  resolvedAt?: string;
+  note?: string;
+}
+
+export interface FlowErrorRecord {
+  id: string;
+  stageId?: string;
+  message: string;
+  timestamp: string;
+  retryable: boolean;
+  context?: Record<string, unknown>;
+}
+
+export interface FlowReport {
+  id: string;
+  title: string;
+  createdAt: string;
+  executiveSummary: string;
+  keyFindings: string[];
+  decisions: string[];
+  approvals: FlowApprovalRecord[];
+  actionsTaken: string[];
+  outputsGenerated: string[];
+  recommendedNextSteps: string[];
+}
+
 export interface FlowStageRun {
   stageId: string;
   status: FlowStageRunStatus;
   startedAt?: string;
   completedAt?: string;
-  /** Whatever the stage produced — text summary or JSON-serialisable object. */
   output?: string | Record<string, unknown>;
-  /** Approval-queue entry id, if this stage hit an approval gate. */
   approvalId?: string;
   notes?: string;
   error?: string;
@@ -148,17 +171,26 @@ export interface FlowRun {
 
   status: FlowRunStatus;
   startedAt: string;
+  updatedAt: string;
   completedAt?: string;
   currentStageId?: string;
 
-  /** Shared blackboard for this run — all stages can read/write. Replaces
-   *  fragile direct agent-to-agent messaging. */
+  progressPct: number;
+  completedStageIds: string[];
+  pendingStageIds: string[];
+  estimatedRemainingWork: string;
+
+  approvals: FlowApprovalRecord[];
+  outputs: Record<string, unknown>;
+  errors: FlowErrorRecord[];
+  report?: FlowReport;
+
+  /** Shared blackboard for this run. All stages read/write this instead of direct agent-to-agent messaging. */
   context: Record<string, unknown>;
 
   stageRuns: FlowStageRun[];
 }
 
-/** Default-construct payload for the admin "create new flow" form. */
 export const DEFAULT_FLOW_DRAFT: Omit<
   FlowDefinition,
   "id" | "slug" | "createdAt" | "updatedAt"
