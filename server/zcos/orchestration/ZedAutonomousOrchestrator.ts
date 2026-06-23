@@ -26,7 +26,10 @@ function appendFlowSuggestion(reply: string, recommendationName: string, reason:
  */
 export class ZedAutonomousOrchestrator {
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
-    const { targetAgent: _legacyTargetAgent, ...autonomousRequest } = request;
+    const autonomousRequest: OrchestratorRequest = {
+      ...request,
+      targetAgent: undefined,
+    };
 
     const [response, flowRecommendation] = await Promise.all([
       ManagerAgent.route(autonomousRequest),
