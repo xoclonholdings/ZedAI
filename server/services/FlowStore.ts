@@ -5,17 +5,16 @@ import { randomUUID } from "crypto";
 import { HUB_DIR, SERVER_DIR } from "../utils/repoPaths";
 import type {
   FlowDefinition,
+  FlowErrorRecord,
   FlowRun,
   FlowStageRun,
 } from "../../shared/flow-types";
 
 /**
- * File-system layout (under hub/flows/):
- *   library/<slug>.json     — editable flow definitions (admin reads/writes)
- *   runs/<runId>.json       — execution state for active/completed runs
+ * ZCOS-owned file-backed flow store.
  *
- * Seed flow templates ship at server/seeds/flows/*.json and are copied to
- * library/ on first boot only — admin edits aren't overwritten on update.
+ * ZED calls routes. Routes call ZCOS flow services. ZCOS owns definitions,
+ * run state, approvals, outputs, errors, and reports under hub/flows/.
  */
 
 const FLOWS_DIR = path.resolve(HUB_DIR, "flows");
@@ -50,6 +49,35 @@ function slugify(name: string): string {
     .slice(0, 60) || `flow-${Date.now()}`;
 }
 
+function hydrateRun(run: FlowRun): FlowRun {
+  const completedStageIds = run.stageRuns
+    .filter((stageRun) => stageRun.status === "completed" || stageRun.status === "skipped")
+    .map((stageRun) => stageRun.stageId);
+  const pendingStageIds = run.stageRuns
+    .filter((stageRun) => stageRun.status === "pending" || stageRun.status === "awaiting_approval")
+    .map((stageRun) => stageRun.stageId);
+  const total = Math.max(run.stageRuns.length, 1);
+  const progressPct = Math.round((completedStageIds.length / total) * 100);
+
+  return {
+    ...run,
+    updatedAt: run.updatedAt || run.startedAt,
+    progressPct: run.status === "completed" ? 100 : progressPct,
+    completedStageIds,
+    pendingStageIds,
+    estimatedRemainingWork:
+      run.status === "completed"
+        ? "Complete"
+        : pendingStageIds.length === 0
+          ? "Finalizing"
+          : `${pendingStageIds.length} stage${pendingStageIds.length === 1 ? "" : "s"} remaining`,
+    approvals: run.approvals || [],
+    outputs: run.outputs || {},
+    errors: run.errors || [],
+    context: run.context || {},
+  };
+}
+
 let didSeedRun = false;
 
 async function seedLibraryFromTemplatesOnce() {
@@ -61,7 +89,7 @@ async function seedLibraryFromTemplatesOnce() {
   try {
     seedFiles = await fs.readdir(SEEDS_DIR);
   } catch {
-    return; // no seeds shipped
+    return;
   }
 
   for (const file of seedFiles) {
@@ -70,10 +98,9 @@ async function seedLibraryFromTemplatesOnce() {
     const libraryPath = path.resolve(LIBRARY_DIR, file);
     try {
       await fs.access(libraryPath);
-      // Already present — admin may have edited it. Don't overwrite.
       continue;
     } catch {
-      // Not present — copy seed in.
+      // copy seed below
     }
     const seed = await readJson<FlowDefinition>(seedPath);
     if (!seed) continue;
@@ -172,8 +199,6 @@ export const FlowStore = {
     return this.createDefinition(rest);
   },
 
-  // ── Runs ────────────────────────────────────────────────────────────
-
   async listRuns(opts?: { userId?: string; limit?: number }): Promise<FlowRun[]> {
     await ensureDirs();
     const files = await fs.readdir(RUNS_DIR);
@@ -182,15 +207,17 @@ export const FlowStore = {
       if (!file.endsWith(".json")) continue;
       const run = await readJson<FlowRun>(path.resolve(RUNS_DIR, file));
       if (!run) continue;
-      if (opts?.userId && run.userId !== opts.userId) continue;
-      runs.push(run);
+      const hydrated = hydrateRun(run);
+      if (opts?.userId && hydrated.userId !== opts.userId) continue;
+      runs.push(hydrated);
     }
     runs.sort((a, b) => (a.startedAt < b.startedAt ? 1 : -1));
     return opts?.limit ? runs.slice(0, opts.limit) : runs;
   },
 
   async getRun(runId: string): Promise<FlowRun | null> {
-    return readJson<FlowRun>(path.resolve(RUNS_DIR, `${runId}.json`));
+    const run = await readJson<FlowRun>(path.resolve(RUNS_DIR, `${runId}.json`));
+    return run ? hydrateRun(run) : null;
   },
 
   async startRun(input: {
@@ -205,7 +232,7 @@ export const FlowStore = {
       stageId: stage.id,
       status: "pending",
     }));
-    const run: FlowRun = {
+    const run = hydrateRun({
       id: randomUUID(),
       flowId: input.flow.id,
       flowSlug: input.flow.slug,
@@ -214,10 +241,18 @@ export const FlowStore = {
       conversationId: input.conversationId,
       status: "queued",
       startedAt: now,
+      updatedAt: now,
       currentStageId: input.flow.stages[0]?.id,
+      progressPct: 0,
+      completedStageIds: [],
+      pendingStageIds: stageRuns.map((stageRun) => stageRun.stageId),
+      estimatedRemainingWork: `${stageRuns.length} stage${stageRuns.length === 1 ? "" : "s"} remaining`,
+      approvals: [],
+      outputs: {},
+      errors: [],
       context: input.context || {},
       stageRuns,
-    };
+    });
     await writeJson(path.resolve(RUNS_DIR, `${run.id}.json`), run);
     return run;
   },
@@ -225,8 +260,25 @@ export const FlowStore = {
   async updateRun(runId: string, patch: Partial<FlowRun>): Promise<FlowRun | null> {
     const existing = await this.getRun(runId);
     if (!existing) return null;
-    const merged: FlowRun = { ...existing, ...patch, id: existing.id };
+    const merged = hydrateRun({
+      ...existing,
+      ...patch,
+      id: existing.id,
+      updatedAt: new Date().toISOString(),
+    });
     await writeJson(path.resolve(RUNS_DIR, `${runId}.json`), merged);
     return merged;
+  },
+
+  async appendError(runId: string, error: Omit<FlowErrorRecord, "id" | "timestamp">): Promise<FlowRun | null> {
+    const run = await this.getRun(runId);
+    if (!run) return null;
+    return this.updateRun(runId, {
+      errors: run.errors.concat({
+        ...error,
+        id: randomUUID(),
+        timestamp: new Date().toISOString(),
+      }),
+    });
   },
 };
