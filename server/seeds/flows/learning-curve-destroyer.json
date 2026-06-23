@@ -1,0 +1,62 @@
+{
+  "id": "flow-learning-curve-destroyer",
+  "slug": "learning-curve-destroyer",
+  "name": "Learning Curve Destroyer",
+  "category": "learning",
+  "description": "Diagnose gaps, simulate errors, explain the subject back simply, and produce a personal learning path.",
+  "purpose": "Help the user learn a skill faster by finding confusion points and converting them into a concrete practice plan.",
+  "status": "published",
+  "version": 1,
+  "agents": ["research", "manager", "operations"],
+  "triggerConditions": ["manual"],
+  "stages": [
+    {
+      "id": "stage-gap-detection",
+      "order": 1,
+      "name": "Hidden Gap Detector",
+      "description": "Find likely missing concepts, fragile assumptions, and terms the user may be skipping past.",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-map-subject", "order": 1, "label": "Map the target skill or subject from the provided context." },
+        { "id": "step-find-gaps", "order": 2, "label": "Identify hidden prerequisite gaps and likely confusion points." },
+        { "id": "step-rank-gaps", "order": 3, "label": "Rank gaps by impact on learning speed." }
+      ],
+      "outputs": ["recommendation", "task_list"]
+    },
+    {
+      "id": "stage-error-simulator",
+      "order": 2,
+      "name": "Real Error Simulator",
+      "description": "Generate realistic mistakes and correction drills for the highest-impact gaps.",
+      "assignedAgent": "manager",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-create-errors", "order": 1, "label": "Create realistic failure cases based on the detected gaps." },
+        { "id": "step-explain-corrections", "order": 2, "label": "Explain the correction pattern for each failure." },
+        { "id": "step-feynman", "order": 3, "label": "Convert the concept into a simple Feynman-style explanation prompt." }
+      ],
+      "outputs": ["draft", "recommendation"]
+    },
+    {
+      "id": "stage-learning-path",
+      "order": 3,
+      "name": "Personal Learning Path",
+      "description": "Turn the findings into a practice sequence with checkpoints.",
+      "assignedAgent": "operations",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-build-path", "order": 1, "label": "Create a focused learning path with daily practice blocks." },
+        { "id": "step-checkpoints", "order": 2, "label": "Define verification checkpoints and pass/fail criteria." },
+        { "id": "step-next-action", "order": 3, "label": "Give the first concrete action to start immediately." }
+      ],
+      "outputs": ["task_list", "report"]
+    }
+  ],
+  "userFacingLabel": "Destroy a Learning Curve",
+  "userFacingBlurb": "Find the hidden gaps, simulate mistakes, and get a practical learning path.",
+  "icon": "Brain",
+  "createdAt": "2026-06-23T00:00:00.000Z",
+  "updatedAt": "2026-06-23T00:00:00.000Z",
+  "publishedAt": "2026-06-23T00:00:00.000Z"
+}
