@@ -1,0 +1,62 @@
+{
+  "id": "flow-competitor-analysis",
+  "slug": "competitor-analysis",
+  "name": "Competitor Analysis",
+  "category": "research",
+  "description": "Research competitors, identify positioning gaps, and produce an action-ready opportunity report.",
+  "purpose": "Give ZED a repeatable research flow for market, audience, content, and competitor intelligence.",
+  "status": "published",
+  "version": 1,
+  "agents": ["research", "business", "manager"],
+  "triggerConditions": ["manual", "weekly"],
+  "stages": [
+    {
+      "id": "stage-market-scan",
+      "order": 1,
+      "name": "Market Scan",
+      "description": "Collect competitor positioning, visible offers, content angles, and audience signals.",
+      "assignedAgent": "research",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-identify-players", "order": 1, "label": "Identify direct and adjacent competitors from the context." },
+        { "id": "step-map-offers", "order": 2, "label": "Map competitor offers, audience promises, and pricing signals when available." },
+        { "id": "step-detect-patterns", "order": 3, "label": "Detect repeated positioning, content, and product patterns." }
+      ],
+      "outputs": ["report", "recommendation"]
+    },
+    {
+      "id": "stage-gap-analysis",
+      "order": 2,
+      "name": "Gap Analysis",
+      "description": "Find content gaps, offer gaps, and weak points in competitor execution.",
+      "assignedAgent": "business",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-content-gaps", "order": 1, "label": "Identify content and messaging gaps." },
+        { "id": "step-offer-gaps", "order": 2, "label": "Identify offer, pricing, or product gaps." },
+        { "id": "step-opportunity-rank", "order": 3, "label": "Rank opportunities by speed, cost, and expected leverage." }
+      ],
+      "outputs": ["recommendation", "task_list"]
+    },
+    {
+      "id": "stage-action-memo",
+      "order": 3,
+      "name": "Action Memo",
+      "description": "Produce a concise next-move memo with risks and recommended execution steps.",
+      "assignedAgent": "manager",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-summarize", "order": 1, "label": "Summarize what matters." },
+        { "id": "step-recommend", "order": 2, "label": "Recommend the highest-leverage move." },
+        { "id": "step-taskify", "order": 3, "label": "Convert the recommendation into next tasks." }
+      ],
+      "outputs": ["report", "task_list"]
+    }
+  ],
+  "userFacingLabel": "Analyze Competitors",
+  "userFacingBlurb": "Find market gaps, weak competitor moves, and the best next opportunity.",
+  "icon": "Search",
+  "createdAt": "2026-06-23T00:00:00.000Z",
+  "updatedAt": "2026-06-23T00:00:00.000Z",
+  "publishedAt": "2026-06-23T00:00:00.000Z"
+}
