@@ -1,20 +1,17 @@
 /**
  * AgentApprovalAdapter
  *
- * One canonical path for the legacy agents (OperationsAgent,
- * BusinessManagerAgent, FinanceAgent) to register an action that
- * needs approval. Replaces the per-agent direct writes to
- * hub/shared-memory/episodic/approval-queue.json so admin sees a
- * single, unified queue.
+ * One canonical path for agents and ZCOS-owned execution services to register
+ * an action that needs approval. Replaces direct writes to scattered approval
+ * files so admin sees a single, unified queue.
  *
  * Flow:
- *   1. Build a TaskExecutionPlan from the agent's draft.
+ *   1. Build a TaskExecutionPlan from the draft/proposal.
  *   2. Persist as a TaskRecord via TaskLifecycleManager.
  *   3. Run ApprovalWatchdog so the right approval_status / role is set
  *      and the admin notification (and email) is dispatched.
  *
- * Returns the task_id so the agent can include it in its response
- * (e.g. so the user can be told "tracking as task task-abc123").
+ * Returns the task_id so callers can persist it as the approvalId.
  */
 
 import {
@@ -29,20 +26,21 @@ export type AgentSource =
   | "OperationsAgent"
   | "BusinessManagerAgent"
   | "FinanceAgent"
-  | "IntelligenceAgent";
+  | "IntelligenceAgent"
+  | "ZcosFlowEngine";
 
 export interface AgentApprovalInput {
   user_id: string;
   conversation_id?: string | null;
-  /** The user's original request that triggered the agent. */
+  /** The user's original request or flow-stage approval reason. */
   message: string;
-  /** The agent's draft / plan output. */
+  /** The agent's draft / plan output / approval context. */
   draft: string;
-  /** Which agent produced the draft. */
+  /** Which agent or ZCOS service produced the approval request. */
   agent: AgentSource;
   /** Hint for plan classification. Optional; auto-derived when omitted. */
   task_type_hint?: TaskType;
-  /** Free-form capabilities the agent flagged (used for context). */
+  /** Free-form capabilities the agent/service flagged for context. */
   capabilities?: string[];
 }
 
@@ -63,8 +61,6 @@ export class AgentApprovalAdapter {
       },
     });
 
-    // The plan summary is generic ("Prepared resolve plan for: ...") — we
-    // augment it with the agent name so the admin sees who asked.
     plan.summary = `[${input.agent}] ${plan.summary}`;
 
     const task = await TaskLifecycleManager.create({
@@ -73,14 +69,12 @@ export class AgentApprovalAdapter {
       plan,
     });
 
-    // Stash the agent's draft as the first log entry for traceability.
     await TaskLifecycleManager.appendLog(
       task.id,
       "info",
-      `Draft from ${input.agent}: ${input.draft.slice(0, 240)}${input.draft.length > 240 ? "…" : ""}`,
+      `Draft from ${input.agent}: ${input.draft.slice(0, 240)}${input.draft.length > 240 ? "..." : ""}`,
     );
 
-    // Watchdog sets approval_status/role and fires the admin email.
     const verdict = await ApprovalWatchdog.evaluate(task);
 
     await logSecurityEvent({
