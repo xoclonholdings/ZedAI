@@ -5,7 +5,7 @@ import type { AgentName, HubConfig, OrchestratorRequest } from "./types";
 
 /**
  * URL / web-research intent detection. Capability-level, not lane-
- * level — even if the user has another agent selected, a message
+ * level — even if a legacy caller supplies another target, a message
  * with a URL or "look this up" intent gets force-routed to research.
  */
 export function isWebLookupIntent(message: string): boolean {
@@ -256,7 +256,7 @@ export function classifyWithKeywords(message: string, config: HubConfig): AgentN
 /**
  * Top-level lane picker. Order:
  *   1. Web-lookup intent overrides everything (capability routing)
- *   2. Explicit UI selection (chip in the composer)
+ *   2. Legacy explicit target support for non-primary callers
  *   3. LLM classifier
  *   4. Keyword fallback
  */
