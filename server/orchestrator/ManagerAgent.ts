@@ -3,6 +3,7 @@ import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
+import { getZedResponsePolicy, type ZedResponseMode } from "../services/ZedResponsePolicy";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 
 import { flushHubConfig, loadHubConfig } from "./manager-agent/config";
@@ -14,6 +15,12 @@ import type {
   OrchestratorResponse,
 } from "./manager-agent/types";
 
+function responseModeForAgent(agent: string): ZedResponseMode {
+  if (agent === "IntelligenceAgent") return "research";
+  if (agent === "BusinessManagerAgent" || agent === "FinanceAgent") return "strategy";
+  return "chat";
+}
+
 /**
  * Front door for every agent-mode message. Walks tier enforcement,
  * builds the knowledge context, picks a lane, dispatches to the
@@ -22,12 +29,12 @@ import type {
  * orchestrate-and-misc.ts both speak.
  *
  * The actual dispatching pieces live in ./manager-agent/:
- *   types.ts            — request/response shapes + AgentName
- *   config.ts           — YAML ruleset cache (load + flush)
- *   agent-selection.ts  — web-intent detection, LLM classifier,
+ *   types.ts            - request/response shapes + AgentName
+ *   config.ts           - YAML ruleset cache (load + flush)
+ *   agent-selection.ts  - web-intent detection, LLM classifier,
  *                         keyword classifier, selectAgent()
- *   format.ts           — formatBrief for research replies
- *   routing-log.ts      — daily append-only routing log
+ *   format.ts           - formatBrief for research replies
+ *   routing-log.ts      - daily append-only routing log
  */
 export class ManagerAgent {
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
@@ -63,6 +70,10 @@ export class ManagerAgent {
           ).prompt;
 
     const agent = await selectAgent(request.message, config, request.targetAgent);
+    const agentContext = [knowledgePrompt, getZedResponsePolicy(responseModeForAgent(agent))]
+      .filter(Boolean)
+      .join("\n\n");
+
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await logRouting(request, agent);
 
@@ -79,7 +90,7 @@ export class ManagerAgent {
               ? "deep"
               : "shallow",
           conversationId: request.conversationId,
-          memoryContext: knowledgePrompt,
+          memoryContext: agentContext,
         };
         const brief = await IntelligenceAgent.research(researchReq);
         reply = formatBrief(brief);
@@ -92,7 +103,7 @@ export class ManagerAgent {
           userId: request.userId,
           task: request.message,
           conversationId: request.conversationId,
-          memoryContext: knowledgePrompt,
+          memoryContext: agentContext,
         });
         return {
           reply: filterOutputForTier3(resp.message),
@@ -111,7 +122,7 @@ export class ManagerAgent {
           userId: request.userId,
           task: request.message,
           conversationId: request.conversationId,
-          memoryContext: knowledgePrompt,
+          memoryContext: agentContext,
         });
         return {
           reply: filterOutputForTier3(resp.message),
@@ -128,7 +139,7 @@ export class ManagerAgent {
           message: request.message,
           conversationId: request.conversationId,
           context: request.context,
-          memoryContext: knowledgePrompt,
+          memoryContext: agentContext,
         };
         const opResp: AgentResponse = await OperationsAgent.process(opReq);
         reply = opResp.reply;
