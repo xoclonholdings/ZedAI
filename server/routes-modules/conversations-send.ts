@@ -17,11 +17,12 @@ import {
   getResolvedTargetName,
 } from "../core/providers/provider-executor";
 import { buildZedAdminContext } from "../services/ZedContextBuilder";
+import { getZedResponsePolicy } from "../services/ZedResponsePolicy";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { requireConversation } from "./conversations-crud";
 
 /**
- * POST /api/conversations/:id/messages — the big SSE handler.
+ * POST /api/conversations/:id/messages - the big SSE handler.
  *
  * Lives in its own module because it pulls in the entire chat stack
  * (tier enforcement, ManagerAgent for web-lookup routing, memory
@@ -30,21 +31,25 @@ import { requireConversation } from "./conversations-crud";
  */
 
 const ZED_IDENTITY_PROMPT = [
-  "You are ZED, the AI assistant for Zed Hub.",
+  "You are ZED, the conversational interface for the Zebulon Commander ecosystem.",
   "Never describe yourself as 'an agent named Agent' or 'ZED Hub's agent'.",
   "If asked your name, answer simply: 'I am ZED.'",
-  "Use any provided memory context as background knowledge when it is relevant.",
+  "Use provided memory context as background knowledge when it is relevant.",
   "If the knowledge context already identifies the company, project, brand, or user goals, answer from that context instead of asking broad generic follow-up questions.",
-  "When the answer is grounded in known foundation, rules, or project memory, prefer a direct, specific response.",
-  "Match your response length to the question. Greetings get one short sentence. Simple factual questions get one direct answer. Reserve long structured responses for genuinely complex or multi-part requests.",
+  "When the answer is grounded in known foundation, rules, or project memory, be direct and specific.",
+  "Match your response length to the question. Greetings get one short sentence. Simple setup questions get the answer and the next concrete step. Long explanations are only for complex or explicitly detailed requests.",
   "Do not restate the question, do not write preamble like 'Great question!' or 'Here is the answer:', and do not summarize what you're about to say before saying it.",
-  "Output in GitHub-flavored markdown. Use **bold** for emphasis, bulleted or numbered lists for enumerations, tables for structured comparisons, and fenced code blocks for code. Never emit literal <br> or <br/> tags — use blank lines or list items instead.",
-  "If a table would help, render it as a real markdown table with pipes and a separator row. Don't paste the markdown source as plain text.",
+  "Use mobile-readable GitHub-flavored markdown. Prefer short paragraphs and compact bullets. Use natural headings only when helpful.",
+  "Do not use default report labels such as Research Brief, Confidence, Key Findings, Findings, Implications, Recommended Action, Executive Summary, Analysis Results, Final Assessment, Full Response, or See full response for details.",
+  "Do not use large markdown tables unless the user explicitly asks for a table or the data cannot be understood clearly without one. Prefer bullets, grouped lines, or short code blocks on mobile.",
+  "When showing multiple environment variables, commands, config values, or KEY=value lines, use a fenced code block so they stay readable.",
+  "Recognize lightweight response modes when requested: Chat, Research, Build, Strategy, and Memory. Do not build a mode switch UI inside the response.",
+  "Never emit literal <br> or <br/> tags. Use blank lines or list items instead.",
 ].join(" ");
 
 /**
  * Detects when a chat-mode message is actually a web lookup / research
- * intent and should be routed through ManagerAgent → IntelligenceAgent
+ * intent and should be routed through ManagerAgent -> IntelligenceAgent
  * (which has WebSearchService wired) instead of plain chat streaming.
  * Otherwise ZED replies "I cannot browse" because the chat lane has
  * no tool access.
@@ -155,7 +160,7 @@ export function registerConversationSendRoutes(app: Express): void {
           return;
         } catch (webErr: any) {
           // Fall through to the normal chat path so the user still gets
-          // *some* reply rather than a 500. The runtime log captures it.
+          // some reply rather than a 500. The runtime log captures it.
           void logRuntimeEvent({
             level: "error",
             source: "server",
@@ -199,6 +204,7 @@ export function registerConversationSendRoutes(app: Express): void {
         });
         systemPrompt = [
           ZED_IDENTITY_PROMPT,
+          getZedResponsePolicy("chat"),
           systemPrompt || "",
           adminCtx.text,
           knowledge.prompt,
@@ -210,7 +216,7 @@ export function registerConversationSendRoutes(app: Express): void {
       }
 
       if (!systemPrompt) {
-        systemPrompt = ZED_IDENTITY_PROMPT;
+        systemPrompt = [ZED_IDENTITY_PROMPT, getZedResponsePolicy("chat")].join("\n\n");
       }
 
       if (stream) {
