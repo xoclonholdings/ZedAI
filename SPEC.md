@@ -14,20 +14,25 @@ This file is the canonical project spec for the repository. If the project chang
   - `main`
   - `backup`
 - Local AI model artifacts such as `models/` are not part of the repo and must remain ignored.
+- Repo-root files should stay limited to source folders, canonical docs, and required project config.
 
 ## Repository Layout
 
 ```text
 ZedAI/
+  attached_assets/  Static attached image assets
   client/           React + Vite frontend
+  docs/             Policies and legacy reference docs
+  hub/              Root shared-memory/config area
+  scripts/local/    Local Windows workstation/model-host launchers
   server/           Express + TypeScript backend
   shared/           Shared schemas and cross-app types/config
-  hub/              Root shared-memory/config area
   zed-docs/         Legacy documentation archive
   zed-memory/       Legacy raw ChatGPT export backup
-  zed-backend/      Legacy backend area
-  attached_assets/  Static attached image assets
   netlify.toml      Netlify deploy configuration
+  package.json      Root package metadata
+  package-lock.json Root dependency lockfile
+  tsconfig.json     Root TypeScript config
   SPEC.md           Canonical project spec
   README.md         Short entrypoint doc
 ```
@@ -62,16 +67,17 @@ ZedAI/
 - Main route file: `server/routes.ts`
 - Dev server script:
   - `server/package.json` -> `npm run dev`
-- Local production boot scripts at repo root:
-  - `zed-start.ps1`
-  - `zed-start-dev.ps1`
-  - `zed-stop.ps1`
-  - `install-zed-autostart.ps1`
-  - `install-zed-autostart.cmd`
-  - `install-zed-workstation.cmd`
-  - `install-zed-model-host.ps1`
-  - `install-zed-model-host.cmd`
-  - `zed-ollama-host.ps1`
+- Local production boot scripts:
+  - `scripts/local/zed-start.ps1`
+  - `scripts/local/zed-start-dev.ps1`
+  - `scripts/local/zed-stop.ps1`
+  - `scripts/local/start-zed-now.cmd`
+  - `scripts/local/install-zed-autostart.ps1`
+  - `scripts/local/install-zed-autostart.cmd`
+  - `scripts/local/install-zed-workstation.cmd`
+  - `scripts/local/install-zed-model-host.ps1`
+  - `scripts/local/install-zed-model-host.cmd`
+  - `scripts/local/zed-ollama-host.ps1`
 - Default local port:
   - `5000`
 
@@ -247,14 +253,14 @@ For Windows local production boot, the server now serves the built frontend from
 
 Local workstation boot is designed to be single-process in production:
 
-- `zed-start.ps1` builds the client when needed
+- `scripts/local/zed-start.ps1` builds the client when needed
 - then starts the backend in non-development mode
 - the backend serves the built frontend directly
 
 Optional separate model-host boot on a dedicated machine uses:
 
-- `install-zed-model-host.ps1`
-- `zed-ollama-host.ps1`
+- `scripts/local/install-zed-model-host.ps1`
+- `scripts/local/zed-ollama-host.ps1`
 
 ## Deploy Specification
 
@@ -308,6 +314,7 @@ Canonical config is in `netlify.toml`:
 
 - `netlify.toml`
 - `package.json`
+- `package-lock.json`
 - `tsconfig.json`
 
 ### Server
@@ -348,16 +355,16 @@ The backend is deployed to Render; configuration lives in the Render dashboard
 
 - `SPEC.md`
 - `README.md`
-- `MEMORY_IMPORT_POLICY.md`
+- `docs/policies/MEMORY_IMPORT_POLICY.md`
 
 ### Legacy Docs
 
 The following locations are legacy reference material and should not be treated as canonical without verification:
 
 - `zed-docs/`
+- `docs/legacy/Agentic_Guide_Add_On.md`
+- `docs/legacy/SKILL.md`
 - `Agentic_Guide.md`
-- `Agentic_Guide_Add_On.md`
-- `SKILL.md`
 - agent-specific skill markdown under `server/agents/**`
 
 If one of those files conflicts with this spec or the code, the code and `SPEC.md` win.
