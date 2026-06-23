@@ -1,6 +1,5 @@
 import ChatEmptyState from "./ChatEmptyState";
 import ChatMessage from "./ChatMessage";
-import ChatStreamIndicator from "./ChatStreamIndicator";
 import type { AgentTarget, ConversationMode, Message } from "@shared/schema";
 
 interface ChatMessagesListProps {
@@ -19,6 +18,17 @@ interface ChatMessagesListProps {
   onSelectSuggestion: (prompt: string) => void;
 }
 
+function buildStreamingMessage(content: string, messages: Message[]): Message {
+  return {
+    id: "streaming-assistant",
+    conversationId: messages[messages.length - 1]?.conversationId || "streaming",
+    role: "assistant",
+    content,
+    metadata: { streaming: true },
+    createdAt: new Date(),
+  } as Message;
+}
+
 export default function ChatMessagesList({
   messages,
   isStreaming,
@@ -34,8 +44,17 @@ export default function ChatMessagesList({
   agentTarget,
   onSelectSuggestion,
 }: ChatMessagesListProps) {
+  const hasStreamingContent = Boolean(isStreaming && streamingMessage?.trim());
+  const streamMessage = hasStreamingContent
+    ? buildStreamingMessage(streamingMessage || "", messages)
+    : null;
+
   return (
-    <div className={`relative z-10 flex-1 overflow-y-auto px-4 md:px-6 ${compact ? "py-2 md:py-3" : "py-3 md:py-4"}`}>
+    <div
+      className={`relative z-10 flex-1 overflow-y-auto px-3 pb-28 sm:px-4 md:px-6 md:pb-32 ${
+        compact ? "pt-2 md:pt-3" : "pt-3 md:pt-4"
+      }`}
+    >
       {messages.length === 0 && !isStreaming && !hasStartedTyping ? (
         <ChatEmptyState
           currentMode={currentMode}
@@ -44,12 +63,11 @@ export default function ChatMessagesList({
         />
       ) : messages.length === 0 && !isStreaming ? (
         <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 zed-glass p-4 text-center text-xs text-muted-foreground md:text-sm">
-          Sent. Waiting for the assistant to respond — if nothing arrives in a few seconds,
-          the provider call probably failed. Pull to refresh or open Admin → Logs to see the
-          error.
+          Sent. Waiting for the assistant to respond. If nothing arrives in a few seconds,
+          the provider call probably failed. Refresh or open Admin Logs to see the error.
         </div>
       ) : (
-        <div className={`mx-auto max-w-4xl ${compact ? "space-y-0.5" : "space-y-1.5"}`}>
+        <div className={`mx-auto w-full max-w-4xl ${compact ? "space-y-1" : "space-y-2"}`}>
           {messages.map((message) => (
             <ChatMessage
               key={message.id}
@@ -61,14 +79,26 @@ export default function ChatMessagesList({
               showTimestamp={showTimestamps}
             />
           ))}
+
+          {streamMessage ? (
+            <div aria-live="polite">
+              <ChatMessage
+                message={streamMessage}
+                onCopy={onCopyMessage}
+                compact={compact}
+                fontSize={fontSize}
+                showTimestamp={false}
+              />
+            </div>
+          ) : isStreaming ? (
+            <div className="sr-only" aria-live="polite">
+              ZED is preparing a response.
+            </div>
+          ) : null}
         </div>
       )}
 
-      {false && isStreaming && (
-        <ChatStreamIndicator streamingMessage={streamingMessage} />
-      )}
-
-      <div ref={messagesEndRef} />
+      <div ref={messagesEndRef} className="h-1" />
     </div>
   );
 }
