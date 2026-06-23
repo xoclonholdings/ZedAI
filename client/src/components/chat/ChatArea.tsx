@@ -8,16 +8,9 @@ import ChatHeader from "./ChatHeader";
 import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
 import { sendAgentMessage } from "./chat-area/sendAgentMessage";
-import { sendChatMessage } from "./chat-area/sendChatMessage";
 import { useConversationMutations } from "./chat-area/useConversationMutations";
 
-import type {
-  Conversation,
-  Message,
-  File as DBFile,
-  ConversationMode,
-  AgentTarget,
-} from "@shared/schema";
+import type { Conversation, Message, File as DBFile } from "@shared/schema";
 
 interface ChatAreaProps {
   conversation?: Conversation;
@@ -40,23 +33,16 @@ export default function ChatArea({
   const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
-  const [currentMode, setCurrentMode] = useState<ConversationMode>(
-    (conversation?.mode as ConversationMode) || "chat",
-  );
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
   const [localMessages, setLocalMessages] = useState<Message[]>(messages);
-  const [agentTarget, setAgentTarget] = useState<AgentTarget>("operations");
   const [composerValue, setComposerValue] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
-  const { updateModeMutation, ensureConversationTitle } = useConversationMutations(
-    conversation,
-    conversationId,
-  );
+  const { ensureConversationTitle } = useConversationMutations(conversation, conversationId);
 
   const compactMessages = !!user?.personalization?.compactMessages;
   const fontSize =
@@ -80,6 +66,7 @@ export default function ChatArea({
   async function handleSend(message: string) {
     if (!message.trim() || isStreaming) return;
     setHasStartedTyping(true);
+    setStreamingMessage("");
 
     let convId = conversationId;
 
@@ -89,7 +76,7 @@ export default function ChatArea({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ title: message.slice(0, 50), mode: currentMode }),
+          body: JSON.stringify({ title: message.slice(0, 50), mode: "chat" }),
         });
         const newConv = await res.json();
         if (!newConv?.id) throw new Error("Conversation creation returned no id");
@@ -106,33 +93,13 @@ export default function ChatArea({
     setEditingMessageId(null);
     setComposerValue("");
 
-    if (currentMode === "agent") {
-      await sendAgentMessage({
-        message,
-        convId: convId!,
-        agentTarget,
-        setIsStreaming,
-        setLocalMessages,
-        queryClient,
-      });
-    } else {
-      await sendChatMessage({
-        message,
-        convId: convId!,
-        abortRef,
-        setIsStreaming,
-        setStreamingMessage,
-        setLocalMessages,
-        queryClient,
-      });
-    }
-  }
-
-  function handleModeToggle(mode: ConversationMode) {
-    setCurrentMode(mode);
-    if (conversationId) {
-      updateModeMutation.mutate(mode);
-    }
+    await sendAgentMessage({
+      message,
+      convId: convId!,
+      setIsStreaming,
+      setLocalMessages,
+      queryClient,
+    });
   }
 
   function handleFileUpload() {
@@ -171,8 +138,6 @@ export default function ChatArea({
           compact={compactMessages}
           fontSize={fontSize}
           showTimestamps={showTimestamps}
-          currentMode={currentMode}
-          agentTarget={agentTarget}
           onSelectSuggestion={(prompt) => setComposerValue(prompt)}
         />
 
@@ -192,10 +157,6 @@ export default function ChatArea({
               onSend={handleSend}
               onAbort={() => abortRef.current?.abort()}
               isStreaming={isStreaming}
-              currentMode={currentMode}
-              onModeChange={handleModeToggle}
-              agentTarget={agentTarget}
-              onAgentTargetChange={setAgentTarget}
               onOpenFileUpload={() => setShowFileUpload(true)}
               editModeLabel={editingMessageId ? "Editing message draft" : null}
               onCancelEdit={
