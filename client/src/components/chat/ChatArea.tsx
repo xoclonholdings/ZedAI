@@ -96,6 +96,7 @@ export default function ChatArea({
     await sendAgentMessage({
       message,
       convId: convId!,
+      abortRef,
       setIsStreaming,
       setLocalMessages,
       queryClient,
