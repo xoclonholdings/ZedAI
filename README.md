@@ -1,6 +1,6 @@
 # ZED AI
 
-The canonical project spec is [SPEC.md](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/SPEC.md).
+The canonical project spec is [SPEC.md](./SPEC.md).
 
 If project behavior, architecture, deploy steps, branch policy, or repo structure changes, update `SPEC.md` first.
 
@@ -13,26 +13,19 @@ npm run dev
 
 Server runs on `http://localhost:5000`.
 
-## Windows Auto Start
+## Local Workstation Scripts
 
-For a hands-off local workstation boot flow:
+Local Windows boot/install scripts live in [scripts/local](./scripts/local/).
 
-- [C:\Users\DGN\Desktop\Xoclon_Holdings\Zed\ZedAI\install-zed-workstation.cmd](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/install-zed-workstation.cmd)
-  - installs workstation logon startup
-- [C:\Users\DGN\Desktop\Xoclon_Holdings\Zed\ZedAI\install-zed-model-host.cmd](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/install-zed-model-host.cmd)
-  - installs the Ollama model host on `D:` and pulls the default ZED model stack
-- [C:\Users\DGN\Desktop\Xoclon_Holdings\Zed\ZedAI\zed-start.ps1](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/zed-start.ps1)
-  - builds the client when needed and starts the production server on `http://127.0.0.1:5000`
-- [C:\Users\DGN\Desktop\Xoclon_Holdings\Zed\ZedAI\zed-ollama-host.ps1](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/zed-ollama-host.ps1)
-  - runs the local Ollama host using `D:\.ollama\models`
-- [C:\Users\DGN\Desktop\Xoclon_Holdings\Zed\ZedAI\zed-start-dev.ps1](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/zed-start-dev.ps1)
-  - optional dual-process dev launcher
-- [C:\Users\DGN\Desktop\Xoclon_Holdings\Zed\ZedAI\zed-stop.ps1](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/zed-stop.ps1)
-  - stops managed ZED processes
+- `scripts/local/start-zed-now.cmd` starts ZED and opens the browser.
+- `scripts/local/install-zed-workstation.cmd` installs workstation logon startup.
+- `scripts/local/install-zed-model-host.cmd` installs the local Ollama model host and pulls the default model stack.
+- `scripts/local/zed-start-dev.ps1` starts the optional dual-process dev launcher.
+- `scripts/local/zed-stop.ps1` stops managed ZED processes.
 
 ## Deploy
 
-Netlify is configured from [netlify.toml](C:/Users/DGN/Desktop/Xoclon_Holdings/Zed/ZedAI/netlify.toml) with:
+Netlify is configured from [netlify.toml](./netlify.toml) with:
 
 - base: `client`
 - build: `npm install && npm run build`
