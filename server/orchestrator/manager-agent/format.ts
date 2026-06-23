@@ -1,23 +1,45 @@
 /**
- * Renders an IntelligenceAgent research brief into the markdown the
- * chat surface displays. Defensive about missing fields because the
- * shape can vary depending on which research depth ran.
+ * Renders an IntelligenceAgent result into mobile-readable markdown.
+ * The user-facing shape intentionally avoids stiff report labels.
  */
 export function formatBrief(brief: any): string {
-  const keyFindings = Array.isArray(brief?.keyFindings) ? brief.keyFindings : [];
-  const findings =
-    keyFindings.length > 0
-      ? keyFindings.map((finding: string) => `- ${finding}`).join("\n")
-      : "- No key findings returned.";
+  const points = Array.isArray(brief?.keyFindings)
+    ? brief.keyFindings.filter(Boolean)
+    : [];
+  const pointLines =
+    points.length > 0
+      ? points.map((finding: string) => `- ${finding}`).join("\n")
+      : "- I could not pull out clean supporting points from the model response.";
 
-  return `**Research Brief: ${brief?.topic || "Research"}**
+  const directAnswer =
+    points[0] ||
+    brief?.implications ||
+    `I checked ${brief?.topic || "the request"} and found enough to give you a direction.`;
 
-**Confidence**: ${brief?.confidence || "unknown"}
+  const sources = Array.isArray(brief?.sources)
+    ? brief.sources.filter(Boolean)
+    : [];
+  const sourceLines = sources.length > 0
+    ? sources.map((source: string) => `- ${source}`).join("\n")
+    : "- No external source trail was recorded.";
 
-**Key Findings**:
-${findings}
+  const nextStep =
+    brief?.recommendedAction &&
+    !/review findings|determine next steps/i.test(brief.recommendedAction)
+      ? brief.recommendedAction
+      : "Tell me whether you want the short action plan, the source trail, or a deeper pass.";
 
-**Implications**: ${brief?.implications || "No implications returned."}
+  return `${directAnswer}
 
-**Recommended Action**: ${brief?.recommendedAction || "No recommended action returned."}`;
+### What matters
+
+${pointLines}
+
+### What I'd do next
+
+${nextStep}
+
+### Source trail
+
+${sourceLines}`;
 }
