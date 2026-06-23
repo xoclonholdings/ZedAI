@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
 import type { AgentTarget, Message } from "@shared/schema";
 
@@ -7,6 +7,7 @@ interface SendAgentMessageArgs {
   message: string;
   convId: string;
   agentTarget?: AgentTarget;
+  abortRef?: MutableRefObject<AbortController | null>;
   setIsStreaming: Dispatch<SetStateAction<boolean>>;
   setLocalMessages: Dispatch<SetStateAction<Message[]>>;
   queryClient: QueryClient;
@@ -22,11 +23,15 @@ export async function sendAgentMessage({
   message,
   convId,
   agentTarget,
+  abortRef,
   setIsStreaming,
   setLocalMessages,
   queryClient,
 }: SendAgentMessageArgs) {
   setIsStreaming(true);
+
+  const controller = new AbortController();
+  if (abortRef) abortRef.current = controller;
 
   const tempUser: Message = {
     id: `temp-user-${Date.now()}`,
@@ -46,6 +51,7 @@ export async function sendAgentMessage({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
+      signal: controller.signal,
       body: JSON.stringify(payload),
     });
 
@@ -89,6 +95,7 @@ export async function sendAgentMessage({
     });
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
   } catch (err: any) {
+    const wasAborted = err?.name === "AbortError";
     console.error("[ZED] Error:", err);
     setLocalMessages((prev) => {
       const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
@@ -99,13 +106,16 @@ export async function sendAgentMessage({
           id: `agent-err-${Date.now()}`,
           conversationId: convId,
           role: "assistant" as const,
-          content: `ZED request failed: ${err?.message || "network error"}`,
+          content: wasAborted
+            ? "Request stopped."
+            : `ZED request failed: ${err?.message || "network error"}`,
           metadata: { agent: "ManagerAgent" },
           createdAt: new Date(),
         },
       ];
     });
   } finally {
+    if (abortRef && abortRef.current === controller) abortRef.current = null;
     setIsStreaming(false);
   }
 }
