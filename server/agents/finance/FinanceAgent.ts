@@ -4,6 +4,8 @@ import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 import { formatResultsForPrompt, webSearch } from "../../services/WebSearchService";
 import { querySimilarResearch, storeResearchBrief } from "../../services/ChromaService";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
+import { buildTradingKnowledgeContext } from "../../zcos/trading/TradingKnowledgeBase";
+import { TradingStore } from "../../zcos/trading/TradingStore";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR, REPO_ROOT } from "../../utils/repoPaths";
 
 const SKILL_PATH = path.resolve(REPO_ROOT, "server/agents/finance/SKILL.md");
@@ -34,7 +36,7 @@ function detectCapabilities(task: string) {
   if (/(forex|fx|eurusd|gbpusd|usdjpy|audusd|currency pair|pip|pips)/.test(lower)) {
     capabilities.add("forex");
   }
-  if (/(trade|trading|entry|exit|stop loss|take profit|position|setup|chart|price action|portfolio)/.test(lower)) {
+  if (/(trade|trading|entry|exit|stop loss|take profit|position|setup|chart|price action|portfolio|paper trade|journal|backtest)/.test(lower)) {
     capabilities.add("trading");
   }
   if (/(wealth|prosperity|capital|compound|allocation|risk|cashflow|returns|net worth)/.test(lower)) {
@@ -45,6 +47,10 @@ function detectCapabilities(task: string) {
 }
 
 function needsApproval(task: string) {
+  const lower = task.toLowerCase();
+  if (/(paper trade|paper trading|simulated|simulation|journal|backtest|back test)/.test(lower)) {
+    return false;
+  }
   return /(buy|sell|short|long|open position|close position|rebalance|allocate|move funds|wire|swap)/i.test(task);
 }
 
@@ -113,6 +119,19 @@ export class FinanceAgent {
     const searchBlock = searchResponses.map((response) => formatResultsForPrompt(response)).join("\n\n");
     const priorResearch = await querySimilarResearch(request.task, 3);
     const priorBlock = priorResearch ? `\n\n## Shared Blackboard Retrieval\n${priorResearch}` : "";
+    const tradingKnowledge = await buildTradingKnowledgeContext(request.task).catch(
+      () => "Trading knowledge context unavailable.",
+    );
+    const tradingPerformance = await TradingStore.getPerformance(request.userId).catch(() => null);
+    const performanceBlock = tradingPerformance
+      ? [
+          `Paper trades: ${tradingPerformance.closedTrades} closed, ${tradingPerformance.openTrades} open`,
+          `Win rate: ${(tradingPerformance.winRate * 100).toFixed(1)}%`,
+          `Expectancy: ${tradingPerformance.expectancy}`,
+          `Profit factor: ${tradingPerformance.profitFactor}`,
+          `Max drawdown: ${tradingPerformance.maximumDrawdown}`,
+        ].join("\n")
+      : "No paper-trading performance report available yet.";
 
     const systemPrompt = `${skill}
 
@@ -121,8 +140,19 @@ You are ZED's Finance Agent.
 Coverage:
 - crypto and web3 market reasoning
 - forex market structure and trade framing
+- stocks and ETFs analysis
 - trading plans, risk management, and scenario planning
 - wealth prosperity, capital growth, and allocation thinking
+
+Phase 1 Trading Intelligence:
+- Learn first, simulate second, validate third, trade fourth.
+- Treat every trade as analysis or paper trading unless a future approved broker integration exists.
+- Do not claim a live trade was placed, funds were moved, or an order was transmitted.
+- No real-money execution exists in Phase 1.
+- Use stored trading knowledge, TradingView snapshots, scanner output, paper-trading history, and journal lessons when relevant.
+- No setup is valid without market structure, liquidity analysis, entry, stop, target, risk/reward, and invalidation.
+- If the user asks for live execution, convert it into a trade thesis, paper-trade plan, or approval-gated future action.
+- If the user asks to log a paper trade, require market, asset class, symbol, direction, entry, stop, target, size, risk amount, and entry reason.
 
 Rules:
 - Never claim a trade was placed, funds were moved, or any market action actually executed.
@@ -131,10 +161,16 @@ Rules:
 - Optimize for predictive analysis and the fastest realistic accumulation path based on the user's current circumstances and market conditions.
 - Prefer outputs with: thesis, current conditions, predictive drivers, scenario map, setup, risk, invalidation, and next step.
 - If enough context exists, convert broad ambition into a concrete accumulation path with timelines, prerequisites, and tradeoffs.
-- Use the same shared blackboard mindset as Intelligence: pull from shared memory, prior research, and live search context before answering.
+- Use the same shared blackboard mindset as Intelligence: pull from shared memory, prior research, trading knowledge, paper-trading history, and live search context before answering.
 
 Active focus lanes: ${scope.map(capabilityLabel).join(", ")}.
 ${request.memoryContext ? `\nShared knowledge context:\n${request.memoryContext}` : ""}${priorBlock}
+
+## Trading Knowledge Context
+${tradingKnowledge}
+
+## Paper Trading Performance Context
+${performanceBlock}
 
 ## Live Market / Research Context
 ${searchBlock}
