@@ -1,0 +1,46 @@
+{
+  "id": "flow-strategy-validation",
+  "slug": "strategy-validation",
+  "name": "Strategy Validation",
+  "category": "finance",
+  "description": "Validate a trading strategy through knowledge rules, backtesting notes, paper-trade evidence, and risk controls.",
+  "purpose": "Prevent ZED from treating untested ideas as tradeable systems.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance", "research"],
+  "triggerConditions": ["manual", "monthly"],
+  "stages": [
+    {
+      "id": "stage-strategy-definition",
+      "order": 1,
+      "name": "Strategy Definition",
+      "description": "Define the rules before validation starts.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-rules", "order": 1, "label": "Define market, timeframe, setup criteria, entry, exit, stop, target, and invalidation rules." },
+        { "id": "step-risk", "order": 2, "label": "Define risk limits, max drawdown, max loss, and required sample size." }
+      ],
+      "outputs": ["report"]
+    },
+    {
+      "id": "stage-validation",
+      "order": 2,
+      "name": "Evidence Review",
+      "description": "Validate the strategy against simulated results and journal evidence.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-backtest", "order": 1, "label": "Review backtesting notes, scanner results, and paper-trading outcomes." },
+        { "id": "step-decision", "order": 2, "label": "Classify the strategy as reject, revise, observe, or continue paper validation." }
+      ],
+      "outputs": ["report", "recommendation"]
+    }
+  ],
+  "userFacingLabel": "Strategy Validation",
+  "userFacingBlurb": "Validate a trading strategy before trusting it for future automation.",
+  "icon": "ShieldAlert",
+  "createdAt": "2026-06-24T00:00:00.000Z",
+  "updatedAt": "2026-06-24T00:00:00.000Z",
+  "publishedAt": "2026-06-24T00:00:00.000Z"
+}
