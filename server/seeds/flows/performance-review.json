@@ -1,0 +1,46 @@
+{
+  "id": "flow-performance-review",
+  "slug": "performance-review",
+  "name": "Performance Review",
+  "category": "finance",
+  "description": "Analyze paper-trading results, pattern performance, rule violations, and improvement priorities.",
+  "purpose": "Help ZED identify what is working, what is failing, and what must improve before any future trading expansion.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance"],
+  "triggerConditions": ["manual", "weekly", "monthly"],
+  "stages": [
+    {
+      "id": "stage-metrics",
+      "order": 1,
+      "name": "Metrics Review",
+      "description": "Calculate current paper-trading performance.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-core-metrics", "order": 1, "label": "Review win rate, expectancy, profit factor, average winner, average loser, and drawdown." },
+        { "id": "step-patterns", "order": 2, "label": "Identify best/worst setups, asset classes, timeframes, mistakes, and rule violations." }
+      ],
+      "outputs": ["report"]
+    },
+    {
+      "id": "stage-improvement-plan",
+      "order": 2,
+      "name": "Improvement Plan",
+      "description": "Translate performance into focused practice priorities.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-priorities", "order": 1, "label": "Rank the next improvement priorities based on performance evidence." },
+        { "id": "step-rules", "order": 2, "label": "Update checklist guidance, watchlist focus, and setup acceptance criteria." }
+      ],
+      "outputs": ["report", "recommendation"]
+    }
+  ],
+  "userFacingLabel": "Performance Review",
+  "userFacingBlurb": "Review paper-trading performance and find the next improvement target.",
+  "icon": "BarChart3",
+  "createdAt": "2026-06-24T00:00:00.000Z",
+  "updatedAt": "2026-06-24T00:00:00.000Z",
+  "publishedAt": "2026-06-24T00:00:00.000Z"
+}
