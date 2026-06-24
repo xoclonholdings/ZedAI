@@ -22,6 +22,12 @@ function toNumber(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === "string" && value.trim()) return value.split(",").map((item) => item.trim()).filter(Boolean);
+  return [];
+}
+
 function requireFields(body: Record<string, unknown>, fields: string[]): string | null {
   for (const field of fields) {
     if (body[field] === undefined || body[field] === null || body[field] === "") {
@@ -43,7 +49,7 @@ export function registerTradingRoutes(app: Express): void {
       status: "active",
       phase: 1,
       mode: "education-analysis-simulation-only",
-      markets: ["stocks", "etfs", "crypto", "forex"],
+      markets: ["stocks", "etfs", "options", "futures", "crypto", "forex"],
       requiredKnowledgeAreas: TRADING_KNOWLEDGE_AREAS.length,
       buildSteps: TRADING_BUILD_SEQUENCE.length,
       primarySources: TRADING_SOURCE_LIST.map((source) => source.name),
@@ -81,7 +87,7 @@ export function registerTradingRoutes(app: Express): void {
       sourceType: req.body.sourceType,
       title: req.body.title,
       text: String(req.body.text),
-      tags: Array.isArray(req.body.tags) ? req.body.tags : [],
+      tags: toArray(req.body.tags),
     });
     res.json({ entry });
   });
@@ -95,11 +101,46 @@ export function registerTradingRoutes(app: Express): void {
       assetClass: req.body.assetClass,
       timeframe: String(req.body.timeframe),
       chartUrl: req.body.chartUrl,
-      indicators: Array.isArray(req.body.indicators) ? req.body.indicators : [],
+      indicators: toArray(req.body.indicators),
       notes: String(req.body.notes),
-      tags: Array.isArray(req.body.tags) ? req.body.tags : [],
+      tags: toArray(req.body.tags),
     });
     res.json({ entry });
+  });
+
+  app.get("/api/trading/tradingview/records", isAuthenticated, async (req: any, res) => {
+    const records = await TradingStore.listTradingViewRecords(userIdFrom(req));
+    res.json({ records });
+  });
+
+  app.post("/api/trading/tradingview/records", isAuthenticated, async (req: any, res) => {
+    const missing = requireFields(req.body || {}, ["type", "symbol", "assetClass", "title", "notes"]);
+    if (missing) return res.status(400).json({ error: `${missing} is required` });
+
+    const record = await TradingStore.addTradingViewRecord({
+      userId: userIdFrom(req),
+      type: req.body.type,
+      symbol: String(req.body.symbol).toUpperCase(),
+      assetClass: req.body.assetClass,
+      timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
+      title: String(req.body.title),
+      status: req.body.status || "active",
+      chartUrl: req.body.chartUrl,
+      trigger: req.body.trigger,
+      notes: String(req.body.notes),
+      tags: toArray(req.body.tags),
+    });
+    res.json({ record });
+  });
+
+  app.patch("/api/trading/tradingview/records/:id", isAuthenticated, async (req: any, res) => {
+    const record = await TradingStore.updateTradingViewRecord({
+      id: req.params.id,
+      userId: userIdFrom(req),
+      patch: req.body || {},
+    });
+    if (!record) return res.status(404).json({ error: "TradingView record not found" });
+    res.json({ record });
   });
 
   app.post("/api/trading/scanner/evaluate", isAuthenticated, async (req, res) => {
@@ -151,17 +192,32 @@ export function registerTradingRoutes(app: Express): void {
       marketStructure: String(req.body.marketStructure),
       liquidityAnalysis: String(req.body.liquidityAnalysis),
       timeframeAlignment: req.body.timeframeAlignment || {},
+      primaryTimeframe: req.body.primaryTimeframe,
       entryPlan: String(req.body.entryPlan),
       stopPlan: String(req.body.stopPlan),
       targetPlan: String(req.body.targetPlan),
       riskReward: req.body.riskReward === undefined ? null : toNumber(req.body.riskReward),
-      invalidationConditions: Array.isArray(req.body.invalidationConditions)
-        ? req.body.invalidationConditions
-        : [String(req.body.invalidationConditions)],
+      invalidationConditions: toArray(req.body.invalidationConditions),
       confidenceScore: toNumber(req.body.confidenceScore, 50),
       status: req.body.status,
       notes: req.body.notes,
     });
+    res.json({ thesis });
+  });
+
+  app.patch("/api/trading/theses/:id", isAuthenticated, async (req: any, res) => {
+    const thesis = await TradingStore.updateThesis({
+      id: req.params.id,
+      userId: userIdFrom(req),
+      patch: req.body || {},
+    });
+    if (!thesis) return res.status(404).json({ error: "Thesis not found" });
+    res.json({ thesis });
+  });
+
+  app.post("/api/trading/theses/:id/archive", isAuthenticated, async (req: any, res) => {
+    const thesis = await TradingStore.archiveThesis({ id: req.params.id, userId: userIdFrom(req) });
+    if (!thesis) return res.status(404).json({ error: "Thesis not found" });
     res.json({ thesis });
   });
 
@@ -193,15 +249,17 @@ export function registerTradingRoutes(app: Express): void {
       assetClass: req.body.assetClass,
       symbol: String(req.body.symbol).toUpperCase(),
       direction: req.body.direction,
+      timeframe: req.body.timeframe,
+      setupName: req.body.setupName,
       entry: toNumber(req.body.entry),
       stop: toNumber(req.body.stop),
       target: toNumber(req.body.target),
       size: toNumber(req.body.size),
       riskAmount: toNumber(req.body.riskAmount),
       entryReason: String(req.body.entryReason),
-      screenshots: Array.isArray(req.body.screenshots) ? req.body.screenshots : [],
-      lessonsLearned: Array.isArray(req.body.lessonsLearned) ? req.body.lessonsLearned : [],
-      ruleViolations: Array.isArray(req.body.ruleViolations) ? req.body.ruleViolations : [],
+      screenshots: toArray(req.body.screenshots),
+      lessonsLearned: toArray(req.body.lessonsLearned),
+      ruleViolations: toArray(req.body.ruleViolations),
     });
     res.json({ trade });
   });
@@ -215,8 +273,8 @@ export function registerTradingRoutes(app: Express): void {
       userId: userIdFrom(req),
       exitPrice: toNumber(req.body.exitPrice),
       exitReason: req.body.exitReason,
-      lessonsLearned: Array.isArray(req.body.lessonsLearned) ? req.body.lessonsLearned : [],
-      ruleViolations: Array.isArray(req.body.ruleViolations) ? req.body.ruleViolations : [],
+      lessonsLearned: toArray(req.body.lessonsLearned),
+      ruleViolations: toArray(req.body.ruleViolations),
     });
     if (!trade) return res.status(404).json({ error: "Paper trade not found" });
     res.json({ trade });
