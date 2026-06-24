@@ -1,0 +1,46 @@
+{
+  "id": "flow-trade-review",
+  "slug": "trade-review",
+  "name": "Trade Review",
+  "category": "finance",
+  "description": "Review a closed paper trade against the original thesis, rules, outcome, mistakes, and lessons learned.",
+  "purpose": "Turn every simulated trade into usable feedback for ZED's trading memory.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance"],
+  "triggerConditions": ["manual", "on_close"],
+  "stages": [
+    {
+      "id": "stage-outcome-review",
+      "order": 1,
+      "name": "Outcome Review",
+      "description": "Compare the closed trade to its original thesis.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-thesis", "order": 1, "label": "Review the original thesis, entry reason, stop, target, and invalidation." },
+        { "id": "step-result", "order": 2, "label": "Classify outcome, realized P&L, reward/risk, and whether the setup behaved as expected." }
+      ],
+      "outputs": ["report"]
+    },
+    {
+      "id": "stage-learning",
+      "order": 2,
+      "name": "Learning Capture",
+      "description": "Capture mistakes, rule compliance, and next improvements.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-violations", "order": 1, "label": "Document rule violations and execution errors." },
+        { "id": "step-lessons", "order": 2, "label": "Convert lessons into checklist improvements and memory notes." }
+      ],
+      "outputs": ["report", "recommendation"]
+    }
+  ],
+  "userFacingLabel": "Trade Review",
+  "userFacingBlurb": "Turn a closed paper trade into lessons and rule improvements.",
+  "icon": "FileText",
+  "createdAt": "2026-06-24T00:00:00.000Z",
+  "updatedAt": "2026-06-24T00:00:00.000Z",
+  "publishedAt": "2026-06-24T00:00:00.000Z"
+}
