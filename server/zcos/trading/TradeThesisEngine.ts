@@ -18,6 +18,7 @@ export interface CreateTradeThesisInput {
   marketStructure: string;
   liquidityAnalysis: string;
   timeframeAlignment?: Record<string, string>;
+  primaryTimeframe?: string;
   entryPlan: string;
   stopPlan: string;
   targetPlan: string;
@@ -65,12 +66,14 @@ export async function createTradeThesis(input: CreateTradeThesisInput): Promise<
     marketStructure: input.marketStructure,
     liquidityAnalysis: input.liquidityAnalysis,
     timeframeAlignment: input.timeframeAlignment || {},
+    primaryTimeframe: input.primaryTimeframe,
     entryPlan: input.entryPlan,
     stopPlan: input.stopPlan,
     targetPlan: input.targetPlan,
     riskReward: typeof input.riskReward === "number" ? input.riskReward : null,
     invalidationConditions: input.invalidationConditions,
     confidenceScore: clampConfidence(input.confidenceScore),
+    outcome: "unresolved",
     notes: [input.notes, `Relevant knowledge:\n${knowledgeContext}`].filter(Boolean).join("\n\n"),
   });
 
