@@ -4,6 +4,7 @@ import { importTradingKnowledge } from "./TradingKnowledgeBase";
 import { TradingStore } from "./TradingStore";
 
 export interface TradingViewSnapshotInput {
+  userId: string;
   symbol: string;
   assetClass: TradingAssetClass;
   timeframe: string;
@@ -14,9 +15,10 @@ export interface TradingViewSnapshotInput {
 }
 
 export async function importTradingViewSnapshot(input: TradingViewSnapshotInput): Promise<TradingKnowledgeEntry> {
-  const source = input.chartUrl || `TradingView:${input.symbol}:${input.timeframe}`;
+  const symbol = input.symbol.toUpperCase();
+  const source = input.chartUrl || `TradingView:${symbol}:${input.timeframe}`;
   const text = [
-    `Symbol: ${input.symbol.toUpperCase()}`,
+    `Symbol: ${symbol}`,
     `Asset class: ${input.assetClass}`,
     `Timeframe: ${input.timeframe}`,
     input.indicators?.length ? `Indicators: ${input.indicators.join(", ")}` : "Indicators: none listed",
@@ -26,13 +28,26 @@ export async function importTradingViewSnapshot(input: TradingViewSnapshotInput)
   const entry = await importTradingKnowledge({
     source,
     sourceType: "tradingview",
-    title: `TradingView snapshot: ${input.symbol.toUpperCase()} ${input.timeframe}`,
+    title: `TradingView snapshot: ${symbol} ${input.timeframe}`,
     text,
-    tags: [input.symbol.toUpperCase(), input.assetClass, input.timeframe, ...(input.tags || [])],
+    tags: [symbol, input.assetClass, input.timeframe, ...(input.tags || [])],
+  });
+
+  await TradingStore.addTradingViewRecord({
+    userId: input.userId,
+    type: "note",
+    symbol,
+    assetClass: input.assetClass,
+    timeframe: input.timeframe,
+    title: `Chart snapshot ${symbol} ${input.timeframe}`,
+    status: "active",
+    chartUrl: input.chartUrl,
+    notes: input.notes,
+    tags: [symbol, input.assetClass, input.timeframe, ...(input.tags || [])],
   });
 
   await TradingStore.appendMemory(
-    `TradingView snapshot imported for ${input.symbol.toUpperCase()} on ${input.timeframe}.`,
+    `TradingView snapshot imported for ${symbol} on ${input.timeframe}.`,
   );
 
   return entry;
