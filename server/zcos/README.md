@@ -9,6 +9,7 @@ This directory is the extraction boundary for services that will eventually move
 - Flows: `server/zcos/flows/ZcosFlowEngine.ts`
 - Flow persistence: `server/services/FlowStore.ts`
 - Flow execution compatibility layer: `server/services/flow/FlowExecutor.ts`
+- Trading Intelligence Phase 1: `server/zcos/trading/*`
 - Approvals: `server/services/approval/*`
 - Tasks: `server/services/execution/TaskLifecycleManager.ts`
 - Provider execution: `server/core/providers/*`
@@ -16,9 +17,15 @@ This directory is the extraction boundary for services that will eventually move
 
 ## Boundary Rule
 
-ZED routes and UI may launch flows, display runs, approve/reject gates, and show reports.
+ZED routes and UI may launch flows, display runs, approve/reject gates, show reports, and expose trading intelligence endpoints.
 
-ZCOS services create runs, execute stages, dispatch model/agent work, create approvals, write memory, track errors, and generate reports.
+ZCOS services create runs, execute stages, dispatch model/agent work, create approvals, write memory, track errors, generate reports, store trading knowledge, evaluate scanner observations, create trade theses, manage paper trades, and calculate simulation performance.
+
+## Trading Phase 1 Rule
+
+Trading Intelligence is education, analysis, simulation, paper trading, journaling, and strategy validation only.
+
+There are no broker connections, live orders, real-money execution, or capital movement in Phase 1.
 
 ## Current Extraction Path
 
