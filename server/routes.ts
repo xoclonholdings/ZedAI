@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { setupLocalAuth } from "./localAuth";
 import { logRuntimeEvent } from "./services/RuntimeLogger";
 import { registerFlowRoutes } from "./routes-modules/flows";
+import { registerTradingRoutes } from "./routes-modules/trading";
 import { registerEnvValidateRoute } from "./routes-modules/env-validate";
 import { registerExecutionRoutes } from "./services/execution/registerExecutionRoutes";
 import { registerIntakeRoutes } from "./services/intake/registerIntakeRoutes";
@@ -100,6 +101,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route-order requirement (/api/flows/runs before /api/flows/:id) is
   // preserved inside the module.
   registerFlowRoutes(app);
+
+  // ── Trading Intelligence Phase 1 (education, analysis, simulation) ─
+  // ZCOS-owned trading services. No broker connections or live orders.
+  registerTradingRoutes(app);
 
   // Env validator — pure logic in services/EnvValidator.ts, thin route
   // wrapper in routes-modules/env-validate.ts.
