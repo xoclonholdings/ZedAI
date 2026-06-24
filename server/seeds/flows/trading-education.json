@@ -1,0 +1,46 @@
+{
+  "id": "flow-trading-education",
+  "slug": "trading-education",
+  "name": "Trading Education",
+  "category": "finance",
+  "description": "Build structured trading knowledge from trusted sources and convert it into concepts, rules, mistakes, and setup criteria.",
+  "purpose": "Teach ZED trading discipline before any advanced automation is considered.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance", "research"],
+  "triggerConditions": ["manual", "weekly"],
+  "stages": [
+    {
+      "id": "stage-source-focus",
+      "order": 1,
+      "name": "Source Focus",
+      "description": "Select the education source and curriculum area.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-source", "order": 1, "label": "Identify the source: Trades By Sci, TopStep, TradingView Education, or manual notes." },
+        { "id": "step-area", "order": 2, "label": "Map the lesson to the required trading curriculum area." }
+      ],
+      "outputs": ["recommendation"]
+    },
+    {
+      "id": "stage-knowledge-extraction",
+      "order": 2,
+      "name": "Knowledge Extraction",
+      "description": "Extract structured rules and examples.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-concepts", "order": 1, "label": "Extract concepts, definitions, rules, patterns, mistakes, and best practices." },
+        { "id": "step-store", "order": 2, "label": "Store the structured knowledge for retrieval." }
+      ],
+      "outputs": ["report", "recommendation"]
+    }
+  ],
+  "userFacingLabel": "Trading Education",
+  "userFacingBlurb": "Turn trading lessons into structured ZED knowledge.",
+  "icon": "BookOpen",
+  "createdAt": "2026-06-24T00:00:00.000Z",
+  "updatedAt": "2026-06-24T00:00:00.000Z",
+  "publishedAt": "2026-06-24T00:00:00.000Z"
+}
