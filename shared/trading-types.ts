@@ -1,14 +1,17 @@
-export type TradingAssetClass = "stock" | "etf" | "crypto" | "forex";
+export type TradingAssetClass = "stock" | "etf" | "option" | "future" | "crypto" | "forex";
 
 export type TradeDirection = "long" | "short";
 
 export type TradingKnowledgeCategory =
   | "market_structure"
   | "liquidity"
+  | "supply_demand"
   | "trade_planning"
+  | "trade_management"
   | "risk_management"
   | "probability"
   | "multi_timeframe"
+  | "market_catalyst"
   | "journal_lesson"
   | "strategy_rule";
 
@@ -19,7 +22,7 @@ export interface TradingKnowledgeEntry {
   createdAt: string;
   updatedAt: string;
   source: string;
-  sourceType: "manual" | "tradingview" | "trades_by_sci" | "journal" | "backtest" | "other";
+  sourceType: "manual" | "tradingview" | "trades_by_sci" | "topstep" | "journal" | "backtest" | "other";
   category: TradingKnowledgeCategory;
   title: string;
   concepts: string[];
@@ -38,6 +41,7 @@ export interface TradingKnowledgeEntry {
 export interface TradeThesis {
   id: string;
   createdAt: string;
+  archivedAt?: string;
   userId: string;
   market: string;
   assetClass: TradingAssetClass;
@@ -48,16 +52,32 @@ export interface TradeThesis {
   marketStructure: string;
   liquidityAnalysis: string;
   timeframeAlignment: Record<string, string>;
+  primaryTimeframe?: string;
   entryPlan: string;
   stopPlan: string;
   targetPlan: string;
   riskReward: number | null;
   invalidationConditions: string[];
   confidenceScore: number;
+  outcome?: "unresolved" | "validated" | "invalidated" | "paper_traded";
   notes?: string;
 }
 
 export type PaperTradeStatus = "open" | "closed" | "cancelled";
+
+export interface TradeReviewReport {
+  id: string;
+  tradeId: string;
+  thesisId?: string;
+  createdAt: string;
+  originalThesis: string;
+  outcome: "win" | "loss" | "breakeven";
+  executionQuality: "excellent" | "good" | "needs_work" | "poor";
+  ruleCompliance: "clean" | "minor_violations" | "major_violations";
+  mistakes: string[];
+  lessonsLearned: string[];
+  recommendedImprovements: string[];
+}
 
 export interface PaperTrade {
   id: string;
@@ -71,6 +91,8 @@ export interface PaperTrade {
   symbol: string;
   direction: TradeDirection;
   status: PaperTradeStatus;
+  timeframe?: string;
+  setupName?: string;
   entry: number;
   stop: number;
   target: number;
@@ -85,6 +107,19 @@ export interface PaperTrade {
   screenshots: string[];
   lessonsLearned: string[];
   ruleViolations: string[];
+  reviewReport?: TradeReviewReport;
+}
+
+export interface TradingPatternAnalytics {
+  highestWinRateSetups: string[];
+  lowestWinRateSetups: string[];
+  mostProfitableConditions: string[];
+  mostCommonMistakes: string[];
+  mostCommonRuleViolations: string[];
+  bestAssetClasses: string[];
+  worstAssetClasses: string[];
+  bestTimeframes: string[];
+  worstTimeframes: string[];
 }
 
 export interface TradingPerformanceReport {
@@ -104,5 +139,25 @@ export interface TradingPerformanceReport {
   consecutiveLosses: number;
   mostSuccessfulSetups: string[];
   leastSuccessfulSetups: string[];
+  patternAnalytics: TradingPatternAnalytics;
   notes: string[];
+}
+
+export type TradingViewRecordType = "watchlist" | "alert" | "screener_result" | "note";
+
+export interface TradingViewRecord {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  type: TradingViewRecordType;
+  symbol: string;
+  assetClass: TradingAssetClass;
+  timeframe?: string;
+  title: string;
+  status: "active" | "resolved" | "archived";
+  chartUrl?: string;
+  trigger?: string;
+  notes: string;
+  tags: string[];
 }
