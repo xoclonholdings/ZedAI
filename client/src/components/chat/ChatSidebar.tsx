@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, MessageSquare } from "lucide-react";
+import { LayoutDashboard, MessageSquare, TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
@@ -290,6 +290,16 @@ export default function ChatSidebar({
 
       {/* Bottom controls */}
       <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/trading")}
+          className="w-full justify-start zed-button text-muted-foreground hover:text-cyan-300"
+        >
+          <TrendingUp className="mr-2 h-4 w-4" />
+          Trading Intelligence
+        </Button>
+
         <Button
           variant="ghost"
           size="sm"
