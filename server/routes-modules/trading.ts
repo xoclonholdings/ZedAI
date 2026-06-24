@@ -186,7 +186,6 @@ export function registerTradingRoutes(app: Express): void {
       screenshots: Array.isArray(req.body.screenshots) ? req.body.screenshots : [],
       lessonsLearned: Array.isArray(req.body.lessonsLearned) ? req.body.lessonsLearned : [],
       ruleViolations: Array.isArray(req.body.ruleViolations) ? req.body.ruleViolations : [],
-      market: String(req.body.market),
     });
     res.json({ trade });
   });
