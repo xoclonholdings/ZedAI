@@ -92,11 +92,12 @@ export function registerTradingRoutes(app: Express): void {
     res.json({ entry });
   });
 
-  app.post("/api/trading/tradingview/snapshot", isAuthenticated, async (req, res) => {
+  app.post("/api/trading/tradingview/snapshot", isAuthenticated, async (req: any, res) => {
     const missing = requireFields(req.body || {}, ["symbol", "assetClass", "timeframe", "notes"]);
     if (missing) return res.status(400).json({ error: `${missing} is required` });
 
     const entry = await importTradingViewSnapshot({
+      userId: userIdFrom(req),
       symbol: String(req.body.symbol),
       assetClass: req.body.assetClass,
       timeframe: String(req.body.timeframe),
