@@ -80,6 +80,12 @@ function calculateMaxDrawdown(closedTrades: PaperTrade[]): number {
   return Number(maxDrawdown.toFixed(4));
 }
 
+function calculateProfitFactor(grossWins: number, grossLosses: number): number {
+  if (grossLosses > 0) return Number((grossWins / grossLosses).toFixed(4));
+  if (grossWins > 0) return 999999;
+  return 0;
+}
+
 export const TradingStore = {
   async listKnowledge(): Promise<TradingKnowledgeEntry[]> {
     await ensureTradingDirs();
@@ -240,7 +246,7 @@ export const TradingStore = {
       winRate: Number(winRate.toFixed(4)),
       averageRewardRisk: Number(averageRewardRisk.toFixed(4)),
       expectancy: Number(expectancy.toFixed(4)),
-      profitFactor: grossLosses > 0 ? Number((grossWins / grossLosses).toFixed(4)) : grossWins > 0 ? Infinity : 0,
+      profitFactor: calculateProfitFactor(grossWins, grossLosses),
       averageWinner: Number(averageWinner.toFixed(4)),
       averageLoser: Number(averageLoser.toFixed(4)),
       realizedPnl: Number(realizedPnl.toFixed(4)),
