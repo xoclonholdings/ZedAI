@@ -1,0 +1,46 @@
+{
+  "id": "flow-paper-trade",
+  "slug": "paper-trade",
+  "name": "Paper Trade",
+  "category": "finance",
+  "description": "Open and manage a simulated paper trade from a documented thesis.",
+  "purpose": "Validate trade discipline in simulation before any future guarded execution is considered.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance"],
+  "triggerConditions": ["manual"],
+  "stages": [
+    {
+      "id": "stage-thesis-check",
+      "order": 1,
+      "name": "Thesis Check",
+      "description": "Confirm the trade has a real thesis before simulation starts.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-link", "order": 1, "label": "Link the paper trade to an existing thesis or create the missing thesis first." },
+        { "id": "step-risk", "order": 2, "label": "Confirm entry, stop, target, risk amount, position size, and invalidation." }
+      ],
+      "outputs": ["recommendation"]
+    },
+    {
+      "id": "stage-simulation",
+      "order": 2,
+      "name": "Simulation Tracking",
+      "description": "Track the simulated trade and preserve journal context.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-open", "order": 1, "label": "Open the simulated paper trade only. No broker, exchange, or real order is used." },
+        { "id": "step-monitor", "order": 2, "label": "Track status, notes, screenshots, and exit conditions until closure." }
+      ],
+      "outputs": ["report", "recommendation"]
+    }
+  ],
+  "userFacingLabel": "Paper Trade",
+  "userFacingBlurb": "Open a simulation-only trade from a documented setup.",
+  "icon": "Wallet",
+  "createdAt": "2026-06-24T00:00:00.000Z",
+  "updatedAt": "2026-06-24T00:00:00.000Z",
+  "publishedAt": "2026-06-24T00:00:00.000Z"
+}
