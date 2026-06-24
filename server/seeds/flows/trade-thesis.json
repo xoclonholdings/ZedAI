@@ -1,0 +1,46 @@
+{
+  "id": "flow-trade-thesis",
+  "slug": "trade-thesis",
+  "name": "Trade Thesis",
+  "category": "finance",
+  "description": "Create a documented trade thesis before any paper trade is opened.",
+  "purpose": "Ensure every setup has structure, liquidity, entry, stop, target, risk, and invalidation.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance"],
+  "triggerConditions": ["manual"],
+  "stages": [
+    {
+      "id": "stage-context",
+      "order": 1,
+      "name": "Market Context",
+      "description": "Frame the asset, timeframe, direction, and market context.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-market", "order": 1, "label": "Identify market, asset class, symbol, direction, and timeframe." },
+        { "id": "step-structure", "order": 2, "label": "Document market structure and liquidity conditions." }
+      ],
+      "outputs": ["recommendation"]
+    },
+    {
+      "id": "stage-plan",
+      "order": 2,
+      "name": "Trade Plan",
+      "description": "Build entry, stop, target, risk/reward, and invalidation.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-entry", "order": 1, "label": "Define entry, confirmation, stop, and target." },
+        { "id": "step-risk", "order": 2, "label": "Score risk/reward, confidence, and no-trade conditions." }
+      ],
+      "outputs": ["report", "recommendation"]
+    }
+  ],
+  "userFacingLabel": "Trade Thesis",
+  "userFacingBlurb": "Create a structured thesis before paper trading a setup.",
+  "icon": "Target",
+  "createdAt": "2026-06-24T00:00:00.000Z",
+  "updatedAt": "2026-06-24T00:00:00.000Z",
+  "publishedAt": "2026-06-24T00:00:00.000Z"
+}
