@@ -1,0 +1,47 @@
+{
+  "id": "flow-market-analysis",
+  "slug": "market-analysis",
+  "name": "Market Analysis",
+  "category": "finance",
+  "description": "Analyze an asset across structure, liquidity, catalysts, timeframe alignment, and no-trade conditions.",
+  "purpose": "Give ZED a repeatable process for evaluating stocks, ETFs, options, futures, crypto, and forex without placing trades.",
+  "status": "published",
+  "version": 1,
+  "agents": ["finance", "research"],
+  "triggerConditions": ["manual", "daily"],
+  "stages": [
+    {
+      "id": "stage-market-selection",
+      "order": 1,
+      "name": "Market Selection",
+      "description": "Identify the asset, market, timeframe, and analysis objective.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-symbol", "order": 1, "label": "Capture symbol, asset class, timeframe, and market session context." },
+        { "id": "step-catalysts", "order": 2, "label": "Check known catalysts such as earnings, CPI, FOMC, major news, or market-wide events." }
+      ],
+      "outputs": ["report", "recommendation"]
+    },
+    {
+      "id": "stage-technical-read",
+      "order": 2,
+      "name": "Technical Read",
+      "description": "Evaluate structure, liquidity, supply/demand, and multi-timeframe alignment.",
+      "assignedAgent": "finance",
+      "requiresApproval": false,
+      "steps": [
+        { "id": "step-structure", "order": 1, "label": "Document trend, range, BOS, CHOCH, support, resistance, supply, and demand." },
+        { "id": "step-liquidity", "order": 2, "label": "Identify liquidity pools, sweeps, equal highs/lows, and stop-hunt risks." },
+        { "id": "step-ranking", "order": 3, "label": "Rank the setup as watch, observe, possible setup, valid setup, or no trade." }
+      ],
+      "outputs": ["report", "recommendation"]
+    }
+  ],
+  "userFacingLabel": "Market Analysis",
+  "userFacingBlurb": "Analyze an asset before deciding whether a thesis is justified.",
+  "icon": "LineChart",
+  "createdAt": "2026-06-24T00:00:00.000Z",
+  "updatedAt": "2026-06-24T00:00:00.000Z",
+  "publishedAt": "2026-06-24T00:00:00.000Z"
+}
