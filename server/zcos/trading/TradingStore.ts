@@ -6,15 +6,19 @@ import { HUB_DIR, HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
 import type {
   PaperTrade,
   PaperTradeStatus,
+  TradeReviewReport,
   TradeThesis,
   TradingKnowledgeEntry,
+  TradingPatternAnalytics,
   TradingPerformanceReport,
+  TradingViewRecord,
 } from "../../../shared/trading-types";
 
 const TRADING_DIR = path.resolve(HUB_DIR, "trading");
 const KNOWLEDGE_PATH = path.resolve(TRADING_DIR, "knowledge.json");
 const THESES_PATH = path.resolve(TRADING_DIR, "trade-theses.json");
 const PAPER_TRADES_PATH = path.resolve(TRADING_DIR, "paper-trades.json");
+const TRADINGVIEW_PATH = path.resolve(TRADING_DIR, "tradingview-records.json");
 const TRADING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working", "trading-intelligence.md");
 
 async function ensureTradingDirs() {
@@ -84,6 +88,118 @@ function calculateProfitFactor(grossWins: number, grossLosses: number): number {
   if (grossLosses > 0) return Number((grossWins / grossLosses).toFixed(4));
   if (grossWins > 0) return 999999;
   return 0;
+}
+
+function setupNameFor(trade: PaperTrade, thesis?: TradeThesis): string {
+  return (
+    trade.setupName ||
+    thesis?.status ||
+    thesis?.reason?.slice(0, 48) ||
+    `${trade.symbol} ${trade.direction}`
+  );
+}
+
+function increment(map: Map<string, { count: number; wins: number; pnl: number }>, key: string, trade: PaperTrade) {
+  const existing = map.get(key) || { count: 0, wins: 0, pnl: 0 };
+  existing.count += 1;
+  existing.wins += trade.outcome === "win" ? 1 : 0;
+  existing.pnl += trade.realizedPnl || 0;
+  map.set(key, existing);
+}
+
+function rankedByWinRate(map: Map<string, { count: number; wins: number; pnl: number }>, direction: "best" | "worst") {
+  return Array.from(map.entries())
+    .filter(([, stats]) => stats.count > 0)
+    .sort((a, b) => {
+      const ar = a[1].wins / a[1].count;
+      const br = b[1].wins / b[1].count;
+      return direction === "best" ? br - ar || b[1].pnl - a[1].pnl : ar - br || a[1].pnl - b[1].pnl;
+    })
+    .slice(0, 5)
+    .map(([key, stats]) => `${key} (${stats.wins}/${stats.count}, P&L ${Number(stats.pnl.toFixed(2))})`);
+}
+
+function mostCommon(items: string[], limit = 5): string[] {
+  const counts = new Map<string, number>();
+  for (const item of items.map((value) => value.trim()).filter(Boolean)) {
+    counts.set(item, (counts.get(item) || 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([item, count]) => `${item} (${count})`);
+}
+
+function buildPatternAnalytics(closedTrades: PaperTrade[], theses: TradeThesis[]): TradingPatternAnalytics {
+  const thesisById = new Map(theses.map((thesis) => [thesis.id, thesis]));
+  const setupStats = new Map<string, { count: number; wins: number; pnl: number }>();
+  const assetStats = new Map<string, { count: number; wins: number; pnl: number }>();
+  const timeframeStats = new Map<string, { count: number; wins: number; pnl: number }>();
+
+  const mistakes: string[] = [];
+  const ruleViolations: string[] = [];
+
+  for (const trade of closedTrades) {
+    const thesis = trade.thesisId ? thesisById.get(trade.thesisId) : undefined;
+    increment(setupStats, setupNameFor(trade, thesis), trade);
+    increment(assetStats, trade.assetClass, trade);
+    increment(timeframeStats, trade.timeframe || thesis?.primaryTimeframe || "unspecified", trade);
+    mistakes.push(...trade.lessonsLearned);
+    ruleViolations.push(...trade.ruleViolations);
+  }
+
+  return {
+    highestWinRateSetups: rankedByWinRate(setupStats, "best"),
+    lowestWinRateSetups: rankedByWinRate(setupStats, "worst"),
+    mostProfitableConditions: Array.from(setupStats.entries())
+      .sort((a, b) => b[1].pnl - a[1].pnl)
+      .slice(0, 5)
+      .map(([key, stats]) => `${key} (P&L ${Number(stats.pnl.toFixed(2))})`),
+    mostCommonMistakes: mostCommon(mistakes),
+    mostCommonRuleViolations: mostCommon(ruleViolations),
+    bestAssetClasses: rankedByWinRate(assetStats, "best"),
+    worstAssetClasses: rankedByWinRate(assetStats, "worst"),
+    bestTimeframes: rankedByWinRate(timeframeStats, "best"),
+    worstTimeframes: rankedByWinRate(timeframeStats, "worst"),
+  };
+}
+
+function createReviewReport(trade: PaperTrade, thesis?: TradeThesis): TradeReviewReport {
+  const outcome = trade.outcome || "breakeven";
+  const violationCount = trade.ruleViolations.length;
+  const executionQuality =
+    outcome === "win" && violationCount === 0
+      ? "excellent"
+      : violationCount === 0
+        ? "good"
+        : violationCount <= 2
+          ? "needs_work"
+          : "poor";
+  const ruleCompliance = violationCount === 0 ? "clean" : violationCount <= 2 ? "minor_violations" : "major_violations";
+
+  const recommendedImprovements = [
+    violationCount > 0 ? "Review the rule violations before taking the next setup." : "Keep the same rule discipline on the next setup.",
+    trade.lessonsLearned.length > 0
+      ? "Convert lessons learned into pre-entry checklist items."
+      : "Add at least one lesson before archiving the trade review.",
+    thesis ? "Compare the final result against the original thesis and invalidation conditions." : "Attach future paper trades to a thesis for cleaner review quality.",
+  ];
+
+  return {
+    id: randomUUID(),
+    tradeId: trade.id,
+    thesisId: trade.thesisId,
+    createdAt: now(),
+    originalThesis: thesis
+      ? `${thesis.symbol} ${thesis.direction}: ${thesis.reason}`
+      : `${trade.symbol} ${trade.direction}: ${trade.entryReason}`,
+    outcome,
+    executionQuality,
+    ruleCompliance,
+    mistakes: trade.ruleViolations,
+    lessonsLearned: trade.lessonsLearned,
+    recommendedImprovements,
+  };
 }
 
 export const TradingStore = {
@@ -159,6 +275,21 @@ export const TradingStore = {
     return thesis;
   },
 
+  async updateThesis(input: { id: string; userId: string; patch: Partial<TradeThesis> }): Promise<TradeThesis | null> {
+    const theses = await readJsonArray<TradeThesis>(THESES_PATH);
+    const index = theses.findIndex((thesis) => thesis.id === input.id && thesis.userId === input.userId);
+    if (index === -1) return null;
+    const updated: TradeThesis = { ...theses[index], ...input.patch, id: theses[index].id, userId: theses[index].userId };
+    theses[index] = updated;
+    await writeJsonArray(THESES_PATH, theses);
+    await this.appendMemory(`Trade thesis updated: ${updated.symbol} ${updated.direction} (${updated.status}).`);
+    return updated;
+  },
+
+  async archiveThesis(input: { id: string; userId: string }): Promise<TradeThesis | null> {
+    return this.updateThesis({ id: input.id, userId: input.userId, patch: { archivedAt: now() } });
+  },
+
   async listPaperTrades(userId?: string, status?: PaperTradeStatus): Promise<PaperTrade[]> {
     await ensureTradingDirs();
     const trades = await readJsonArray<PaperTrade>(PAPER_TRADES_PATH);
@@ -195,6 +326,7 @@ export const TradingStore = {
     ruleViolations?: string[];
   }): Promise<PaperTrade | null> {
     const trades = await readJsonArray<PaperTrade>(PAPER_TRADES_PATH);
+    const theses = await readJsonArray<TradeThesis>(THESES_PATH);
     const index = trades.findIndex((trade) => trade.id === input.id && trade.userId === input.userId);
     if (index === -1) return null;
 
@@ -202,7 +334,7 @@ export const TradingStore = {
     if (existing.status !== "open") return existing;
 
     const realizedPnl = calculateRealizedPnl(existing, input.exitPrice);
-    const updated: PaperTrade = {
+    const baseUpdated: PaperTrade = {
       ...existing,
       status: "closed",
       updatedAt: now(),
@@ -214,15 +346,60 @@ export const TradingStore = {
       lessonsLearned: [...existing.lessonsLearned, ...(input.lessonsLearned || [])],
       ruleViolations: [...existing.ruleViolations, ...(input.ruleViolations || [])],
     };
+    const thesis = baseUpdated.thesisId ? theses.find((item) => item.id === baseUpdated.thesisId) : undefined;
+    const updated: PaperTrade = {
+      ...baseUpdated,
+      reviewReport: createReviewReport(baseUpdated, thesis),
+    };
 
     trades[index] = updated;
     await writeJsonArray(PAPER_TRADES_PATH, trades);
-    await this.appendMemory(`Paper trade closed: ${updated.symbol} ${updated.direction} exit ${input.exitPrice}, P&L ${realizedPnl}.`);
+    await this.appendMemory(`Paper trade closed: ${updated.symbol} ${updated.direction} exit ${input.exitPrice}, P&L ${realizedPnl}. Review: ${updated.reviewReport?.executionQuality}, compliance ${updated.reviewReport?.ruleCompliance}.`);
+    return updated;
+  },
+
+  async listTradingViewRecords(userId?: string): Promise<TradingViewRecord[]> {
+    await ensureTradingDirs();
+    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
+    return records
+      .filter((record) => !userId || record.userId === userId)
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  },
+
+  async addTradingViewRecord(input: Omit<TradingViewRecord, "id" | "createdAt" | "updatedAt">): Promise<TradingViewRecord> {
+    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
+    const timestamp = now();
+    const record: TradingViewRecord = {
+      ...input,
+      id: randomUUID(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    await writeJsonArray(TRADINGVIEW_PATH, [record, ...records]);
+    await this.appendMemory(`TradingView ${record.type} added: ${record.symbol} ${record.title}.`);
+    return record;
+  },
+
+  async updateTradingViewRecord(input: { id: string; userId: string; patch: Partial<TradingViewRecord> }): Promise<TradingViewRecord | null> {
+    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
+    const index = records.findIndex((record) => record.id === input.id && record.userId === input.userId);
+    if (index === -1) return null;
+    const updated: TradingViewRecord = {
+      ...records[index],
+      ...input.patch,
+      id: records[index].id,
+      userId: records[index].userId,
+      updatedAt: now(),
+    };
+    records[index] = updated;
+    await writeJsonArray(TRADINGVIEW_PATH, records);
+    await this.appendMemory(`TradingView ${updated.type} updated: ${updated.symbol} ${updated.title}.`);
     return updated;
   },
 
   async getPerformance(userId?: string): Promise<TradingPerformanceReport> {
     const trades = await this.listPaperTrades(userId);
+    const theses = await this.listTheses(userId);
     const closedTrades = trades.filter((trade) => trade.status === "closed");
     const openTrades = trades.filter((trade) => trade.status === "open");
     const winners = closedTrades.filter((trade) => (trade.realizedPnl || 0) > 0);
@@ -237,6 +414,11 @@ export const TradingStore = {
     const winRate = closedTrades.length ? winners.length / closedTrades.length : 0;
     const expectancy = winRate * averageWinner - (1 - winRate) * averageLoser;
     const outcomes = closedTrades.map((trade) => trade.outcome);
+    const patternAnalytics = buildPatternAnalytics(closedTrades, theses);
+
+    await this.appendMemory(
+      `Performance reviewed: ${closedTrades.length} closed trades, win rate ${(winRate * 100).toFixed(1)}%, realized P&L ${Number(realizedPnl.toFixed(2))}.`,
+    );
 
     return {
       generatedAt: now(),
@@ -253,8 +435,9 @@ export const TradingStore = {
       maximumDrawdown: calculateMaxDrawdown(closedTrades),
       consecutiveWins: longestRun(outcomes, "win"),
       consecutiveLosses: longestRun(outcomes, "loss"),
-      mostSuccessfulSetups: [],
-      leastSuccessfulSetups: [],
+      mostSuccessfulSetups: patternAnalytics.highestWinRateSetups,
+      leastSuccessfulSetups: patternAnalytics.lowestWinRateSetups,
+      patternAnalytics,
       notes: [
         "Phase 1 is simulation-only. No broker connection or live execution exists.",
         closedTrades.length < 20
