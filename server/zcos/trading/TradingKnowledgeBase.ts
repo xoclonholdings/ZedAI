@@ -1,5 +1,6 @@
 import type { TradingKnowledgeCategory, TradingKnowledgeEntry } from "../../../shared/trading-types";
 
+import { buildTradingCurriculumContext } from "./TradingCurriculum";
 import { TradingStore } from "./TradingStore";
 
 interface ImportTradingKnowledgeInput {
@@ -13,7 +14,20 @@ interface ImportTradingKnowledgeInput {
 const CATEGORY_KEYWORDS: Array<{ category: TradingKnowledgeCategory; keywords: string[] }> = [
   {
     category: "market_structure",
-    keywords: ["market structure", "trend", "break of structure", "bos", "choch", "support", "resistance", "supply", "demand", "range", "breakout", "reversal"],
+    keywords: [
+      "market structure",
+      "trend",
+      "break of structure",
+      "bos",
+      "choch",
+      "support",
+      "resistance",
+      "supply",
+      "demand",
+      "range",
+      "breakout",
+      "reversal",
+    ],
   },
   {
     category: "liquidity",
@@ -115,19 +129,32 @@ export async function importTradingKnowledge(input: ImportTradingKnowledgeInput)
 }
 
 export async function buildTradingKnowledgeContext(query: string): Promise<string> {
+  const curriculumContext = buildTradingCurriculumContext();
   const entries = await TradingStore.searchKnowledge(query, 6);
   if (!entries.length) {
-    return "No stored trading knowledge matched this request yet. Use Phase 1 knowledge import to teach ZED structured concepts before relying on setup evaluation.";
+    return [
+      curriculumContext,
+      "",
+      "Stored Knowledge Matches:",
+      "No stored trading knowledge matched this request yet. Use Phase 1 knowledge import to teach ZED structured concepts before relying on setup evaluation.",
+    ].join("\n");
   }
 
-  return entries
+  const storedMatches = entries
     .map((entry) => {
       const rules = entry.rules.slice(0, 3).map((rule) => `- ${rule}`).join("\n");
       const risk = entry.riskRules.slice(0, 2).map((rule) => `- ${rule}`).join("\n");
       const entriesText = entry.entryCriteria.slice(0, 2).map((rule) => `- ${rule}`).join("\n");
-      return [`${entry.title} (${entry.category})`, rules && `Rules:\n${rules}`, entriesText && `Entry criteria:\n${entriesText}`, risk && `Risk rules:\n${risk}`]
+      return [
+        `${entry.title} (${entry.category})`,
+        rules && `Rules:\n${rules}`,
+        entriesText && `Entry criteria:\n${entriesText}`,
+        risk && `Risk rules:\n${risk}`,
+      ]
         .filter(Boolean)
         .join("\n");
     })
     .join("\n\n");
+
+  return [curriculumContext, "", "Stored Knowledge Matches:", storedMatches].join("\n");
 }
