@@ -17,6 +17,7 @@ import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
+import TradingPage from "@/pages/trading";
 
 installApiFetchPatch();
 
@@ -74,6 +75,10 @@ function Router() {
 
       <Route path="/admin">
         {isAuthenticated ? <Admin /> : <Login />}
+      </Route>
+
+      <Route path="/trading">
+        {isAuthenticated ? <TradingPage /> : <Login />}
       </Route>
 
       <Route path="/flows">
