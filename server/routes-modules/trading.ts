@@ -4,6 +4,11 @@ import { isAuthenticated } from "../localAuth";
 import type { PaperTradeStatus } from "../../shared/trading-types";
 import { evaluateScannerObservation } from "../zcos/trading/ScannerEngine";
 import { createTradeThesis } from "../zcos/trading/TradeThesisEngine";
+import {
+  TRADING_BUILD_SEQUENCE,
+  TRADING_KNOWLEDGE_AREAS,
+  TRADING_SOURCE_LIST,
+} from "../zcos/trading/TradingCurriculum";
 import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
 import { TradingStore } from "../zcos/trading/TradingStore";
 import { importTradingViewSnapshot } from "../zcos/trading/TradingViewBridge";
@@ -39,12 +44,23 @@ export function registerTradingRoutes(app: Express): void {
       phase: 1,
       mode: "education-analysis-simulation-only",
       markets: ["stocks", "etfs", "crypto", "forex"],
+      requiredKnowledgeAreas: TRADING_KNOWLEDGE_AREAS.length,
+      buildSteps: TRADING_BUILD_SEQUENCE.length,
+      primarySources: TRADING_SOURCE_LIST.map((source) => source.name),
       restrictions: [
         "No broker connections",
         "No real orders",
         "No live capital movement",
         "Paper trading only",
       ],
+    });
+  });
+
+  app.get("/api/trading/curriculum", isAuthenticated, async (_req, res) => {
+    res.json({
+      sources: TRADING_SOURCE_LIST,
+      knowledgeAreas: TRADING_KNOWLEDGE_AREAS,
+      buildSequence: TRADING_BUILD_SEQUENCE,
     });
   });
 
