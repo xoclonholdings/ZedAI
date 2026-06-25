@@ -1,10 +1,21 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, MessageSquare, TrendingUp } from "lucide-react";
+import {
+  Briefcase,
+  Clock,
+  GraduationCap,
+  LayoutDashboard,
+  MessageSquare,
+  PenTool,
+  Search,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
+import SettingsModal from "@/components/settings/SettingsModal";
 
 import ChatSidebarHeader from "./ChatSidebarHeader";
 import ConversationList from "./ConversationList";
@@ -33,11 +44,102 @@ interface LocalUser {
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
+  isAdmin?: boolean;
+  claims?: {
+    isAdmin?: boolean;
+  };
   personalization?: {
     compactMessages?: boolean;
     fontSize?: string;
     showTimestamps?: boolean;
   };
+}
+
+interface WorkspaceLink {
+  label: string;
+  description: string;
+  path: string;
+  icon: LucideIcon;
+}
+
+const WORKSPACE_LINKS: WorkspaceLink[] = [
+  {
+    label: "Research",
+    description: "Markets, competitors, documents, trends",
+    path: "/workspaces/research",
+    icon: Search,
+  },
+  {
+    label: "Business",
+    description: "Strategy, revenue, operations, reports",
+    path: "/workspaces/business",
+    icon: Briefcase,
+  },
+  {
+    label: "Trading",
+    description: "Paper trading, theses, journals, validation",
+    path: "/trading",
+    icon: TrendingUp,
+  },
+  {
+    label: "Content",
+    description: "Ideas, scripts, SEO, YouTube, social",
+    path: "/workspaces/content",
+    icon: PenTool,
+  },
+  {
+    label: "Learning",
+    description: "Paths, practice, assessments, progress",
+    path: "/workspaces/learning",
+    icon: GraduationCap,
+  },
+];
+
+function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function NavButton({
+  icon: Icon,
+  label,
+  description,
+  active,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  description?: string;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2 text-left transition-all ${
+        active
+          ? "border-cyan-400/40 bg-white/10 text-white"
+          : "border-white/10 bg-black/20 text-muted-foreground hover:border-white/20 hover:text-foreground"
+      }`}
+    >
+      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium leading-5">{label}</span>
+        {description && (
+          <span className="mt-0.5 block truncate text-[11px] leading-4 text-muted-foreground">
+            {description}
+          </span>
+        )}
+      </span>
+    </button>
+  );
 }
 
 export default function ChatSidebar({
@@ -68,10 +170,8 @@ export default function ChatSidebar({
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}${body ? ` — ${body.slice(0, 160)}` : ""}`);
+        throw new Error(`HTTP ${res.status}${body ? ` - ${body.slice(0, 160)}` : ""}`);
       }
-      // Force /api/me to refetch so the new profileImageUrl flows
-      // through useAuth and the avatar updates immediately.
       await queryClient.invalidateQueries({ queryKey: ["/api/me"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
     } catch (err: any) {
@@ -79,7 +179,6 @@ export default function ChatSidebar({
       window.alert(err?.message || "Avatar upload failed");
     } finally {
       setIsUploadingPicture(false);
-      // Reset the input so re-selecting the same file still triggers onChange
       e.target.value = "";
     }
   }
@@ -89,7 +188,8 @@ export default function ChatSidebar({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const compact = !!user?.personalization?.compactMessages;
   const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
-  const headingClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
+  const projectTextClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
+  const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zed-ai.online";
 
   function goTo(path: string) {
     navigate(path);
@@ -188,9 +288,18 @@ export default function ChatSidebar({
           variant="ghost"
           size="sm"
           className="w-10 h-10 zed-button rounded-xl text-muted-foreground hover:text-cyan-300"
-          title="Trading Intelligence"
+          title="Trading"
         >
           <TrendingUp size={18} />
+        </Button>
+        <Button
+          onClick={() => goTo("/history")}
+          variant="ghost"
+          size="sm"
+          className="w-10 h-10 zed-button rounded-xl text-muted-foreground hover:text-cyan-300"
+          title="History"
+        >
+          <Clock size={18} />
         </Button>
       </div>
     );
@@ -204,7 +313,6 @@ export default function ChatSidebar({
         isMobile ? "" : "border-r"
       } border-purple-500/30 backdrop-blur-xl`}
     >
-      {/* Ambient orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-4 w-20 h-20 bg-purple-600/10 rounded-full blur-2xl zed-float" />
         <div
@@ -222,78 +330,108 @@ export default function ChatSidebar({
       />
 
       <div className={`flex-1 px-4 overflow-y-auto ${compact ? "text-sm" : ""}`}>
-        <div className={`${compact ? "space-y-2 py-2" : "space-y-3 py-3"}`}>
-          <div className="flex items-center justify-between">
-            <div className={`${headingClass} font-medium text-foreground`}>Projects</div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onCreateProject()}
-              className="h-8 w-8 rounded-xl zed-button p-0 text-muted-foreground hover:text-foreground"
-            >
-              +
-            </Button>
-          </div>
-
-          <div className={`${compact ? "space-y-1.5" : "space-y-2"}`}>
-            <button
-              onClick={() => onSelectProject(null)}
-              className={`w-full rounded-xl border px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left transition-all ${
-                selectedProjectId === null
-                  ? "border-cyan-400/40 bg-white/10 text-white"
-                  : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Inbox
-            </button>
-
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className={`flex items-stretch gap-1 rounded-xl border ${
-                  selectedProjectId === project.id
-                    ? "border-cyan-400/40 bg-white/10"
-                    : "border-white/10 bg-black/20"
+        <div className={`${compact ? "space-y-4 py-3" : "space-y-5 py-4"}`}>
+          <SidebarSection title="Projects">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onSelectProject(null)}
+                className={`flex-1 rounded-xl border px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left transition-all ${
+                  selectedProjectId === null
+                    ? "border-cyan-400/40 bg-white/10 text-white"
+                    : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <button
-                  onClick={() => onSelectProject(project.id)}
-                  className={`flex-1 px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left ${
-                    selectedProjectId === project.id
-                      ? "text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {project.name}
-                </button>
-                <button
-                  onClick={() => goTo(`/projects/${project.id}`)}
-                  className="px-2 text-muted-foreground hover:text-cyan-300"
-                  aria-label="Project settings"
-                  title="Project settings & sources"
-                >
-                  ⚙
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+                Inbox
+              </button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onCreateProject()}
+                className="h-9 w-9 rounded-xl zed-button p-0 text-muted-foreground hover:text-foreground"
+                title="New project"
+              >
+                +
+              </Button>
+            </div>
 
-        <ConversationList
-          conversations={conversations}
-          projects={projects}
-          currentPath={location}
-          selectedProjectId={selectedProjectId}
-          onSelect={(id) => {
-            if (id) {
-              window.history.pushState({}, "", `/chat/${id}`);
-            }
-            if (isMobile && onClose) onClose();
-          }}
-          onDelete={handleDeleteConversation}
-          onAssignProject={onAssignProject}
-          onRename={handleRenameConversation}
-        />
+            {projects.length > 0 && (
+              <div className={`${compact ? "mt-1.5 space-y-1.5" : "mt-2 space-y-2"}`}>
+                {projects.map((project) => (
+                  <div
+                    key={project.id}
+                    className={`flex items-stretch gap-1 rounded-xl border ${
+                      selectedProjectId === project.id
+                        ? "border-cyan-400/40 bg-white/10"
+                        : "border-white/10 bg-black/20"
+                    }`}
+                  >
+                    <button
+                      onClick={() => onSelectProject(project.id)}
+                      className={`flex-1 px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left ${
+                        selectedProjectId === project.id
+                          ? "text-white"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {project.name}
+                    </button>
+                    <button
+                      onClick={() => goTo(`/projects/${project.id}`)}
+                      className="px-2 text-muted-foreground hover:text-cyan-300"
+                      aria-label="Project settings"
+                      title="Project settings and sources"
+                    >
+                      Settings
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SidebarSection>
+
+          <SidebarSection title="Workspaces">
+            <div className="space-y-2">
+              {WORKSPACE_LINKS.map((workspace) => (
+                <NavButton
+                  key={workspace.path}
+                  icon={workspace.icon}
+                  label={workspace.label}
+                  description={workspace.description}
+                  active={location === workspace.path || (workspace.path === "/trading" && location.startsWith("/trading"))}
+                  onClick={() => goTo(workspace.path)}
+                />
+              ))}
+            </div>
+          </SidebarSection>
+
+          <SidebarSection title="History">
+            <NavButton
+              icon={Clock}
+              label="Activity History"
+              description="Recent, running, completed, approvals, failed"
+              active={location.startsWith("/history")}
+              onClick={() => goTo("/history")}
+            />
+          </SidebarSection>
+
+          <SidebarSection title="Conversations">
+            <ConversationList
+              conversations={conversations}
+              projects={projects}
+              currentPath={location}
+              selectedProjectId={selectedProjectId}
+              onSelect={(id) => {
+                if (id) {
+                  window.history.pushState({}, "", `/chat/${id}`);
+                }
+                if (isMobile && onClose) onClose();
+              }}
+              onDelete={handleDeleteConversation}
+              onAssignProject={onAssignProject}
+              onRename={handleRenameConversation}
+            />
+          </SidebarSection>
+        </div>
       </div>
 
       <ChatSidebarUserCard
@@ -304,28 +442,23 @@ export default function ChatSidebar({
         isLoggingOut={isLoggingOut}
       />
 
-      {/* Bottom controls */}
       <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => goTo("/trading")}
-          className="w-full justify-start zed-button text-muted-foreground hover:text-cyan-300"
-          title="Paper trading, theses, journals, and validation"
-        >
-          <TrendingUp className="mr-2 h-4 w-4" />
-          Trading Intelligence
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => goTo("/admin")}
-          className="w-full justify-start zed-button text-muted-foreground hover:text-purple-400"
-        >
-          <LayoutDashboard className="mr-2 h-4 w-4" />
-          Admin Panel
-        </Button>
+        <SidebarSection title="Settings">
+          <div className="space-y-1">
+            <SettingsModal />
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => goTo("/admin")}
+                className="w-full justify-start zed-button text-muted-foreground hover:text-purple-400"
+              >
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                Admin Panel
+              </Button>
+            )}
+          </div>
+        </SidebarSection>
 
         <ChatRuntimeFooter />
       </div>
