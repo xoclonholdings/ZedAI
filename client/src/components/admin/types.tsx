@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 export type AdminSection =
-  | "overview"
   | "flows"
   | "knowledge"
   | "integrations"
