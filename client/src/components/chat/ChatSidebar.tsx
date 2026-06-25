@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
   Clock,
+  FolderKanban,
   GraduationCap,
-  LayoutDashboard,
   MessageSquare,
   PenTool,
   Search,
+  Settings as SettingsIcon,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
@@ -18,7 +19,6 @@ import { useAuth } from "@/components/auth/UseAuth";
 import SettingsModal from "@/components/settings/SettingsModal";
 
 import ChatSidebarHeader from "./ChatSidebarHeader";
-import ConversationList from "./ConversationList";
 import ChatSidebarUserCard from "./ChatSidebarUserCard";
 import ChatRuntimeFooter from "./ChatRuntimeFooter";
 
@@ -44,10 +44,6 @@ interface LocalUser {
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
-  isAdmin?: boolean;
-  claims?: {
-    isAdmin?: boolean;
-  };
   personalization?: {
     compactMessages?: boolean;
     fontSize?: string;
@@ -95,7 +91,7 @@ const WORKSPACE_LINKS: WorkspaceLink[] = [
   },
 ];
 
-function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
+function SidebarSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="space-y-2">
       <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
@@ -143,18 +139,20 @@ function NavButton({
 }
 
 export default function ChatSidebar({
-  conversations,
   projects,
   selectedProjectId,
   onSelectProject,
   onCreateProject,
-  onAssignProject,
   onClose,
   isMobile = false,
 }: ChatSidebarProps) {
   const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user, logout } = useAuth() as { user?: LocalUser; logout: () => Promise<void> };
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const compact = !!user?.personalization?.compactMessages;
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -183,16 +181,13 @@ export default function ChatSidebar({
     }
   }
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const { user, logout } = useAuth() as { user?: LocalUser; logout: () => Promise<void> };
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const compact = !!user?.personalization?.compactMessages;
-  const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
-  const projectTextClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
-  const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zed-ai.online";
-
   function goTo(path: string) {
     navigate(path);
+    if (isMobile && onClose) onClose();
+  }
+
+  function selectProject(projectId: string | null) {
+    onSelectProject(projectId);
     if (isMobile && onClose) onClose();
   }
 
@@ -215,42 +210,6 @@ export default function ChatSidebar({
       if (isMobile && onClose) onClose();
     },
   });
-
-  const deleteConversationMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/conversations/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error("Failed to delete");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-    },
-  });
-
-  async function handleDeleteConversation(id: string) {
-    await deleteConversationMutation.mutateAsync(id);
-    if (location.includes(id)) {
-      window.history.pushState({}, "", "/chat");
-    }
-  }
-
-  async function handleRenameConversation(id: string, currentTitle: string) {
-    const title = window.prompt("Rename chat", currentTitle);
-    if (!title?.trim() || title.trim() === currentTitle) return;
-    const res = await fetch(`/api/conversations/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ title: title.trim() }),
-    });
-    if (res.ok) {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", id] });
-    }
-  }
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -301,6 +260,15 @@ export default function ChatSidebar({
         >
           <Clock size={18} />
         </Button>
+        <Button
+          onClick={() => setIsCollapsed(false)}
+          variant="ghost"
+          size="sm"
+          className="w-10 h-10 zed-button rounded-xl text-muted-foreground hover:text-cyan-300"
+          title="Settings"
+        >
+          <SettingsIcon size={18} />
+        </Button>
       </div>
     );
   }
@@ -309,9 +277,7 @@ export default function ChatSidebar({
     <div
       className={`${
         isMobile ? "w-full h-screen" : "w-80 h-full"
-      } flex flex-col relative zed-glass ${
-        isMobile ? "" : "border-r"
-      } border-purple-500/30 backdrop-blur-xl`}
+      } flex flex-col relative zed-glass ${isMobile ? "" : "border-r"} border-purple-500/30 backdrop-blur-xl`}
     >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-4 w-20 h-20 bg-purple-600/10 rounded-full blur-2xl zed-float" />
@@ -334,7 +300,7 @@ export default function ChatSidebar({
           <SidebarSection title="Projects">
             <div className="flex items-center gap-2">
               <button
-                onClick={() => onSelectProject(null)}
+                onClick={() => selectProject(null)}
                 className={`flex-1 rounded-xl border px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left transition-all ${
                   selectedProjectId === null
                     ? "border-cyan-400/40 bg-white/10 text-white"
@@ -366,7 +332,7 @@ export default function ChatSidebar({
                     }`}
                   >
                     <button
-                      onClick={() => onSelectProject(project.id)}
+                      onClick={() => selectProject(project.id)}
                       className={`flex-1 px-3 ${compact ? "py-1.5 text-xs" : "py-2 text-sm"} text-left ${
                         selectedProjectId === project.id
                           ? "text-white"
@@ -381,7 +347,7 @@ export default function ChatSidebar({
                       aria-label="Project settings"
                       title="Project settings and sources"
                     >
-                      Settings
+                      <FolderKanban size={14} />
                     </button>
                   </div>
                 ))}
@@ -407,29 +373,15 @@ export default function ChatSidebar({
           <SidebarSection title="History">
             <NavButton
               icon={Clock}
-              label="Activity History"
-              description="Recent, running, completed, approvals, failed"
+              label="History"
+              description="Activity, conversations, runs, approvals"
               active={location.startsWith("/history")}
               onClick={() => goTo("/history")}
             />
           </SidebarSection>
 
-          <SidebarSection title="Conversations">
-            <ConversationList
-              conversations={conversations}
-              projects={projects}
-              currentPath={location}
-              selectedProjectId={selectedProjectId}
-              onSelect={(id) => {
-                if (id) {
-                  window.history.pushState({}, "", `/chat/${id}`);
-                }
-                if (isMobile && onClose) onClose();
-              }}
-              onDelete={handleDeleteConversation}
-              onAssignProject={onAssignProject}
-              onRename={handleRenameConversation}
-            />
+          <SidebarSection title="Settings">
+            <SettingsModal />
           </SidebarSection>
         </div>
       </div>
@@ -442,24 +394,7 @@ export default function ChatSidebar({
         isLoggingOut={isLoggingOut}
       />
 
-      <div className="p-3 border-t border-white/10 relative z-10 space-y-1">
-        <SidebarSection title="Settings">
-          <div className="space-y-1">
-            <SettingsModal />
-            {isAdmin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => goTo("/admin")}
-                className="w-full justify-start zed-button text-muted-foreground hover:text-purple-400"
-              >
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Admin Panel
-              </Button>
-            )}
-          </div>
-        </SidebarSection>
-
+      <div className="border-t border-white/10 p-3 relative z-10">
         <ChatRuntimeFooter />
       </div>
     </div>
