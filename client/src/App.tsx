@@ -87,8 +87,16 @@ function Router() {
         {isAuthenticated ? <TradingPage /> : <Login />}
       </Route>
 
+      <Route path="/workspaces/:workspace/tools/:id">
+        {isAuthenticated ? <FlowDetailPage /> : <Login />}
+      </Route>
+
       <Route path="/workspaces/:workspace">
         {isAuthenticated ? <WorkspacePage /> : <Login />}
+      </Route>
+
+      <Route path="/history/:runId">
+        {isAuthenticated ? <RunDetailPage /> : <Login />}
       </Route>
 
       <Route path="/history">
