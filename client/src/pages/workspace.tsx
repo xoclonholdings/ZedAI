@@ -157,7 +157,7 @@ export default function WorkspacePage() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => navigate(`/flows/${item.id}`)}
+                  onClick={() => navigate(`/workspaces/${workspace}/tools/${item.id}`)}
                   className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
                 >
                   <div className="text-sm font-semibold text-foreground">{item.userFacingLabel}</div>
