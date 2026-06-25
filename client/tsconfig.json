@@ -11,10 +11,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["../shared/*"]
     },
     "types": ["vite/client"]
   },
-  "include": ["src"],
+  "include": ["src", "../shared/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
