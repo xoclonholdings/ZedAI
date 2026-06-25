@@ -94,3 +94,5 @@ export type {
   Analytics,
   InsertAnalytics,
 } from "./SystemSchema";
+
+export type AgentTarget = "operations" | "research" | "business" | "finance";
