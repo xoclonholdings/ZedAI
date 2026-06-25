@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Archive, ChevronLeft, FolderKanban, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,23 @@ import SettingsMainMenu from "./SettingsMainMenu";
 import SettingsSuggestions from "./SettingsSuggestions";
 import SettingsVoiceControls from "./SettingsVoiceControls";
 
-const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhODU1Zjc7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ViNDg5OTtzdG9wLW9wYWNpdHk6MSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjgiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPjwvc3ZnPg==";
+const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhODU1Zjc7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ViNDg5OTtzdG9wLW9wYWNpdHk6MSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjgiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPjwvc3ZnPg==";
+
+interface SettingsUser {
+  email?: string;
+  isAdmin?: boolean;
+  claims?: {
+    isAdmin?: boolean;
+  };
+  personalization?: {
+    compactMessages?: boolean;
+    fontSize?: string;
+  };
+}
 
 export default function SettingsModal() {
-  const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const { user } = useAuth() as { user?: SettingsUser };
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("main");
   const { appSettings, setAppSettings } = useAppSettings();
@@ -36,6 +50,17 @@ export default function SettingsModal() {
   const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
   const titleClass = fontSize === "small" ? "text-base" : fontSize === "large" ? "text-xl" : "text-lg";
   const descriptionClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-sm" : "text-sm";
+  const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zed-ai.online";
+
+  function handleMainMenuNavigate(section: string) {
+    if (section === "admin") {
+      setIsOpen(false);
+      setActiveSection("main");
+      navigate("/admin");
+      return;
+    }
+    setActiveSection(section);
+  }
 
   function BackButton() {
     return (
@@ -87,8 +112,7 @@ export default function SettingsModal() {
         <div className={`flex-1 overflow-y-auto pr-1 ${compact ? "space-y-3" : "space-y-4"}`}>
           {activeSection === "main" && (
             <div className={compact ? "space-y-4" : "space-y-6"}>
-              <SettingsMainMenu onNavigate={setActiveSection} />
-
+              <SettingsMainMenu isAdmin={isAdmin} onNavigate={handleMainMenuNavigate} />
             </div>
           )}
 
