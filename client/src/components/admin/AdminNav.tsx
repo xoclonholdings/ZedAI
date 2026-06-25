@@ -4,14 +4,13 @@ import { ChevronDown } from "lucide-react";
 import type { AdminSection, AdminNavTab } from "./types";
 
 const TABS: AdminNavTab[] = [
-  { id: "overview", label: "Overview" },
-  { id: "flows", label: "Flows" },
-  { id: "knowledge", label: "Knowledge" },
   { id: "integrations", label: "Integrations" },
   { id: "ruleset", label: "Ruleset" },
+  { id: "knowledge", label: "Knowledge" },
   { id: "approvals", label: "Approvals" },
   { id: "logs", label: "Logs" },
   { id: "security", label: "Security" },
+  { id: "flows", label: "Tools" },
 ];
 
 export default function AdminNav({
