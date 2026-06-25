@@ -91,6 +91,11 @@ export default function ChatSidebar({
   const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
   const headingClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm";
 
+  function goTo(path: string) {
+    navigate(path);
+    if (isMobile && onClose) onClose();
+  }
+
   const createConversationMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/conversations", {
@@ -166,6 +171,7 @@ export default function ChatSidebar({
           variant="ghost"
           size="sm"
           className="w-10 h-10 zed-button rounded-xl"
+          title="Expand sidebar"
         >
           <MessageSquare size={20} />
         </Button>
@@ -173,8 +179,18 @@ export default function ChatSidebar({
           onClick={() => createConversationMutation.mutate()}
           className="w-10 h-10 zed-gradient rounded-xl zed-button p-0"
           disabled={createConversationMutation.isPending}
+          title="New conversation"
         >
           +
+        </Button>
+        <Button
+          onClick={() => goTo("/trading")}
+          variant="ghost"
+          size="sm"
+          className="w-10 h-10 zed-button rounded-xl text-muted-foreground hover:text-cyan-300"
+          title="Trading Intelligence"
+        >
+          <TrendingUp size={18} />
         </Button>
       </div>
     );
@@ -251,7 +267,7 @@ export default function ChatSidebar({
                   {project.name}
                 </button>
                 <button
-                  onClick={() => navigate(`/projects/${project.id}`)}
+                  onClick={() => goTo(`/projects/${project.id}`)}
                   className="px-2 text-muted-foreground hover:text-cyan-300"
                   aria-label="Project settings"
                   title="Project settings & sources"
@@ -293,8 +309,9 @@ export default function ChatSidebar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/trading")}
+          onClick={() => goTo("/trading")}
           className="w-full justify-start zed-button text-muted-foreground hover:text-cyan-300"
+          title="Paper trading, theses, journals, and validation"
         >
           <TrendingUp className="mr-2 h-4 w-4" />
           Trading Intelligence
@@ -303,7 +320,7 @@ export default function ChatSidebar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/admin")}
+          onClick={() => goTo("/admin")}
           className="w-full justify-start zed-button text-muted-foreground hover:text-purple-400"
         >
           <LayoutDashboard className="mr-2 h-4 w-4" />
