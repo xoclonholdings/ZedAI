@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
 import AdminNav from "@/components/admin/AdminNav";
 import KnowledgeSection from "@/components/admin/sections/KnowledgeSection";
-import OverviewSection from "@/components/admin/sections/OverviewSection";
 import FlowsSection from "@/components/admin/sections/FlowsSection";
 import IntegrationsSection from "@/components/admin/sections/IntegrationsSection";
 import RulesetSection from "@/components/admin/sections/RulesetSection";
@@ -20,7 +19,7 @@ import zedLogo from "@assets/Zed_logo.png";
 export default function Admin() {
   const [, navigate] = useLocation();
   const { user } = useAuth() as { user?: any };
-  const [section, setSection] = useState<AdminSection>("overview");
+  const [section, setSection] = useState<AdminSection>("integrations");
 
   // Approvals are managed at the shell so the nav-tab badge stays accurate
   // even when the user isn't on the Approvals tab.
@@ -103,13 +102,6 @@ export default function Admin() {
       <AdminNav active={section} onSelect={setSection} pendingApprovals={pendingCount} />
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
-        {section === "overview" && (
-          <OverviewSection
-            onNavigate={setSection}
-            onOpenChat={() => navigate("/chat")}
-            pendingApprovals={pendingCount}
-          />
-        )}
         {section === "flows" && <FlowsSection />}
         {section === "knowledge" && <KnowledgeSection />}
         {section === "integrations" && <IntegrationsSection />}
