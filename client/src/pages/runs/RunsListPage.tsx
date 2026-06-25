@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, RefreshCw, Workflow } from "lucide-react";
+import { ChevronLeft, Clock, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,92 +8,92 @@ import { Button } from "@/components/ui/button";
 import type { FlowRun } from "../../../../shared/flow-types";
 import { RUN_STATUS_STYLE } from "./styles";
 
+function statusLabel(status: FlowRun["status"]): string {
+  if (status === "awaiting_approval") return "Waiting for Approval";
+  return status.replace("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function RunsListPage() {
   const [, navigate] = useLocation();
-  const [runs, setRuns] = useState<FlowRun[]>([]);
+  const [items, setItems] = useState<FlowRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function fetchRuns() {
+  async function fetchHistory() {
     setLoading(true);
     try {
       const res = await fetch("/api/flows/runs", { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setRuns(data.runs || []);
+      setItems(data.runs || []);
       setError(null);
     } catch (e: any) {
-      setError(e?.message || "Failed to load runs");
+      setError(e?.message || "Failed to load history");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    void fetchRuns();
+    void fetchHistory();
   }, []);
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between sticky top-0 z-20">
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/flows")}
-          className="text-muted-foreground hover:text-foreground zed-button rounded-xl"
+          onClick={() => navigate("/history")}
+          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Flows
+          History
         </Button>
         <div className="flex items-center gap-2">
-          <Workflow size={16} className="text-cyan-300" />
-          <span className="font-medium">Runs</span>
+          <Clock size={16} className="text-cyan-300" />
+          <span className="font-medium">Activity History</span>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          onClick={fetchRuns}
+          onClick={fetchHistory}
           disabled={loading}
-          className="text-muted-foreground hover:text-foreground zed-button h-8 w-8 p-0"
+          className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground zed-button"
         >
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
         </Button>
       </div>
 
-      <div className="p-4 max-w-3xl mx-auto space-y-3">
+      <div className="mx-auto max-w-3xl space-y-3 p-4 pb-24">
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
             {error}
           </div>
         )}
 
-        {loading && runs.length === 0 ? (
-          <div className="text-center text-muted-foreground py-12 text-sm">Loading…</div>
-        ) : runs.length === 0 ? (
-          <div className="text-center text-muted-foreground py-12 text-sm">
-            No flow runs yet. Pick a flow to start one.
+        {loading && items.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
+        ) : items.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            No history yet. Work ZED completes for you will appear here.
           </div>
         ) : (
-          runs.map((run) => (
+          items.map((item) => (
             <button
-              key={run.id}
+              key={item.id}
               type="button"
-              onClick={() => navigate(`/runs/${run.id}`)}
+              onClick={() => navigate(`/history/${item.id}`)}
               className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-left transition-colors hover:bg-white/5"
-              data-testid={`run-row-${run.id}`}
+              data-testid={`history-row-${item.id}`}
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium truncate">{run.flowName}</span>
-                <Badge
-                  variant="secondary"
-                  className={`border text-[9px] uppercase tracking-[0.16em] ${RUN_STATUS_STYLE[run.status]}`}
-                >
-                  {run.status.replace("_", " ")}
+                <span className="truncate text-sm font-medium">{item.flowName}</span>
+                <Badge variant="secondary" className={`border text-[9px] uppercase tracking-[0.16em] ${RUN_STATUS_STYLE[item.status]}`}>
+                  {statusLabel(item.status)}
                 </Badge>
               </div>
-              <div className="mt-1 text-[11px] text-muted-foreground">
-                {new Date(run.startedAt).toLocaleString()}
-              </div>
+              <div className="mt-1 text-[11px] text-muted-foreground">{new Date(item.startedAt).toLocaleString()}</div>
             </button>
           ))
         )}
