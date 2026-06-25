@@ -81,6 +81,10 @@ function Router() {
         {isAuthenticated ? <TradingPage /> : <Login />}
       </Route>
 
+      <Route path="/trading/">
+        {isAuthenticated ? <TradingPage /> : <Login />}
+      </Route>
+
       <Route path="/flows">
         {isAuthenticated ? <FlowsPage /> : <Login />}
       </Route>
