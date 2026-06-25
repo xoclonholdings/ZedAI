@@ -18,6 +18,8 @@ import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
 import TradingPage from "@/pages/trading";
+import WorkspacePage from "@/pages/workspace";
+import HistoryPage from "@/pages/history";
 
 installApiFetchPatch();
 
@@ -83,6 +85,14 @@ function Router() {
 
       <Route path="/trading/">
         {isAuthenticated ? <TradingPage /> : <Login />}
+      </Route>
+
+      <Route path="/workspaces/:workspace">
+        {isAuthenticated ? <WorkspacePage /> : <Login />}
+      </Route>
+
+      <Route path="/history">
+        {isAuthenticated ? <HistoryPage /> : <Login />}
       </Route>
 
       <Route path="/flows">
