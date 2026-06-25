@@ -1,5 +1,4 @@
-import { X, Plus, Shield, Sparkles } from "lucide-react";
-
+import { X, Plus, Shield, Sparkles, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SettingsModal from "@/components/settings/SettingsModal";
 import { useAuth } from "@/components/auth/UseAuth";
@@ -12,6 +11,7 @@ interface ChatSidebarHeaderProps {
   onCollapse: () => void;
   isAdmin?: boolean;
   onOpenAdmin?: () => void;
+  onOpenTrading?: () => void;
 }
 
 export default function ChatSidebarHeader({
@@ -22,6 +22,7 @@ export default function ChatSidebarHeader({
   onCollapse,
   isAdmin = false,
   onOpenAdmin,
+  onOpenTrading,
 }: ChatSidebarHeaderProps) {
   const { user } = useAuth();
   const compact = !!user?.personalization?.compactMessages;
@@ -69,6 +70,18 @@ export default function ChatSidebarHeader({
 
       <div className="mt-4 space-y-2">
         <SettingsModal />
+        {onOpenTrading && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onOpenTrading}
+            className="w-full justify-start zed-button text-muted-foreground hover:text-cyan-300"
+            title="Paper trading, theses, journals, and validation"
+          >
+            <TrendingUp className="mr-2 h-4 w-4" />
+            Trading Intelligence
+          </Button>
+        )}
         {isAdmin && onOpenAdmin && (
           <Button
             variant="ghost"
