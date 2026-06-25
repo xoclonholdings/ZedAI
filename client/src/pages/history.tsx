@@ -72,7 +72,7 @@ export default function HistoryPage() {
           <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">Completed Work</div>
           <h1 className="mt-2 text-2xl font-semibold">History</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Review recent activity, running work, completed outputs, approvals, failures, and archived work.
+            Review recent activity, active work, completed outputs, approvals, failures, and archived work.
           </p>
         </section>
 
@@ -90,7 +90,7 @@ export default function HistoryPage() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => navigate(`/runs/${item.id}`)}
+                onClick={() => navigate(`/history/${item.id}`)}
                 className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-left transition-colors hover:bg-white/5"
               >
                 <div className="flex items-center justify-between gap-2">
