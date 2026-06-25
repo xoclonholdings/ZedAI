@@ -1,29 +1,23 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import {
-  AlertTriangle,
-  ChevronLeft,
-  Play,
-  Rocket,
-  Workflow,
-} from "lucide-react";
+import { CheckCircle2, ChevronLeft, Play, Rocket, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-import type {
-  FlowDefinition,
-  FlowStage,
-} from "../../../shared/flow-types";
+import type { FlowDefinition, FlowStage } from "../../../shared/flow-types";
 
 export default function FlowDetailPage() {
   const [, navigate] = useLocation();
-  const { id } = useParams<{ id?: string }>();
+  const { id, workspace } = useParams<{ id?: string; workspace?: string }>();
   const [flow, setFlow] = useState<FlowDefinition | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
+
+  const backPath = workspace ? `/workspaces/${workspace}` : "/chat";
+  const backLabel = workspace ? "Workspace" : "Chat";
 
   useEffect(() => {
     if (!id) return;
@@ -35,7 +29,7 @@ export default function FlowDetailPage() {
         const data = (await res.json()) as FlowDefinition;
         if (!cancelled) setFlow(data);
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load flow");
+        if (!cancelled) setError(e?.message || "Failed to load tool");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -55,40 +49,39 @@ export default function FlowDetailPage() {
         credentials: "include",
         body: JSON.stringify({}),
       });
+      const body = await res.json().catch(() => null);
       if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw new Error(`HTTP ${res.status}${body ? ` — ${body.slice(0, 160)}` : ""}`);
+        throw new Error(body?.error || `HTTP ${res.status}`);
       }
-      const run = await res.json();
-      navigate(`/runs/${run.id}`);
+      navigate(`/history/${body.id}`);
     } catch (e: any) {
-      setError(e?.message || "Failed to launch flow");
+      setError(e?.message || "Failed to start tool");
       setLaunching(false);
     }
   }
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between sticky top-0 z-20">
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/flows")}
-          className="text-muted-foreground hover:text-foreground zed-button rounded-xl"
+          onClick={() => navigate(backPath)}
+          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Flows
+          {backLabel}
         </Button>
         <div className="flex items-center gap-2">
-          <Workflow size={16} className="text-cyan-300" />
-          <span className="text-sm font-medium truncate max-w-[60vw]">
-            {flow?.userFacingLabel || "Flow"}
+          <Wrench size={16} className="text-cyan-300" />
+          <span className="max-w-[60vw] truncate text-sm font-medium">
+            {flow?.userFacingLabel || "Tool"}
           </span>
         </div>
         <span className="w-10" />
       </div>
 
-      <div className="p-4 max-w-3xl mx-auto space-y-4 pb-24">
+      <div className="mx-auto max-w-3xl space-y-4 p-4 pb-28">
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
             {error}
@@ -96,57 +89,39 @@ export default function FlowDetailPage() {
         )}
 
         {loading ? (
-          <div className="text-center text-muted-foreground py-12 text-sm">Loading…</div>
+          <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
         ) : !flow ? (
-          <div className="text-center text-muted-foreground py-12 text-sm">
-            Flow not found.
-          </div>
+          <div className="py-12 text-center text-sm text-muted-foreground">Tool not found.</div>
         ) : (
           <>
-            <div className="space-y-1">
-              <h1 className="text-2xl font-semibold">{flow.userFacingLabel}</h1>
-              <p className="text-sm text-muted-foreground leading-6">
-                {flow.userFacingBlurb}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              <Badge
-                variant="secondary"
-                className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"
-              >
-                {flow.stages.length} stages
-              </Badge>
-              {flow.agents.map((a) => (
-                <Badge
-                  key={a}
-                  variant="secondary"
-                  className="zed-glass border-purple-500/30 text-purple-200 text-[10px] uppercase tracking-[0.16em]"
-                >
-                  {a}
+            <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
+                <Wrench size={14} />
+                Workspace Tool
+              </div>
+              <h1 className="mt-2 text-2xl font-semibold">{flow.userFacingLabel}</h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{flow.userFacingBlurb}</p>
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]">
+                  {flow.stages.length} step set{flow.stages.length === 1 ? "" : "s"}
                 </Badge>
-              ))}
-              <Badge
-                variant="secondary"
-                className="zed-glass border-cyan-500/30 text-cyan-200 text-[10px] uppercase tracking-[0.16em]"
-              >
-                v{flow.version}
-              </Badge>
-            </div>
+                <Badge variant="secondary" className="zed-glass border-cyan-500/30 text-cyan-200 text-[10px] uppercase tracking-[0.16em]">
+                  {flow.category}
+                </Badge>
+              </div>
+            </section>
 
-            <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 px-3 py-2 text-[11px] text-yellow-200 flex items-start gap-2">
-              <AlertTriangle size={12} className="mt-0.5 shrink-0" />
-              <span>
-                Execution engine still in development — launching creates a tracked run but
-                the agent dispatch + approval gates aren&apos;t wired yet. You&apos;ll see
-                the run state under <strong>Runs</strong>.
-              </span>
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-3 text-xs leading-5 text-emerald-100">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-300" />
+                <span>
+                  Starting this creates a tracked History item. ZED executes each step, pauses for approval when needed, stores outputs, and saves the final report.
+                </span>
+              </div>
             </div>
 
             <div>
-              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                Stages
-              </p>
+              <p className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">Steps</p>
               <div className="space-y-2">
                 {flow.stages.map((stage, idx) => (
                   <StageCard key={stage.id} stage={stage} idx={idx} />
@@ -159,21 +134,21 @@ export default function FlowDetailPage() {
 
       {flow && (
         <div className="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-black/95 px-4 pt-3 pb-safe backdrop-blur">
-          <div className="max-w-3xl mx-auto">
+          <div className="mx-auto max-w-3xl">
             <Button
               onClick={launch}
               disabled={launching}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+              className="h-12 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
             >
               {launching ? (
                 <span className="flex items-center gap-2">
                   <Rocket size={16} className="animate-pulse" />
-                  Launching…
+                  Starting...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Play size={16} />
-                  Launch flow
+                  Start
                 </span>
               )}
             </Button>
@@ -187,41 +162,26 @@ export default function FlowDetailPage() {
 function StageCard({ stage, idx }: { stage: FlowStage; idx: number }) {
   return (
     <Card className="zed-glass border-white/10">
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="space-y-2 p-3">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] text-muted-foreground">
-            {String(idx + 1).padStart(2, "0")}
-          </span>
-          <span className="text-sm font-medium flex-1 truncate">{stage.name}</span>
+          <span className="font-mono text-[10px] text-muted-foreground">{String(idx + 1).padStart(2, "0")}</span>
+          <span className="flex-1 truncate text-sm font-medium">{stage.name}</span>
           {stage.requiresApproval && (
-            <Badge
-              variant="secondary"
-              className="zed-glass border-yellow-500/30 text-yellow-200 text-[9px] uppercase tracking-[0.16em]"
-            >
+            <Badge variant="secondary" className="zed-glass border-yellow-500/30 text-yellow-200 text-[9px] uppercase tracking-[0.16em]">
               approval
             </Badge>
           )}
-          {stage.assignedAgent && (
-            <Badge
-              variant="secondary"
-              className="zed-glass border-purple-500/30 text-purple-200 text-[9px] uppercase tracking-[0.16em]"
-            >
-              {stage.assignedAgent}
-            </Badge>
-          )}
         </div>
-        {stage.description && (
-          <p className="text-[11px] text-muted-foreground leading-5">{stage.description}</p>
-        )}
+        {stage.description && <p className="text-[11px] leading-5 text-muted-foreground">{stage.description}</p>}
         {stage.steps.length > 0 && (
           <details>
             <summary className="cursor-pointer text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              {stage.steps.length} step{stage.steps.length === 1 ? "" : "s"}
+              {stage.steps.length} item{stage.steps.length === 1 ? "" : "s"}
             </summary>
             <ul className="mt-2 space-y-1">
               {stage.steps.map((step, i) => (
                 <li key={step.id} className="flex items-start gap-2 text-[11px] text-foreground/80">
-                  <span className="font-mono text-muted-foreground mt-0.5">{i + 1}.</span>
+                  <span className="mt-0.5 font-mono text-muted-foreground">{i + 1}.</span>
                   <span>{step.label}</span>
                 </li>
               ))}
