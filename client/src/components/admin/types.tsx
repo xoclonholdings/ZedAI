@@ -22,13 +22,13 @@ import {
 } from "lucide-react";
 
 export type AdminSection =
-  | "flows"
   | "knowledge"
   | "integrations"
   | "ruleset"
   | "approvals"
   | "logs"
-  | "security";
+  | "security"
+  | "tools";
 
 export type IntegrationKey =
   | "aiHost"
