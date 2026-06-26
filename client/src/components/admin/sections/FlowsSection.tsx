@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Archive, CheckCircle2, DraftingCompass, Plus, RefreshCw, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,12 +9,15 @@ import { FlowDetail } from "./flows/FlowDetail";
 import { FlowRow } from "./flows/FlowRow";
 import type { View } from "./flows/shared";
 
-export default function FlowsSection() {
+type ToolFilter = "all" | "published" | "draft" | "archived";
+
+export default function ToolsSection() {
   const [view, setView] = useState<View>("list");
   const [flows, setFlows] = useState<FlowDefinition[]>([]);
   const [active, setActive] = useState<FlowDefinition | null>(null);
   const [loading, setLoading] = useState(false);
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [filter, setFilter] = useState<ToolFilter>("all");
   const [error, setError] = useState<string | null>(null);
 
   async function refresh() {
@@ -28,7 +31,7 @@ export default function FlowsSection() {
       const data = await res.json();
       setFlows(data.flows || []);
     } catch (e: any) {
-      setError(e?.message || "Failed to load flows");
+      setError(e?.message || "Failed to load tools");
     } finally {
       setLoading(false);
     }
@@ -52,7 +55,7 @@ export default function FlowsSection() {
   }
 
   async function createNew() {
-    const name = window.prompt("Name this flow");
+    const name = window.prompt("Name this tool");
     if (!name?.trim()) return;
     const res = await fetch("/api/admin/flows", {
       method: "POST",
@@ -81,6 +84,20 @@ export default function FlowsSection() {
     }
   }
 
+  const counts = useMemo(() => {
+    const published = flows.filter((flow) => flow.status === "published").length;
+    const archived = flows.filter((flow) => flow.status === "archived").length;
+    const draft = flows.filter((flow) => flow.status !== "published" && flow.status !== "archived").length;
+    return { published, draft, archived };
+  }, [flows]);
+
+  const visibleFlows = flows.filter((flow) => {
+    if (filter === "published") return flow.status === "published";
+    if (filter === "archived") return flow.status === "archived";
+    if (filter === "draft") return flow.status !== "published" && flow.status !== "archived";
+    return true;
+  });
+
   if (view === "detail" && active) {
     return (
       <FlowDetail
@@ -99,13 +116,12 @@ export default function FlowsSection() {
   }
 
   return (
-    <>
+    <div className="space-y-5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div>
-          <h2 className="text-lg font-semibold">Flows</h2>
-          <p className="text-sm text-muted-foreground">
-            Reusable operational pipelines. Edit a flow's stages, publish to make it pickable in
-            Flow Mode.
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold">Tools</h2>
+          <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+            Configure reusable ZED tools. These are backed by the existing flow engine, but this section is for admin-facing tools that can be created, reviewed, published, duplicated, or archived.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -116,7 +132,7 @@ export default function FlowsSection() {
             className="zed-glass border-white/10 h-8"
           >
             <Plus size={13} className="mr-1" />
-            New
+            New Tool
           </Button>
           <Button
             size="sm"
@@ -130,6 +146,40 @@ export default function FlowsSection() {
         </div>
       </div>
 
+      <div className="grid gap-3 md:grid-cols-4">
+        <ToolStatCard
+          label="All Tools"
+          value={flows.length}
+          active={filter === "all"}
+          icon={Wrench}
+          onClick={() => setFilter("all")}
+        />
+        <ToolStatCard
+          label="Published"
+          value={counts.published}
+          active={filter === "published"}
+          icon={CheckCircle2}
+          onClick={() => setFilter("published")}
+        />
+        <ToolStatCard
+          label="Draft"
+          value={counts.draft}
+          active={filter === "draft"}
+          icon={DraftingCompass}
+          onClick={() => setFilter("draft")}
+        />
+        <ToolStatCard
+          label="Archived"
+          value={counts.archived}
+          active={filter === "archived"}
+          icon={Archive}
+          onClick={() => {
+            setIncludeArchived(true);
+            setFilter("archived");
+          }}
+        />
+      </div>
+
       <div className="flex items-center gap-2 text-xs">
         <label className="flex items-center gap-1.5 text-muted-foreground">
           <input
@@ -138,7 +188,7 @@ export default function FlowsSection() {
             onChange={(e) => setIncludeArchived(e.target.checked)}
             className="h-3.5 w-3.5 rounded border-white/20 bg-black"
           />
-          Show archived
+          Include archived tools
         </label>
       </div>
 
@@ -150,15 +200,15 @@ export default function FlowsSection() {
 
       {loading ? (
         <div className="text-center text-muted-foreground py-8 text-sm">Loading…</div>
-      ) : flows.length === 0 ? (
+      ) : visibleFlows.length === 0 ? (
         <Card className="zed-glass border-white/10">
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No flows yet. Tap <strong>New</strong> to create one.
+            No tools match this view. Tap <strong>New Tool</strong> to create one.
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          {flows.map((f) => (
+          {visibleFlows.map((f) => (
             <FlowRow
               key={f.id}
               flow={f}
@@ -170,6 +220,42 @@ export default function FlowsSection() {
           ))}
         </div>
       )}
-    </>
+    </div>
+  );
+}
+
+function ToolStatCard({
+  label,
+  value,
+  active,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  active: boolean;
+  icon: any;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border p-4 text-left transition-all ${
+        active
+          ? "border-cyan-400/35 bg-cyan-400/10 shadow-[0_0_30px_rgba(34,211,238,0.08)]"
+          : "border-white/10 bg-black/25 hover:border-white/20 hover:bg-black/35"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="rounded-xl border border-white/10 bg-black/40 p-2">
+          <Icon size={15} className={active ? "text-cyan-300" : "text-foreground/70"} />
+        </div>
+        <div>
+          <div className="text-2xl font-semibold leading-none">{value}</div>
+          <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+        </div>
+      </div>
+    </button>
   );
 }
