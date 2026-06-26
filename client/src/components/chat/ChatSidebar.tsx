@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Briefcase,
+  ChevronDown,
   Clock,
   FolderKanban,
   GraduationCap,
@@ -58,6 +59,8 @@ interface WorkspaceLink {
   icon: LucideIcon;
 }
 
+type SidebarPanel = "projects" | "workspaces" | "history" | "settings";
+
 const WORKSPACE_LINKS: WorkspaceLink[] = [
   {
     label: "Research",
@@ -91,13 +94,35 @@ const WORKSPACE_LINKS: WorkspaceLink[] = [
   },
 ];
 
-function SidebarSection({ title, children }: { title: string; children: ReactNode }) {
+function SidebarDropdown({
+  title,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
   return (
     <div className="space-y-2">
-      <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-        {title}
-      </div>
-      {children}
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-xs font-medium uppercase tracking-[0.18em] transition-all ${
+          isOpen
+            ? "border-cyan-400/40 bg-white/10 text-white"
+            : "border-white/10 bg-black/20 text-muted-foreground hover:border-white/20 hover:text-foreground"
+        }`}
+      >
+        <span>{title}</span>
+        <ChevronDown
+          size={14}
+          className={`transition-transform ${isOpen ? "rotate-180 text-cyan-300" : ""}`}
+        />
+      </button>
+      {isOpen && <div className="space-y-2 pl-1">{children}</div>}
     </div>
   );
 }
@@ -150,6 +175,7 @@ export default function ChatSidebar({
   const queryClient = useQueryClient();
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [openPanel, setOpenPanel] = useState<SidebarPanel | null>("projects");
   const { user, logout } = useAuth() as { user?: LocalUser; logout: () => Promise<void> };
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const compact = !!user?.personalization?.compactMessages;
@@ -179,6 +205,10 @@ export default function ChatSidebar({
       setIsUploadingPicture(false);
       e.target.value = "";
     }
+  }
+
+  function togglePanel(panel: SidebarPanel) {
+    setOpenPanel((current) => (current === panel ? null : panel));
   }
 
   function goTo(path: string) {
@@ -296,8 +326,12 @@ export default function ChatSidebar({
       />
 
       <div className={`flex-1 px-4 overflow-y-auto ${compact ? "text-sm" : ""}`}>
-        <div className={`${compact ? "space-y-4 py-3" : "space-y-5 py-4"}`}>
-          <SidebarSection title="Projects">
+        <div className={`${compact ? "space-y-3 py-3" : "space-y-3 py-4"}`}>
+          <SidebarDropdown
+            title="Projects"
+            isOpen={openPanel === "projects"}
+            onToggle={() => togglePanel("projects")}
+          >
             <div className="flex items-center gap-2">
               <button
                 onClick={() => selectProject(null)}
@@ -321,7 +355,7 @@ export default function ChatSidebar({
             </div>
 
             {projects.length > 0 && (
-              <div className={`${compact ? "mt-1.5 space-y-1.5" : "mt-2 space-y-2"}`}>
+              <div className={`${compact ? "space-y-1.5" : "space-y-2"}`}>
                 {projects.map((project) => (
                   <div
                     key={project.id}
@@ -353,24 +387,30 @@ export default function ChatSidebar({
                 ))}
               </div>
             )}
-          </SidebarSection>
+          </SidebarDropdown>
 
-          <SidebarSection title="Workspaces">
-            <div className="space-y-2">
-              {WORKSPACE_LINKS.map((workspace) => (
-                <NavButton
-                  key={workspace.path}
-                  icon={workspace.icon}
-                  label={workspace.label}
-                  description={workspace.description}
-                  active={location === workspace.path || (workspace.path === "/trading" && location.startsWith("/trading"))}
-                  onClick={() => goTo(workspace.path)}
-                />
-              ))}
-            </div>
-          </SidebarSection>
+          <SidebarDropdown
+            title="Workspaces"
+            isOpen={openPanel === "workspaces"}
+            onToggle={() => togglePanel("workspaces")}
+          >
+            {WORKSPACE_LINKS.map((workspace) => (
+              <NavButton
+                key={workspace.path}
+                icon={workspace.icon}
+                label={workspace.label}
+                description={workspace.description}
+                active={location === workspace.path || (workspace.path === "/trading" && location.startsWith("/trading"))}
+                onClick={() => goTo(workspace.path)}
+              />
+            ))}
+          </SidebarDropdown>
 
-          <SidebarSection title="History">
+          <SidebarDropdown
+            title="History"
+            isOpen={openPanel === "history"}
+            onToggle={() => togglePanel("history")}
+          >
             <NavButton
               icon={Clock}
               label="History"
@@ -378,11 +418,15 @@ export default function ChatSidebar({
               active={location.startsWith("/history")}
               onClick={() => goTo("/history")}
             />
-          </SidebarSection>
+          </SidebarDropdown>
 
-          <SidebarSection title="Settings">
+          <SidebarDropdown
+            title="Settings"
+            isOpen={openPanel === "settings"}
+            onToggle={() => togglePanel("settings")}
+          >
             <SettingsModal />
-          </SidebarSection>
+          </SidebarDropdown>
         </div>
       </div>
 
