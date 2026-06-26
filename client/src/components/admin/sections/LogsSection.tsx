@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { AlertCircle, AlertTriangle, Info, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, AlertTriangle, Info, RefreshCw, Route, ServerCrash } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export default function LogsSection() {
   const [routing, setRouting] = useState<string[]>([]);
   const [runtime, setRuntime] = useState<RuntimeEvent[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>("errors");
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   async function fetchLogs() {
@@ -49,8 +49,15 @@ export default function LogsSection() {
     return () => window.clearInterval(interval);
   }, []);
 
-  const errorCount = runtime.filter((e) => e.level === "error").length;
-  const warnCount = runtime.filter((e) => e.level === "warn").length;
+  const counts = useMemo(
+    () => ({
+      all: runtime.length,
+      errors: runtime.filter((e) => e.level === "error").length,
+      warnings: runtime.filter((e) => e.level === "warn").length,
+      routing: routing.length,
+    }),
+    [routing.length, runtime],
+  );
 
   const visibleRuntime = (() => {
     if (filter === "errors") return runtime.filter((e) => e.level === "error");
@@ -70,45 +77,56 @@ export default function LogsSection() {
   }
 
   return (
-    <>
+    <div className="space-y-5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className="text-lg font-semibold">Logs</h2>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={fetchLogs}
-            disabled={loading}
-            className="zed-button text-muted-foreground hover:text-foreground"
-          >
-            <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold">Logs</h2>
+          <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+            Inspect failed requests, runtime errors, warnings, and agent-routing activity from the existing diagnostics feed.
+          </p>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fetchLogs}
+          disabled={loading}
+          className="zed-button text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} />
+          Refresh
+        </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterPill
-          label={`All (${runtime.length})`}
-          active={filter === "all"}
-          onClick={() => setFilter("all")}
-        />
-        <FilterPill
-          label={`Errors (${errorCount})`}
+      <div className="grid gap-3 md:grid-cols-4">
+        <LogStatCard
+          label="Errors"
+          value={counts.errors}
           active={filter === "errors"}
+          icon={ServerCrash}
           tone="error"
           onClick={() => setFilter("errors")}
         />
-        <FilterPill
-          label={`Warnings (${warnCount})`}
+        <LogStatCard
+          label="Warnings"
+          value={counts.warnings}
           active={filter === "warnings"}
+          icon={AlertTriangle}
           tone="warn"
           onClick={() => setFilter("warnings")}
         />
-        <FilterPill
-          label={`Routing (${routing.length})`}
+        <LogStatCard
+          label="Routing"
+          value={counts.routing}
           active={filter === "routing"}
+          icon={Route}
           onClick={() => setFilter("routing")}
+        />
+        <LogStatCard
+          label="All Runtime"
+          value={counts.all}
+          active={filter === "all"}
+          icon={Info}
+          onClick={() => setFilter("all")}
         />
       </div>
 
@@ -117,7 +135,7 @@ export default function LogsSection() {
       ) : visibleRuntimeReversed.length === 0 ? (
         <Card className="zed-glass border-white/10">
           <CardContent className="py-12 text-center text-muted-foreground text-sm">
-            {loading ? "Loading…" : "No events match this filter."}
+            {loading ? "Loading…" : "No events match this view."}
           </CardContent>
         </Card>
       ) : (
@@ -154,9 +172,7 @@ export default function LogsSection() {
                       >
                         {evt.source}
                       </Badge>
-                      <span className={`font-mono font-medium ${style.cls}`}>
-                        {evt.event}
-                      </span>
+                      <span className={`font-mono font-medium ${style.cls}`}>{evt.event}</span>
                     </div>
                     {evt.detail && (
                       <p className="mt-1 text-xs leading-5 text-foreground/80 break-words">
@@ -180,55 +196,54 @@ export default function LogsSection() {
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
-function FilterPill({
+function LogStatCard({
   label,
+  value,
   active,
+  icon: Icon,
   tone,
   onClick,
 }: {
   label: string;
+  value: number;
   active: boolean;
+  icon: any;
   tone?: "error" | "warn";
   onClick: () => void;
 }) {
-  const activeTone =
-    tone === "error"
-      ? "bg-red-500/20 text-red-200 border-red-500/30"
-      : tone === "warn"
-        ? "bg-yellow-500/20 text-yellow-200 border-yellow-500/30"
-        : "bg-white/10 text-foreground border-white/20";
+  const toneClass = tone === "error" ? "text-red-300" : tone === "warn" ? "text-yellow-300" : "text-cyan-300";
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+      className={`rounded-2xl border p-4 text-left transition-all ${
         active
-          ? activeTone
-          : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
+          ? "border-cyan-400/35 bg-cyan-400/10 shadow-[0_0_30px_rgba(34,211,238,0.08)]"
+          : "border-white/10 bg-black/25 hover:border-white/20 hover:bg-black/35"
       }`}
     >
-      {label}
+      <div className="flex items-start gap-3">
+        <div className="rounded-xl border border-white/10 bg-black/40 p-2">
+          <Icon size={15} className={active ? "text-cyan-300" : toneClass} />
+        </div>
+        <div>
+          <div className="text-2xl font-semibold leading-none">{value}</div>
+          <div className="mt-1 text-xs text-muted-foreground">{label}</div>
+        </div>
+      </div>
     </button>
   );
 }
 
-function RoutingLogList({
-  entries,
-  loading,
-}: {
-  entries: string[];
-  loading: boolean;
-}) {
+function RoutingLogList({ entries, loading }: { entries: string[]; loading: boolean }) {
   if (loading) {
     return (
       <Card className="zed-glass border-white/10">
-        <CardContent className="py-12 text-center text-muted-foreground text-sm">
-          Loading…
-        </CardContent>
+        <CardContent className="py-12 text-center text-muted-foreground text-sm">Loading…</CardContent>
       </Card>
     );
   }
@@ -236,7 +251,7 @@ function RoutingLogList({
     return (
       <Card className="zed-glass border-white/10">
         <CardContent className="py-12 text-center text-muted-foreground text-sm">
-          No agent routing logs yet. Send a message in Agent mode to generate entries.
+          No agent routing logs yet. Send an agent-routed message to generate entries.
         </CardContent>
       </Card>
     );
@@ -249,25 +264,16 @@ function RoutingLogList({
           parsed = JSON.parse(entry);
         } catch {}
         return (
-          <div
-            key={i}
-            className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/5"
-          >
+          <div key={i} className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/5">
             <span className="text-muted-foreground">
               {parsed.timestamp ? new Date(parsed.timestamp).toLocaleTimeString() : ""}
             </span>
-            <span className="mx-2 text-purple-400 font-medium">
-              {parsed.agent || "—"}
-            </span>
+            <span className="mx-2 text-purple-400 font-medium">{parsed.agent || "—"}</span>
             <span className="text-foreground/70">
-              {parsed.conversationId
-                ? `conv:${String(parsed.conversationId).slice(0, 8)}`
-                : ""}
+              {parsed.conversationId ? `conv:${String(parsed.conversationId).slice(0, 8)}` : ""}
             </span>
             {parsed.messageLength && (
-              <span className="ml-2 text-muted-foreground">
-                {parsed.messageLength} chars
-              </span>
+              <span className="ml-2 text-muted-foreground">{parsed.messageLength} chars</span>
             )}
           </div>
         );
