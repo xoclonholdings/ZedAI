@@ -9,8 +9,8 @@ import { loadAdminSettings } from "./io";
  *
  * Per-account secrets (github tokens, email passwords, google
  * credentials) and per-custom-integration field values are each
- * handled individually so the UI can show "•••••• (set)" hints
- * without exposing the underlying value.
+ * handled individually so the UI can show "saved" hints without
+ * exposing the underlying value.
  */
 export async function getPublicAdminSettings() {
   const settings = await loadAdminSettings();
@@ -62,6 +62,53 @@ export async function getPublicAdminSettings() {
         ...settings.integrations.firewall,
         authToken: "",
         hasAuthToken: !!settings.integrations.firewall.authToken,
+      },
+      deployment: {
+        ...settings.integrations.deployment,
+        accessToken: "",
+        hasAccessToken: !!settings.integrations.deployment.accessToken,
+      },
+      payments: {
+        ...settings.integrations.payments,
+        secretKey: "",
+        webhookSecret: "",
+        hasSecretKey: !!settings.integrations.payments.secretKey,
+        hasWebhookSecret: !!settings.integrations.payments.webhookSecret,
+      },
+      socialPublishing: {
+        ...settings.integrations.socialPublishing,
+        accessToken: "",
+        hasAccessToken: !!settings.integrations.socialPublishing.accessToken,
+      },
+      crm: {
+        ...settings.integrations.crm,
+        apiKey: "",
+        hasApiKey: !!settings.integrations.crm.apiKey,
+      },
+      accounting: {
+        ...settings.integrations.accounting,
+        clientSecret: "",
+        refreshToken: "",
+        hasCredentials: !!(
+          settings.integrations.accounting.clientId &&
+          settings.integrations.accounting.clientSecret &&
+          settings.integrations.accounting.refreshToken
+        ),
+      },
+      cloudStorage: {
+        ...settings.integrations.cloudStorage,
+        accessToken: "",
+        hasAccessToken: !!settings.integrations.cloudStorage.accessToken,
+      },
+      tradingView: {
+        ...settings.integrations.tradingView,
+        alertWebhookSecret: "",
+        hasAlertWebhookSecret: !!settings.integrations.tradingView.alertWebhookSecret,
+      },
+      marketData: {
+        ...settings.integrations.marketData,
+        apiKey: "",
+        hasApiKey: !!settings.integrations.marketData.apiKey,
       },
     },
     users: settings.users.map(sanitizeUser),
