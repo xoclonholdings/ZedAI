@@ -8,6 +8,8 @@ import type {
   PaperTradeStatus,
   TradeReviewReport,
   TradeThesis,
+  TradingGovernanceDecision,
+  TradingIncidentReport,
   TradingKnowledgeEntry,
   TradingPatternAnalytics,
   TradingPerformanceReport,
@@ -19,6 +21,8 @@ const KNOWLEDGE_PATH = path.resolve(TRADING_DIR, "knowledge.json");
 const THESES_PATH = path.resolve(TRADING_DIR, "trade-theses.json");
 const PAPER_TRADES_PATH = path.resolve(TRADING_DIR, "paper-trades.json");
 const TRADINGVIEW_PATH = path.resolve(TRADING_DIR, "tradingview-records.json");
+const GOVERNANCE_DECISIONS_PATH = path.resolve(TRADING_DIR, "governance-decisions.json");
+const INCIDENT_REPORTS_PATH = path.resolve(TRADING_DIR, "incident-reports.json");
 const TRADING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working", "trading-intelligence.md");
 
 async function ensureTradingDirs() {
@@ -313,7 +317,7 @@ export const TradingStore = {
       ruleViolations: input.ruleViolations || [],
     };
     await writeJsonArray(PAPER_TRADES_PATH, [trade, ...trades]);
-    await this.appendMemory(`Paper trade opened: ${trade.symbol} ${trade.direction} entry ${trade.entry}, stop ${trade.stop}, target ${trade.target}.`);
+    await this.appendMemory(`Paper trade opened: ${trade.symbol} ${trade.direction} entry ${trade.entry}, stop ${trade.stop}, target ${trade.target}. Authorization: ${trade.authorizationDecision || "not recorded"}.`);
     return trade;
   },
 
@@ -395,6 +399,48 @@ export const TradingStore = {
     await writeJsonArray(TRADINGVIEW_PATH, records);
     await this.appendMemory(`TradingView ${updated.type} updated: ${updated.symbol} ${updated.title}.`);
     return updated;
+  },
+
+  async listGovernanceDecisions(userId?: string): Promise<TradingGovernanceDecision[]> {
+    await ensureTradingDirs();
+    const decisions = await readJsonArray<TradingGovernanceDecision>(GOVERNANCE_DECISIONS_PATH);
+    return decisions
+      .filter((decision) => !userId || decision.userId === userId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  },
+
+  async addGovernanceDecision(input: Omit<TradingGovernanceDecision, "id" | "createdAt" | "version" | "reviewer">): Promise<TradingGovernanceDecision> {
+    const decisions = await readJsonArray<TradingGovernanceDecision>(GOVERNANCE_DECISIONS_PATH);
+    const decision: TradingGovernanceDecision = {
+      ...input,
+      id: randomUUID(),
+      createdAt: now(),
+      version: "phase1-governance-v1",
+      reviewer: "TradingGovernanceEngine",
+    };
+    await writeJsonArray(GOVERNANCE_DECISIONS_PATH, [decision, ...decisions]);
+    await this.appendMemory(`Governance decision recorded: ${decision.symbol || "trade"} => ${decision.decision}. ${decision.reason}`);
+    return decision;
+  },
+
+  async listIncidentReports(userId?: string): Promise<TradingIncidentReport[]> {
+    await ensureTradingDirs();
+    const incidents = await readJsonArray<TradingIncidentReport>(INCIDENT_REPORTS_PATH);
+    return incidents
+      .filter((incident) => !userId || incident.userId === userId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  },
+
+  async addIncidentReport(input: Omit<TradingIncidentReport, "id" | "createdAt">): Promise<TradingIncidentReport> {
+    const incidents = await readJsonArray<TradingIncidentReport>(INCIDENT_REPORTS_PATH);
+    const incident: TradingIncidentReport = {
+      ...input,
+      id: randomUUID(),
+      createdAt: now(),
+    };
+    await writeJsonArray(INCIDENT_REPORTS_PATH, [incident, ...incidents]);
+    await this.appendMemory(`Trading incident recorded: ${incident.symbol || "trade"}. ${incident.incident}.`);
+    return incident;
   },
 
   async getPerformance(userId?: string): Promise<TradingPerformanceReport> {
