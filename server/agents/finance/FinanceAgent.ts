@@ -36,11 +36,17 @@ function detectCapabilities(task: string) {
   if (/(forex|fx|eurusd|gbpusd|usdjpy|audusd|currency pair|pip|pips)/.test(lower)) {
     capabilities.add("forex");
   }
-  if (/(trade|trading|entry|exit|stop loss|take profit|position|setup|chart|price action|portfolio|paper trade|journal|backtest)/.test(lower)) {
-    capabilities.add("trading");
+  if (/(equity|equities|stock|stocks|etf|etfs|spy|qqq|iwm|sector fund)/.test(lower)) {
+    capabilities.add("equities-etfs");
+  }
+  if (/(future|futures|es|nq|ym|rty|cl|gc|micro e-mini|contract)/.test(lower)) {
+    capabilities.add("futures");
+  }
+  if (/(trade|trading|entry|exit|stop loss|take profit|position|setup|chart|price action|portfolio|paper trade|journal|backtest|strategy|risk)/.test(lower)) {
+    capabilities.add("trading-intelligence");
   }
   if (/(wealth|prosperity|capital|compound|allocation|risk|cashflow|returns|net worth)/.test(lower)) {
-    capabilities.add("wealth");
+    capabilities.add("capital-risk");
   }
 
   return [...capabilities];
@@ -48,10 +54,10 @@ function detectCapabilities(task: string) {
 
 function needsApproval(task: string) {
   const lower = task.toLowerCase();
-  if (/(paper trade|paper trading|simulated|simulation|journal|backtest|back test)/.test(lower)) {
+  if (/(paper trade|paper trading|simulated|simulation|journal|backtest|back test|trade thesis|trade plan)/.test(lower)) {
     return false;
   }
-  return /(buy|sell|short|long|open position|close position|rebalance|allocate|move funds|wire|swap)/i.test(task);
+  return /(buy|sell|short|long|open position|close position|rebalance|allocate|move funds|wire|swap|place order|execute trade)/i.test(task);
 }
 
 function expandFinanceQueries(task: string): string[] {
@@ -70,10 +76,19 @@ function expandFinanceQueries(task: string): string[] {
     queries.add(`${task} currency strength risk events`);
   }
 
+  if (/(equity|equities|stock|stocks|etf|etfs|spy|qqq|iwm)/.test(lower)) {
+    queries.add(`${task} equity market structure breadth volatility`);
+    queries.add(`${task} ETF sector rotation liquidity catalysts`);
+  }
+
+  if (/(future|futures|es|nq|ym|rty|cl|gc|micro e-mini|contract)/.test(lower)) {
+    queries.add(`${task} futures session structure liquidity volatility`);
+    queries.add(`${task} futures economic calendar news risk`);
+  }
+
   if (/(wealth|prosperity|accumulate|capital|compound|allocation|portfolio)/.test(lower)) {
-    queries.add(`${task} capital allocation framework`);
-    queries.add(`${task} fastest ethical accumulation paths`);
-    queries.add(`${task} risk-adjusted wealth strategy`);
+    queries.add(`${task} capital allocation risk management framework`);
+    queries.add(`${task} risk-adjusted portfolio drawdown controls`);
   }
 
   queries.add(`${task} latest market context`);
@@ -86,10 +101,14 @@ function capabilityLabel(capability: string) {
       return "crypto & web3";
     case "forex":
       return "forex";
-    case "trading":
-      return "trading strategy";
-    case "wealth":
-      return "wealth building";
+    case "equities-etfs":
+      return "equities & ETFs";
+    case "futures":
+      return "futures";
+    case "trading-intelligence":
+      return "trading intelligence";
+    case "capital-risk":
+      return "capital and risk management";
     default:
       return capability;
   }
@@ -104,7 +123,7 @@ export class FinanceAgent {
       this.skill = await fs.readFile(SKILL_PATH, "utf-8");
     } catch {
       this.skill =
-        "Finance Agent: Help with trading, crypto/web3, forex, macro context, capital preservation, and wealth-building plans. Be practical, risk-aware, and action-oriented without pretending to execute trades.";
+        "ZED Trading Intelligence Analyst: Help with equities, ETFs, futures, forex, crypto, market structure, paper-trading validation, risk controls, and performance review. Be evidence-driven, risk-aware, and clear that no live trades are executed.";
     }
     return this.skill;
   }
@@ -112,7 +131,7 @@ export class FinanceAgent {
   static async process(request: FinanceAgentRequest): Promise<FinanceAgentResponse> {
     const skill = await this.loadSkill();
     const capabilities = detectCapabilities(request.task);
-    const scope = capabilities.length > 0 ? capabilities : ["trading", "wealth"];
+    const scope = capabilities.length > 0 ? capabilities : ["trading-intelligence", "capital-risk"];
     const approval = needsApproval(request.task);
     const expandedQueries = expandFinanceQueries(request.task);
     const searchResponses = await Promise.all(expandedQueries.map((query) => webSearch(query, 4)));
@@ -135,17 +154,18 @@ export class FinanceAgent {
 
     const systemPrompt = `${skill}
 
-You are ZED's Finance Agent.
+You are ZED's Trading Intelligence Analyst.
 
 Coverage:
-- crypto and web3 market reasoning
-- forex market structure and trade framing
-- stocks and ETFs analysis
-- trading plans, risk management, and scenario planning
-- wealth prosperity, capital growth, and allocation thinking
+- equities and ETFs analysis
+- futures market structure and session context
+- forex market structure and macro drivers
+- cryptocurrency and web3 market reasoning
+- trading plans, strategy validation, risk management, and scenario planning
+- portfolio exposure, correlation risk, and capital preservation analysis
 
-Phase 1 Trading Intelligence:
-- Learn first, simulate second, validate third, trade fourth.
+Operating Standard:
+- Research first, simulate second, validate third, and only consider live deployment after all validation requirements are met.
 - Treat every trade as analysis or paper trading unless a future approved broker integration exists.
 - Do not claim a live trade was placed, funds were moved, or an order was transmitted.
 - No real-money execution exists in Phase 1.
@@ -155,12 +175,13 @@ Phase 1 Trading Intelligence:
 - If the user asks to log a paper trade, require market, asset class, symbol, direction, entry, stop, target, size, risk amount, and entry reason.
 
 Rules:
+- Never provide financial advice or encourage speculative trading.
 - Never claim a trade was placed, funds were moved, or any market action actually executed.
-- If the request sounds like direct execution, return a proposal, trade plan, or risk-managed recommendation instead.
-- If live market pricing is not provided, be transparent that the response is a reasoning framework rather than a guaranteed live quote.
-- Optimize for predictive analysis and the fastest realistic accumulation path based on the user's current circumstances and market conditions.
-- Prefer outputs with: thesis, current conditions, predictive drivers, scenario map, setup, risk, invalidation, and next step.
-- If enough context exists, convert broad ambition into a concrete accumulation path with timelines, prerequisites, and tradeoffs.
+- If the request sounds like direct execution, return a trade thesis, paper-trade plan, or risk review instead.
+- If live market pricing is not provided, state that the response is a reasoning framework rather than a live quote.
+- If economic calendar, news, historical performance, journal, or pricing data is unavailable, identify the missing inputs before concluding.
+- Optimize for positive expectancy, controlled drawdowns, consistent execution, repeatable process, and long-term survivability.
+- Prefer outputs with: thesis, market context, statistical edge, entry validation, exit validation, risk analysis, failure analysis, optimization opportunities, confidence assessment, invalidation, and next step.
 - Use the same shared blackboard mindset as Intelligence: pull from shared memory, prior research, trading knowledge, paper-trading history, and live search context before answering.
 
 Active focus lanes: ${scope.map(capabilityLabel).join(", ")}.
@@ -189,8 +210,8 @@ Return a direct operator-style response. Avoid vague motivation language.`.trim(
         .map((line) => line.trim())
         .filter(Boolean)
         .slice(0, 4),
-      implications: `Finance lane analysis for ${request.task}`,
-      recommendedAction: "Review the proposed accumulation or trading path and validate against live execution constraints.",
+      implications: `Trading intelligence analysis for ${request.task}`,
+      recommendedAction: "Review the proposed thesis, risk controls, and validation requirements before treating any setup as execution-ready.",
     }).catch(() => {});
     await this.writeToMemory(request, reply, scope, approval);
     await this.log(request, reply, scope, approval);
