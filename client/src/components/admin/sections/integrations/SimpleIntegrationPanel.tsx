@@ -1,11 +1,36 @@
+import { ExternalLink } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { FieldRow, saveButtonLabel, type SaveStatus } from "./shared";
 
+const HIDDEN_FIELDS = new Set(["enabled", "status", "notes", "accounts"]);
+
 function humanize(s: string): string {
   return s.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
+}
+
+function isSecretField(key: string): boolean {
+  const normalized = key.toLowerCase();
+  return (
+    normalized.includes("token") ||
+    normalized.includes("secret") ||
+    normalized.includes("password") ||
+    normalized.includes("apikey") ||
+    normalized === "api_key"
+  );
+}
+
+function getSetupUrl(draft: any): string | null {
+  return (
+    draft.dashboardUrl ||
+    draft.workspaceUrl ||
+    draft.apiBaseUrl ||
+    draft.webhookBaseUrl ||
+    null
+  );
 }
 
 export function SimpleIntegrationPanel({
@@ -19,37 +44,56 @@ export function SimpleIntegrationPanel({
   onSave: () => void;
   saveStatus: SaveStatus;
 }) {
-  const otherFields = Object.entries(draft).filter(
-    ([key]) => !["enabled", "status", "notes", "accounts"].includes(key),
-  );
+  const otherFields = Object.entries(draft).filter(([key]) => {
+    if (HIDDEN_FIELDS.has(key)) return false;
+    if (key.startsWith("has") && typeof draft[key] === "boolean") return false;
+    return true;
+  });
+  const setupUrl = getSetupUrl(draft);
+
   return (
-    <div className="rounded-xl border border-white/10 bg-black/30 p-3 space-y-2.5">
-      <div className="flex items-center justify-between gap-2 pb-1">
-        <button
-          type="button"
-          onClick={() => onUpdate("enabled", !draft.enabled)}
-          className="flex items-center gap-2 text-sm"
-        >
-          <span
-            className={`flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
-              draft.enabled ? "justify-end bg-emerald-500/60" : "justify-start bg-white/15"
-            }`}
+    <div className="rounded-xl border border-white/10 bg-black/30 p-3 space-y-3">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => onUpdate("enabled", !draft.enabled)}
+            className="flex items-center gap-2 text-sm"
           >
-            <span className="h-4 w-4 rounded-full bg-white shadow" />
-          </span>
-          <span>{draft.enabled ? "Enabled" : "Disabled"}</span>
-        </button>
-        {"status" in draft && (
-          <Badge
-            variant="secondary"
-            className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
+            <span
+              className={`flex h-5 w-9 items-center rounded-full p-0.5 transition-colors ${
+                draft.enabled ? "justify-end bg-emerald-500/60" : "justify-start bg-white/15"
+              }`}
+            >
+              <span className="h-4 w-4 rounded-full bg-white shadow" />
+            </span>
+            <span>{draft.enabled ? "Enabled" : "Disabled"}</span>
+          </button>
+          {"status" in draft && (
+            <Badge
+              variant="secondary"
+              className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
+            >
+              {draft.status}
+            </Badge>
+          )}
+        </div>
+        {draft.notes && <p className="text-xs leading-relaxed text-muted-foreground">{draft.notes}</p>}
+        {setupUrl && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(setupUrl, "_blank", "noopener,noreferrer")}
+            className="h-8 border-white/10 bg-black/20 text-xs"
           >
-            {draft.status}
-          </Badge>
+            <ExternalLink size={12} className="mr-1.5" />
+            Open setup / login
+          </Button>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
         {otherFields.map(([key, value]) => {
           if (typeof value === "boolean") {
             return (
@@ -71,21 +115,40 @@ export function SimpleIntegrationPanel({
               </FieldRow>
             );
           }
+
+          if (Array.isArray(value)) {
+            return (
+              <FieldRow key={key} label={humanize(key)}>
+                <Input
+                  value={value.join(", ")}
+                  onChange={(e) =>
+                    onUpdate(
+                      key,
+                      e.target.value
+                        .split(",")
+                        .map((item) => item.trim())
+                        .filter(Boolean),
+                    )
+                  }
+                  className="border-white/10 bg-black/30 text-sm h-9"
+                  placeholder="item, item, item"
+                />
+              </FieldRow>
+            );
+          }
+
           const isPort = key.toLowerCase().includes("port");
-          const isSecret =
-            key.toLowerCase().includes("token") ||
-            key.toLowerCase().includes("password") ||
-            key.toLowerCase().includes("apikey");
+          const secret = isSecretField(key);
           return (
             <FieldRow key={key} label={humanize(key)}>
               <Input
-                type={isSecret ? "password" : "text"}
+                type={secret ? "password" : "text"}
                 value={String(value ?? "")}
                 onChange={(e) =>
                   onUpdate(key, isPort ? Number(e.target.value) || 0 : e.target.value)
                 }
                 className="border-white/10 bg-black/30 text-sm h-9"
-                placeholder={isSecret ? "stored server-side or paste to replace" : ""}
+                placeholder={secret ? "stored server-side or paste to replace" : ""}
               />
             </FieldRow>
           );
