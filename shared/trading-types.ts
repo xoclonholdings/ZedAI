@@ -17,6 +17,74 @@ export type TradingKnowledgeCategory =
 
 export type SetupStatus = "watch" | "observe" | "possible_setup" | "valid_setup" | "no_trade";
 
+export type GovernanceDecisionOutcome =
+  | "APPROVED"
+  | "CONDITIONALLY_APPROVED"
+  | "PAPER_TRADE_ONLY"
+  | "REQUIRES_REVISION"
+  | "REJECTED";
+
+export type AuthorizationDecision = "AUTHORIZED" | "AUTHORIZED_WITH_CONDITIONS" | "DENIED";
+
+export type ChecklistResult = "PASS" | "FAIL" | "NOT_APPLICABLE" | "UNKNOWN";
+
+export type LiveTradingEligibility = "Eligible" | "Nearly Eligible" | "Not Eligible";
+
+export interface TradingGovernanceChecklistItem {
+  key: string;
+  label: string;
+  result: ChecklistResult;
+  evidence: string;
+  missingInformation?: string[];
+  critical?: boolean;
+}
+
+export interface TradingGovernanceDecision {
+  id: string;
+  createdAt: string;
+  version: string;
+  userId: string;
+  reviewer: "TradingGovernanceEngine";
+  tradeId?: string;
+  thesisId?: string;
+  symbol?: string;
+  decision: GovernanceDecisionOutcome | AuthorizationDecision;
+  reason: string;
+  supportingEvidence: string[];
+  requiredActions: string[];
+  nextReviewConditions: string[];
+  checklist?: TradingGovernanceChecklistItem[];
+  riskMetrics?: Record<string, number | string | boolean | null>;
+  liveTradingEligibility?: LiveTradingEligibility;
+  paperTradingProgress?: {
+    currentSampleSize: number;
+    requiredSampleSize: number;
+    currentExpectancy: number;
+    currentDrawdown: number;
+    ruleCompliance: string;
+    executionConsistency: string;
+    status: string;
+  };
+  outcome?: "pending" | "followed" | "ignored" | "invalidated";
+}
+
+export interface TradingIncidentReport {
+  id: string;
+  createdAt: string;
+  userId: string;
+  tradeId?: string;
+  thesisId?: string;
+  symbol?: string;
+  incident: string;
+  cause: string;
+  evidence: string[];
+  rulesViolated: string[];
+  potentialConsequences: string[];
+  requiredCorrections: string[];
+  futurePrevention: string[];
+  linkedDecisionId: string;
+}
+
 export interface TradingKnowledgeEntry {
   id: string;
   createdAt: string;
@@ -61,6 +129,8 @@ export interface TradeThesis {
   confidenceScore: number;
   outcome?: "unresolved" | "validated" | "invalidated" | "paper_traded";
   notes?: string;
+  governanceDecisionId?: string;
+  governanceDecision?: GovernanceDecisionOutcome;
 }
 
 export type PaperTradeStatus = "open" | "closed" | "cancelled";
@@ -108,6 +178,8 @@ export interface PaperTrade {
   lessonsLearned: string[];
   ruleViolations: string[];
   reviewReport?: TradeReviewReport;
+  authorizationDecisionId?: string;
+  authorizationDecision?: AuthorizationDecision;
 }
 
 export interface TradingPatternAnalytics {
