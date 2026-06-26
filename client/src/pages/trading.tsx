@@ -8,6 +8,8 @@ import {
   LineChart,
   RefreshCw,
   Search,
+  ShieldAlert,
+  ShieldCheck,
   Target,
   TrendingUp,
 } from "lucide-react";
@@ -17,12 +19,14 @@ import { Button } from "@/components/ui/button";
 import type {
   PaperTrade,
   TradeThesis,
+  TradingGovernanceDecision,
+  TradingIncidentReport,
   TradingKnowledgeEntry,
   TradingPerformanceReport,
   TradingViewRecord,
 } from "@shared/trading-types";
 
-type TradingTab = "overview" | "knowledge" | "theses" | "paper" | "tradingview" | "performance";
+type TradingTab = "overview" | "knowledge" | "theses" | "paper" | "governance" | "tradingview" | "performance";
 
 interface TradingStatus {
   status: string;
@@ -57,6 +61,7 @@ const tabs: Array<{ id: TradingTab; label: string }> = [
   { id: "knowledge", label: "Knowledge" },
   { id: "theses", label: "Theses" },
   { id: "paper", label: "Paper Trades" },
+  { id: "governance", label: "Governance" },
   { id: "tradingview", label: "TradingView" },
   { id: "performance", label: "Performance" },
 ];
@@ -75,7 +80,10 @@ async function apiSend<T>(url: string, method: "POST" | "PATCH", body: Record<st
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+  if (!res.ok) {
+    const detail = data?.authorization?.reason || data?.error || `HTTP ${res.status}`;
+    throw new Error(detail);
+  }
   return data;
 }
 
@@ -85,6 +93,21 @@ function splitList(value: string): string[] {
     .flatMap((line) => line.split(","))
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function formatDate(value?: string): string {
+  if (!value) return "Unknown";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function decisionBadgeClass(decision?: string): string {
+  if (!decision) return "border-white/10 bg-white/[0.04] text-muted-foreground";
+  if (["APPROVED", "AUTHORIZED"].includes(decision)) return "border-emerald-400/30 bg-emerald-500/10 text-emerald-200";
+  if (["CONDITIONALLY_APPROVED", "AUTHORIZED_WITH_CONDITIONS", "PAPER_TRADE_ONLY"].includes(decision)) return "border-yellow-400/30 bg-yellow-500/10 text-yellow-100";
+  if (["REQUIRES_REVISION"].includes(decision)) return "border-orange-400/30 bg-orange-500/10 text-orange-100";
+  return "border-red-400/30 bg-red-500/10 text-red-200";
 }
 
 function StatCard({ label, value, note }: { label: string; value: string | number; note?: string }) {
@@ -137,6 +160,8 @@ export default function TradingPage() {
   const [trades, setTrades] = useState<PaperTrade[]>([]);
   const [performance, setPerformance] = useState<TradingPerformanceReport | null>(null);
   const [tvRecords, setTvRecords] = useState<TradingViewRecord[]>([]);
+  const [governanceDecisions, setGovernanceDecisions] = useState<TradingGovernanceDecision[]>([]);
+  const [incidents, setIncidents] = useState<TradingIncidentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -197,7 +222,7 @@ export default function TradingPage() {
     setLoading(true);
     setError(null);
     try {
-      const [statusData, curriculumData, knowledgeData, thesesData, tradesData, performanceData, tvData] = await Promise.all([
+      const [statusData, curriculumData, knowledgeData, thesesData, tradesData, performanceData, tvData, governanceData, incidentData] = await Promise.all([
         apiGet<TradingStatus>("/api/trading/phase1/status"),
         apiGet<Curriculum>("/api/trading/curriculum"),
         apiGet<{ entries: TradingKnowledgeEntry[] }>("/api/trading/knowledge"),
@@ -205,6 +230,8 @@ export default function TradingPage() {
         apiGet<{ trades: PaperTrade[] }>("/api/trading/paper-trades"),
         apiGet<{ report: TradingPerformanceReport }>("/api/trading/performance"),
         apiGet<{ records: TradingViewRecord[] }>("/api/trading/tradingview/records"),
+        apiGet<{ decisions: TradingGovernanceDecision[] }>("/api/trading/governance/decisions"),
+        apiGet<{ incidents: TradingIncidentReport[] }>("/api/trading/governance/incidents"),
       ]);
       setStatus(statusData);
       setCurriculum(curriculumData);
@@ -213,6 +240,8 @@ export default function TradingPage() {
       setTrades(tradesData.trades || []);
       setPerformance(performanceData.report || null);
       setTvRecords(tvData.records || []);
+      setGovernanceDecisions(governanceData.decisions || []);
+      setIncidents(incidentData.incidents || []);
     } catch (err: any) {
       setError(err?.message || "Failed to load trading intelligence");
     } finally {
@@ -241,6 +270,7 @@ export default function TradingPage() {
   const openTrades = trades.filter((trade) => trade.status === "open");
   const closedTrades = trades.filter((trade) => trade.status === "closed");
   const lessons = closedTrades.flatMap((trade) => trade.lessonsLearned).filter(Boolean).slice(0, 8);
+  const latestGovernanceDecision = governanceDecisions[0];
 
   async function submitKnowledge() {
     await apiSend("/api/trading/knowledge/import", "POST", {
@@ -253,14 +283,20 @@ export default function TradingPage() {
   }
 
   async function submitThesis() {
-    await apiSend("/api/trading/theses", "POST", {
+    const response = await apiSend<{ governanceDecision: TradingGovernanceDecision }>("/api/trading/theses", "POST", {
       ...thesisForm,
       riskReward: Number(thesisForm.riskReward),
       confidenceScore: Number(thesisForm.confidenceScore),
       invalidationConditions: splitList(thesisForm.invalidationConditions),
       timeframeAlignment: { primary: thesisForm.primaryTimeframe },
     });
-    setNotice("Trade thesis created.");
+    setNotice(`Trade thesis created. Governance decision: ${response.governanceDecision.decision}.`);
+    await refresh();
+  }
+
+  async function reviewThesisGovernance(id: string) {
+    const response = await apiSend<{ governanceDecision: TradingGovernanceDecision }>(`/api/trading/theses/${id}/governance`, "POST", {});
+    setNotice(`Governance reviewed: ${response.governanceDecision.decision}.`);
     await refresh();
   }
 
@@ -271,7 +307,7 @@ export default function TradingPage() {
   }
 
   async function submitPaperTrade() {
-    await apiSend("/api/trading/paper-trades", "POST", {
+    const response = await apiSend<{ authorization: TradingGovernanceDecision }>("/api/trading/paper-trades", "POST", {
       ...paperForm,
       entry: Number(paperForm.entry),
       stop: Number(paperForm.stop),
@@ -279,7 +315,7 @@ export default function TradingPage() {
       size: Number(paperForm.size),
       riskAmount: Number(paperForm.riskAmount),
     });
-    setNotice("Paper trade opened.");
+    setNotice(`Paper trade opened. Authorization: ${response.authorization.decision}.`);
     await refresh();
   }
 
@@ -294,6 +330,13 @@ export default function TradingPage() {
       ruleViolations: splitList(violations),
     });
     setNotice("Paper trade closed and review report generated.");
+    await refresh();
+  }
+
+  async function runGovernanceReview() {
+    const response = await apiSend<{ governanceDecision: TradingGovernanceDecision }>("/api/trading/governance/review", "POST", {});
+    setNotice(`Governance review complete: ${response.governanceDecision.decision}.`);
+    setTab("governance");
     await refresh();
   }
 
@@ -409,6 +452,24 @@ export default function TradingPage() {
                     </div>
                   </Panel>
 
+                  <Panel title="Governance Snapshot" icon={<ShieldCheck size={16} className="text-emerald-300" />}>
+                    {latestGovernanceDecision ? (
+                      <div className="space-y-3 text-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className={decisionBadgeClass(latestGovernanceDecision.decision)}>{latestGovernanceDecision.decision}</Badge>
+                          <span className="text-xs text-muted-foreground">{formatDate(latestGovernanceDecision.createdAt)}</span>
+                        </div>
+                        <p className="leading-6 text-muted-foreground">{latestGovernanceDecision.reason}</p>
+                        <Button size="sm" onClick={runGovernanceReview} className="rounded-xl zed-gradient">Run Governance Review</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">No governance decisions yet. Create a thesis or open a paper trade to begin the audit trail.</p>
+                        <Button size="sm" onClick={runGovernanceReview} className="rounded-xl zed-gradient">Run Governance Review</Button>
+                      </div>
+                    )}
+                  </Panel>
+
                   <Panel title="Recent Lessons" icon={<BookOpen size={16} className="text-purple-300" />}>
                     {lessons.length ? (
                       <ul className="space-y-2 text-sm text-muted-foreground">
@@ -489,7 +550,11 @@ export default function TradingPage() {
                       <div key={thesis.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="font-semibold">{thesis.symbol} {thesis.direction}</div>
-                          <div className="flex gap-2"><Badge>{thesis.status}</Badge><Badge>{thesis.confidenceScore}%</Badge></div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge>{thesis.status}</Badge>
+                            <Badge>{thesis.confidenceScore}%</Badge>
+                            {thesis.governanceDecision && <Badge className={decisionBadgeClass(thesis.governanceDecision)}>{thesis.governanceDecision}</Badge>}
+                          </div>
                         </div>
                         <p className="mt-2 text-sm text-muted-foreground">{thesis.reason}</p>
                         <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
@@ -498,7 +563,10 @@ export default function TradingPage() {
                           <div><span className="text-white">Entry:</span> {thesis.entryPlan}</div>
                           <div><span className="text-white">Invalidation:</span> {thesis.invalidationConditions.join(", ")}</div>
                         </div>
-                        {!thesis.archivedAt && <Button size="sm" variant="ghost" onClick={() => archiveThesis(thesis.id)} className="mt-2 rounded-xl text-muted-foreground">Archive</Button>}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Button size="sm" variant="ghost" onClick={() => reviewThesisGovernance(thesis.id)} className="rounded-xl text-muted-foreground">Review Governance</Button>
+                          {!thesis.archivedAt && <Button size="sm" variant="ghost" onClick={() => archiveThesis(thesis.id)} className="rounded-xl text-muted-foreground">Archive</Button>}
+                        </div>
                       </div>
                     ))}
                     {theses.length === 0 && <p className="text-sm text-muted-foreground">No theses yet.</p>}
@@ -531,7 +599,10 @@ export default function TradingPage() {
                       <div key={trade.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="font-semibold">{trade.symbol} {trade.direction}</div>
-                          <Badge className={trade.status === "open" ? "bg-cyan-500/10 text-cyan-200" : "bg-purple-500/10 text-purple-200"}>{trade.status}</Badge>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge className={trade.status === "open" ? "bg-cyan-500/10 text-cyan-200" : "bg-purple-500/10 text-purple-200"}>{trade.status}</Badge>
+                            {trade.authorizationDecision && <Badge className={decisionBadgeClass(trade.authorizationDecision)}>{trade.authorizationDecision}</Badge>}
+                          </div>
                         </div>
                         <div className="mt-2 grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
                           <div>Entry {trade.entry}</div><div>Stop {trade.stop}</div><div>Target {trade.target}</div>
@@ -548,6 +619,82 @@ export default function TradingPage() {
                     {trades.length === 0 && <p className="text-sm text-muted-foreground">No paper trades yet.</p>}
                   </div>
                 </Panel>
+              </div>
+            )}
+
+            {tab === "governance" && (
+              <div className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-4">
+                  <StatCard label="Decisions" value={governanceDecisions.length} note="audit trail" />
+                  <StatCard label="Incidents" value={incidents.length} note="risk denials" />
+                  <StatCard label="Live Eligibility" value={latestGovernanceDecision?.liveTradingEligibility || "Not Eligible"} note="live trading disabled" />
+                  <StatCard label="Sample Size" value={`${performance?.closedTrades || 0}/100`} note="validation target" />
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+                  <Panel title="Decision History" icon={<ShieldCheck size={16} className="text-emerald-300" />}>
+                    <div className="mb-3 flex justify-end">
+                      <Button size="sm" onClick={runGovernanceReview} className="rounded-xl zed-gradient">Run Governance Review</Button>
+                    </div>
+                    <div className="space-y-3">
+                      {governanceDecisions.map((decision) => (
+                        <div key={decision.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className={decisionBadgeClass(decision.decision)}>{decision.decision}</Badge>
+                              {decision.symbol && <span className="text-sm font-semibold">{decision.symbol}</span>}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{formatDate(decision.createdAt)}</span>
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">{decision.reason}</p>
+                          {decision.paperTradingProgress && (
+                            <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-400/5 p-2 text-xs text-cyan-100">
+                              Validation: {decision.paperTradingProgress.currentSampleSize}/{decision.paperTradingProgress.requiredSampleSize} trades. Status: {decision.paperTradingProgress.status}. Live eligibility: {decision.liveTradingEligibility || "Not Eligible"}.
+                            </div>
+                          )}
+                          {decision.checklist && (
+                            <div className="mt-3 grid gap-2 md:grid-cols-2">
+                              {decision.checklist.map((item) => (
+                                <div key={`${decision.id}-${item.key}`} className="rounded-lg border border-white/10 bg-black/30 p-2 text-xs">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-medium text-white">{item.label}</span>
+                                    <Badge className={decisionBadgeClass(item.result)}>{item.result}</Badge>
+                                  </div>
+                                  <p className="mt-1 leading-5 text-muted-foreground">{item.evidence}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+                            <div><span className="text-white">Evidence:</span> {decision.supportingEvidence.slice(0, 3).join(" | ") || "None recorded"}</div>
+                            <div><span className="text-white">Required:</span> {decision.requiredActions.join(" | ") || "None"}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {governanceDecisions.length === 0 && <p className="text-sm text-muted-foreground">No governance decisions yet.</p>}
+                    </div>
+                  </Panel>
+
+                  <Panel title="Incident Reports" icon={<ShieldAlert size={16} className="text-red-300" />}>
+                    <div className="space-y-3">
+                      {incidents.map((incident) => (
+                        <div key={incident.id} className="rounded-xl border border-red-400/20 bg-red-500/[0.04] p-3">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="font-semibold text-red-100">{incident.symbol || "Risk Incident"}</div>
+                            <span className="text-xs text-muted-foreground">{formatDate(incident.createdAt)}</span>
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-muted-foreground">{incident.incident}</p>
+                          <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                            <div><span className="text-white">Cause:</span> {incident.cause}</div>
+                            <div><span className="text-white">Rules:</span> {incident.rulesViolated.join(" | ") || "None"}</div>
+                            <div><span className="text-white">Corrections:</span> {incident.requiredCorrections.join(" | ") || "None"}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {incidents.length === 0 && <p className="text-sm text-muted-foreground">No governance incidents recorded.</p>}
+                    </div>
+                  </Panel>
+                </div>
               </div>
             )}
 
