@@ -330,7 +330,7 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
     reason = "One or more critical governance checks failed or returned unknown.";
   } else if (softFailures.length > 0 || performance.closedTrades < REQUIRED_SAMPLE_SIZE) {
     authorization = "AUTHORIZED_WITH_CONDITIONS";
-    reason = "Critical risk checks passed, but validation or context remains incomplete.";
+    reason = "Critical risk checks passed, but validation or context remains incomplete. Paper trading may continue for validation only.";
   } else {
     authorization = "AUTHORIZED";
     reason = "All critical and validation checks passed for paper trading.";
@@ -377,7 +377,7 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
     });
   }
 
-  return { decision, authorized: authorization === "AUTHORIZED" };
+  return { decision, authorized: authorization !== "DENIED" };
 }
 
 export async function governanceReview(userId: string): Promise<TradingGovernanceDecision> {
