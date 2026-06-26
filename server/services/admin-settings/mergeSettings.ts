@@ -65,6 +65,74 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
         ...defaultIntegrations.businessOperations,
         ...(raw?.integrations?.businessOperations || {}),
       },
+      deployment: {
+        ...defaultIntegrations.deployment,
+        ...(raw?.integrations?.deployment || {}),
+        hasAccessToken: !!(
+          raw?.integrations?.deployment?.accessToken ||
+          raw?.integrations?.deployment?.hasAccessToken
+        ),
+      },
+      payments: {
+        ...defaultIntegrations.payments,
+        ...(raw?.integrations?.payments || {}),
+        hasSecretKey: !!(
+          raw?.integrations?.payments?.secretKey || raw?.integrations?.payments?.hasSecretKey
+        ),
+        hasWebhookSecret: !!(
+          raw?.integrations?.payments?.webhookSecret ||
+          raw?.integrations?.payments?.hasWebhookSecret
+        ),
+      },
+      socialPublishing: {
+        ...defaultIntegrations.socialPublishing,
+        ...(raw?.integrations?.socialPublishing || {}),
+        platforms: Array.isArray(raw?.integrations?.socialPublishing?.platforms)
+          ? raw!.integrations!.socialPublishing!.platforms
+          : defaultIntegrations.socialPublishing.platforms,
+        hasAccessToken: !!(
+          raw?.integrations?.socialPublishing?.accessToken ||
+          raw?.integrations?.socialPublishing?.hasAccessToken
+        ),
+      },
+      crm: {
+        ...defaultIntegrations.crm,
+        ...(raw?.integrations?.crm || {}),
+        hasApiKey: !!(raw?.integrations?.crm?.apiKey || raw?.integrations?.crm?.hasApiKey),
+      },
+      accounting: {
+        ...defaultIntegrations.accounting,
+        ...(raw?.integrations?.accounting || {}),
+        hasCredentials: !!(
+          (raw?.integrations?.accounting?.clientId &&
+            raw?.integrations?.accounting?.clientSecret &&
+            raw?.integrations?.accounting?.refreshToken) ||
+          raw?.integrations?.accounting?.hasCredentials
+        ),
+      },
+      cloudStorage: {
+        ...defaultIntegrations.cloudStorage,
+        ...(raw?.integrations?.cloudStorage || {}),
+        hasAccessToken: !!(
+          raw?.integrations?.cloudStorage?.accessToken ||
+          raw?.integrations?.cloudStorage?.hasAccessToken
+        ),
+      },
+      tradingView: {
+        ...defaultIntegrations.tradingView,
+        ...(raw?.integrations?.tradingView || {}),
+        hasAlertWebhookSecret: !!(
+          raw?.integrations?.tradingView?.alertWebhookSecret ||
+          raw?.integrations?.tradingView?.hasAlertWebhookSecret
+        ),
+      },
+      marketData: {
+        ...defaultIntegrations.marketData,
+        ...(raw?.integrations?.marketData || {}),
+        hasApiKey: !!(
+          raw?.integrations?.marketData?.apiKey || raw?.integrations?.marketData?.hasApiKey
+        ),
+      },
       kalshi: {
         ...defaultIntegrations.kalshi,
         ...(raw?.integrations?.kalshi || {}),
