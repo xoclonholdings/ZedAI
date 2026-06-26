@@ -29,6 +29,15 @@ interface GitHubPullRequest {
   updated_at?: string;
 }
 
+interface GitHubAccountConfig {
+  id?: string;
+  label?: string;
+  owner?: string;
+  repo?: string;
+  defaultBranch?: string;
+  token?: string;
+}
+
 export interface GitHubConnectionStatus {
   configured: boolean;
   reachable: boolean;
@@ -63,20 +72,41 @@ export interface GitHubRepoReadout {
 async function getGitHubConfig() {
   const settings = await loadAdminSettings();
   const github = settings.integrations.github;
+  const account = selectGitHubAccount(github);
+  const token = account?.token || github.token || "";
   const baseUrl = github.apiBaseUrl || "https://api.github.com";
   const headers = {
     Accept: "application/vnd.github+json",
-    Authorization: `Bearer ${github.token}`,
+    Authorization: `Bearer ${token}`,
     "User-Agent": "ZED-AI-GitHub-Integration",
   };
 
-  return { github, baseUrl, headers };
+  return { github, account, baseUrl, headers };
+}
+
+function selectGitHubAccount(github: any): GitHubAccountConfig | null {
+  const configuredAccount = (github.accounts || []).find(
+    (account: GitHubAccountConfig) => account.owner && account.repo && account.token,
+  );
+  if (configuredAccount) return configuredAccount;
+
+  if (github.owner || github.repo || github.token) {
+    return {
+      label: github.label || "Primary repo",
+      owner: github.owner,
+      repo: github.repo,
+      defaultBranch: github.defaultBranch,
+      token: github.token,
+    };
+  }
+
+  return null;
 }
 
 export async function checkGitHubIntegrationStatus(): Promise<GitHubConnectionStatus> {
-  const { github, baseUrl, headers } = await getGitHubConfig();
+  const { github, account, baseUrl, headers } = await getGitHubConfig();
 
-  if (!github.enabled || !github.owner || !github.repo || !github.token) {
+  if (!github.enabled || !account?.owner || !account.repo || !account.token) {
     return {
       configured: false,
       reachable: false,
@@ -89,7 +119,7 @@ export async function checkGitHubIntegrationStatus(): Promise<GitHubConnectionSt
   try {
     const [userResponse, repoResponse] = await Promise.all([
       fetch(`${baseUrl}/user`, { headers }),
-      fetch(`${baseUrl}/repos/${github.owner}/${github.repo}`, { headers }),
+      fetch(`${baseUrl}/repos/${account.owner}/${account.repo}`, { headers }),
     ]);
 
     if (userResponse.status === 401 || repoResponse.status === 401) {
@@ -146,12 +176,17 @@ export async function getGitHubRepoReadout(): Promise<GitHubRepoReadout> {
     return { status, pulls: [], issues: [] };
   }
 
-  const { github, baseUrl, headers } = await getGitHubConfig();
+  const { account, baseUrl, headers } = await getGitHubConfig();
+  if (!account?.owner || !account.repo) return { status, pulls: [], issues: [] };
 
   try {
     const [pullsResponse, issuesResponse] = await Promise.all([
-      fetch(`${baseUrl}/repos/${github.owner}/${github.repo}/pulls?state=open&per_page=8`, { headers }),
-      fetch(`${baseUrl}/repos/${github.owner}/${github.repo}/issues?state=open&per_page=8`, { headers }),
+      fetch(`${baseUrl}/repos/${account.owner}/${account.repo}/pulls?state=open&per_page=8`, {
+        headers,
+      }),
+      fetch(`${baseUrl}/repos/${account.owner}/${account.repo}/issues?state=open&per_page=8`, {
+        headers,
+      }),
     ]);
 
     const pullsPayload = pullsResponse.ok ? ((await pullsResponse.json()) as GitHubPullRequest[]) : [];
