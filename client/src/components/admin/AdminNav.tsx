@@ -10,7 +10,7 @@ const TABS: AdminNavTab[] = [
   { id: "approvals", label: "Approvals" },
   { id: "logs", label: "Logs" },
   { id: "security", label: "Security" },
-  { id: "flows", label: "Tools" },
+  { id: "tools", label: "Tools" },
 ];
 
 export default function AdminNav({
