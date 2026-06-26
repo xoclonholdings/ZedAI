@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Archive, CheckCircle2, DraftingCompass, Plus, RefreshCw, Wrench } from "lucide-react";
+import { Archive, CheckCircle2, FileEdit, Plus, RefreshCw, Wrench } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -165,7 +165,7 @@ export default function ToolsSection() {
           label="Draft"
           value={counts.draft}
           active={filter === "draft"}
-          icon={DraftingCompass}
+          icon={FileEdit}
           onClick={() => setFilter("draft")}
         />
         <ToolStatCard
