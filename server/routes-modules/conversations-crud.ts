@@ -95,10 +95,22 @@ export function registerConversationCrudRoutes(app: Express): void {
   app.get("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
       const conversations = await storage.getConversationsByUser(req.user.claims.sub);
-      res.json(conversations);
+      res.json(conversations.filter((conversation) => conversation.isActive !== false));
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  app.get("/api/conversations/archived", isAuthenticated, async (req: any, res) => {
+    try {
+      const conversations = await storage.getConversationsByUser(req.user.claims.sub);
+      res.json({
+        conversations: conversations.filter((conversation) => conversation.isActive === false),
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch archived conversations" });
     }
   });
 
@@ -139,6 +151,32 @@ export function registerConversationCrudRoutes(app: Express): void {
         },
       });
       res.status(500).json({ error: detail || "Failed to create conversation" });
+    }
+  });
+
+  app.post("/api/conversations/:id/archive", isAuthenticated, async (req: any, res) => {
+    try {
+      const conversation = await requireConversation(req, res);
+      if (!conversation) return;
+      if (conversation.userId !== req.user.claims.sub) return res.status(403).json({ error: "Forbidden" });
+      const updated = await storage.updateConversation(req.params.id, { isActive: false });
+      res.json({ conversation: updated });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to archive conversation" });
+    }
+  });
+
+  app.post("/api/conversations/:id/restore", isAuthenticated, async (req: any, res) => {
+    try {
+      const conversation = await requireConversation(req, res);
+      if (!conversation) return;
+      if (conversation.userId !== req.user.claims.sub) return res.status(403).json({ error: "Forbidden" });
+      const updated = await storage.updateConversation(req.params.id, { isActive: true });
+      res.json({ conversation: updated });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to restore conversation" });
     }
   });
 
