@@ -1,15 +1,19 @@
-import { Menu } from "lucide-react";
+import { Archive, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
 
 interface ChatHeaderProps {
   isMobile?: boolean;
   onOpenSidebar?: () => void;
+  canArchive?: boolean;
+  onArchiveConversation?: () => void;
 }
 
 export default function ChatHeader({
   isMobile = false,
   onOpenSidebar,
+  canArchive = false,
+  onArchiveConversation,
 }: ChatHeaderProps) {
   const { user } = useAuth();
   const compact = !!user?.personalization?.compactMessages;
@@ -45,7 +49,20 @@ export default function ChatHeader({
         </div>
       </div>
 
-      <div />
+      {canArchive && onArchiveConversation ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onArchiveConversation}
+          className={`${compact ? "h-8 px-2" : "h-9 px-3"} zed-button rounded-xl text-muted-foreground hover:text-orange-300`}
+          title="Archive this chat"
+        >
+          <Archive size={16} className="md:mr-2" />
+          <span className="hidden md:inline">Archive</span>
+        </Button>
+      ) : (
+        <div />
+      )}
     </div>
   );
 }
