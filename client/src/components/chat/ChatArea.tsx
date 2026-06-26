@@ -103,6 +103,26 @@ export default function ChatArea({
     });
   }
 
+  async function handleArchiveConversation() {
+    if (!conversationId) return;
+    const confirmed = window.confirm("Archive this chat? You can restore it from Settings > Archived Chats.");
+    if (!confirmed) return;
+
+    const response = await fetch(`/api/conversations/${conversationId}/archive`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      window.alert("Failed to archive this chat.");
+      return;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    window.history.pushState({}, "", "/chat");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+
   function handleFileUpload() {
     if (conversationId) {
       queryClient.invalidateQueries({
@@ -126,7 +146,12 @@ export default function ChatArea({
       <div className="flex-1 flex flex-col h-full relative overflow-hidden">
         <ChatBackground />
 
-        <ChatHeader isMobile={isMobile} onOpenSidebar={onOpenSidebar} />
+        <ChatHeader
+          isMobile={isMobile}
+          onOpenSidebar={onOpenSidebar}
+          canArchive={!!conversationId}
+          onArchiveConversation={handleArchiveConversation}
+        />
 
         <ChatMessagesList
           messages={localMessages}
