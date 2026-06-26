@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, AlertTriangle, Info, RefreshCw, Route, ServerCrash } from "lucide-react";
+import { AlertCircle, AlertTriangle, GitBranch, Info, RefreshCw, ServerCrash } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -118,7 +118,7 @@ export default function LogsSection() {
           label="Routing"
           value={counts.routing}
           active={filter === "routing"}
-          icon={Route}
+          icon={GitBranch}
           onClick={() => setFilter("routing")}
         />
         <LogStatCard
