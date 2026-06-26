@@ -1,4 +1,4 @@
-import { LogOut, Shield, UserRound } from "lucide-react";
+import { LogOut, Shield, User } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -42,7 +42,7 @@ export default function AccountSecuritySettings() {
       <CardContent className="space-y-4">
         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
-            <UserRound className="h-4 w-4 text-cyan-300" />
+            <User className="h-4 w-4 text-cyan-300" />
             Current Account
           </div>
           <div className="space-y-2 text-sm text-muted-foreground">
