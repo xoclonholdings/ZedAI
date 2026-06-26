@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Archive, ChevronLeft, FolderKanban, Settings } from "lucide-react";
+import { ChevronLeft, FolderKanban, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,9 @@ import {
 
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { useAuth } from "@/components/auth/UseAuth";
+import AccountSecuritySettings from "./AccountSecuritySettings";
 import AdminSecuritySettings from "./AdminSecuritySettings";
+import ArchivedChatsSettings from "./ArchivedChatsSettings";
 import DataControlsSettings from "./DataControlsSettings";
 import MyMemorySettings from "./MyMemorySettings";
 import NotificationsSettings from "./NotificationsSettings";
@@ -105,7 +107,7 @@ export default function SettingsModal() {
           </DialogTitle>
 
           <DialogDescription className={`${descriptionClass} text-muted-foreground`}>
-            Manage your preferences, rules, and security.
+            Manage your profile, memory, workspace, archive, and account controls.
           </DialogDescription>
         </DialogHeader>
 
@@ -145,34 +147,41 @@ export default function SettingsModal() {
             <div>
               <BackButton />
               <div className={compact ? "space-y-4" : "space-y-6"}>
-                <RulesSettings />
-                <DataControlsSettings />
+                {isAdmin ? (
+                  <RulesSettings />
+                ) : (
+                  <Card className="zed-glass border-white/10">
+                    <CardHeader>
+                      <CardTitle>Rules & Parameters</CardTitle>
+                      <CardDescription>
+                        Workspace rules are managed by an admin so ZED behavior stays consistent.
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                )}
                 <Card className="zed-glass border-white/10">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FolderKanban className="h-5 w-5" />
-                      Projects & Filing
+                      Projects & Workspaces
                     </CardTitle>
+                    <CardDescription>
+                      Projects organize what you are working on. Workspaces organize the kind of work you are doing.
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-3">
                     <p className="text-sm text-muted-foreground">
-                      Projects now live in the chat sidebar so conversations can be filed and filtered there.
+                      Use the sidebar Projects section for filing chats and the Workspaces section for Research, Business, Trading, Content, and Learning.
                     </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/workspaces/research")}>Open Research</Button>
+                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/workspaces/business")}>Open Business</Button>
+                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/trading")}>Open Trading</Button>
+                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/history")}>Open History</Button>
+                    </div>
                   </CardContent>
                 </Card>
-                <Card className="zed-glass border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Archive className="h-5 w-5" />
-                      Archived Chats
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      No archived conversations yet. Conversations you archive will appear here.
-                    </p>
-                  </CardContent>
-                </Card>
+                <DataControlsSettings />
               </div>
             </div>
           )}
@@ -187,26 +196,17 @@ export default function SettingsModal() {
           {activeSection === "security" && (
             <div>
               <BackButton />
-              <AdminSecuritySettings />
+              <div className={compact ? "space-y-4" : "space-y-6"}>
+                <AccountSecuritySettings />
+                {isAdmin && <AdminSecuritySettings />}
+              </div>
             </div>
           )}
 
           {activeSection === "archived" && (
             <div>
               <BackButton />
-              <Card className="zed-glass border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Archive className="h-5 w-5" />
-                    Archived Chats
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    No archived conversations yet. Conversations you archive will appear here.
-                  </p>
-                </CardContent>
-              </Card>
+              <ArchivedChatsSettings />
             </div>
           )}
         </div>
