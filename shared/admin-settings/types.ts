@@ -68,11 +68,13 @@ export interface AgentDefinition {
   entryPoint?: string;
 }
 
+export type IntegrationStatus = "planned" | "configured" | "active";
+
 // ─── Per-integration shapes ──────────────────────────────────────────
 
 export interface GustoIntegrationSettings {
   enabled: boolean;
-  status: "planned" | "configured" | "active";
+  status: IntegrationStatus;
   environment: "sandbox" | "production";
   companyId: string;
   apiBaseUrl: string;
@@ -93,7 +95,7 @@ export interface GitHubAccount {
 
 export interface GitHubIntegrationSettings {
   enabled: boolean;
-  status: "planned" | "configured" | "active";
+  status: IntegrationStatus;
   apiBaseUrl: string;
   /** Multi-account: list of repositories the integration tracks. */
   accounts: GitHubAccount[];
@@ -122,7 +124,7 @@ export interface EmailAccount {
 
 export interface EmailIntegrationSettings {
   enabled: boolean;
-  status: "planned" | "configured" | "active";
+  status: IntegrationStatus;
   accounts: EmailAccount[];
   /** Legacy single-sender fields preserved for backward-compat. */
   provider?: "smtp" | "gmail" | "outlook" | "custom";
@@ -153,14 +155,14 @@ export interface GoogleAccount {
 
 export interface GoogleIntegrationSettings {
   enabled: boolean;
-  status: "planned" | "configured" | "active";
+  status: IntegrationStatus;
   accounts: GoogleAccount[];
   notes: string;
 }
 
 export interface TelephonyIntegrationSettings {
   enabled: boolean;
-  status: "planned" | "configured" | "active";
+  status: IntegrationStatus;
   provider: "twilio" | "sip" | "custom";
   phoneNumber: string;
   voicemailEmail: string;
@@ -173,7 +175,7 @@ export interface TelephonyIntegrationSettings {
 
 export interface FirewallIntegrationSettings {
   enabled: boolean;
-  status: "planned" | "configured" | "active";
+  status: IntegrationStatus;
   publicBaseUrl: string;
   vpnBaseUrl: string;
   preferredRoute: "vpn" | "public";
@@ -188,13 +190,103 @@ export interface FirewallIntegrationSettings {
 
 export interface BusinessOperationsSettings {
   enabled: boolean;
-  status: "planned" | "configured" | "active";
+  status: IntegrationStatus;
   ecommerce: boolean;
   dropshipping: boolean;
   realEstate: boolean;
   acquisitions: boolean;
   businessCredit: boolean;
   rdSuggestions: boolean;
+  notes: string;
+}
+
+export interface DeploymentIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  provider: "netlify" | "render" | "vercel" | "railway" | "custom";
+  dashboardUrl: string;
+  apiBaseUrl: string;
+  siteId: string;
+  serviceId: string;
+  accessToken: string;
+  hasAccessToken?: boolean;
+  notes: string;
+}
+
+export interface PaymentsIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  provider: "stripe" | "paypal" | "square" | "custom";
+  dashboardUrl: string;
+  publishableKey: string;
+  secretKey: string;
+  webhookSecret: string;
+  hasSecretKey?: boolean;
+  hasWebhookSecret?: boolean;
+  notes: string;
+}
+
+export interface SocialPublishingIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  platforms: string[];
+  contentApprovalRequired: boolean;
+  dashboardUrl: string;
+  accessToken: string;
+  hasAccessToken?: boolean;
+  notes: string;
+}
+
+export interface CrmIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  provider: "hubspot" | "salesforce" | "zoho" | "airtable" | "custom";
+  workspaceUrl: string;
+  apiKey: string;
+  hasApiKey?: boolean;
+  notes: string;
+}
+
+export interface AccountingIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  provider: "quickbooks" | "xero" | "wave" | "custom";
+  dashboardUrl: string;
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  hasCredentials?: boolean;
+  notes: string;
+}
+
+export interface CloudStorageIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  provider: "google_drive" | "dropbox" | "onedrive" | "s3" | "custom";
+  rootFolderUrl: string;
+  accessToken: string;
+  hasAccessToken?: boolean;
+  notes: string;
+}
+
+export interface TradingViewIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  workspaceUrl: string;
+  defaultWatchlist: string;
+  webhookUrl: string;
+  alertWebhookSecret: string;
+  hasAlertWebhookSecret?: boolean;
+  notes: string;
+}
+
+export interface MarketDataIntegrationSettings {
+  enabled: boolean;
+  status: IntegrationStatus;
+  provider: "polygon" | "alphavantage" | "twelvedata" | "finnhub" | "custom";
+  apiBaseUrl: string;
+  apiKey: string;
+  hasApiKey?: boolean;
   notes: string;
 }
 
@@ -206,9 +298,17 @@ export interface IntegrationsSettings {
   telephony: TelephonyIntegrationSettings;
   firewall: FirewallIntegrationSettings;
   businessOperations: BusinessOperationsSettings;
+  deployment: DeploymentIntegrationSettings;
+  payments: PaymentsIntegrationSettings;
+  socialPublishing: SocialPublishingIntegrationSettings;
+  crm: CrmIntegrationSettings;
+  accounting: AccountingIntegrationSettings;
+  cloudStorage: CloudStorageIntegrationSettings;
+  tradingView: TradingViewIntegrationSettings;
+  marketData: MarketDataIntegrationSettings;
   kalshi: {
     enabled: boolean;
-    status: "planned" | "configured" | "active";
+    status: IntegrationStatus;
     environment: "demo" | "production";
     apiBaseUrl: string;
     email: string;
