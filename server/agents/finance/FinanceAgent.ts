@@ -26,6 +26,12 @@ export interface FinanceAgentResponse {
   capabilities: string[];
 }
 
+function isStructuralAudit(task: string) {
+  return /(4-pillar|four pillar|structural audit|setup audit|system audit|technical patch|technical patches|binary logical trigger|math\/risk|systemic weakness)/i.test(
+    task,
+  );
+}
+
 function detectCapabilities(task: string) {
   const lower = task.toLowerCase();
   const capabilities = new Set<string>();
@@ -45,6 +51,9 @@ function detectCapabilities(task: string) {
   if (/(trade|trading|entry|exit|stop loss|take profit|position|setup|chart|price action|portfolio|paper trade|journal|backtest|strategy|risk)/.test(lower)) {
     capabilities.add("trading-intelligence");
   }
+  if (/(audit|structural|pillar|trigger|patch|failure mode|weakness|expectancy|risk-to-reward|system)/.test(lower)) {
+    capabilities.add("trading-intelligence");
+  }
   if (/(wealth|prosperity|capital|compound|allocation|risk|cashflow|returns|net worth)/.test(lower)) {
     capabilities.add("capital-risk");
   }
@@ -54,7 +63,7 @@ function detectCapabilities(task: string) {
 
 function needsApproval(task: string) {
   const lower = task.toLowerCase();
-  if (/(paper trade|paper trading|simulated|simulation|journal|backtest|back test|trade thesis|trade plan)/.test(lower)) {
+  if (/(paper trade|paper trading|simulated|simulation|journal|backtest|back test|trade thesis|trade plan|audit|review)/.test(lower)) {
     return false;
   }
   return /(buy|sell|short|long|open position|close position|rebalance|allocate|move funds|wire|swap|place order|execute trade)/i.test(task);
@@ -63,6 +72,11 @@ function needsApproval(task: string) {
 function expandFinanceQueries(task: string): string[] {
   const lower = task.toLowerCase();
   const queries = new Set<string>([task]);
+
+  if (isStructuralAudit(task)) {
+    queries.add(`${task} market regime volatility liquidity risk controls`);
+    queries.add(`${task} trading system audit binary triggers expectancy drawdown`);
+  }
 
   if (/(crypto|web3|bitcoin|btc|ethereum|eth|altcoin|defi|token)/.test(lower)) {
     queries.add(`${task} crypto market structure`);
@@ -130,6 +144,7 @@ export class FinanceAgent {
 
   static async process(request: FinanceAgentRequest): Promise<FinanceAgentResponse> {
     const skill = await this.loadSkill();
+    const auditMode = isStructuralAudit(request.task);
     const capabilities = detectCapabilities(request.task);
     const scope = capabilities.length > 0 ? capabilities : ["trading-intelligence", "capital-risk"];
     const approval = needsApproval(request.task);
@@ -151,6 +166,10 @@ export class FinanceAgent {
           `Max drawdown: ${tradingPerformance.maximumDrawdown}`,
         ].join("\n")
       : "No paper-trading performance report available yet.";
+
+    const auditInstructions = auditMode
+      ? `\n\nFour-Pillar Structural Audit Mode is active. Use exactly these sections when answering:\n1. Market Context\n2. Binary Logical Triggers\n3. Math/Risk Metrics\n4. Systemic Weaknesses\n5. Technical Patches\n\nFor each pillar, label available facts, assumptions, missing data, and decision status. For Technical Patches, include issue, proposed change, expected benefit, potential downside, validation plan, and priority. If the user did not provide a concrete trade setup, audit the currently available setup or configuration and state that live-market conclusions are non-assessable without symbol, timeframe, entry, stop, target, current price, session, and account-risk inputs.`
+      : "";
 
     const systemPrompt = `${skill}
 
@@ -185,7 +204,7 @@ Rules:
 - If economic calendar, news, historical performance, journal, or pricing data is unavailable, identify the missing inputs before concluding.
 - Optimize for positive expectancy, controlled drawdowns, consistent execution, repeatable process, risk-adjusted capital growth, and long-term survivability.
 - Prefer outputs with: thesis, market context, statistical edge, entry validation, exit validation, risk analysis, failure analysis, optimization opportunities, confidence assessment, invalidation, and next step.
-- Use the same shared blackboard mindset as Intelligence: pull from shared memory, prior research, trading knowledge, paper-trading history, and live search context before answering.
+- Use the same shared blackboard mindset as Intelligence: pull from shared memory, prior research, trading knowledge, paper-trading history, and live search context before answering.${auditInstructions}
 
 Active focus lanes: ${scope.map(capabilityLabel).join(", ")}.
 ${request.memoryContext ? `\nShared knowledge context:\n${request.memoryContext}` : ""}${priorBlock}
@@ -213,8 +232,10 @@ Return a direct operator-style response. Avoid vague motivation language.`.trim(
         .map((line) => line.trim())
         .filter(Boolean)
         .slice(0, 4),
-      implications: `Finance lane analysis for ${request.task}`,
-      recommendedAction: "Review the proposed thesis, capital framework, risk controls, and validation requirements before treating any setup as execution-ready.",
+      implications: auditMode ? `Four-pillar trading audit for ${request.task}` : `Finance lane analysis for ${request.task}`,
+      recommendedAction: auditMode
+        ? "Review the technical patches and validate them through paper-trading metrics before changing live behavior."
+        : "Review the proposed thesis, capital framework, risk controls, and validation requirements before treating any setup as execution-ready.",
     }).catch(() => {});
     await this.writeToMemory(request, reply, scope, approval);
     await this.log(request, reply, scope, approval);
