@@ -5,6 +5,11 @@ import type { PaperTradeStatus } from "../../shared/trading-types";
 import { evaluateScannerObservation } from "../zcos/trading/ScannerEngine";
 import { createTradeThesis } from "../zcos/trading/TradeThesisEngine";
 import {
+  authorizePaperTrade,
+  evaluateTradeThesisGovernance,
+  governanceReview,
+} from "../zcos/trading/TradingGovernanceEngine";
+import {
   TRADING_BUILD_SEQUENCE,
   TRADING_KNOWLEDGE_AREAS,
   TRADING_SOURCE_LIST,
@@ -35,6 +40,12 @@ function requireFields(body: Record<string, unknown>, fields: string[]): string 
     }
   }
   return null;
+}
+
+async function findUserThesis(userId: string, thesisId?: unknown) {
+  if (!thesisId) return undefined;
+  const theses = await TradingStore.listTheses(userId);
+  return theses.find((thesis) => thesis.id === String(thesisId));
 }
 
 /**
@@ -203,7 +214,15 @@ export function registerTradingRoutes(app: Express): void {
       status: req.body.status,
       notes: req.body.notes,
     });
-    res.json({ thesis });
+    const governanceDecision = await evaluateTradeThesisGovernance(thesis);
+    res.json({ thesis: { ...thesis, governanceDecisionId: governanceDecision.id, governanceDecision: governanceDecision.decision }, governanceDecision });
+  });
+
+  app.post("/api/trading/theses/:id/governance", isAuthenticated, async (req: any, res) => {
+    const thesis = await findUserThesis(userIdFrom(req), req.params.id);
+    if (!thesis) return res.status(404).json({ error: "Thesis not found" });
+    const governanceDecision = await evaluateTradeThesisGovernance(thesis);
+    res.json({ governanceDecision });
   });
 
   app.patch("/api/trading/theses/:id", isAuthenticated, async (req: any, res) => {
@@ -228,6 +247,41 @@ export function registerTradingRoutes(app: Express): void {
     res.json({ trades });
   });
 
+  app.post("/api/trading/paper-trades/authorize", isAuthenticated, async (req: any, res) => {
+    const missing = requireFields(req.body || {}, [
+      "market",
+      "assetClass",
+      "symbol",
+      "direction",
+      "entry",
+      "stop",
+      "target",
+      "size",
+      "riskAmount",
+      "entryReason",
+    ]);
+    if (missing) return res.status(400).json({ error: `${missing} is required` });
+
+    const thesis = await findUserThesis(userIdFrom(req), req.body.thesisId);
+    const authorization = await authorizePaperTrade({
+      userId: userIdFrom(req),
+      thesis,
+      market: String(req.body.market),
+      assetClass: req.body.assetClass,
+      symbol: String(req.body.symbol),
+      direction: req.body.direction,
+      timeframe: req.body.timeframe,
+      setupName: req.body.setupName,
+      entry: toNumber(req.body.entry),
+      stop: toNumber(req.body.stop),
+      target: toNumber(req.body.target),
+      size: toNumber(req.body.size),
+      riskAmount: toNumber(req.body.riskAmount),
+      entryReason: String(req.body.entryReason),
+    });
+    res.json(authorization);
+  });
+
   app.post("/api/trading/paper-trades", isAuthenticated, async (req: any, res) => {
     const missing = requireFields(req.body || {}, [
       "market",
@@ -242,6 +296,31 @@ export function registerTradingRoutes(app: Express): void {
       "entryReason",
     ]);
     if (missing) return res.status(400).json({ error: `${missing} is required` });
+
+    const thesis = await findUserThesis(userIdFrom(req), req.body.thesisId);
+    const authorization = await authorizePaperTrade({
+      userId: userIdFrom(req),
+      thesis,
+      market: String(req.body.market),
+      assetClass: req.body.assetClass,
+      symbol: String(req.body.symbol),
+      direction: req.body.direction,
+      timeframe: req.body.timeframe,
+      setupName: req.body.setupName,
+      entry: toNumber(req.body.entry),
+      stop: toNumber(req.body.stop),
+      target: toNumber(req.body.target),
+      size: toNumber(req.body.size),
+      riskAmount: toNumber(req.body.riskAmount),
+      entryReason: String(req.body.entryReason),
+    });
+
+    if (!authorization.authorized) {
+      return res.status(409).json({
+        error: "Paper trade not authorized by governance layer",
+        authorization: authorization.decision,
+      });
+    }
 
     const trade = await TradingStore.openPaperTrade({
       userId: userIdFrom(req),
@@ -261,8 +340,10 @@ export function registerTradingRoutes(app: Express): void {
       screenshots: toArray(req.body.screenshots),
       lessonsLearned: toArray(req.body.lessonsLearned),
       ruleViolations: toArray(req.body.ruleViolations),
+      authorizationDecisionId: authorization.decision.id,
+      authorizationDecision: "AUTHORIZED",
     });
-    res.json({ trade });
+    res.json({ trade, authorization: authorization.decision });
   });
 
   app.post("/api/trading/paper-trades/:id/close", isAuthenticated, async (req: any, res) => {
@@ -284,5 +365,20 @@ export function registerTradingRoutes(app: Express): void {
   app.get("/api/trading/performance", isAuthenticated, async (req: any, res) => {
     const report = await TradingStore.getPerformance(userIdFrom(req));
     res.json({ report });
+  });
+
+  app.post("/api/trading/governance/review", isAuthenticated, async (req: any, res) => {
+    const governanceDecision = await governanceReview(userIdFrom(req));
+    res.json({ governanceDecision });
+  });
+
+  app.get("/api/trading/governance/decisions", isAuthenticated, async (req: any, res) => {
+    const decisions = await TradingStore.listGovernanceDecisions(userIdFrom(req));
+    res.json({ decisions });
+  });
+
+  app.get("/api/trading/governance/incidents", isAuthenticated, async (req: any, res) => {
+    const incidents = await TradingStore.listIncidentReports(userIdFrom(req));
+    res.json({ incidents });
   });
 }
