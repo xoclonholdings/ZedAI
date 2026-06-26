@@ -5,15 +5,39 @@ import { defaultAppSettings } from "@shared/adminSettings";
 
 export type { AppSettings } from "@shared/adminSettings";
 
+const LOCAL_APP_SETTINGS_KEY = "zed_app_settings";
+
+function readLocalAppSettings(): Partial<AppSettings> {
+  try {
+    const raw = localStorage.getItem(LOCAL_APP_SETTINGS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalAppSettings(settings: AppSettings) {
+  try {
+    localStorage.setItem(LOCAL_APP_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // Local persistence is best-effort only.
+  }
+}
+
 export function useAppSettings() {
-  const [appSettings, setAppSettingsState] = useState<AppSettings>(defaultAppSettings);
+  const [appSettings, setAppSettingsState] = useState<AppSettings>({
+    ...defaultAppSettings,
+    ...readLocalAppSettings(),
+  });
   const [isLoading, setIsLoading] = useState(true);
   const hydratedRef = useRef(false);
+  const canSyncAdminSettingsRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadSettings() {
+      const localSettings = readLocalAppSettings();
       try {
         const response = await fetch("/api/admin/settings", {
           credentials: "include",
@@ -21,17 +45,19 @@ export function useAppSettings() {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to load app settings");
+          throw new Error("Admin settings unavailable");
         }
 
         const data = await response.json();
         if (!cancelled) {
-          setAppSettingsState({ ...defaultAppSettings, ...(data.app || {}) });
+          canSyncAdminSettingsRef.current = true;
+          setAppSettingsState({ ...defaultAppSettings, ...(data.app || {}), ...localSettings });
           hydratedRef.current = true;
         }
       } catch {
         if (!cancelled) {
-          setAppSettingsState(defaultAppSettings);
+          canSyncAdminSettingsRef.current = false;
+          setAppSettingsState({ ...defaultAppSettings, ...localSettings });
           hydratedRef.current = true;
         }
       } finally {
@@ -52,13 +78,17 @@ export function useAppSettings() {
     setAppSettingsState((prev) => {
       const next = typeof update === "function" ? (update as (value: AppSettings) => AppSettings)(prev) : update;
 
-      if (hydratedRef.current) {
+      writeLocalAppSettings(next);
+
+      if (hydratedRef.current && canSyncAdminSettingsRef.current) {
         void fetch("/api/admin/settings/app", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(next),
-        }).catch(() => {});
+        }).catch(() => {
+          canSyncAdminSettingsRef.current = false;
+        });
       }
 
       return next;
@@ -70,11 +100,17 @@ export function useAppSettings() {
 
 export async function clearAppSettings() {
   try {
+    localStorage.removeItem(LOCAL_APP_SETTINGS_KEY);
+  } catch {
+    // ignore local reset errors in destructive reset flow
+  }
+
+  try {
     await fetch("/api/admin/settings/app/reset", {
       method: "POST",
       credentials: "include",
     });
   } catch {
-    // ignore reset errors in destructive reset flow
+    // ignore admin reset errors for non-admin users
   }
 }
