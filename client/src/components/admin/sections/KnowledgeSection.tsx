@@ -4,7 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { CoreView } from "./knowledge/CoreView";
-import { MetricCard, SectionIntro, ViewButton } from "./knowledge/atoms";
+import { MetricCard, SectionIntro } from "./knowledge/atoms";
 import { OverviewView } from "./knowledge/OverviewView";
 import { ProjectView } from "./knowledge/ProjectView";
 import { ScratchpadView } from "./knowledge/ScratchpadView";
@@ -51,6 +51,8 @@ export default function KnowledgeSection() {
     () => serializeFoundationProfile(foundationProfile),
     [foundationProfile],
   );
+  const currentViewMeta = VIEW_META[view];
+  const CurrentViewIcon = currentViewMeta.icon;
 
   useEffect(() => {
     void refreshKnowledgeData();
@@ -240,10 +242,10 @@ export default function KnowledgeSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <SectionIntro
-        title="Knowledge Control Center"
-        description="Manage the memory layers that make ZED useful: inspect retrieval quality, curate durable project knowledge, clear temporary scratchpad context, and maintain canonical core memory without losing operational detail."
+        title="Knowledge"
+        description="Use one focused dropdown to inspect retrieval, manage durable memory, clean temporary context, or edit canonical core memory."
         action={
           <Button
             variant="outline"
@@ -257,20 +259,38 @@ export default function KnowledgeSection() {
         }
       />
 
-      <div className="grid gap-3 md:grid-cols-4">
-        {(Object.keys(VIEW_META) as KnowledgeView[]).map((key) => (
-          <ViewButton
-            key={key}
-            active={view === key}
-            label={VIEW_META[key].label}
-            description={VIEW_META[key].description}
-            icon={VIEW_META[key].icon}
-            onClick={() => setView(key)}
-          />
-        ))}
+      <div className="rounded-2xl border border-white/10 bg-black/25 p-3 space-y-3">
+        <label className="block space-y-1.5">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Knowledge Section
+          </span>
+          <select
+            value={view}
+            onChange={(event) => setView(event.target.value as KnowledgeView)}
+            className="h-11 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm font-medium text-foreground outline-none focus:border-cyan-400/50"
+          >
+            {(Object.keys(VIEW_META) as KnowledgeView[]).map((key) => (
+              <option key={key} value={key}>
+                {VIEW_META[key].label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/25 p-3">
+          <div className="rounded-xl border border-white/10 bg-black/40 p-2">
+            <CurrentViewIcon size={15} className="text-cyan-300" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">{currentViewMeta.label}</div>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {currentViewMeta.description}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard label="Core Memory" value={overview?.coreCount ?? "—"} />
         <MetricCard label="Project Memory" value={overview?.projectCount ?? "—"} />
         <MetricCard label="Scratchpad" value={overview?.scratchpadCount ?? "—"} />
