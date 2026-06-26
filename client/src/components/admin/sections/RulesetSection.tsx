@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Lock, RefreshCw, Router, Save } from "lucide-react";
+import { Lock, RefreshCw, Save } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -9,7 +8,6 @@ import { AccessForm } from "./ruleset/AccessForm";
 import { ParametersForm } from "./ruleset/ParametersForm";
 import { PersonalityForm } from "./ruleset/PersonalityForm";
 import { SecurityForm } from "./ruleset/SecurityForm";
-import { SectionButton } from "./ruleset/form-atoms";
 import {
   FILE_META,
   cloneDefaults,
@@ -32,6 +30,7 @@ export default function RulesetSection() {
   const currentSectionMeta =
     currentMeta.sections.find((s) => s.key === activeSection) || currentMeta.sections[0];
   const currentRules = rulesets[activeFile];
+  const CurrentFileIcon = currentMeta.icon;
 
   useEffect(() => {
     void loadRulesets();
@@ -115,14 +114,12 @@ export default function RulesetSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Ruleset Control Center</h2>
+          <h2 className="text-lg font-semibold">Ruleset</h2>
           <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-            Edit each rules domain through structured controls instead of raw YAML. Pick a rules
-            file first, then work inside a single focused section with fields that match the real
-            config shape.
+            Pick a rules domain and section from dropdowns, then edit the structured form underneath. No raw YAML required.
           </p>
         </div>
         <Button
@@ -132,7 +129,7 @@ export default function RulesetSection() {
           disabled={refreshing}
         >
           <RefreshCw size={14} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Reload Ruleset
+          Reload
         </Button>
       </div>
 
@@ -149,115 +146,103 @@ export default function RulesetSection() {
         </Card>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {(Object.keys(FILE_META) as RulesetKey[]).map((key) => {
-          const meta = FILE_META[key];
-          const Icon = meta.icon;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setActiveFile(key)}
-              className={[
-                "rounded-2xl border px-4 py-4 text-left transition-all",
-                activeFile === key
-                  ? "border-cyan-400/35 bg-cyan-400/10 shadow-[0_0_30px_rgba(34,211,238,0.08)]"
-                  : "border-white/10 bg-black/25 hover:border-white/20 hover:bg-black/35",
-              ].join(" ")}
+      <div className="rounded-2xl border border-white/10 bg-black/25 p-3 space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="block space-y-1.5">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Rules Domain
+            </span>
+            <select
+              value={activeFile}
+              onChange={(event) => setActiveFile(event.target.value as RulesetKey)}
+              className="h-11 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm font-medium text-foreground outline-none focus:border-cyan-400/50"
             >
-              <div className="flex items-start gap-3">
-                <div className="rounded-xl border border-white/10 bg-black/40 p-2">
-                  <Icon
-                    size={15}
-                    className={activeFile === key ? "text-cyan-300" : "text-foreground/70"}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{meta.label}</span>
-                    {activeFile === key ? (
-                      <Badge variant="outline" className="border-cyan-400/30 text-cyan-300">
-                        Active
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <div className="text-xs leading-5 text-muted-foreground">{meta.description}</div>
-                </div>
-              </div>
-            </button>
-          );
-        })}
+              {(Object.keys(FILE_META) as RulesetKey[]).map((key) => (
+                <option key={key} value={key}>
+                  {FILE_META[key].label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block space-y-1.5">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+              Section
+            </span>
+            <select
+              value={activeSection}
+              onChange={(event) => setActiveSection(event.target.value)}
+              className="h-11 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm font-medium text-foreground outline-none focus:border-cyan-400/50"
+            >
+              {currentMeta.sections.map((section) => (
+                <option key={section.key} value={section.key}>
+                  {section.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/25 p-3">
+          <div className="rounded-xl border border-white/10 bg-black/40 p-2">
+            <CurrentFileIcon size={15} className="text-cyan-300" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">{currentMeta.label}</div>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {currentMeta.description}
+            </p>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              <span className="text-foreground/80">{currentSectionMeta.label}:</span>{" "}
+              {currentSectionMeta.description}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.34fr_0.66fr]">
-        <Card className="zed-glass border-white/10">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Router size={16} className="text-cyan-300" />
-              {currentMeta.label} Sections
-            </CardTitle>
-            <CardDescription>
-              Choose the exact section you want to configure. Each section opens as a focused form
-              instead of a raw document.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {currentMeta.sections.map((section) => (
-              <SectionButton
-                key={section.key}
-                active={activeSection === section.key}
-                label={section.label}
-                description={section.description}
-                onClick={() => setActiveSection(section.key)}
-              />
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card className="zed-glass border-white/10">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Lock size={16} className="text-purple-300" />
-              {currentSectionMeta.label}
-            </CardTitle>
-            <CardDescription>
-              {currentSectionMeta.description} This saves back into{" "}
-              <code className="rounded bg-black/30 px-1.5 py-0.5 text-[11px]">{activeFile}</code>.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {loading ? (
-              <div className="py-10 text-sm text-muted-foreground">
-                Loading structured ruleset controls...
+      <Card className="zed-glass border-white/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Lock size={16} className="text-purple-300" />
+            {currentSectionMeta.label}
+          </CardTitle>
+          <CardDescription>
+            This saves back into{" "}
+            <code className="rounded bg-black/30 px-1.5 py-0.5 text-[11px]">{activeFile}</code>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loading ? (
+            <div className="py-10 text-sm text-muted-foreground">
+              Loading structured ruleset controls...
+            </div>
+          ) : (
+            <>
+              {renderForm()}
+              <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
+                <Button
+                  onClick={saveActiveFile}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                >
+                  <Save size={14} className="mr-2" />
+                  {saveStatus === "saving"
+                    ? "Saving..."
+                    : saveStatus === "saved"
+                      ? "Saved!"
+                      : saveStatus === "error"
+                        ? "Save Failed"
+                        : `Save ${currentMeta.label}`}
+                </Button>
+                {saveStatus === "error" ? (
+                  <span className="text-xs text-red-400">
+                    Could not save this rules file. Check field values and try again.
+                  </span>
+                ) : null}
               </div>
-            ) : (
-              <>
-                {renderForm()}
-                <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
-                  <Button
-                    onClick={saveActiveFile}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  >
-                    <Save size={14} className="mr-2" />
-                    {saveStatus === "saving"
-                      ? "Saving..."
-                      : saveStatus === "saved"
-                        ? "Saved!"
-                        : saveStatus === "error"
-                          ? "Save Failed"
-                          : `Save ${currentMeta.label}`}
-                  </Button>
-                  {saveStatus === "error" ? (
-                    <span className="text-xs text-red-400">
-                      Could not save this rules file. Check field values and try again.
-                    </span>
-                  ) : null}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
