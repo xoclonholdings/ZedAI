@@ -92,40 +92,139 @@ export async function updateIntegrationSettings(
       github: {
         ...current.integrations.github,
         ...(nextIntegrations.github || {}),
-        token:
-          nextIntegrations.github && "token" in nextIntegrations.github
-            ? nextIntegrations.github.token || current.integrations.github.token
-            : current.integrations.github.token,
+        token: preserveSecret(
+          current.integrations.github,
+          nextIntegrations.github,
+          "token",
+        ),
+        accounts: mergeSecretAccounts(
+          current.integrations.github.accounts || [],
+          nextIntegrations.github?.accounts,
+          ["token"],
+        ),
       },
       email: {
         ...current.integrations.email,
         ...(nextIntegrations.email || {}),
-        password:
-          nextIntegrations.email && "password" in nextIntegrations.email
-            ? nextIntegrations.email.password || current.integrations.email.password
-            : current.integrations.email.password,
+        password: preserveSecret(
+          current.integrations.email,
+          nextIntegrations.email,
+          "password",
+        ),
+        accounts: mergeSecretAccounts(
+          current.integrations.email.accounts || [],
+          nextIntegrations.email?.accounts,
+          ["password"],
+        ),
+      },
+      google: {
+        ...current.integrations.google,
+        ...(nextIntegrations.google || {}),
+        accounts: mergeSecretAccounts(
+          current.integrations.google.accounts || [],
+          nextIntegrations.google?.accounts,
+          ["clientSecret", "refreshToken"],
+        ),
       },
       telephony: {
         ...current.integrations.telephony,
         ...(nextIntegrations.telephony || {}),
-        apiKey:
-          nextIntegrations.telephony && "apiKey" in nextIntegrations.telephony
-            ? nextIntegrations.telephony.apiKey ||
-              current.integrations.telephony.apiKey
-            : current.integrations.telephony.apiKey,
+        apiKey: preserveSecret(
+          current.integrations.telephony,
+          nextIntegrations.telephony,
+          "apiKey",
+        ),
       },
       firewall: {
         ...current.integrations.firewall,
         ...(nextIntegrations.firewall || {}),
-        authToken:
-          nextIntegrations.firewall && "authToken" in nextIntegrations.firewall
-            ? nextIntegrations.firewall.authToken ||
-              current.integrations.firewall.authToken
-            : current.integrations.firewall.authToken,
+        authToken: preserveSecret(
+          current.integrations.firewall,
+          nextIntegrations.firewall,
+          "authToken",
+        ),
       },
       businessOperations: {
         ...current.integrations.businessOperations,
         ...(nextIntegrations.businessOperations || {}),
+      },
+      deployment: {
+        ...current.integrations.deployment,
+        ...(nextIntegrations.deployment || {}),
+        accessToken: preserveSecret(
+          current.integrations.deployment,
+          nextIntegrations.deployment,
+          "accessToken",
+        ),
+      },
+      payments: {
+        ...current.integrations.payments,
+        ...(nextIntegrations.payments || {}),
+        secretKey: preserveSecret(
+          current.integrations.payments,
+          nextIntegrations.payments,
+          "secretKey",
+        ),
+        webhookSecret: preserveSecret(
+          current.integrations.payments,
+          nextIntegrations.payments,
+          "webhookSecret",
+        ),
+      },
+      socialPublishing: {
+        ...current.integrations.socialPublishing,
+        ...(nextIntegrations.socialPublishing || {}),
+        accessToken: preserveSecret(
+          current.integrations.socialPublishing,
+          nextIntegrations.socialPublishing,
+          "accessToken",
+        ),
+      },
+      crm: {
+        ...current.integrations.crm,
+        ...(nextIntegrations.crm || {}),
+        apiKey: preserveSecret(current.integrations.crm, nextIntegrations.crm, "apiKey"),
+      },
+      accounting: {
+        ...current.integrations.accounting,
+        ...(nextIntegrations.accounting || {}),
+        clientSecret: preserveSecret(
+          current.integrations.accounting,
+          nextIntegrations.accounting,
+          "clientSecret",
+        ),
+        refreshToken: preserveSecret(
+          current.integrations.accounting,
+          nextIntegrations.accounting,
+          "refreshToken",
+        ),
+      },
+      cloudStorage: {
+        ...current.integrations.cloudStorage,
+        ...(nextIntegrations.cloudStorage || {}),
+        accessToken: preserveSecret(
+          current.integrations.cloudStorage,
+          nextIntegrations.cloudStorage,
+          "accessToken",
+        ),
+      },
+      tradingView: {
+        ...current.integrations.tradingView,
+        ...(nextIntegrations.tradingView || {}),
+        alertWebhookSecret: preserveSecret(
+          current.integrations.tradingView,
+          nextIntegrations.tradingView,
+          "alertWebhookSecret",
+        ),
+      },
+      marketData: {
+        ...current.integrations.marketData,
+        ...(nextIntegrations.marketData || {}),
+        apiKey: preserveSecret(
+          current.integrations.marketData,
+          nextIntegrations.marketData,
+          "apiKey",
+        ),
       },
       kalshi: {
         ...current.integrations.kalshi,
@@ -138,4 +237,32 @@ export async function updateIntegrationSettings(
     },
   }));
   return settings.integrations;
+}
+
+function preserveSecret<T extends Record<string, any>>(
+  current: T,
+  next: Partial<T> | undefined,
+  key: keyof T,
+) {
+  if (!next || !(key in next)) return current[key];
+  const incoming = next[key];
+  if (typeof incoming === "string" && incoming.trim() === "") return current[key];
+  if (incoming === "•••••• (set)") return current[key];
+  return incoming ?? current[key];
+}
+
+function mergeSecretAccounts(
+  currentAccounts: any[],
+  nextAccounts: any[] | undefined,
+  secretKeys: string[],
+) {
+  if (!Array.isArray(nextAccounts)) return currentAccounts;
+  return nextAccounts.map((nextAccount) => {
+    const currentAccount = currentAccounts.find((account) => account.id === nextAccount.id) || {};
+    const merged = { ...currentAccount, ...nextAccount };
+    for (const key of secretKeys) {
+      merged[key] = preserveSecret(currentAccount, nextAccount, key);
+    }
+    return merged;
+  });
 }
