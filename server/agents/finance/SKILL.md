@@ -255,6 +255,145 @@ Confidence must reflect only available evidence.
 
 Never overstate certainty.
 
+## Four-Pillar Structural Audit Mode
+
+When the user asks for a structural audit, four-pillar audit, setup audit, system audit, or technical patches, use this mode.
+
+If the user did not provide a specific trade setup, audit the currently available strategy or agent configuration instead and clearly state that no live trade can be evaluated without symbol, timeframe, entry, stop, target, current price, market session, and account-risk inputs.
+
+### Pillar 1: Market Context
+
+Classify whether the setup is compatible with the current or supplied environment.
+
+Evaluate:
+
+- market and asset class
+- timeframe alignment
+- regime: trend, range, expansion, compression, distribution, accumulation, reversal, or event-driven
+- liquidity conditions
+- volatility state using ATR, realized volatility, session range, or another supplied metric
+- higher-timeframe bias
+- correlated-market confirmation or conflict
+- session timing
+- economic-calendar and news risk
+
+Output:
+
+- facts available
+- missing data
+- assumptions
+- alignment rating: supported, partially supported, unsupported, or non-assessable
+
+### Pillar 2: Binary Logical Triggers
+
+Convert setup logic into binary, reproducible conditions.
+
+Every trigger should be written as pass/fail or true/false.
+
+Examples:
+
+- If price closes above the defined BOS level, structure trigger is true.
+- If liquidity sweep occurs and price reclaims the swept level within N candles, reversal trigger is true.
+- If volume is greater than the N-period average by the defined threshold, confirmation trigger is true.
+- If candle closes before the required session window, timing trigger is false.
+
+Reject vague triggers such as:
+
+- looks bullish
+- feels weak
+- momentum seems strong
+- ready to break out
+
+Output:
+
+- required entry triggers
+- required no-trade triggers
+- exit and invalidation triggers
+- any subjective trigger that must be rewritten
+- trigger status: pass, fail, pending, or missing data
+
+### Pillar 3: Math and Risk Metrics
+
+Calculate metrics when enough inputs exist. If inputs are missing, label the metric as non-calculable and list the missing inputs.
+
+Evaluate:
+
+- entry price
+- stop price
+- target price
+- initial risk per unit
+- reward per unit
+- risk-to-reward ratio
+- account size
+- maximum account risk
+- position size
+- expected R multiple
+- required win rate
+- expectancy
+- profit factor when historical winners and losers exist
+- maximum drawdown when equity curve or trade log exists
+- portfolio and correlated exposure
+- leverage
+
+Use these formulas when applicable:
+
+- risk per unit = absolute value of entry minus stop
+- reward per unit = absolute value of target minus entry
+- risk-to-reward = reward per unit divided by risk per unit
+- position size = account risk amount divided by risk per unit
+- required win rate for breakeven = risk per unit divided by risk per unit plus reward per unit
+- expectancy = win rate times average winner minus loss rate times average loser
+
+Immediately flag:
+
+- undefined stop
+- non-positive reward-to-risk
+- position size that exceeds max account risk
+- leverage that exceeds system limits
+- risk concentration across correlated assets
+
+### Pillar 4: Systemic Weaknesses
+
+Identify structural, behavioral, data, execution, and market-regime weaknesses.
+
+Evaluate:
+
+- choppy-market vulnerability
+- low-liquidity vulnerability
+- false-breakout vulnerability
+- event-risk exposure
+- overnight-gap exposure
+- spread and slippage sensitivity
+- correlated-market failure
+- overfitting risk
+- insufficient sample size
+- ambiguous rules
+- manual execution complexity
+- missing incident response when risk limits are breached
+
+Output:
+
+- failure mode
+- why it damages edge
+- likely trigger or warning sign
+- mitigation
+- trade-off
+
+### Technical Patch Output
+
+End every four-pillar audit with specific technical patches.
+
+Each patch must include:
+
+- issue
+- proposed change
+- expected benefit
+- potential downside
+- validation plan
+- implementation priority: critical, high, medium, or low
+
+Do not recommend a patch unless it improves robustness, repeatability, risk control, measurement quality, or capital survivability.
+
 ## Trade Thesis Requirements
 
 Every trade should begin with a documented thesis.
