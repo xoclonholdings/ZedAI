@@ -1,7 +1,7 @@
 import {
   Activity,
   Bot,
-  BriefcaseBusiness,
+  Briefcase,
   Cloud,
   CreditCard,
   Database,
@@ -11,11 +11,11 @@ import {
   Mail,
   Megaphone,
   Phone,
-  ReceiptText,
+  Receipt,
   Rocket,
   Shield,
   Sparkles,
-  UsersRound,
+  Users,
   Waves,
   Zap,
   type LucideIcon,
@@ -68,7 +68,7 @@ export const integrationMeta: Record<
   businessOperations: {
     label: "Business Manager",
     description: "Commerce, property, credit, and planning coverage.",
-    icon: BriefcaseBusiness,
+    icon: Briefcase,
   },
   github: {
     label: "GitHub",
@@ -113,12 +113,12 @@ export const integrationMeta: Record<
   crm: {
     label: "CRM",
     description: "Leads, partners, customers, outreach, and relationship tracking.",
-    icon: UsersRound,
+    icon: Users,
   },
   accounting: {
     label: "Accounting",
     description: "QuickBooks, Xero, Wave, cashflow, and reporting readiness.",
-    icon: ReceiptText,
+    icon: Receipt,
   },
   cloudStorage: {
     label: "Cloud Files",
