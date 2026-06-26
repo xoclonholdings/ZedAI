@@ -1,7 +1,7 @@
 import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
-import type { PaperTradeStatus } from "../../shared/trading-types";
+import type { AuthorizationDecision, PaperTradeStatus } from "../../shared/trading-types";
 import { evaluateScannerObservation } from "../zcos/trading/ScannerEngine";
 import { createTradeThesis } from "../zcos/trading/TradeThesisEngine";
 import {
@@ -341,7 +341,7 @@ export function registerTradingRoutes(app: Express): void {
       lessonsLearned: toArray(req.body.lessonsLearned),
       ruleViolations: toArray(req.body.ruleViolations),
       authorizationDecisionId: authorization.decision.id,
-      authorizationDecision: "AUTHORIZED",
+      authorizationDecision: authorization.decision.decision as AuthorizationDecision,
     });
     res.json({ trade, authorization: authorization.decision });
   });
