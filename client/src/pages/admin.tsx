@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
 import AdminNav from "@/components/admin/AdminNav";
 import KnowledgeSection from "@/components/admin/sections/KnowledgeSection";
-import FlowsSection from "@/components/admin/sections/FlowsSection";
+import ToolsSection from "@/components/admin/sections/FlowsSection";
 import IntegrationsSection from "@/components/admin/sections/IntegrationsSection";
 import RulesetSection from "@/components/admin/sections/RulesetSection";
 import ApprovalsSection from "@/components/admin/sections/ApprovalsSection";
@@ -102,7 +102,7 @@ export default function Admin() {
       <AdminNav active={section} onSelect={setSection} pendingApprovals={pendingCount} />
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
-        {section === "flows" && <FlowsSection />}
+        {section === "tools" && <ToolsSection />}
         {section === "knowledge" && <KnowledgeSection />}
         {section === "integrations" && <IntegrationsSection />}
         {section === "ruleset" && <RulesetSection />}
