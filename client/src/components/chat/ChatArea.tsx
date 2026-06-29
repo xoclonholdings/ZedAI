@@ -32,6 +32,7 @@ export default function ChatArea({
 }: ChatAreaProps) {
   const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [uploadConversationId, setUploadConversationId] = useState<string | null>(null);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState("");
@@ -48,12 +49,19 @@ export default function ChatArea({
   const fontSize =
     (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
   const showTimestamps = !!user?.personalization?.showTimestamps;
+  const activeUploadConversationId = uploadConversationId || conversationId;
 
   useEffect(() => {
     if (!isStreaming) {
       setLocalMessages(messages);
     }
   }, [messages, isStreaming]);
+
+  useEffect(() => {
+    if (conversationId) {
+      setUploadConversationId(conversationId);
+    }
+  }, [conversationId]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,6 +70,28 @@ export default function ChatArea({
   useEffect(() => {
     scrollToBottom();
   }, [localMessages, streamingMessage, scrollToBottom]);
+
+  async function createConversation(title: string) {
+    const response = await fetch("/api/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ title: title.trim().slice(0, 50) || "New Conversation", mode: "chat" }),
+    });
+
+    const newConversation = await response.json().catch(() => null);
+
+    if (!response.ok || !newConversation?.id) {
+      throw new Error("Conversation creation returned no id");
+    }
+
+    const newConversationId = newConversation.id as string;
+    window.history.pushState({}, "", `/chat/${newConversationId}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+
+    return newConversationId;
+  }
 
   async function handleSend(message: string) {
     if (!message.trim() || isStreaming) return;
@@ -72,17 +102,7 @@ export default function ChatArea({
 
     if (!convId) {
       try {
-        const res = await fetch("/api/conversations", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ title: message.slice(0, 50), mode: "chat" }),
-        });
-        const newConv = await res.json();
-        if (!newConv?.id) throw new Error("Conversation creation returned no id");
-        convId = newConv.id;
-        window.history.pushState({}, "", `/chat/${newConv.id}`);
-        queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+        convId = await createConversation(message);
       } catch (err) {
         console.error("Failed to create conversation:", err);
         return;
@@ -119,17 +139,41 @@ export default function ChatArea({
     }
 
     await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    setUploadConversationId(null);
+    setShowFileUpload(false);
     window.history.pushState({}, "", "/chat");
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
 
   function handleFileUpload() {
-    if (conversationId) {
+    if (activeUploadConversationId) {
       queryClient.invalidateQueries({
-        queryKey: ["/api/conversations", conversationId, "files"],
+        queryKey: ["/api/conversations", activeUploadConversationId, "files"],
       });
     }
     setShowFileUpload(false);
+  }
+
+  async function handleOpenFileUpload() {
+    if (showFileUpload) {
+      setShowFileUpload(false);
+      return;
+    }
+
+    let convId = activeUploadConversationId;
+
+    if (!convId) {
+      try {
+        convId = await createConversation("File upload");
+      } catch (err) {
+        console.error("Failed to create conversation for upload:", err);
+        window.alert("Could not start a conversation for file upload.");
+        return;
+      }
+    }
+
+    setUploadConversationId(convId);
+    setShowFileUpload(true);
   }
 
   async function handleCopyMessage(message: Message) {
@@ -167,9 +211,9 @@ export default function ChatArea({
           onSelectSuggestion={(prompt) => setComposerValue(prompt)}
         />
 
-        {showFileUpload && conversationId && (
+        {showFileUpload && activeUploadConversationId && (
           <FileUpload
-            conversationId={conversationId}
+            conversationId={activeUploadConversationId}
             onUpload={handleFileUpload}
             onClose={() => setShowFileUpload(false)}
           />
@@ -183,7 +227,7 @@ export default function ChatArea({
               onSend={handleSend}
               onAbort={() => abortRef.current?.abort()}
               isStreaming={isStreaming}
-              onOpenFileUpload={() => setShowFileUpload(true)}
+              onOpenFileUpload={handleOpenFileUpload}
               editModeLabel={editingMessageId ? "Editing message draft" : null}
               onCancelEdit={
                 editingMessageId
