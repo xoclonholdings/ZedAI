@@ -39,18 +39,20 @@ export default function ChatComposer({
     fontSize === "small"
       ? "text-xs leading-5"
       : fontSize === "large"
-        ? "text-base leading-7"
-        : "text-sm leading-6";
+        ? "text-base leading-6"
+        : "text-sm leading-5";
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dictation = useDictation(onValueChange);
+  const minTextareaHeight = compact ? 32 : 36;
+  const maxTextareaHeight = 96;
 
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
-    ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 150) + "px";
-  }, [value]);
+    ta.style.height = "0px";
+    ta.style.height = `${Math.min(Math.max(ta.scrollHeight, minTextareaHeight), maxTextareaHeight)}px`;
+  }, [value, minTextareaHeight]);
 
   const trimmed = value.trim();
   const canSend = trimmed.length > 0 && !isStreaming;
@@ -69,7 +71,7 @@ export default function ChatComposer({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {editModeLabel && (
         <div className="flex items-center justify-between rounded-lg border border-cyan-400/20 bg-cyan-500/5 px-3 py-1.5 text-xs">
           <span className="text-cyan-200">{editModeLabel}</span>
@@ -85,11 +87,7 @@ export default function ChatComposer({
         </div>
       )}
 
-      <div
-        className={`rounded-2xl border border-white/10 bg-black/40 ${
-          compact ? "px-2 py-1.5" : "px-2.5 py-2"
-        }`}
-      >
+      <div className="rounded-2xl border border-white/10 bg-black/40 px-2 py-1.5">
         <div className="min-w-0">
           <Textarea
             ref={textareaRef}
@@ -98,24 +96,23 @@ export default function ChatComposer({
             onKeyDown={handleKeyDown}
             placeholder={dictation.isDictating ? "Listening..." : "Message Zed"}
             rows={1}
-            className={`block w-full max-h-[150px] resize-none overflow-y-auto border-0 bg-transparent px-2 text-left shadow-none outline-none placeholder:text-left focus-visible:ring-0 focus-visible:ring-offset-0 ${
-              compact ? "min-h-[38px] py-1.5" : "min-h-[44px] py-2"
-            } ${textClass}`}
+            style={{ minHeight: minTextareaHeight, maxHeight: maxTextareaHeight }}
+            className={`block w-full resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-left shadow-none outline-none placeholder:text-left focus-visible:ring-0 focus-visible:ring-offset-0 ${textClass}`}
             disabled={isStreaming}
           />
         </div>
 
-        <div className="mt-2 flex w-full items-center gap-2">
+        <div className="mt-1 flex w-full items-center gap-1.5">
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={onOpenFileUpload}
-            className="h-9 w-9 shrink-0 rounded-xl text-muted-foreground hover:text-purple-300"
+            className="h-8 w-8 shrink-0 rounded-xl text-muted-foreground hover:text-purple-300"
             title="Attach a file"
             aria-label="Attach a file"
           >
-            <Paperclip size={16} />
+            <Paperclip size={15} />
           </Button>
 
           <div className="flex-1" />
@@ -129,13 +126,13 @@ export default function ChatComposer({
               disabled={isStreaming}
               title={dictation.isDictating ? "Stop dictation" : "Dictate"}
               aria-label={dictation.isDictating ? "Stop dictation" : "Dictate"}
-              className={`h-9 w-9 shrink-0 rounded-xl ${
+              className={`h-8 w-8 shrink-0 rounded-xl ${
                 dictation.isDictating
                   ? "bg-red-500/15 text-red-300 hover:bg-red-500/25"
                   : "text-muted-foreground hover:bg-white/5 hover:text-cyan-300"
               } disabled:pointer-events-none disabled:opacity-40`}
             >
-              {dictation.isDictating ? <MicOff size={15} /> : <Mic size={15} />}
+              {dictation.isDictating ? <MicOff size={14} /> : <Mic size={14} />}
             </Button>
           )}
 
@@ -143,22 +140,22 @@ export default function ChatComposer({
             <Button
               type="button"
               onClick={onAbort}
-              className="h-9 w-9 shrink-0 rounded-xl bg-white/10 p-0 text-foreground hover:bg-white/20"
+              className="h-8 w-8 shrink-0 rounded-xl bg-white/10 p-0 text-foreground hover:bg-white/20"
               title="Stop generation"
               aria-label="Stop generation"
             >
-              <Square size={14} className="fill-current" />
+              <Square size={13} className="fill-current" />
             </Button>
           ) : (
             <Button
               type="button"
               onClick={handleSend}
               disabled={!canSend}
-              className="h-9 w-9 shrink-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-0 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
+              className="h-8 w-8 shrink-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-0 hover:from-purple-700 hover:to-pink-700 disabled:opacity-30"
               title="Send (Enter)"
               aria-label="Send message"
             >
-              <Send size={15} />
+              <Send size={14} />
             </Button>
           )}
         </div>
