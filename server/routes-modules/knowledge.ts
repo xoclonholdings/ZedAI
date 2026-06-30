@@ -1,4 +1,4 @@
-import type { Express, Request } from "express";
+import type { Express } from "express";
 
 import { isAdmin, isAuthenticated } from "../localAuth";
 import { KnowledgeService } from "../services/KnowledgeService";
