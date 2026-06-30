@@ -144,6 +144,7 @@ ZedAI/
   - `POST /api/admin/reject/:id`
   - `GET /api/admin/security-log`
   - `GET /api/admin/system-test`
+  - `GET /api/admin/knowledge/curation`
 
 ### Auth
 
@@ -170,6 +171,7 @@ ZedAI/
   - `episodic/`
   - `consensus/`
   - `semantic/`
+  - `curation/`
 - Legacy ChatGPT exports were reconciled into the canonical foundation under:
   - `hub/shared-memory/semantic/foundation/`
   - `hub/shared-memory/episodic/imported/`
@@ -180,16 +182,31 @@ ZedAI/
   - `hub/shared-memory/semantic/foundation/shards/`
 - Full normalized cold storage remains at:
   - `hub/shared-memory/semantic/foundation/merged-conversations.json`
+- Knowledge curation review output is persisted under:
+  - `hub/shared-memory/curation/latest-review.json`
+  - `hub/shared-memory/curation/review-history.jsonl`
 - `zed-memory/` is retained as a read-only raw backup archive and is not the active runtime memory source
 - The backup/archive role of `zed-memory/` is documented in `zed-memory/LEGACY_BACKUP_MANIFEST.md`
 
 ### Knowledge Curation and Evolution Engine
 
-The Knowledge Curation and Evolution Engine is the third planned memory system after the Knowledge Ingestion Engine and Context Engine. Its role is to act on what the first two systems learned by continuously maintaining knowledge quality, organization, accuracy, and long-term evolution.
+The Knowledge Curation and Evolution Engine is an active runtime memory system after the Knowledge Ingestion Engine and Context Engine. Its role is to act on what the first two systems learned by continuously maintaining knowledge quality, organization, accuracy, and long-term evolution.
+
+Runtime implementation:
+
+- Service: `server/services/KnowledgeCurationEngine.ts`
+- Route wiring: `server/routes-modules/knowledge.ts`
+- Startup scheduler: `server/index.ts`
+- Latest review output: `hub/shared-memory/curation/latest-review.json`
+- Review history output: `hub/shared-memory/curation/review-history.jsonl`
+- Default scheduler interval: every 6 hours, with an initial review scheduled shortly after server boot
+- Environment controls:
+  - `ZED_KNOWLEDGE_CURATION_DISABLED=true` disables the background scheduler
+  - `ZED_KNOWLEDGE_CURATION_INTERVAL_MS` overrides the review interval, with a 60 second minimum
 
 Knowledge is treated as a living system. New information must strengthen, refine, replace, extend, or question existing knowledge instead of simply accumulating as disconnected documents.
 
-The engine is responsible for monitoring the knowledge graph for:
+The engine actively monitors memory-backed knowledge objects for:
 
 - duplicate objects
 - weak relationships
@@ -204,19 +221,19 @@ The engine is responsible for monitoring the knowledge graph for:
 - redundant concepts
 - unorganized collections
 
-Every knowledge object must receive a dynamic health score based on completeness, confidence, context depth, relationship density, source diversity, freshness, conflict count, verification status, and user confirmation. Low-health objects become candidates for refinement.
+Every knowledge object receives a dynamic health score based on completeness, confidence, context depth, relationship density, source diversity, freshness, conflict count, verification status, and user confirmation. Low-health objects become candidates for refinement.
 
-When new information arrives, the engine compares it against existing objects and classifies the effect as confirmation, expansion, contradiction, supersession, merge, or replacement. It should not create duplicate knowledge when an existing canonical object can be refined.
+When new information arrives, the engine can compare it against existing objects and classify the effect as confirmation, expansion, contradiction, supersession, merge, replacement, creation, or clarification need. It should not create duplicate knowledge when an existing canonical object can be refined.
 
 Every concept should have one canonical object. Non-canonical material should be represented as an alias, historical version, rejected proposal, archived draft, or supporting evidence. The canonical object represents ZED's current understanding.
 
 Knowledge should evolve rather than disappear. Version history must preserve original state, updated state, reason for change, user clarification, supporting evidence, timestamp, confidence before, and confidence after.
 
-The engine continuously strengthens relationships across projects, research, agents, workflows, goals, tasks, people, companies, frameworks, books, ideas, specifications, and learning paths. It should also generate automatic living collections from the graph.
+The engine continuously strengthens relationships across projects, research, agents, workflows, goals, tasks, people, companies, frameworks, books, ideas, specifications, and learning paths. It also generates automatic living collections from the graph during reviews.
 
-Knowledge aging must mark objects as recently updated, stable, needs review, potentially outdated, or historical. Older information must not be assumed correct without freshness and verification checks.
+Knowledge aging marks objects as recently updated, stable, needs review, potentially outdated, or historical. Older information must not be assumed correct without freshness and verification checks.
 
-The engine should actively identify learning gaps and generate recommended clarification questions, such as missing objectives, owners, rationales, specifications, evidence, or decision records.
+The engine actively identifies learning gaps and generates recommended clarification questions, such as missing objectives, owners, rationales, specifications, evidence, or decision records.
 
 Cross-domain discovery is expected. Concepts from one domain, such as trading, business planning, behavioral insight, product design, or research, may become useful evidence or strategy in another domain.
 
@@ -245,10 +262,14 @@ The server currently exposes at least these API routes:
 - `POST /api/conversations/:id/messages`
 - `GET /api/conversations/:id/files`
 - `POST /api/conversations/:id/upload`
+- `GET /api/knowledge/curation/latest`
+- `POST /api/knowledge/curation/review`
+- `POST /api/knowledge/curation/evaluate`
 - `POST /api/orchestrate`
 - `GET /api/orchestrate/status`
 - `POST /api/voice/transcribe`
 - `GET /api/admin/system-status`
+- `GET /api/admin/knowledge/curation`
 - `GET /api/admin/ruleset`
 - `POST /api/admin/ruleset`
 - `GET /api/admin/logs`
@@ -366,6 +387,8 @@ Canonical config is in `netlify.toml`:
 - `server/package.json`
 - `server/index.ts`
 - `server/routes.ts`
+- `server/routes-modules/knowledge.ts`
+- `server/services/KnowledgeCurationEngine.ts`
 - `server/vite.ts`
 - `server/db.ts`
 - `server/migrations.ts`
@@ -389,6 +412,8 @@ and expects:
 
 - local port `5000`
 - all hub/config/log/session paths to resolve against the repo-root `hub/` directory
+
+At server boot, ZED initializes runtime directories, fallback storage, core memory, and the Knowledge Curation scheduler. The scheduler writes curation reports under `hub/shared-memory/curation/` and logs review status to the runtime log.
 
 The backend is deployed to Render; configuration lives in the Render dashboard
 (environment variables, build/start command, optional persistent disk).
