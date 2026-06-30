@@ -6,9 +6,12 @@ import { KnowledgeService } from "../services/KnowledgeService";
 import { getZedResponsePolicy, type ZedResponseMode } from "../services/ZedResponsePolicy";
 import {
   buildZedGovernancePrompt,
-  governZedResponse,
   userRequestedSourceLinks,
 } from "../services/ZedResponseGovernance";
+import {
+  buildZedVoicePrompt,
+  presentZedResponse,
+} from "../services/ZedVoiceFormationEngine";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 
 import { flushHubConfig, loadHubConfig } from "./manager-agent/config";
@@ -44,6 +47,7 @@ function responseModeForAgent(agent: string): ZedResponseMode {
 export class ManagerAgent {
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
     const config = await loadHubConfig();
+    const includeSources = userRequestedSourceLinks(request.message);
 
     const tierCheck = await checkTiers(
       request.message,
@@ -52,7 +56,12 @@ export class ManagerAgent {
     );
     if (tierCheck.blocked) {
       return {
-        reply: governZedResponse(tierCheck.reply, { userMessage: request.message }),
+        reply: await presentZedResponse(tierCheck.reply, {
+          userMessage: request.message,
+          includeSources,
+          mode: "chat",
+          grounded: true,
+        }),
         agent: "ManagerAgent",
         blocked: true,
         tier: tierCheck.tier,
@@ -81,14 +90,15 @@ export class ManagerAgent {
       lane: responseMode,
       knowledgePresent: Boolean(knowledgePrompt),
     });
+    const voicePrompt = await buildZedVoicePrompt({ mode: responseMode });
     const agentContext = [
       governancePrompt,
+      voicePrompt,
       knowledgePrompt,
       getZedResponsePolicy(responseMode),
     ]
       .filter(Boolean)
       .join("\n\n");
-    const includeSources = userRequestedSourceLinks(request.message);
 
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await logRouting(request, agent);
@@ -122,9 +132,11 @@ export class ManagerAgent {
           memoryContext: agentContext,
         });
         return {
-          reply: governZedResponse(filterOutputForTier3(resp.message), {
+          reply: await presentZedResponse(filterOutputForTier3(resp.message), {
             userMessage: request.message,
             includeSources,
+            mode: responseMode,
+            grounded: true,
           }),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
@@ -144,9 +156,11 @@ export class ManagerAgent {
           memoryContext: agentContext,
         });
         return {
-          reply: governZedResponse(filterOutputForTier3(resp.message), {
+          reply: await presentZedResponse(filterOutputForTier3(resp.message), {
             userMessage: request.message,
             includeSources,
+            mode: responseMode,
+            grounded: true,
           }),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
@@ -173,9 +187,11 @@ export class ManagerAgent {
       }
     }
 
-    reply = governZedResponse(filterOutputForTier3(reply), {
+    reply = await presentZedResponse(filterOutputForTier3(reply), {
       userMessage: request.message,
       includeSources,
+      mode: responseMode,
+      grounded: true,
     });
 
     return {
