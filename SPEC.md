@@ -111,7 +111,9 @@ ZedAI/
   - `OperationsAgent`
   - `IntelligenceAgent` (`R&D Agent` in the UI)
 - `BusinessManagerAgent` is reachable in the current live orchestrator and may operate as an active lane when Business Operations is enabled in Admin settings
-- `FinanceAgent` is a live specialist lane for trading, crypto/web3, forex, and wealth-building analysis
+- `FinanceAgent` is one phased specialist feature for trading, crypto/web3, forex, market opportunity, accumulation strategy, wealth-building, and capital allocation analysis
+- The current FinanceAgent phase is Trading Intelligence: disciplined market analysis, paper-trading validation, strategy audits, trade thesis generation, risk controls, journal review, and performance analytics; this phase does not execute live trades, transmit orders, move funds, or manage live capital
+- Later FinanceAgent phases expand the same feature, not a separate entity, into broader market opportunity, accumulation strategy, wealth-building, and capital allocation workflows while preserving the same evidence, validation, approval, and risk-control requirements
 - `FinanceAgent` is intended as a distinct lane from `BusinessManagerAgent`, focusing on predictive analysis, market opportunity, accumulation strategy, and trading/wealth contexts while sharing research blackboard data with the R&D/Intelligence lane
 - Current planned agents:
   - `IDEOperatorAgent`
@@ -347,6 +349,7 @@ Canonical config is in `netlify.toml`:
   - probabilities
   - sentiment
   - event contracts
+- FinanceAgent shares market-research context with the R&D/Intelligence lane, but remains one phased finance feature whose current Trading Intelligence phase focuses on paper-trading validation, market-structure analysis, strategy audits, and risk management before later expansion into broader opportunity and capital-allocation workflows
 - Kalshi support is currently planned and configurable in Admin > Integrations, but not yet active for live contract execution or trading workflows
 
 ## Configuration Sources
