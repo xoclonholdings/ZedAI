@@ -171,6 +171,16 @@ app.use((req, res, next) => {
     log("[WARNING] Failed to initialize core memory - using default memory");
   }
 
+  try {
+    const { startKnowledgeCurationScheduler } = await import(
+      "./services/KnowledgeCurationEngine"
+    );
+    startKnowledgeCurationScheduler();
+    log("Knowledge curation scheduler active");
+  } catch (error) {
+    log("[WARNING] Failed to start knowledge curation scheduler:", String(error));
+  }
+
   app.use("/api/auth/user", (_req, res) => {
     res.status(200).json({ message: "Auth temporarily disabled" });
   });
@@ -205,6 +215,10 @@ app.use((req, res, next) => {
   const shutdown = async (signal: string) => {
     log(`Received ${signal}, shutting down gracefully...`);
     try {
+      const { stopKnowledgeCurationScheduler } = await import(
+        "./services/KnowledgeCurationEngine"
+      );
+      stopKnowledgeCurationScheduler();
       await gracefulShutdown();
       log("Graceful shutdown completed");
       process.exit(0);
