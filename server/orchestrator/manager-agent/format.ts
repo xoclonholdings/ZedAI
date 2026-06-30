@@ -1,8 +1,12 @@
 /**
  * Renders an IntelligenceAgent result into mobile-readable markdown.
- * The user-facing shape intentionally avoids stiff report labels.
+ * The default shape avoids exposing source-trail machinery; sources are
+ * included only when the user explicitly asks for them.
  */
-export function formatBrief(brief: any): string {
+export function formatBrief(
+  brief: any,
+  options: { includeSources?: boolean } = {},
+): string {
   const points = Array.isArray(brief?.keyFindings)
     ? brief.keyFindings.filter(Boolean)
     : [];
@@ -16,18 +20,19 @@ export function formatBrief(brief: any): string {
     brief?.implications ||
     `I checked ${brief?.topic || "the request"} and found enough to give you a direction.`;
 
-  const sources = Array.isArray(brief?.sources)
-    ? brief.sources.filter(Boolean)
-    : [];
-  const sourceLines = sources.length > 0
-    ? sources.map((source: string) => `- ${source}`).join("\n")
-    : "- No external source trail was recorded.";
-
   const nextStep =
     brief?.recommendedAction &&
     !/review findings|determine next steps/i.test(brief.recommendedAction)
       ? brief.recommendedAction
-      : "Tell me whether you want the short action plan, the source trail, or a deeper pass.";
+      : "Tell me whether you want the short action plan, sources, or a deeper pass.";
+
+  const sources = Array.isArray(brief?.sources)
+    ? brief.sources.filter(Boolean)
+    : [];
+  const sourceSection =
+    options.includeSources && sources.length > 0
+      ? `\n\n### Sources\n\n${sources.map((source: string) => `- ${source}`).join("\n")}`
+      : "";
 
   return `${directAnswer}
 
@@ -37,9 +42,5 @@ ${pointLines}
 
 ### What I'd do next
 
-${nextStep}
-
-### Source trail
-
-${sourceLines}`;
+${nextStep}${sourceSection}`;
 }
