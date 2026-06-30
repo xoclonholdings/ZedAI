@@ -4,6 +4,11 @@ import { BusinessManagerAgent } from "../agents/business-manager/BusinessManager
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
 import { getZedResponsePolicy, type ZedResponseMode } from "../services/ZedResponsePolicy";
+import {
+  buildZedGovernancePrompt,
+  governZedResponse,
+  userRequestedSourceLinks,
+} from "../services/ZedResponseGovernance";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 
 import { flushHubConfig, loadHubConfig } from "./manager-agent/config";
@@ -47,7 +52,7 @@ export class ManagerAgent {
     );
     if (tierCheck.blocked) {
       return {
-        reply: tierCheck.reply,
+        reply: governZedResponse(tierCheck.reply, { userMessage: request.message }),
         agent: "ManagerAgent",
         blocked: true,
         tier: tierCheck.tier,
@@ -70,9 +75,20 @@ export class ManagerAgent {
           ).prompt;
 
     const agent = await selectAgent(request.message, config, request.targetAgent);
-    const agentContext = [knowledgePrompt, getZedResponsePolicy(responseModeForAgent(agent))]
+    const responseMode = responseModeForAgent(agent);
+    const governancePrompt = buildZedGovernancePrompt({
+      userMessage: request.message,
+      lane: responseMode,
+      knowledgePresent: Boolean(knowledgePrompt),
+    });
+    const agentContext = [
+      governancePrompt,
+      knowledgePrompt,
+      getZedResponsePolicy(responseMode),
+    ]
       .filter(Boolean)
       .join("\n\n");
+    const includeSources = userRequestedSourceLinks(request.message);
 
     console.log(`[ManagerAgent] Routing to ${agent} for user ${request.userId}`);
     await logRouting(request, agent);
@@ -93,7 +109,7 @@ export class ManagerAgent {
           memoryContext: agentContext,
         };
         const brief = await IntelligenceAgent.research(researchReq);
-        reply = formatBrief(brief);
+        reply = formatBrief(brief, { includeSources });
         extra = { metadata: { brief } };
         break;
       }
@@ -106,7 +122,10 @@ export class ManagerAgent {
           memoryContext: agentContext,
         });
         return {
-          reply: filterOutputForTier3(resp.message),
+          reply: governZedResponse(filterOutputForTier3(resp.message), {
+            userMessage: request.message,
+            includeSources,
+          }),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
           metadata: {
@@ -125,7 +144,10 @@ export class ManagerAgent {
           memoryContext: agentContext,
         });
         return {
-          reply: filterOutputForTier3(resp.message),
+          reply: governZedResponse(filterOutputForTier3(resp.message), {
+            userMessage: request.message,
+            includeSources,
+          }),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
           metadata: { capabilities: resp.capabilities },
@@ -151,7 +173,10 @@ export class ManagerAgent {
       }
     }
 
-    reply = filterOutputForTier3(reply);
+    reply = governZedResponse(filterOutputForTier3(reply), {
+      userMessage: request.message,
+      includeSources,
+    });
 
     return {
       reply,
