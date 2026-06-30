@@ -16,9 +16,13 @@ import { buildZedAdminContext } from "../services/ZedContextBuilder";
 import { getZedResponsePolicy } from "../services/ZedResponsePolicy";
 import {
   buildZedGovernancePrompt,
-  governZedResponse,
   userRequestedSourceLinks,
 } from "../services/ZedResponseGovernance";
+import {
+  buildZedVoicePrompt,
+  ingestZedVoiceCorrection,
+  presentZedResponse,
+} from "../services/ZedVoiceFormationEngine";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { requireConversation } from "./conversations-crud";
 
@@ -98,11 +102,17 @@ export function registerConversationSendRoutes(app: Express): void {
         req.ip || "",
       );
       if (tierCheck.blocked) {
+        const blockedContent = await presentZedResponse(tierCheck.reply, {
+          userMessage: content,
+          includeSources,
+          mode: "chat",
+          grounded: true,
+        });
         const blockedMsg = await storage.createMessage(
           insertMessageSchema.parse({
             conversationId,
             role: "assistant",
-            content: governZedResponse(tierCheck.reply, { userMessage: content, includeSources }),
+            content: blockedContent,
           }),
         );
         if (stream) {
@@ -121,6 +131,25 @@ export function registerConversationSendRoutes(app: Express): void {
         insertMessageSchema.parse({ conversationId, role: "user", content }),
       );
 
+      const messagesBeforeReply = await storage.getMessagesByConversation(conversationId);
+      const previousAssistant = [...messagesBeforeReply]
+        .reverse()
+        .find((message: any) => message.role === "assistant");
+      await ingestZedVoiceCorrection({
+        userId: req.user?.claims?.sub || "unknown",
+        conversationId,
+        userMessage: content,
+        previousAssistantContent: previousAssistant?.content,
+      }).catch((err) => {
+        void logRuntimeEvent({
+          level: "warn",
+          source: "server",
+          event: "voice.correction_ingest.failed",
+          detail: err?.message || String(err),
+          context: { conversationId },
+        });
+      });
+
       if (isWebLookupIntent(content)) {
         try {
           const isAdmin = !!req.user?.claims?.isAdmin;
@@ -132,15 +161,17 @@ export function registerConversationSendRoutes(app: Express): void {
             targetAgent: "research",
             context: { isAdmin },
           });
-          const governedReply = governZedResponse(result.reply || "(no response)", {
+          const presentedReply = await presentZedResponse(result.reply || "(no response)", {
             userMessage: content,
             includeSources,
+            mode: "research",
+            grounded: true,
           });
           const aiMessage = await storage.createMessage(
             insertMessageSchema.parse({
               conversationId,
               role: "assistant",
-              content: governedReply,
+              content: presentedReply,
             }),
           );
           await KnowledgeService.persistInteraction({
@@ -180,7 +211,7 @@ export function registerConversationSendRoutes(app: Express): void {
         }
       }
 
-      const history = await storage.getMessagesByConversation(conversationId);
+      const history = messagesBeforeReply;
       const ollamaMessages: OllamaMessage[] = history
         .slice(-20)
         .map((m: any) => ({ role: m.role as "user" | "assistant", content: m.content }));
@@ -215,6 +246,7 @@ export function registerConversationSendRoutes(app: Express): void {
             lane: "chat",
             knowledgePresent: Boolean(knowledge.prompt || adminCtx.text || systemPrompt),
           }),
+          await buildZedVoicePrompt({ mode: "chat" }),
           getZedResponsePolicy("chat"),
           systemPrompt || "",
           adminCtx.text,
@@ -230,6 +262,7 @@ export function registerConversationSendRoutes(app: Express): void {
         systemPrompt = [
           ZED_IDENTITY_PROMPT,
           buildZedGovernancePrompt({ userMessage: content, lane: "chat" }),
+          await buildZedVoicePrompt({ mode: "chat" }),
           getZedResponsePolicy("chat"),
         ].join("\n\n");
       }
@@ -253,15 +286,17 @@ export function registerConversationSendRoutes(app: Express): void {
             fullResponse += token;
           },
           async () => {
-            const governedResponse = governZedResponse(fullResponse || "(no response)", {
+            const presentedResponse = await presentZedResponse(fullResponse || "(no response)", {
               userMessage: content,
               includeSources,
+              mode: "chat",
+              grounded: true,
             });
             const aiMessage = await storage.createMessage(
               insertMessageSchema.parse({
                 conversationId,
                 role: "assistant",
-                content: governedResponse,
+                content: presentedResponse,
               }),
             );
             await KnowledgeService.persistInteraction({
@@ -271,22 +306,28 @@ export function registerConversationSendRoutes(app: Express): void {
               assistantContent: aiMessage.content,
               tags: ["chat", "conversation"],
             });
-            res.write(`data: ${JSON.stringify({ type: "token", token: governedResponse })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: "token", token: presentedResponse })}\n\n`);
             res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
             res.end();
           },
           async (err) => {
             console.error("[SSE] stream error:", err);
             const fallback = "ZED's model host is not reachable right now. Check the active AI provider settings and try again.";
+            const presentedFallback = await presentZedResponse(fallback, {
+              userMessage: content,
+              includeSources,
+              mode: "chat",
+              grounded: true,
+            });
             const aiMessage = await storage.createMessage(
               insertMessageSchema.parse({
                 conversationId,
                 role: "assistant",
-                content: governZedResponse(fallback, { userMessage: content, includeSources }),
+                content: presentedFallback,
               }),
             );
             res.write(
-              `data: ${JSON.stringify({ type: "error", message: aiMessage, error: fallback })}\n\n`,
+              `data: ${JSON.stringify({ type: "error", message: aiMessage, error: presentedFallback })}\n\n`,
             );
             res.end();
           },
@@ -299,12 +340,17 @@ export function registerConversationSendRoutes(app: Express): void {
         } catch (err: any) {
           aiText = "ZED's model host is not reachable right now. Check the active AI provider settings and try again.";
         }
-        const governedText = governZedResponse(aiText, { userMessage: content, includeSources });
+        const presentedText = await presentZedResponse(aiText, {
+          userMessage: content,
+          includeSources,
+          mode: "chat",
+          grounded: true,
+        });
         const aiMessage = await storage.createMessage(
           insertMessageSchema.parse({
             conversationId,
             role: "assistant",
-            content: governedText,
+            content: presentedText,
           }),
         );
         await KnowledgeService.persistInteraction({
