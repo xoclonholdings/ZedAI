@@ -223,6 +223,11 @@ export class KnowledgeCurationEngine {
       this.recalculateHealth(object);
     }
 
+    const recommendedQuestions = this.buildRecommendedQuestions(objects, contradictions).slice(0, 20);
+    for (const object of objects) {
+      this.recalculateHealth(object);
+    }
+
     const orphanedObjects = objects
       .filter((object) => object.issues.some((issue) => issue.type === "orphaned_knowledge"))
       .map((object) => object.id);
@@ -234,7 +239,6 @@ export class KnowledgeCurationEngine {
       ),
     );
     const collections = this.buildCollections(objects);
-    const recommendedQuestions = this.buildRecommendedQuestions(objects, contradictions).slice(0, 20);
     const averageHealthScore = objects.length
       ? round(objects.reduce((sum, object) => sum + object.healthScore, 0) / objects.length)
       : 0;
