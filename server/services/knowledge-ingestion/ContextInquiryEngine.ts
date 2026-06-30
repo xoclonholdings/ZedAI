@@ -108,7 +108,8 @@ function findRelevantObjects(userInput: string, objects: KnowledgeObject[], expl
 
 function findRelevantConflicts(objects: KnowledgeObject[], conflicts: KnowledgeConflict[]): KnowledgeConflict[] {
   const ids = new Set(objects.map((object) => object.id));
-  return conflicts.filter((conflict) => conflict.objectIds.some((id) => ids.has(id)) || conflict.status === "unresolved").slice(0, 10);
+  if (!ids.size) return [];
+  return conflicts.filter((conflict) => conflict.objectIds.some((id) => ids.has(id))).slice(0, 10);
 }
 
 function questionForField(object: KnowledgeObject, field: string): ContextQuestion | null {
@@ -116,7 +117,7 @@ function questionForField(object: KnowledgeObject, field: string): ContextQuesti
     return {
       id: stableId("ctxq", `${object.id}:temporalStatus`),
       category: "status",
-      question: `Is ${object.name} current, historical, experimental, rejected, or superseded?`,
+      question: `Is ${object.name} current, historical, rejected, or superseded?`,
       targetObjectId: object.id,
       priority: 0.94,
       wouldChange: ["classification", "reasoning", "retrieval"],
@@ -233,11 +234,13 @@ export class ContextInquiryEngine {
     const knowsCurrency = relevantObjects.length > 0 && !contextScore.unknownFields.includes("temporalStatus");
     const knowsAdoptionStatus = relevantObjects.length > 0 && !contextScore.unknownFields.includes("validationStatus");
     const knowsRelationships = relevantObjects.some((object) => object.relatedObjectIds.length > 0);
+    const hasRelevantStoredContext = relevantObjects.length > 0;
     const materialUncertainty =
-      relevantConflicts.some((conflict) => conflict.status === "unresolved") ||
-      contextScore.completeness < 0.62 ||
-      contextScore.confidence < 0.58 ||
-      questions.some((question) => question.priority >= 0.86);
+      hasRelevantStoredContext &&
+      (relevantConflicts.some((conflict) => conflict.status === "unresolved") ||
+        contextScore.completeness < 0.62 ||
+        contextScore.confidence < 0.58 ||
+        questions.some((question) => question.priority >= 0.86));
 
     const assessment: ContextAssessment = {
       knowsIdentity,
