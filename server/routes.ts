@@ -16,6 +16,7 @@ import { registerAdminLogsRoutes } from "./routes-modules/admin-logs";
 import { registerApprovalRoutes } from "./routes-modules/approvals";
 import { registerMeRoutes } from "./routes-modules/me";
 import { registerKnowledgeRoutes } from "./routes-modules/knowledge";
+import { registerKnowledgeIngestionRoutes } from "./routes-modules/knowledge-ingestion";
 import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-and-misc";
 import { registerConversationCrudRoutes } from "./routes-modules/conversations-crud";
 import { registerConversationSendRoutes } from "./routes-modules/conversations-send";
@@ -68,6 +69,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Knowledge / memory endpoints — routes-modules/knowledge.ts
   registerKnowledgeRoutes(app);
+
+  // Structured knowledge ingestion + contextual inquiry endpoints —
+  // routes-modules/knowledge-ingestion.ts. This is service-owned and
+  // produces candidate graph knowledge, not vector chunks.
+  registerKnowledgeIngestionRoutes(app);
 
   // ── Projects (CRUD + instructions + sources + conversation assignment) ─
   // Extracted to routes-modules/projects.ts.
