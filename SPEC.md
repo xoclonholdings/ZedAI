@@ -137,6 +137,18 @@ ZedAI/
   - `Business`
 - Agents coordinate indirectly through shared hub memory, rules, approvals, and logs rather than direct agent-to-agent chat handoff
 
+### Knowledge Ingestion and Context
+
+- Structured ingestion lives under `server/services/knowledge-ingestion/` and is registered through `server/routes-modules/knowledge-ingestion.ts`.
+- Imported content is normalized into candidate knowledge first. It is not treated as canonical until validated or promoted.
+- The ingestion pipeline performs source analysis, semantic decomposition, object detection, relationship mapping, timeline detection, decision extraction, conflict detection, duplicate-aware graph integration, and reasoning-index generation.
+- The service creates durable graph state at runtime under `hub/shared-memory/knowledge-graph/knowledge-graph.json`.
+- Graph objects retain current truth, historical truth, evidence, confidence, contradictions, open questions, related objects, temporal status, and candidate/canonical state.
+- Conflict resolution never overwrites silently. Resolved conflicts preserve the conflict record and update affected objects with a reviewed truth state.
+- The Context Inquiry Engine sits between retrieval and response generation. It scores completeness, confidence, recency, relationship density, conflict count, context depth, and unknown fields.
+- The Context Inquiry Engine returns `answer` only when uncertainty is immaterial. It returns `inquire_first` with minimal high-value questions when missing context would change classification, storage, reasoning, retrieval, or conflict resolution.
+- This subsystem is intentionally service-owned and UI-agnostic so it can become a future ZCOS service.
+
 ### Admin
 
 - Admin endpoints currently include:
@@ -183,6 +195,9 @@ ZedAI/
   - `consensus/`
   - `semantic/`
   - `curation/`
+  - `knowledge-graph/`
+- Structured candidate/canonical graph memory is persisted at runtime under:
+  - `hub/shared-memory/knowledge-graph/knowledge-graph.json`
 - Legacy ChatGPT exports were reconciled into the canonical foundation under:
   - `hub/shared-memory/semantic/foundation/`
   - `hub/shared-memory/episodic/imported/`
@@ -276,6 +291,12 @@ The server currently exposes at least these API routes:
 - `GET /api/knowledge/curation/latest`
 - `POST /api/knowledge/curation/review`
 - `POST /api/knowledge/curation/evaluate`
+- `POST /api/knowledge-ingestion/import`
+- `GET /api/knowledge-ingestion/graph`
+- `GET /api/knowledge-ingestion/indexes`
+- `POST /api/knowledge-ingestion/promote`
+- `POST /api/knowledge-ingestion/conflicts/:id/resolve`
+- `POST /api/context/assess`
 - `POST /api/orchestrate`
 - `GET /api/orchestrate/status`
 - `POST /api/voice/transcribe`
@@ -400,7 +421,9 @@ Canonical config is in `netlify.toml`:
 - `server/index.ts`
 - `server/routes.ts`
 - `server/routes-modules/knowledge.ts`
+- `server/routes-modules/knowledge-ingestion.ts`
 - `server/services/KnowledgeCurationEngine.ts`
+- `server/services/knowledge-ingestion/`
 - `server/services/ZedResponseGovernance.ts`
 - `server/services/ZedResponsePolicy.ts`
 - `server/vite.ts`
