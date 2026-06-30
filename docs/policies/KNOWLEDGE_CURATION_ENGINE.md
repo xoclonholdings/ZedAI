@@ -8,13 +8,31 @@ ZED should not simply accumulate information. It should continuously improve kno
 
 ## Position In The Memory System
 
-This is the third planned knowledge system:
+This is the third active knowledge system:
 
 1. Knowledge Ingestion Engine: learns from new inputs.
 2. Context Engine: understands meaning, relevance, and situational context.
 3. Knowledge Curation and Evolution Engine: acts on what was learned and understood to keep knowledge coherent over time.
 
 The engine consumes ingestion outputs, context interpretations, user confirmations, source evidence, conversation history, agent outputs, and existing knowledge graph state.
+
+## Runtime Implementation
+
+The active backend implementation lives in `server/services/KnowledgeCurationEngine.ts` and is wired through `server/routes-modules/knowledge.ts`.
+
+At server boot, `server/index.ts` starts the curation scheduler unless `ZED_KNOWLEDGE_CURATION_DISABLED=true` is set. The default interval is 6 hours and can be overridden with `ZED_KNOWLEDGE_CURATION_INTERVAL_MS`.
+
+Runtime reports are written to:
+
+- `hub/shared-memory/curation/latest-review.json`
+- `hub/shared-memory/curation/review-history.jsonl`
+
+Active endpoints:
+
+- `GET /api/knowledge/curation/latest`: returns the latest persisted review.
+- `POST /api/knowledge/curation/review`: runs an authenticated on-demand review.
+- `POST /api/knowledge/curation/evaluate`: compares incoming knowledge against existing objects and classifies the effect.
+- `GET /api/admin/knowledge/curation`: admin read-through endpoint that returns the latest report or runs one if none exists.
 
 ## Core Principle
 
@@ -234,7 +252,7 @@ Minor refinements, added evidence, relationship suggestions, and low-risk metada
 
 ## Periodic Knowledge Reviews
 
-The engine should schedule background reviews that:
+The active scheduler runs background reviews that:
 
 - strengthen weak objects
 - merge duplicates
@@ -244,7 +262,7 @@ The engine should schedule background reviews that:
 - surface unresolved contradictions
 - propose stale-object review queues
 
-Reviews should produce compact reports that show what changed, what needs confirmation, and what knowledge is becoming less reliable.
+Reviews produce compact reports that show what changed, what needs confirmation, and what knowledge is becoming less reliable.
 
 ## Success Criteria
 
