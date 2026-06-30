@@ -6,6 +6,7 @@ import { insertMessageSchema } from "../../shared/schema";
 import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
 import { KnowledgeService } from "../services/KnowledgeService";
 import { KnowledgeCurationEngine } from "../services/KnowledgeCurationEngine";
+import { ContextInquiryEngine } from "../services/knowledge-ingestion/ContextInquiryEngine";
 import { injectMemory } from "../services/MemoryInjector";
 import {
   checkOllamaHealth,
@@ -27,6 +28,42 @@ import {
   getPublicAdminSettings,
   loadAdminSettings,
 } from "../services/AdminSettingsStore";
+
+type ContextInquiryQuestion = {
+  question: string;
+  priority: number;
+  category?: string;
+  wouldChange?: string[];
+};
+
+type ContextAssessmentForSummary = {
+  responsePolicy: string;
+  materialUncertainty: boolean;
+  questions: ContextInquiryQuestion[];
+};
+
+function selectTopContextQuestion(questions: ContextInquiryQuestion[]): ContextInquiryQuestion | null {
+  return [...(questions || [])].sort((a, b) => b.priority - a.priority)[0] || null;
+}
+
+function formatContextInquiryReply(question: string): string {
+  const cleanedQuestion = question.trim().replace(/\s+/g, " ");
+  const punctuatedQuestion = /[?.!]$/.test(cleanedQuestion) ? cleanedQuestion : `${cleanedQuestion}?`;
+  return `I need one detail before I can answer that cleanly: ${punctuatedQuestion}`;
+}
+
+function compactContextAssessment(
+  assessment: ContextAssessmentForSummary,
+  topQuestion: ContextInquiryQuestion,
+): Record<string, unknown> {
+  return {
+    responsePolicy: assessment.responsePolicy,
+    materialUncertainty: assessment.materialUncertainty,
+    questionCount: assessment.questions.length,
+    questionCategory: topQuestion.category,
+    affects: Array.isArray(topQuestion.wouldChange) ? topQuestion.wouldChange : [],
+  };
+}
 
 /**
  * Orchestrator + a handful of small one-shot endpoints. They live
@@ -60,6 +97,48 @@ export function registerOrchestrateAndMiscRoutes(
             content: message,
           }),
         );
+      }
+
+      try {
+        const contextAssessmentResult = await ContextInquiryEngine.assess({ userInput: message });
+        const assessment = contextAssessmentResult.assessment;
+        const topQuestion = selectTopContextQuestion(assessment.questions);
+
+        if (assessment.responsePolicy === "inquire_first" && topQuestion) {
+          const reply = governZedResponse(formatContextInquiryReply(topQuestion.question), {
+            userMessage: message,
+            includeSources: false,
+          });
+          const inquiryResponse = {
+            reply,
+            agent: "ManagerAgent",
+            requiresApproval: false,
+            metadata: {
+              contextInquiry: true,
+              contextAssessment: compactContextAssessment(assessment, topQuestion),
+            },
+          };
+
+          if (conversationId) {
+            await storage.createMessage(
+              insertMessageSchema.parse({
+                conversationId,
+                role: "assistant",
+                content: reply,
+                metadata: {
+                  agent: inquiryResponse.agent,
+                  requiresApproval: inquiryResponse.requiresApproval,
+                  contextInquiry: true,
+                  contextAssessment: inquiryResponse.metadata.contextAssessment,
+                },
+              }),
+            );
+          }
+
+          return res.json(inquiryResponse);
+        }
+      } catch (error) {
+        console.error("[ContextInquiry] Assessment failed:", error);
       }
 
       const ip = req.ip || "";
