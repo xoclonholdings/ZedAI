@@ -3,7 +3,6 @@ import type { Express } from "express";
 import { isAdmin, isAuthenticated } from "../localAuth";
 import { storage } from "../storage/databaseStorage";
 import { insertMessageSchema } from "../../shared/schema";
-import { ManagerAgent } from "../orchestrator/ManagerAgent";
 import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
 import { KnowledgeService } from "../services/KnowledgeService";
 import { injectMemory } from "../services/MemoryInjector";
@@ -16,6 +15,13 @@ import {
   getActiveProviderName,
   getResolvedTargetName,
 } from "../core/providers/provider-executor";
+import { getZedResponsePolicy } from "../services/ZedResponsePolicy";
+import {
+  buildZedGovernancePrompt,
+  governZedResponse,
+  userRequestedProcessDisclosure,
+  userRequestedSourceLinks,
+} from "../services/ZedResponseGovernance";
 import {
   getPublicAdminSettings,
   loadAdminSettings,
@@ -81,24 +87,31 @@ export function registerOrchestrateAndMiscRoutes(
           isAdmin: Boolean(req.user?.claims?.isAdmin),
         },
       });
+      const governedResponse = {
+        ...response,
+        reply: governZedResponse(response.reply, {
+          userMessage: message,
+          includeSources: userRequestedSourceLinks(message),
+        }),
+      };
 
       if (conversationId) {
         await storage.createMessage(
           insertMessageSchema.parse({
             conversationId,
             role: "assistant",
-            content: response.reply,
+            content: governedResponse.reply,
             metadata: {
-              agent: response.agent,
-              requiresApproval: response.requiresApproval,
-              autonomous: response.metadata?.autonomous,
-              flowRecommendation: response.metadata?.flowRecommendation,
+              agent: governedResponse.agent,
+              requiresApproval: governedResponse.requiresApproval,
+              autonomous: governedResponse.metadata?.autonomous,
+              flowRecommendation: governedResponse.metadata?.flowRecommendation,
             },
           }),
         );
       }
 
-      res.json(response);
+      res.json(governedResponse);
     } catch (error) {
       console.error("[Orchestrator] Error:", error);
       const detail =
@@ -107,7 +120,9 @@ export function registerOrchestrateAndMiscRoutes(
           : "The selected agent is temporarily unavailable.";
       res.json({
         error: "Orchestration failed",
-        reply: `ZED orchestration is unavailable right now: ${detail}`,
+        reply: governZedResponse(`ZED orchestration is unavailable right now: ${detail}`, {
+          userMessage: String(req.body?.message || ""),
+        }),
         agent: "ManagerAgent",
       });
     }
@@ -179,17 +194,31 @@ export function registerOrchestrateAndMiscRoutes(
     try {
       const { message } = req.body;
       if (!message) return res.status(400).json({ error: "Message required" });
-      const prompt = buildOllamaPrompt(message);
-      const options = { lane: "chat" as const };
-      const reply = await generateFromOllama(prompt, options);
-      res.json({
-        reply,
-        provider: getActiveProviderName(options),
-        target: getResolvedTargetName(options),
+      const governancePrompt = buildZedGovernancePrompt({
+        userMessage: message,
+        lane: "chat",
       });
+      const prompt = buildOllamaPrompt(message, {
+        memory: [governancePrompt, getZedResponsePolicy("chat")].join("\n\n"),
+      });
+      const options = { lane: "chat" as const };
+      const rawReply = await generateFromOllama(prompt, options);
+      const reply = governZedResponse(rawReply, {
+        userMessage: message,
+        includeSources: userRequestedSourceLinks(message),
+      });
+      const payload: Record<string, unknown> = { reply };
+      if (userRequestedProcessDisclosure(message)) {
+        payload.provider = getActiveProviderName(options);
+        payload.target = getResolvedTargetName(options);
+      }
+      res.json(payload);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: "Chat failed", reply: "Error processing request" });
+      res.status(500).json({
+        error: "Chat failed",
+        reply: "ZED's model host is not reachable right now. Check the active AI provider settings and try again.",
+      });
     }
   });
 }
