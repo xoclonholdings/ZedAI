@@ -16,6 +16,7 @@ import { users } from "../../shared/schema";
  *   - /api/knowledge/context  + /search          (read-only retrieval)
  *   - /api/knowledge/curation/*                  (active knowledge health)
  *   - /api/knowledge/core-memory                 (admin-only KV store)
+ *   - /api/knowledge/voice-memory                (ZED voice formation)
  *   - /api/knowledge/project-memory              (per-user long-term)
  *   - /api/knowledge/personal-base               (the "profile" entry)
  *   - /api/knowledge/scratchpad                  (24h short-term notes)
@@ -60,7 +61,7 @@ async function ensureSessionUserInDatabase(req: any): Promise<void> {
         },
       });
   } catch {
-    // Non-fatal — see /api/conversations create handler for the
+    // Non-fatal - see /api/conversations create handler for the
     // detailed explanation. FK violations elsewhere will surface
     // through their own catch blocks.
   }
@@ -186,6 +187,46 @@ export function registerKnowledgeRoutes(app: Express): void {
       res
         .status(500)
         .json({ error: error.message || "Failed to fetch personal base memory" });
+    }
+  });
+
+  app.get("/api/knowledge/voice-memory", isAdmin, async (_req: any, res) => {
+    try {
+      const { getZedVoiceMemory } = await import("../services/ZedVoiceFormationEngine");
+      res.json({ item: await getZedVoiceMemory() });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch voice memory" });
+    }
+  });
+
+  app.put("/api/knowledge/voice-memory", isAdmin, async (req: any, res) => {
+    try {
+      const { saveZedVoiceMemory } = await import("../services/ZedVoiceFormationEngine");
+      const item = await saveZedVoiceMemory(
+        req.body || {},
+        "Admin-updated ZED canonical voice memory",
+      );
+      res.json({ item });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update voice memory" });
+    }
+  });
+
+  app.post("/api/knowledge/voice-memory/correction", isAuthenticated, async (req: any, res) => {
+    try {
+      const { ingestZedVoiceCorrection } = await import("../services/ZedVoiceFormationEngine");
+      const item = await ingestZedVoiceCorrection({
+        userId: req.user?.claims?.sub || "unknown",
+        conversationId: typeof req.body?.conversationId === "string" ? req.body.conversationId : undefined,
+        userMessage: String(req.body?.correction || req.body?.content || ""),
+        previousAssistantContent:
+          typeof req.body?.previousAssistantContent === "string"
+            ? req.body.previousAssistantContent
+            : undefined,
+      });
+      res.json({ item, stored: !!item });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to store voice correction" });
     }
   });
 
