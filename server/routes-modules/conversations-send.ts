@@ -12,12 +12,13 @@ import {
   streamChatFromOllama,
   type OllamaMessage,
 } from "../services/Ollama/OllamaService";
-import {
-  getActiveProviderName,
-  getResolvedTargetName,
-} from "../core/providers/provider-executor";
 import { buildZedAdminContext } from "../services/ZedContextBuilder";
 import { getZedResponsePolicy } from "../services/ZedResponsePolicy";
+import {
+  buildZedGovernancePrompt,
+  governZedResponse,
+  userRequestedSourceLinks,
+} from "../services/ZedResponseGovernance";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { requireConversation } from "./conversations-crud";
 
@@ -90,6 +91,7 @@ export function registerConversationSendRoutes(app: Express): void {
 
       if (!content) return res.status(400).json({ error: "Message required" });
 
+      const includeSources = userRequestedSourceLinks(content);
       const tierCheck = await checkTiers(
         content,
         req.user?.claims?.sub || "unknown",
@@ -100,7 +102,7 @@ export function registerConversationSendRoutes(app: Express): void {
           insertMessageSchema.parse({
             conversationId,
             role: "assistant",
-            content: tierCheck.reply,
+            content: governZedResponse(tierCheck.reply, { userMessage: content, includeSources }),
           }),
         );
         if (stream) {
@@ -130,11 +132,15 @@ export function registerConversationSendRoutes(app: Express): void {
             targetAgent: "research",
             context: { isAdmin },
           });
+          const governedReply = governZedResponse(result.reply || "(no response)", {
+            userMessage: content,
+            includeSources,
+          });
           const aiMessage = await storage.createMessage(
             insertMessageSchema.parse({
               conversationId,
               role: "assistant",
-              content: result.reply || "(no response)",
+              content: governedReply,
             }),
           );
           await KnowledgeService.persistInteraction({
@@ -204,6 +210,11 @@ export function registerConversationSendRoutes(app: Express): void {
         });
         systemPrompt = [
           ZED_IDENTITY_PROMPT,
+          buildZedGovernancePrompt({
+            userMessage: content,
+            lane: "chat",
+            knowledgePresent: Boolean(knowledge.prompt || adminCtx.text || systemPrompt),
+          }),
           getZedResponsePolicy("chat"),
           systemPrompt || "",
           adminCtx.text,
@@ -216,7 +227,11 @@ export function registerConversationSendRoutes(app: Express): void {
       }
 
       if (!systemPrompt) {
-        systemPrompt = [ZED_IDENTITY_PROMPT, getZedResponsePolicy("chat")].join("\n\n");
+        systemPrompt = [
+          ZED_IDENTITY_PROMPT,
+          buildZedGovernancePrompt({ userMessage: content, lane: "chat" }),
+          getZedResponsePolicy("chat"),
+        ].join("\n\n");
       }
 
       if (stream) {
@@ -236,14 +251,17 @@ export function registerConversationSendRoutes(app: Express): void {
           systemPrompt,
           (token) => {
             fullResponse += token;
-            res.write(`data: ${JSON.stringify({ type: "token", token })}\n\n`);
           },
           async () => {
+            const governedResponse = governZedResponse(fullResponse || "(no response)", {
+              userMessage: content,
+              includeSources,
+            });
             const aiMessage = await storage.createMessage(
               insertMessageSchema.parse({
                 conversationId,
                 role: "assistant",
-                content: fullResponse || "(no response)",
+                content: governedResponse,
               }),
             );
             await KnowledgeService.persistInteraction({
@@ -253,24 +271,18 @@ export function registerConversationSendRoutes(app: Express): void {
               assistantContent: aiMessage.content,
               tags: ["chat", "conversation"],
             });
+            res.write(`data: ${JSON.stringify({ type: "token", token: governedResponse })}\n\n`);
             res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
             res.end();
           },
           async (err) => {
             console.error("[SSE] stream error:", err);
-            const provider = getActiveProviderName({ lane: "chat" });
-            const target = getResolvedTargetName({ lane: "chat" });
-            const isConnRefused =
-              err.message?.includes("ECONNREFUSED") ||
-              err.message?.includes("fetch failed");
-            const fallback = isConnRefused
-              ? `Provider '${provider}' is not reachable at ${target}. Verify the URL, network access, and that the upstream service is running.`
-              : `AI model error (${provider} @ ${target}): ${err.message}`;
+            const fallback = "ZED's model host is not reachable right now. Check the active AI provider settings and try again.";
             const aiMessage = await storage.createMessage(
               insertMessageSchema.parse({
                 conversationId,
                 role: "assistant",
-                content: fallback,
+                content: governZedResponse(fallback, { userMessage: content, includeSources }),
               }),
             );
             res.write(
@@ -285,13 +297,14 @@ export function registerConversationSendRoutes(app: Express): void {
         try {
           aiText = await generateChatFromOllama(ollamaMessages, systemPrompt, { lane: "chat" });
         } catch (err: any) {
-          aiText = `AI model error: ${err?.message || "unknown error"}`;
+          aiText = "ZED's model host is not reachable right now. Check the active AI provider settings and try again.";
         }
+        const governedText = governZedResponse(aiText, { userMessage: content, includeSources });
         const aiMessage = await storage.createMessage(
           insertMessageSchema.parse({
             conversationId,
             role: "assistant",
-            content: aiText,
+            content: governedText,
           }),
         );
         await KnowledgeService.persistInteraction({
