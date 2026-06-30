@@ -181,6 +181,47 @@ ZedAI/
 - `zed-memory/` is retained as a read-only raw backup archive and is not the active runtime memory source
 - The backup/archive role of `zed-memory/` is documented in `zed-memory/LEGACY_BACKUP_MANIFEST.md`
 
+### Knowledge Curation and Evolution Engine
+
+The Knowledge Curation and Evolution Engine is the third planned memory system after the Knowledge Ingestion Engine and Context Engine. Its role is to act on what the first two systems learned by continuously maintaining knowledge quality, organization, accuracy, and long-term evolution.
+
+Knowledge is treated as a living system. New information must strengthen, refine, replace, extend, or question existing knowledge instead of simply accumulating as disconnected documents.
+
+The engine is responsible for monitoring the knowledge graph for:
+
+- duplicate objects
+- weak relationships
+- contradictions
+- outdated information
+- incomplete objects
+- orphaned knowledge
+- missing context
+- missing evidence
+- missing decisions
+- low-confidence facts
+- redundant concepts
+- unorganized collections
+
+Every knowledge object must receive a dynamic health score based on completeness, confidence, context depth, relationship density, source diversity, freshness, conflict count, verification status, and user confirmation. Low-health objects become candidates for refinement.
+
+When new information arrives, the engine compares it against existing objects and classifies the effect as confirmation, expansion, contradiction, supersession, merge, or replacement. It should not create duplicate knowledge when an existing canonical object can be refined.
+
+Every concept should have one canonical object. Non-canonical material should be represented as an alias, historical version, rejected proposal, archived draft, or supporting evidence. The canonical object represents ZED's current understanding.
+
+Knowledge should evolve rather than disappear. Version history must preserve original state, updated state, reason for change, user clarification, supporting evidence, timestamp, confidence before, and confidence after.
+
+The engine continuously strengthens relationships across projects, research, agents, workflows, goals, tasks, people, companies, frameworks, books, ideas, specifications, and learning paths. It should also generate automatic living collections from the graph.
+
+Knowledge aging must mark objects as recently updated, stable, needs review, potentially outdated, or historical. Older information must not be assumed correct without freshness and verification checks.
+
+The engine should actively identify learning gaps and generate recommended clarification questions, such as missing objectives, owners, rationales, specifications, evidence, or decision records.
+
+Cross-domain discovery is expected. Concepts from one domain, such as trading, business planning, behavioral insight, product design, or research, may become useful evidence or strategy in another domain.
+
+Major canonical promotions, replacements, merges, and conflict resolutions should use a user confirmation loop when the change affects long-term knowledge authority.
+
+The detailed operating policy is `docs/policies/KNOWLEDGE_CURATION_ENGINE.md`.
+
 ### Optional or Secondary Dependencies
 
 - Neon PostgreSQL via `@neondatabase/serverless`
@@ -356,6 +397,7 @@ The backend is deployed to Render; configuration lives in the Render dashboard
 - `SPEC.md`
 - `README.md`
 - `docs/policies/MEMORY_IMPORT_POLICY.md`
+- `docs/policies/KNOWLEDGE_CURATION_ENGINE.md`
 
 ### Legacy Docs
 
@@ -381,6 +423,8 @@ When the project changes, update `SPEC.md` for any of the following:
 - auth model
 - storage model
 - agent layout
+- memory system behavior
+- knowledge graph object lifecycle
 - environment requirements
 
 ## Known Historical Notes
