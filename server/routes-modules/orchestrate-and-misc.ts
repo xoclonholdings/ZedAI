@@ -5,6 +5,7 @@ import { storage } from "../storage/databaseStorage";
 import { insertMessageSchema } from "../../shared/schema";
 import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
 import { KnowledgeService } from "../services/KnowledgeService";
+import { KnowledgeCurationEngine } from "../services/KnowledgeCurationEngine";
 import { injectMemory } from "../services/MemoryInjector";
 import {
   checkOllamaHealth,
@@ -37,7 +38,7 @@ import {
  *   POST /api/orchestrate           Autonomous ZED dispatch through ZCOS
  *   GET  /api/orchestrate/status    Active vs planned agents + integrations
  *   POST /api/voice/transcribe      Stub for future Whisper integration
- *   GET  /api/admin/knowledge/overview  Counts for the admin Knowledge tab
+ *   GET  /api/admin/knowledge/overview  Counts + curation health for the admin Knowledge tab
  *   GET  /api/admin/system-test     Cheap status probe (no auth)
  *   POST /api/chat                  Bare-bones single-shot chat (no auth)
  */
@@ -164,15 +165,28 @@ export function registerOrchestrateAndMiscRoutes(
       const settings = await loadAdminSettings();
       const defaultUserId = settings.users?.[0]?.id || "admin-user";
       const { MemoryService } = await import("../services/memoryService");
-      const [core, project, scratchpad] = await Promise.all([
+      const [core, project, scratchpad, curation] = await Promise.all([
         MemoryService.getAllCoreMemory(),
         MemoryService.getProjectMemory(defaultUserId).catch(() => []),
         MemoryService.getScratchpadMemory(defaultUserId).catch(() => []),
+        KnowledgeCurationEngine.getLatestReview().catch(() => null),
       ]);
       res.json({
         coreCount: core.length,
         projectCount: project.length,
         scratchpadCount: scratchpad.length,
+        curation: curation
+          ? {
+              generatedAt: curation.generatedAt,
+              averageHealthScore: curation.summary.averageHealthScore,
+              needsReviewCount: curation.summary.needsReviewCount,
+              duplicateGroupCount: curation.summary.duplicateGroupCount,
+              contradictionCount: curation.summary.contradictionCount,
+              orphanedCount: curation.summary.orphanedCount,
+              learningGapCount: curation.summary.learningGapCount,
+              recommendedQuestionCount: curation.recommendedQuestions.length,
+            }
+          : null,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to load knowledge overview" });
