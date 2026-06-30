@@ -286,7 +286,7 @@ export function registerConversationSendRoutes(app: Express): void {
               }),
             );
             res.write(
-              `data: ${JSON.stringify({ type: "error", message: aiMessage, error: err.message })}\n\n`,
+              `data: ${JSON.stringify({ type: "error", message: aiMessage, error: fallback })}\n\n`,
             );
             res.end();
           },
