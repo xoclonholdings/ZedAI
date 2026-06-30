@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
-import { webSearch, formatResultsForPrompt } from "../../services/WebSearchService";
+import { webSearch, formatResultsForPrompt, type SearchResponse } from "../../services/WebSearchService";
 import { storeResearchBrief, querySimilarResearch } from "../../services/ChromaService";
 import { REPO_ROOT, HUB_LOG_DIR } from "../../utils/repoPaths";
 
@@ -119,11 +119,10 @@ NEXT_STEP: [specific thing to do next]`.trim();
       { lane: "research" },
     );
 
-    const brief = this.parseBrief(request.query, rawReply, primarySearch.source);
-    brief.sources.push(`Expanded keyword search: ${expandedQueries.join(" | ")}`);
+    const brief = this.parseBrief(request.query, rawReply, primarySearch);
 
     await storeResearchBrief(brief);
-    await this.log(request, brief);
+    await this.log(request, brief, expandedQueries);
 
     return brief;
   }
@@ -139,7 +138,7 @@ NEXT_STEP: [specific thing to do next]`.trim();
     );
   }
 
-  private static parseBrief(query: string, raw: string, searchSource: string): ResearchBrief {
+  private static parseBrief(query: string, raw: string, search: SearchResponse): ResearchBrief {
     const lines = raw.split("\n");
     const keyFindings: string[] = [];
     let inFindings = false;
@@ -166,9 +165,10 @@ NEXT_STEP: [specific thing to do next]`.trim();
       }
     }
 
-    const sources: string[] = [];
-    if (searchSource !== "none") sources.push(`Web search via ${searchSource}`);
-    sources.push("Configured model synthesis");
+    const sources = search.results
+      .filter((result) => result.title && result.url)
+      .slice(0, 4)
+      .map((result) => `${result.title}: ${result.url}`);
 
     return {
       topic: query,
@@ -182,7 +182,11 @@ NEXT_STEP: [specific thing to do next]`.trim();
     };
   }
 
-  private static async log(request: ResearchRequest, brief: ResearchBrief): Promise<void> {
+  private static async log(
+    request: ResearchRequest,
+    brief: ResearchBrief,
+    expandedQueries: string[],
+  ): Promise<void> {
     try {
       await fs.mkdir(LOG_DIR, { recursive: true });
       const date = new Date().toISOString().split("T")[0];
@@ -194,6 +198,7 @@ NEXT_STEP: [specific thing to do next]`.trim();
         sourceStrength: brief.confidence,
         pointsCount: brief.keyFindings.length,
         sources: brief.sources,
+        expandedQueries,
       }) + "\n";
       await fs.appendFile(logFile, entry);
     } catch {}
