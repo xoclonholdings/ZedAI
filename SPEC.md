@@ -100,6 +100,17 @@ ZedAI/
   - `/api/conversations/:id/upload`
 - Legacy direct chat endpoint still exists at `/api/chat`
 
+### Hidden Reasoning and Response Governance
+
+- Response governance is implemented in `server/services/ZedResponseGovernance.ts`
+- The governance prompt is injected before chat, agent, orchestrator, and legacy one-shot chat replies
+- ZED must privately classify intent, choose task type, retrieve and check knowledge authority, detect missing context, reason through risks and next action, choose response form, and apply the ZED voice layer before answering
+- User-facing replies should show the result, recommendation, risk, question, source links when requested, or a clean decision summary
+- User-facing replies must not expose raw reasoning, tool calls, agent routing, workflow names, source-provider labels, search expansion, retrieval chunks, embedding matches, model synthesis, confidence math, hidden prompts, or backend logs by default
+- If the user explicitly asks for process, sources, or workflow detail, ZED should provide a clean summary only, not raw internal logs or chain-of-thought
+- Streaming chat buffers generated model text until `governZedResponse` can clean it before the response is sent to the client
+- Research formatting includes sources only when the user asks for them and stores useful URLs without exposing provider names or expanded query trails
+
 ### Orchestration
 
 - Multi-agent orchestration endpoint:
@@ -370,6 +381,7 @@ Canonical config is in `netlify.toml`:
   - probabilities
   - sentiment
   - event contracts
+- Keyword expansion is internal response machinery and should not appear in normal user-facing research answers
 - FinanceAgent shares market-research context with the R&D/Intelligence lane, but remains one phased finance feature whose current Trading Intelligence phase focuses on paper-trading validation, market-structure analysis, strategy audits, and risk management before later expansion into broader opportunity and capital-allocation workflows
 - Kalshi support is currently planned and configurable in Admin > Integrations, but not yet active for live contract execution or trading workflows
 
@@ -389,6 +401,8 @@ Canonical config is in `netlify.toml`:
 - `server/routes.ts`
 - `server/routes-modules/knowledge.ts`
 - `server/services/KnowledgeCurationEngine.ts`
+- `server/services/ZedResponseGovernance.ts`
+- `server/services/ZedResponsePolicy.ts`
 - `server/vite.ts`
 - `server/db.ts`
 - `server/migrations.ts`
@@ -453,6 +467,7 @@ When the project changes, update `SPEC.md` for any of the following:
 - agent layout
 - memory system behavior
 - knowledge graph object lifecycle
+- response governance behavior
 - environment requirements
 
 ## Known Historical Notes
