@@ -2,6 +2,7 @@ import type { Express, Request } from "express";
 
 import { isAdmin, isAuthenticated } from "../localAuth";
 import { KnowledgeService } from "../services/KnowledgeService";
+import { KnowledgeCurationEngine } from "../services/KnowledgeCurationEngine";
 import { injectMemory } from "../services/MemoryInjector";
 import {
   insertProjectMemorySchema,
@@ -13,6 +14,7 @@ import { users } from "../../shared/schema";
 /**
  * Knowledge / memory endpoints:
  *   - /api/knowledge/context  + /search          (read-only retrieval)
+ *   - /api/knowledge/curation/*                  (active knowledge health)
  *   - /api/knowledge/core-memory                 (admin-only KV store)
  *   - /api/knowledge/project-memory              (per-user long-term)
  *   - /api/knowledge/personal-base               (the "profile" entry)
@@ -107,6 +109,55 @@ export function registerKnowledgeRoutes(app: Express): void {
       res.json(results);
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Knowledge search failed" });
+    }
+  });
+
+  app.get("/api/knowledge/curation/latest", isAuthenticated, async (_req: any, res) => {
+    try {
+      const report = await KnowledgeCurationEngine.getLatestReview();
+      res.json({ report });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to load curation review" });
+    }
+  });
+
+  app.post("/api/knowledge/curation/review", isAuthenticated, async (req: any, res) => {
+    try {
+      const report = await KnowledgeCurationEngine.runReview({
+        userId: req.user.claims.sub,
+        trigger: req.user?.claims?.isAdmin ? "manual-admin" : "manual-user",
+      });
+      res.json({ report });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Knowledge curation review failed" });
+    }
+  });
+
+  app.post("/api/knowledge/curation/evaluate", isAuthenticated, async (req: any, res) => {
+    try {
+      const evaluation = await KnowledgeCurationEngine.evaluateIncoming({
+        userId: req.user.claims.sub,
+        title: typeof req.body?.title === "string" ? req.body.title : undefined,
+        type: typeof req.body?.type === "string" ? req.body.type : null,
+        content: String(req.body?.content || ""),
+      });
+      res.json({ evaluation });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Knowledge evaluation failed" });
+    }
+  });
+
+  app.get("/api/admin/knowledge/curation", isAdmin, async (req: any, res) => {
+    try {
+      const latest = await KnowledgeCurationEngine.getLatestReview();
+      if (latest) return res.json({ report: latest });
+      const report = await KnowledgeCurationEngine.runReview({
+        userId: req.user?.claims?.sub || "admin-user",
+        trigger: "admin-read-through",
+      });
+      res.json({ report });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to load admin curation report" });
     }
   });
 
