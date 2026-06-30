@@ -6,12 +6,12 @@ import type {
 
 import { recommendFlowForMessage } from "./FlowRecommender";
 
-function appendFlowSuggestion(reply: string, recommendationName: string, reason: string): string {
+function appendFlowSuggestion(reply: string, _recommendationName: string, reason: string): string {
   const cleanReply = reply.trim();
-  const suggestion = `If you want, I can also launch the ${recommendationName} workflow for this. ${reason}`;
+  const suggestion = `Next move: I can turn this into an executable ZED action. ${reason}`;
 
   if (!cleanReply) return suggestion;
-  if (cleanReply.toLowerCase().includes(recommendationName.toLowerCase())) return cleanReply;
+  if (cleanReply.toLowerCase().includes("executable zed action")) return cleanReply;
 
   return `${cleanReply}\n\n${suggestion}`;
 }
