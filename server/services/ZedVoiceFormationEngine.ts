@@ -110,12 +110,7 @@ function defaultVoiceMemory(): ZedVoiceMemory {
       entry("ZED challenges weak assumptions plainly when risk, accuracy, or canonical knowledge requires it."),
       entry("ZED asks for context when a confident answer would require guessing."),
     ],
-    approvedPhrases: [
-      entry("The clean version is this:"),
-      entry("The issue is this:"),
-      entry("What I would do next:"),
-      entry("I need one detail before I can answer that cleanly."),
-    ],
+    approvedPhrases: [],
     rejectedPhrases: [
       entry("As an AI language model"),
       entry("Great question!"),
@@ -123,8 +118,12 @@ function defaultVoiceMemory(): ZedVoiceMemory {
       entry("Executive Summary"),
       entry("Key Findings"),
       entry("Recommended Action"),
+      entry("Next move"),
       entry("Source trail"),
       entry("Confidence Level"),
+      entry("Research Brief"),
+      entry("Findings"),
+      entry("Give me one more constraint"),
     ],
     domainLanguage: [
       entry("ZED"),
@@ -144,10 +143,10 @@ function defaultVoiceMemory(): ZedVoiceMemory {
     tonePreferences: [
       entry("Direct, specific, mobile-readable, and calm."),
       entry("Concise by default; depth only when requested or required by risk."),
-      entry("No generic consultant language, fake certainty, or robotic report headings."),
+      entry("No generic consultant language, fake certainty, robotic report headings, or canned response templates."),
     ],
     responsePatternsWorked: [
-      entry("Answer first, then explain constraints or next steps."),
+      entry("Answer first, then explain only the constraint needed to act."),
       entry("Use compact bullets for multiple concrete items."),
       entry("Ask one precise question when the missing fact changes the answer."),
     ],
@@ -156,12 +155,14 @@ function defaultVoiceMemory(): ZedVoiceMemory {
       entry("Repeating the user's request as preamble."),
       entry("Showing source trails, tool names, or workflow details without being asked."),
       entry("Treating old or internal memory as current external truth."),
+      entry("Appending templated next-step language to every response."),
     ],
     domainCommunicationRules: [
       entry("Do not present old data as current truth; verify it or state the date boundary."),
       entry("Use canonical memory when it is relevant, but do not expose private memory mechanics."),
       entry("Do not mimic the user's wording style closely; learn stable operating preferences instead."),
       entry("Avoid source lists unless the user asks for sources or the task requires citations."),
+      entry("Never add canned conversational fallback text. If a pipeline fails, report the concrete failure or missing input."),
     ],
     contextBehavior: [
       entry("Be direct for implementation, configuration, and operational decisions."),
@@ -169,7 +170,7 @@ function defaultVoiceMemory(): ZedVoiceMemory {
       entry("Challenge when a request conflicts with canonical rules, safety, accuracy, or known product philosophy."),
       entry("Summarize when the conversation has accumulated decisions or the user asks for recap."),
       entry("Produce a plan for multi-step work, high-risk work, or ambiguous execution."),
-      entry("Stay quiet and ask for context when the missing detail materially changes the result."),
+      entry("Ask for context when the missing detail materially changes the result."),
     ],
     responseExamples: [],
     correctionHistory: [],
@@ -185,7 +186,7 @@ function normalizeVoiceMemory(input: Partial<ZedVoiceMemory> | null): ZedVoiceMe
   return {
     schemaVersion: 1,
     voicePrinciples: uniqueEntries([...(input.voicePrinciples || []), ...base.voicePrinciples]),
-    approvedPhrases: uniqueEntries([...(input.approvedPhrases || []), ...base.approvedPhrases]),
+    approvedPhrases: uniqueEntries(input.approvedPhrases || []),
     rejectedPhrases: uniqueEntries([...(input.rejectedPhrases || []), ...base.rejectedPhrases]),
     domainLanguage: uniqueEntries([...(input.domainLanguage || []), ...base.domainLanguage]),
     productPhilosophy: uniqueEntries([...(input.productPhilosophy || []), ...base.productPhilosophy]),
@@ -221,11 +222,12 @@ function correctionRules(text: string): string[] {
   if (/\btoo generic\b|\bgeneric\b|\bconsultant\b/i.test(text)) rules.push("Replace generic consultant language with specific project-aware wording.");
   if (/\bask before\b|\bshould have asked\b|\bdon't assume\b|\bdo not assume\b/i.test(text)) rules.push("Ask one precise clarifying question before answering when a missing detail changes the result.");
   if (/\bnot my voice\b|\bimitat/i.test(text)) rules.push("Do not mimic the user's voice; maintain ZED's operational voice.");
+  if (/\btemplate|templated|canned|next move|no response/i.test(text)) rules.push("Never use canned conversational fallback text or expose empty response placeholders.");
   return rules;
 }
 
 function isLikelyVoiceCorrection(text: string): boolean {
-  return /\b(wording|tone|framing|phrasing|phrase|assumption|too generic|too robotic|too long|too verbose|more concise|less formal|ask before|should have asked|don't assume|do not assume|do not say|don't say|stop saying|avoid saying|say instead|use instead|instead say|instead use|approved wording|approved phrase|rejected wording|rejected phrase|not my voice|not zed|sounds like chatgpt)\b/i.test(text);
+  return /\b(wording|tone|framing|phrasing|phrase|assumption|too generic|too robotic|too long|too verbose|more concise|less formal|ask before|should have asked|don't assume|do not assume|do not say|don't say|stop saying|avoid saying|say instead|use instead|instead say|instead use|approved wording|approved phrase|rejected wording|rejected phrase|not my voice|not zed|sounds like chatgpt|template|templated|canned|next move|no response)\b/i.test(text);
 }
 
 function extractAfter(text: string, patterns: RegExp[]): string[] {
@@ -252,8 +254,21 @@ function removeLeakage(content: string): string {
     .trim();
 }
 
+function removeCannedResponseLanguage(content: string): string {
+  return content
+    .replace(/^\s*next\s+move\s*:\s*/gim, "")
+    .replace(/^\s*recommended\s+action\s*:\s*/gim, "")
+    .replace(/^\s*confidence(?:\s+level)?\s*:\s*/gim, "")
+    .replace(/^\s*(?:key\s+findings|findings|executive\s+summary|research\s+brief)\s*:?\s*$/gim, "")
+    .replace(/\(no response\)/gi, "")
+    .replace(/\bgive me one more constraint or target,? and i can turn this into a cleaner action plan\.?/gi, "")
+    .replace(/\bgive me the specific competitor set or market,? and i can turn this into a tighter action plan\.?/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function hasRoboticHeading(content: string): boolean {
-  return /^#{1,4}\s*(Executive Summary|Key Findings|Findings|Recommended Action|Confidence|Analysis Results|Final Assessment)\b/im.test(content);
+  return /^#{1,4}\s*(Executive Summary|Key Findings|Findings|Recommended Action|Confidence|Analysis Results|Final Assessment|Research Brief)\b/im.test(content);
 }
 
 function isMobileUseful(content: string): boolean {
@@ -297,12 +312,11 @@ export async function buildZedVoicePrompt(params: { mode?: ZedVoiceMode } = {}):
   return [
     "## ZED Voice Memory",
     "ZED's voice is generated from canonical Voice Memory. Do not imitate the user. Use this memory to keep ZED stable through learned operating rules.",
+    "Never use canned response templates. Never add phrases like Next move, Recommended Action, Confidence Level, Research Brief, Findings, or placeholder text like (no response).",
     "### Voice principles",
     list(memory.voicePrinciples),
-    "### Approved language",
-    list(memory.approvedPhrases, 10),
     "### Rejected language",
-    list(memory.rejectedPhrases, 14),
+    list(memory.rejectedPhrases, 18),
     "### Domain language",
     list(memory.domainLanguage, 14),
     "### Product philosophy",
@@ -314,7 +328,7 @@ export async function buildZedVoicePrompt(params: { mode?: ZedVoiceMode } = {}):
     "### Response patterns that failed",
     list(memory.responsePatternsFailed),
     "### Communication rules",
-    list(memory.domainCommunicationRules, 10),
+    list(memory.domainCommunicationRules, 12),
     "### Context behavior",
     list(memory.contextBehavior, 10),
     `Active voice mode: ${mode}.`,
@@ -424,8 +438,12 @@ export async function presentZedResponseWithChecks(
   content = removeRejectedLanguage(content, memory);
   if (content !== beforeRejected) adjustments.push("removed_rejected_language");
 
+  const beforeCanned = content;
+  content = removeCannedResponseLanguage(content);
+  if (content !== beforeCanned) adjustments.push("removed_canned_response_language");
+
   if (hasRoboticHeading(content)) {
-    content = content.replace(/^#{1,4}\s*(Executive Summary|Key Findings|Findings|Recommended Action|Confidence|Analysis Results|Final Assessment)\s*:?\s*/gim, "");
+    content = content.replace(/^#{1,4}\s*(Executive Summary|Key Findings|Findings|Recommended Action|Confidence|Analysis Results|Final Assessment|Research Brief)\s*:?\s*/gim, "");
     adjustments.push("softened_robotic_heading");
   }
 
@@ -435,14 +453,13 @@ export async function presentZedResponseWithChecks(
     !/\b(confirm|approve|permission|before I)\b/i.test(content);
 
   if (shouldAskBeforeAnswering) {
-    content = "I need explicit approval before taking that action. Confirm the exact target and scope, and I can proceed from there.";
+    content = "I need explicit approval before taking that action. Confirm the exact target and scope.";
     adjustments.push("blocked_unapproved_execution_claim");
   }
 
   content = content.replace(/\n{3,}/g, "\n\n").trim();
   if (!content) {
-    content = "I need one more detail before I can answer that cleanly.";
-    adjustments.push("replaced_empty_response");
+    adjustments.push("empty_response_detected");
   }
 
   return {
