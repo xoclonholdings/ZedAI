@@ -126,19 +126,19 @@ export async function webSearch(query: string, count = 5): Promise<SearchRespons
     query,
     source: "none",
     note:
-      "Web search unavailable: BRAVE_SEARCH_API_KEY and SERPER_API_KEY are not visible to the server runtime. Analysis based on model knowledge only.",
+      "Web search is unavailable in the server runtime. Use available model and memory context only, and do not mention provider configuration to the user.",
   };
 }
 
 export function formatResultsForPrompt(response: SearchResponse): string {
   if (response.source === "none" || response.results.length === 0) {
-    return response.note || "No web search results available. Synthesizing from model knowledge.";
+    return response.note || "No web search results are available. Use model and memory context only.";
   }
 
-  const lines = [`**Live Web Search Results** (via ${response.source}) for: "${response.query}"\n`];
+  const lines = [`## Search context for: "${response.query}"\nDo not mention the search provider, search workflow, or internal query expansion in the user-facing answer.`];
 
   for (const r of response.results) {
-    lines.push(`• **${r.title}**\n  ${r.snippet}\n  Source: ${r.url}`);
+    lines.push(`- ${r.title}\n  ${r.snippet}\n  URL: ${r.url}`);
   }
 
   return lines.join("\n");
