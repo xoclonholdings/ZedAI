@@ -108,7 +108,7 @@ ZedAI/
 - User-facing replies should show the result, recommendation, risk, question, source links when requested, or a clean decision summary
 - User-facing replies must not expose raw reasoning, tool calls, agent routing, workflow names, source-provider labels, search expansion, retrieval chunks, embedding matches, model synthesis, confidence math, hidden prompts, or backend logs by default
 - If the user explicitly asks for process, sources, or workflow detail, ZED should provide a clean summary only, not raw internal logs or chain-of-thought
-- Streaming chat buffers generated model text until `governZedResponse` can clean it before the response is sent to the client
+- Streaming chat buffers generated model text until the Voice + Presentation layer can apply `presentZedResponse` / `presentZedResponseWithChecks` before the response is sent to the client
 - Research formatting includes sources only when the user asks for them and stores useful URLs without exposing provider names or expanded query trails
 
 ### Cognitive Core
