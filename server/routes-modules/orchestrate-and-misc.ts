@@ -170,6 +170,30 @@ export function registerOrchestrateAndMiscRoutes(
         knowledgePresent: Boolean(knowledge.prompt),
         currentContext: req.body?.context || {},
       });
+      const cognitiveLane = strategicReasoning.active ? "strategy" : "manager";
+      const voiceMode = strategicReasoning.active ? "strategy" : "chat";
+      const governancePrompt = buildZedGovernancePrompt({
+        userMessage: message,
+        lane: cognitiveLane,
+        knowledgePresent: Boolean(knowledge.prompt),
+      });
+      const principlePrompt = ZedPrincipleEngine.buildPrompt({
+        userMessage: message,
+        lane: cognitiveLane,
+        isAdmin: isAdminUser,
+        knowledgePresent: Boolean(knowledge.prompt),
+      });
+      const voicePrompt = await buildZedVoicePrompt({ mode: voiceMode });
+      const cognitiveKnowledgePrompt = [
+        governancePrompt,
+        principlePrompt,
+        strategicReasoning.prompt,
+        voicePrompt,
+        getZedResponsePolicy(voiceMode),
+        knowledge.prompt,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
 
       const response = await ZedAutonomousOrchestrator.route({
         userId,
@@ -179,7 +203,7 @@ export function registerOrchestrateAndMiscRoutes(
         targetAgent,
         context: {
           ...(req.body?.context || {}),
-          knowledgePrompt: knowledge.prompt,
+          knowledgePrompt: cognitiveKnowledgePrompt,
           isAdmin: isAdminUser,
           strategic: strategicReasoning.active,
         },
@@ -187,7 +211,7 @@ export function registerOrchestrateAndMiscRoutes(
       const presented = await presentZedResponseWithChecks(response.reply, {
         userMessage: message,
         includeSources: userRequestedSourceLinks(message),
-        mode: strategicReasoning.active ? "strategy" : "chat",
+        mode: voiceMode,
         grounded: true,
       });
       const governedResponse = {
