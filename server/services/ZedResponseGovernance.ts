@@ -58,12 +58,19 @@ const INTERNAL_SECTION_HEADINGS = [
   "expanded keyword search",
   "retrieval chunks",
   "embedding matches",
+  "configured model synthesis",
+  "live web search results",
+  "what matters",
+  "what i'd do next",
+  "what i’d do next",
 ];
 
 const INTERNAL_LINE_PATTERNS = [
   /^\s*(?:[-*]\s*)?Web search via\b/i,
   /^\s*(?:[-*]\s*)?Configured model synthesis\b/i,
   /^\s*(?:[-*]\s*)?Expanded keyword search\b/i,
+  /^\s*(?:[-*]\s*)?Live web search results\b/i,
+  /^\s*(?:[-*]\s*)?Search context for\b/i,
   /^\s*(?:[-*]\s*)?Source trail\b/i,
   /^\s*(?:[-*]\s*)?Research brief results\b/i,
   /^\s*(?:[-*]\s*)?Confidence(?: level)?\b/i,
@@ -74,6 +81,17 @@ const INTERNAL_LINE_PATTERNS = [
   /^\s*(?:[-*]\s*)?Search expansion\b/i,
   /^\s*(?:[-*]\s*)?Retrieval chunks\b/i,
   /^\s*(?:[-*]\s*)?Embedding matches\b/i,
+  /^\s*(?:[-*]\s*)?Analyze Competitors workflow\b/i,
+];
+
+const INTERNAL_TEXT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\s*\(via\s+(?:brave|serper)\)/gi, ""],
+  [/\bvia\s+(?:brave|serper)\b/gi, ""],
+  [/\b(?:brave|serper)\s+(?:search|provider|api)\b/gi, "search"],
+  [/\bconfigured model synthesis\b/gi, ""],
+  [/\banalyze competitors workflow\b/gi, ""],
+  [/\bsource trail\b/gi, "sources"],
+  [/\bresearch brief results\b/gi, "results"],
 ];
 
 function normalized(message: string): string {
@@ -177,6 +195,18 @@ function stripInternalSections(text: string, includeSources: boolean): string {
   return text.replace(sectionPattern, "\n");
 }
 
+function sanitizeInternalText(text: string): string {
+  let output = text;
+  for (const [pattern, replacement] of INTERNAL_TEXT_REPLACEMENTS) {
+    output = output.replace(pattern, replacement);
+  }
+  return output
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function governZedResponse(reply: string, options: ZedResponseGovernanceOptions): string {
   if (!reply || !reply.trim()) return reply;
 
@@ -196,8 +226,5 @@ export function governZedResponse(reply: string, options: ZedResponseGovernanceO
     return !INTERNAL_LINE_PATTERNS.some((pattern) => pattern.test(line));
   });
 
-  return governedLines
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return sanitizeInternalText(governedLines.join("\n"));
 }
