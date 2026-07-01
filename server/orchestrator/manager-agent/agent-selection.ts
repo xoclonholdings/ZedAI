@@ -18,6 +18,7 @@ export function isWebLookupIntent(message: string): boolean {
 
   const webIntentPhrases = [
     "visit",
+    "did you visit",
     "open this site",
     "open the site",
     "go to",
@@ -33,6 +34,9 @@ export function isWebLookupIntent(message: string): boolean {
     "latest",
     "current",
     "news",
+    "website",
+    "webpage",
+    "url",
     "what does this website",
     "analyze this website",
     "audit this website",
@@ -249,6 +253,7 @@ const DEFAULT_RESEARCH_KEYWORDS = [
   "happening in",
   "tell me about",
   "website",
+  "webpage",
   "url",
   "browse",
   "visit",
