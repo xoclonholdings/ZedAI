@@ -119,20 +119,20 @@ export async function webSearch(query: string, count = 5): Promise<SearchRespons
     }
   }
 
-  console.log("[WebSearch] No API keys visible to runtime — returning offline note");
+  console.log("[WebSearch] No search API keys visible to runtime — returning no search results");
 
   return {
     results: [],
     query,
     source: "none",
     note:
-      "Web search is unavailable in the server runtime. Use available model and memory context only, and do not mention provider configuration to the user.",
+      "No search API results are available for this query. If direct webpage content is supplied separately, use that. If no URL or source context is available, ask for the exact URL instead of saying browsing is unavailable.",
   };
 }
 
 export function formatResultsForPrompt(response: SearchResponse): string {
   if (response.source === "none" || response.results.length === 0) {
-    return response.note || "No web search results are available. Use model and memory context only.";
+    return response.note || "No search results are available. Use direct webpage content, model context, and memory when available.";
   }
 
   const lines = [`## Search context for: "${response.query}"\nDo not mention the search provider, search workflow, or internal query expansion in the user-facing answer.`];
