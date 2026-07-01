@@ -3,6 +3,8 @@ import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
+import { ZedPrincipleEngine } from "../services/ZedPrincipleEngine";
+import { ZedStrategicReasoningEngine } from "../services/ZedStrategicReasoningEngine";
 import { getZedResponsePolicy, type ZedResponseMode } from "../services/ZedResponsePolicy";
 import {
   buildZedGovernancePrompt,
@@ -85,17 +87,32 @@ export class ManagerAgent {
 
     const agent = await selectAgent(request.message, config, request.targetAgent);
     const responseMode = responseModeForAgent(agent);
-    const governancePrompt = buildZedGovernancePrompt({
+    const strategicReasoning = ZedStrategicReasoningEngine.prepare({
       userMessage: request.message,
       lane: responseMode,
       knowledgePresent: Boolean(knowledgePrompt),
+      currentContext: request.context,
     });
-    const voicePrompt = await buildZedVoicePrompt({ mode: responseMode });
+    const voiceMode: ZedResponseMode = strategicReasoning.active ? "strategy" : responseMode;
+    const governancePrompt = buildZedGovernancePrompt({
+      userMessage: request.message,
+      lane: voiceMode,
+      knowledgePresent: Boolean(knowledgePrompt),
+    });
+    const principlePrompt = ZedPrincipleEngine.buildPrompt({
+      userMessage: request.message,
+      lane: voiceMode,
+      knowledgePresent: Boolean(knowledgePrompt),
+      isAdmin: Boolean(request.context?.isAdmin),
+    });
+    const voicePrompt = await buildZedVoicePrompt({ mode: voiceMode });
     const agentContext = [
       governancePrompt,
+      principlePrompt,
+      strategicReasoning.prompt,
       voicePrompt,
       knowledgePrompt,
-      getZedResponsePolicy(responseMode),
+      getZedResponsePolicy(voiceMode),
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -135,7 +152,7 @@ export class ManagerAgent {
           reply: await presentZedResponse(filterOutputForTier3(resp.message), {
             userMessage: request.message,
             includeSources,
-            mode: responseMode,
+            mode: voiceMode,
             grounded: true,
           }),
           agent: resp.agent,
@@ -144,6 +161,7 @@ export class ManagerAgent {
             planned: resp.planned,
             capabilities: resp.capabilities,
             integration: "Business Operations",
+            strategic: strategicReasoning.active,
           },
         };
       }
@@ -159,12 +177,12 @@ export class ManagerAgent {
           reply: await presentZedResponse(filterOutputForTier3(resp.message), {
             userMessage: request.message,
             includeSources,
-            mode: responseMode,
+            mode: voiceMode,
             grounded: true,
           }),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
-          metadata: { capabilities: resp.capabilities },
+          metadata: { capabilities: resp.capabilities, strategic: strategicReasoning.active },
         };
       }
 
@@ -181,7 +199,7 @@ export class ManagerAgent {
         reply = opResp.reply;
         extra = {
           requiresApproval: opResp.requiresApproval,
-          metadata: { actions: opResp.actions },
+          metadata: { actions: opResp.actions, strategic: strategicReasoning.active },
         };
         break;
       }
@@ -190,7 +208,7 @@ export class ManagerAgent {
     reply = await presentZedResponse(filterOutputForTier3(reply), {
       userMessage: request.message,
       includeSources,
-      mode: responseMode,
+      mode: voiceMode,
       grounded: true,
     });
 
