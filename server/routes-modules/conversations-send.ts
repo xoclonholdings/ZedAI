@@ -27,6 +27,10 @@ import {
   ingestZedVoiceCorrection,
   presentZedResponse,
 } from "../services/ZedVoiceFormationEngine";
+import {
+  extractWebTargets,
+  hasWebsiteReferenceWithoutTarget,
+} from "../services/WebContentService";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { requireConversation } from "./conversations-crud";
 
@@ -90,6 +94,21 @@ function compactContextAssessment(
     questionCategory: topQuestion.category,
     affects: Array.isArray(topQuestion.wouldChange) ? topQuestion.wouldChange : [],
   };
+}
+
+function resolveReferencedWebpage(content: string, history: any[]): string {
+  if (extractWebTargets(content).length > 0) return content;
+  if (!hasWebsiteReferenceWithoutTarget(content)) return content;
+
+  for (const message of [...history].reverse()) {
+    const targets = extractWebTargets(String(message?.content || ""));
+    const target = targets[0];
+    if (target?.url) {
+      return `${content}\n\nReferenced webpage from recent conversation: ${target.url}`;
+    }
+  }
+
+  return content;
 }
 
 /**
@@ -177,6 +196,7 @@ export function registerConversationSendRoutes(app: Express): void {
       );
 
       const messagesBeforeReply = await storage.getMessagesByConversation(conversationId);
+      const webLookupMessage = resolveReferencedWebpage(content, messagesBeforeReply);
       const previousAssistant = [...messagesBeforeReply]
         .reverse()
         .find((message: any) => message.role === "assistant");
@@ -195,58 +215,60 @@ export function registerConversationSendRoutes(app: Express): void {
         });
       });
 
-      try {
-        const contextAssessmentResult = await ContextInquiryEngine.assess({ userInput: content });
-        const assessment = contextAssessmentResult.assessment;
-        const topQuestion = selectTopContextQuestion(assessment.questions);
+      if (!isWebLookupIntent(content)) {
+        try {
+          const contextAssessmentResult = await ContextInquiryEngine.assess({ userInput: content });
+          const assessment = contextAssessmentResult.assessment;
+          const topQuestion = selectTopContextQuestion(assessment.questions);
 
-        if (assessment.responsePolicy === "inquire_first" && topQuestion) {
-          const assistantContent = await presentZedResponse(formatContextInquiryReply(topQuestion.question), {
-            userMessage: content,
-            includeSources: false,
-            mode: "chat",
-            grounded: true,
-          });
-          const aiMessage = await storage.createMessage(
-            insertMessageSchema.parse({
-              conversationId,
-              role: "assistant",
-              content: assistantContent,
-              metadata: {
-                contextInquiry: true,
-                contextAssessment: compactContextAssessment(assessment, topQuestion),
-              },
-            }),
-          );
+          if (assessment.responsePolicy === "inquire_first" && topQuestion) {
+            const assistantContent = await presentZedResponse(formatContextInquiryReply(topQuestion.question), {
+              userMessage: content,
+              includeSources: false,
+              mode: "chat",
+              grounded: true,
+            });
+            const aiMessage = await storage.createMessage(
+              insertMessageSchema.parse({
+                conversationId,
+                role: "assistant",
+                content: assistantContent,
+                metadata: {
+                  contextInquiry: true,
+                  contextAssessment: compactContextAssessment(assessment, topQuestion),
+                },
+              }),
+            );
 
-          if (stream) {
-            res.setHeader("Content-Type", "text/event-stream");
-            res.setHeader("Cache-Control", "no-cache");
-            res.setHeader("Connection", "keep-alive");
-            res.setHeader("X-Accel-Buffering", "no");
-            res.write(`data: ${JSON.stringify({ type: "user_message", message: userMessage })}\n\n`);
-            res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
-            res.end();
-          } else {
-            res.json({ userMessage, aiMessage });
+            if (stream) {
+              res.setHeader("Content-Type", "text/event-stream");
+              res.setHeader("Cache-Control", "no-cache");
+              res.setHeader("Connection", "keep-alive");
+              res.setHeader("X-Accel-Buffering", "no");
+              res.write(`data: ${JSON.stringify({ type: "user_message", message: userMessage })}\n\n`);
+              res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
+              res.end();
+            } else {
+              res.json({ userMessage, aiMessage });
+            }
+            return;
           }
-          return;
+        } catch (contextErr) {
+          void logRuntimeEvent({
+            level: "warn",
+            source: "server",
+            event: "context_inquiry.failed",
+            detail: contextErr instanceof Error ? contextErr.message : String(contextErr),
+            context: { conversationId },
+          });
         }
-      } catch (contextErr) {
-        void logRuntimeEvent({
-          level: "warn",
-          source: "server",
-          event: "context_inquiry.failed",
-          detail: contextErr instanceof Error ? contextErr.message : String(contextErr),
-          context: { conversationId },
-        });
       }
 
       if (isWebLookupIntent(content)) {
         try {
           const result = await ManagerAgent.route({
             userId,
-            message: content,
+            message: webLookupMessage,
             conversationId,
             ip: req.ip || "",
             targetAgent: "research",
