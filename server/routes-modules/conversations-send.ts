@@ -6,6 +6,10 @@ import { insertMessageSchema } from "../../shared/schema";
 import { checkTiers } from "../middleware/TierEnforcement";
 import { ManagerAgent } from "../orchestrator/ManagerAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
+import { ContextInquiryEngine } from "../services/knowledge-ingestion/ContextInquiryEngine";
+import { ZedPrincipleEngine } from "../services/ZedPrincipleEngine";
+import { ZedStrategicReasoningEngine } from "../services/ZedStrategicReasoningEngine";
+import { ZedReflectionEngine } from "../services/ZedReflectionEngine";
 import { injectMemory } from "../services/MemoryInjector";
 import {
   generateChatFromOllama,
@@ -13,7 +17,7 @@ import {
   type OllamaMessage,
 } from "../services/Ollama/OllamaService";
 import { buildZedAdminContext } from "../services/ZedContextBuilder";
-import { getZedResponsePolicy } from "../services/ZedResponsePolicy";
+import { getZedResponsePolicy, type ZedResponseMode } from "../services/ZedResponsePolicy";
 import {
   buildZedGovernancePrompt,
   userRequestedSourceLinks,
@@ -51,6 +55,42 @@ const ZED_IDENTITY_PROMPT = [
   "Recognize lightweight response modes when requested: Chat, Research, Build, Strategy, and Memory. Do not build a mode switch UI inside the response.",
   "Never emit literal <br> or <br/> tags. Use blank lines or list items instead.",
 ].join(" ");
+
+type ContextInquiryQuestion = {
+  question: string;
+  priority: number;
+  category?: string;
+  wouldChange?: string[];
+};
+
+type ContextAssessmentForSummary = {
+  responsePolicy: string;
+  materialUncertainty: boolean;
+  questions: ContextInquiryQuestion[];
+};
+
+function selectTopContextQuestion(questions: ContextInquiryQuestion[]): ContextInquiryQuestion | null {
+  return [...(questions || [])].sort((a, b) => b.priority - a.priority)[0] || null;
+}
+
+function formatContextInquiryReply(question: string): string {
+  const cleanedQuestion = question.trim().replace(/\s+/g, " ");
+  const punctuatedQuestion = /[?.!]$/.test(cleanedQuestion) ? cleanedQuestion : `${cleanedQuestion}?`;
+  return `I need one detail before I can answer that cleanly: ${punctuatedQuestion}`;
+}
+
+function compactContextAssessment(
+  assessment: ContextAssessmentForSummary,
+  topQuestion: ContextInquiryQuestion,
+): Record<string, unknown> {
+  return {
+    responsePolicy: assessment.responsePolicy,
+    materialUncertainty: assessment.materialUncertainty,
+    questionCount: assessment.questions.length,
+    questionCategory: topQuestion.category,
+    affects: Array.isArray(topQuestion.wouldChange) ? topQuestion.wouldChange : [],
+  };
+}
 
 /**
  * Detects when a chat-mode message is actually a web lookup / research
@@ -95,10 +135,15 @@ export function registerConversationSendRoutes(app: Express): void {
 
       if (!content) return res.status(400).json({ error: "Message required" });
 
+      const userId = req.user?.claims?.sub || "unknown";
+      const isAdmin = !!req.user?.claims?.isAdmin;
       const includeSources = userRequestedSourceLinks(content);
+      let cognitiveVoiceMode: ZedResponseMode = "chat";
+      let cognitiveStrategicActive = false;
+
       const tierCheck = await checkTiers(
         content,
-        req.user?.claims?.sub || "unknown",
+        userId,
         req.ip || "",
       );
       if (tierCheck.blocked) {
@@ -136,7 +181,7 @@ export function registerConversationSendRoutes(app: Express): void {
         .reverse()
         .find((message: any) => message.role === "assistant");
       await ingestZedVoiceCorrection({
-        userId: req.user?.claims?.sub || "unknown",
+        userId,
         conversationId,
         userMessage: content,
         previousAssistantContent: previousAssistant?.content,
@@ -150,11 +195,57 @@ export function registerConversationSendRoutes(app: Express): void {
         });
       });
 
+      try {
+        const contextAssessmentResult = await ContextInquiryEngine.assess({ userInput: content });
+        const assessment = contextAssessmentResult.assessment;
+        const topQuestion = selectTopContextQuestion(assessment.questions);
+
+        if (assessment.responsePolicy === "inquire_first" && topQuestion) {
+          const assistantContent = await presentZedResponse(formatContextInquiryReply(topQuestion.question), {
+            userMessage: content,
+            includeSources: false,
+            mode: "chat",
+            grounded: true,
+          });
+          const aiMessage = await storage.createMessage(
+            insertMessageSchema.parse({
+              conversationId,
+              role: "assistant",
+              content: assistantContent,
+              metadata: {
+                contextInquiry: true,
+                contextAssessment: compactContextAssessment(assessment, topQuestion),
+              },
+            }),
+          );
+
+          if (stream) {
+            res.setHeader("Content-Type", "text/event-stream");
+            res.setHeader("Cache-Control", "no-cache");
+            res.setHeader("Connection", "keep-alive");
+            res.setHeader("X-Accel-Buffering", "no");
+            res.write(`data: ${JSON.stringify({ type: "user_message", message: userMessage })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
+            res.end();
+          } else {
+            res.json({ userMessage, aiMessage });
+          }
+          return;
+        }
+      } catch (contextErr) {
+        void logRuntimeEvent({
+          level: "warn",
+          source: "server",
+          event: "context_inquiry.failed",
+          detail: contextErr instanceof Error ? contextErr.message : String(contextErr),
+          context: { conversationId },
+        });
+      }
+
       if (isWebLookupIntent(content)) {
         try {
-          const isAdmin = !!req.user?.claims?.isAdmin;
           const result = await ManagerAgent.route({
-            userId: req.user?.claims?.sub || "unknown",
+            userId,
             message: content,
             conversationId,
             ip: req.ip || "",
@@ -175,11 +266,29 @@ export function registerConversationSendRoutes(app: Express): void {
             }),
           );
           await KnowledgeService.persistInteraction({
-            userId: req.user?.claims?.sub || "unknown",
+            userId,
             conversationId,
             userContent: content,
             assistantContent: aiMessage.content,
             tags: ["chat", "web", "research"],
+          });
+          await ZedReflectionEngine.reflectAfterReply({
+            userId,
+            conversationId,
+            userMessage: content,
+            assistantReply: aiMessage.content,
+            route: "chat",
+            strategic: Boolean(result.metadata?.strategic),
+            requiresApproval: result.requiresApproval,
+            tags: ["chat", "research", "cognitive-core"],
+          }).catch((err) => {
+            void logRuntimeEvent({
+              level: "warn",
+              source: "server",
+              event: "reflection.failed",
+              detail: err?.message || String(err),
+              context: { conversationId },
+            });
           });
           if (stream) {
             res.setHeader("Content-Type", "text/event-stream");
@@ -225,10 +334,9 @@ export function registerConversationSendRoutes(app: Express): void {
       }
 
       try {
-        const isAdmin = !!req.user?.claims?.isAdmin;
         const memCtx = await injectMemory("ChatMode", { includeFoundation: isAdmin });
         const knowledge = await KnowledgeService.buildContext({
-          userId: req.user.claims.sub,
+          userId,
           query: content,
           conversationId,
           lane: "chat",
@@ -236,18 +344,33 @@ export function registerConversationSendRoutes(app: Express): void {
           includeAdminFoundation: isAdmin,
         });
         const adminCtx = await buildZedAdminContext({
-          userId: req.user?.claims?.sub,
+          userId,
           conversationId,
         });
+        const strategicReasoning = ZedStrategicReasoningEngine.prepare({
+          userMessage: content,
+          lane: "chat",
+          knowledgePresent: Boolean(knowledge.prompt || adminCtx.text || systemPrompt),
+          currentContext: { conversationId, isAdmin },
+        });
+        cognitiveStrategicActive = strategicReasoning.active;
+        cognitiveVoiceMode = strategicReasoning.active ? "strategy" : "chat";
         systemPrompt = [
           ZED_IDENTITY_PROMPT,
           buildZedGovernancePrompt({
             userMessage: content,
-            lane: "chat",
+            lane: cognitiveVoiceMode,
             knowledgePresent: Boolean(knowledge.prompt || adminCtx.text || systemPrompt),
           }),
-          await buildZedVoicePrompt({ mode: "chat" }),
-          getZedResponsePolicy("chat"),
+          ZedPrincipleEngine.buildPrompt({
+            userMessage: content,
+            lane: cognitiveVoiceMode,
+            knowledgePresent: Boolean(knowledge.prompt || adminCtx.text || systemPrompt),
+            isAdmin,
+          }),
+          strategicReasoning.prompt,
+          await buildZedVoicePrompt({ mode: cognitiveVoiceMode }),
+          getZedResponsePolicy(cognitiveVoiceMode),
           systemPrompt || "",
           adminCtx.text,
           knowledge.prompt,
@@ -259,11 +382,26 @@ export function registerConversationSendRoutes(app: Express): void {
       }
 
       if (!systemPrompt) {
+        const strategicReasoning = ZedStrategicReasoningEngine.prepare({
+          userMessage: content,
+          lane: "chat",
+          knowledgePresent: false,
+          currentContext: { conversationId, isAdmin },
+        });
+        cognitiveStrategicActive = strategicReasoning.active;
+        cognitiveVoiceMode = strategicReasoning.active ? "strategy" : "chat";
         systemPrompt = [
           ZED_IDENTITY_PROMPT,
-          buildZedGovernancePrompt({ userMessage: content, lane: "chat" }),
-          await buildZedVoicePrompt({ mode: "chat" }),
-          getZedResponsePolicy("chat"),
+          buildZedGovernancePrompt({ userMessage: content, lane: cognitiveVoiceMode }),
+          ZedPrincipleEngine.buildPrompt({
+            userMessage: content,
+            lane: cognitiveVoiceMode,
+            knowledgePresent: false,
+            isAdmin,
+          }),
+          strategicReasoning.prompt,
+          await buildZedVoicePrompt({ mode: cognitiveVoiceMode }),
+          getZedResponsePolicy(cognitiveVoiceMode),
         ].join("\n\n");
       }
 
@@ -289,7 +427,7 @@ export function registerConversationSendRoutes(app: Express): void {
             const presentedResponse = await presentZedResponse(fullResponse || "(no response)", {
               userMessage: content,
               includeSources,
-              mode: "chat",
+              mode: cognitiveVoiceMode,
               grounded: true,
             });
             const aiMessage = await storage.createMessage(
@@ -300,11 +438,28 @@ export function registerConversationSendRoutes(app: Express): void {
               }),
             );
             await KnowledgeService.persistInteraction({
-              userId: req.user.claims.sub,
+              userId,
               conversationId,
               userContent: content,
               assistantContent: aiMessage.content,
               tags: ["chat", "conversation"],
+            });
+            await ZedReflectionEngine.reflectAfterReply({
+              userId,
+              conversationId,
+              userMessage: content,
+              assistantReply: aiMessage.content,
+              route: "chat",
+              strategic: cognitiveStrategicActive,
+              tags: ["chat", "conversation", "cognitive-core"],
+            }).catch((err) => {
+              void logRuntimeEvent({
+                level: "warn",
+                source: "server",
+                event: "reflection.failed",
+                detail: err?.message || String(err),
+                context: { conversationId },
+              });
             });
             res.write(`data: ${JSON.stringify({ type: "token", token: presentedResponse })}\n\n`);
             res.write(`data: ${JSON.stringify({ type: "done", message: aiMessage })}\n\n`);
@@ -343,7 +498,7 @@ export function registerConversationSendRoutes(app: Express): void {
         const presentedText = await presentZedResponse(aiText, {
           userMessage: content,
           includeSources,
-          mode: "chat",
+          mode: cognitiveVoiceMode,
           grounded: true,
         });
         const aiMessage = await storage.createMessage(
@@ -354,11 +509,28 @@ export function registerConversationSendRoutes(app: Express): void {
           }),
         );
         await KnowledgeService.persistInteraction({
-          userId: req.user.claims.sub,
+          userId,
           conversationId,
           userContent: content,
           assistantContent: aiMessage.content,
           tags: ["chat", "conversation"],
+        });
+        await ZedReflectionEngine.reflectAfterReply({
+          userId,
+          conversationId,
+          userMessage: content,
+          assistantReply: aiMessage.content,
+          route: "chat",
+          strategic: cognitiveStrategicActive,
+          tags: ["chat", "conversation", "cognitive-core"],
+        }).catch((err) => {
+          void logRuntimeEvent({
+            level: "warn",
+            source: "server",
+            event: "reflection.failed",
+            detail: err?.message || String(err),
+            context: { conversationId },
+          });
         });
         res.json({ userMessage, aiMessage });
       }
