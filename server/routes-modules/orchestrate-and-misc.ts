@@ -7,6 +7,9 @@ import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOr
 import { KnowledgeService } from "../services/KnowledgeService";
 import { KnowledgeCurationEngine } from "../services/KnowledgeCurationEngine";
 import { ContextInquiryEngine } from "../services/knowledge-ingestion/ContextInquiryEngine";
+import { ZedPrincipleEngine } from "../services/ZedPrincipleEngine";
+import { ZedStrategicReasoningEngine } from "../services/ZedStrategicReasoningEngine";
+import { ZedReflectionEngine } from "../services/ZedReflectionEngine";
 import { injectMemory } from "../services/MemoryInjector";
 import {
   checkOllamaHealth,
@@ -20,10 +23,13 @@ import {
 import { getZedResponsePolicy } from "../services/ZedResponsePolicy";
 import {
   buildZedGovernancePrompt,
-  governZedResponse,
   userRequestedProcessDisclosure,
   userRequestedSourceLinks,
 } from "../services/ZedResponseGovernance";
+import {
+  buildZedVoicePrompt,
+  presentZedResponseWithChecks,
+} from "../services/ZedVoiceFormationEngine";
 import {
   getPublicAdminSettings,
   loadAdminSettings,
@@ -87,6 +93,7 @@ export function registerOrchestrateAndMiscRoutes(
     try {
       const { message, conversationId, targetAgent } = req.body;
       const userId = req.user.claims.sub;
+      const isAdminUser = Boolean(req.user?.claims?.isAdmin);
       if (!message) return res.status(400).json({ error: "Message required" });
 
       if (conversationId) {
@@ -105,10 +112,13 @@ export function registerOrchestrateAndMiscRoutes(
         const topQuestion = selectTopContextQuestion(assessment.questions);
 
         if (assessment.responsePolicy === "inquire_first" && topQuestion) {
-          const reply = governZedResponse(formatContextInquiryReply(topQuestion.question), {
+          const presented = await presentZedResponseWithChecks(formatContextInquiryReply(topQuestion.question), {
             userMessage: message,
             includeSources: false,
+            mode: "chat",
+            grounded: true,
           });
+          const reply = presented.content;
           const inquiryResponse = {
             reply,
             agent: "ManagerAgent",
@@ -149,10 +159,16 @@ export function registerOrchestrateAndMiscRoutes(
         lane: "manager",
         injectedMemory: (
           await injectMemory("ManagerAgent", {
-            includeFoundation: !!req.user?.claims?.isAdmin,
+            includeFoundation: isAdminUser,
           }).catch(() => ({ formatted: "" }))
         ).formatted,
-        includeAdminFoundation: !!req.user?.claims?.isAdmin,
+        includeAdminFoundation: isAdminUser,
+      });
+      const strategicReasoning = ZedStrategicReasoningEngine.prepare({
+        userMessage: message,
+        lane: "manager",
+        knowledgePresent: Boolean(knowledge.prompt),
+        currentContext: req.body?.context || {},
       });
 
       const response = await ZedAutonomousOrchestrator.route({
@@ -164,15 +180,23 @@ export function registerOrchestrateAndMiscRoutes(
         context: {
           ...(req.body?.context || {}),
           knowledgePrompt: knowledge.prompt,
-          isAdmin: Boolean(req.user?.claims?.isAdmin),
+          isAdmin: isAdminUser,
+          strategic: strategicReasoning.active,
         },
+      });
+      const presented = await presentZedResponseWithChecks(response.reply, {
+        userMessage: message,
+        includeSources: userRequestedSourceLinks(message),
+        mode: strategicReasoning.active ? "strategy" : "chat",
+        grounded: true,
       });
       const governedResponse = {
         ...response,
-        reply: governZedResponse(response.reply, {
-          userMessage: message,
-          includeSources: userRequestedSourceLinks(message),
-        }),
+        reply: presented.content,
+        metadata: {
+          ...(response.metadata || {}),
+          strategic: strategicReasoning.active,
+        },
       };
 
       if (conversationId) {
@@ -186,10 +210,24 @@ export function registerOrchestrateAndMiscRoutes(
               requiresApproval: governedResponse.requiresApproval,
               autonomous: governedResponse.metadata?.autonomous,
               flowRecommendation: governedResponse.metadata?.flowRecommendation,
+              strategic: strategicReasoning.active,
             },
           }),
         );
       }
+
+      await ZedReflectionEngine.reflectAfterReply({
+        userId,
+        conversationId,
+        userMessage: message,
+        assistantReply: governedResponse.reply,
+        route: "orchestrate",
+        strategic: strategicReasoning.active,
+        requiresApproval: governedResponse.requiresApproval,
+        tags: ["orchestrate", "cognitive-core"],
+      }).catch((error) => {
+        console.warn("[Reflection] Failed to store orchestrator reflection:", error);
+      });
 
       res.json(governedResponse);
     } catch (error) {
@@ -198,11 +236,14 @@ export function registerOrchestrateAndMiscRoutes(
         error instanceof Error && error.message
           ? error.message
           : "The selected agent is temporarily unavailable.";
+      const presented = await presentZedResponseWithChecks(`ZED orchestration is unavailable right now: ${detail}`, {
+        userMessage: String(req.body?.message || ""),
+        mode: "chat",
+        grounded: false,
+      });
       res.json({
         error: "Orchestration failed",
-        reply: governZedResponse(`ZED orchestration is unavailable right now: ${detail}`, {
-          userMessage: String(req.body?.message || ""),
-        }),
+        reply: presented.content,
         agent: "ManagerAgent",
       });
     }
@@ -287,24 +328,56 @@ export function registerOrchestrateAndMiscRoutes(
     try {
       const { message } = req.body;
       if (!message) return res.status(400).json({ error: "Message required" });
-      const governancePrompt = buildZedGovernancePrompt({
+      const strategicReasoning = ZedStrategicReasoningEngine.prepare({
         userMessage: message,
         lane: "chat",
+        knowledgePresent: false,
       });
+      const voiceMode = strategicReasoning.active ? "strategy" : "chat";
+      const governancePrompt = buildZedGovernancePrompt({
+        userMessage: message,
+        lane: voiceMode,
+      });
+      const principlePrompt = ZedPrincipleEngine.buildPrompt({
+        userMessage: message,
+        lane: voiceMode,
+        knowledgePresent: false,
+      });
+      const voicePrompt = await buildZedVoicePrompt({ mode: voiceMode });
       const prompt = buildOllamaPrompt(message, {
-        memory: [governancePrompt, getZedResponsePolicy("chat")].join("\n\n"),
+        memory: [
+          governancePrompt,
+          principlePrompt,
+          strategicReasoning.prompt,
+          voicePrompt,
+          getZedResponsePolicy(voiceMode),
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
       });
       const options = { lane: "chat" as const };
       const rawReply = await generateFromOllama(prompt, options);
-      const reply = governZedResponse(rawReply, {
+      const presented = await presentZedResponseWithChecks(rawReply, {
         userMessage: message,
         includeSources: userRequestedSourceLinks(message),
+        mode: voiceMode,
+        grounded: true,
       });
-      const payload: Record<string, unknown> = { reply };
+      const payload: Record<string, unknown> = { reply: presented.content };
       if (userRequestedProcessDisclosure(message)) {
         payload.provider = getActiveProviderName(options);
         payload.target = getResolvedTargetName(options);
       }
+      await ZedReflectionEngine.reflectAfterReply({
+        userId: "anonymous",
+        userMessage: message,
+        assistantReply: presented.content,
+        route: "legacy-chat",
+        strategic: strategicReasoning.active,
+        tags: ["legacy-chat", "cognitive-core"],
+      }).catch((error) => {
+        console.warn("[Reflection] Failed to store legacy chat reflection:", error);
+      });
       res.json(payload);
     } catch (error) {
       console.error(error);
