@@ -111,6 +111,34 @@ ZedAI/
 - Streaming chat buffers generated model text until `governZedResponse` can clean it before the response is sent to the client
 - Research formatting includes sources only when the user asks for them and stores useful URLs without exposing provider names or expanded query trails
 
+### Cognitive Core
+
+The Cognitive Core is the active hidden reasoning chain used by normal chat and orchestrated agent replies. It is lightweight, service-owned, and intended to migrate into ZCOS later without changing the ZED interface.
+
+Required runtime order:
+
+1. Context Inquiry Engine checks whether missing or ambiguous context would materially change correctness, classification, storage, retrieval, or reasoning.
+2. Principle Engine injects hidden operating principles before generation.
+3. Strategic Reasoning Engine activates for strategy, architecture, product, business, roadmap, competitor, audit, planning, gap-analysis, and next-move questions.
+4. Knowledge retrieval and orchestration provide canonical memory, rules, project context, and agent execution.
+5. Voice + Presentation Engine produces the final user-visible response.
+6. Reflection Engine stores safe post-response summaries for important replies only.
+
+Runtime implementation:
+
+- Context Inquiry: `server/services/knowledge-ingestion/ContextInquiryEngine.ts`
+- Principle Engine: `server/services/ZedPrincipleEngine.ts`
+- Strategic Reasoning Engine: `server/services/ZedStrategicReasoningEngine.ts`
+- Voice + Presentation Engine: `server/services/ZedVoiceFormationEngine.ts`
+- Response Governance: `server/services/ZedResponseGovernance.ts`
+- Reflection Engine: `server/services/ZedReflectionEngine.ts`
+- Main conversation wiring: `server/routes-modules/conversations-send.ts`
+- Orchestrator wiring: `server/routes-modules/orchestrate-and-misc.ts`
+- Agent prompt integration: `server/orchestrator/ManagerAgent.ts`
+
+The Principle, Strategic Reasoning, and Reflection services must not expose raw chain-of-thought, hidden prompts, source trails, provider names, workflow names, internal scoring, route names, graph IDs, or retrieval internals to the user. If the user asks how an answer was produced, ZED should provide a clean implementation summary only.
+
+Reflection stores concise summaries of important exchanges under project memory type `reflection`. Reflection summaries must describe user intent, visible answer, approval relevance, and strategic relevance only. They must not store hidden reasoning, prompt text, tool logs, provider traces, or raw internal state.
 ### Orchestration
 
 - Multi-agent orchestration endpoint:
