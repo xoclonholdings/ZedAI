@@ -1,8 +1,7 @@
 /**
  * Renders an IntelligenceAgent result into mobile-readable markdown.
- * The default shape avoids exposing source-trail machinery, provider
- * labels, workflow labels, and rigid report templates. Sources are
- * included only when the user explicitly asks for them.
+ * This formatter must not add canned conversational language. It only
+ * cleans internal parse markers and preserves useful agent output.
  */
 
 const INTERNAL_TEXT_PATTERNS = [
@@ -18,6 +17,18 @@ const INTERNAL_TEXT_PATTERNS = [
   /^\s*(?:source|provider)\s*:\s*/gim,
 ];
 
+const TEMPLATE_TEXT_PATTERNS = [
+  /^\s*next\s+move\s*:\s*/gim,
+  /^\s*recommended\s+action\s*:\s*/gim,
+  /^\s*confidence(?:\s+level)?\s*:\s*/gim,
+  /^\s*key\s+findings\s*:?\s*$/gim,
+  /^\s*findings\s*:?\s*$/gim,
+  /^\s*executive\s+summary\s*:?\s*$/gim,
+  /^\s*research\s+brief\s*:?\s*$/gim,
+  /\bgive me one more constraint or target,? and i can turn this into a cleaner action plan\.?/gi,
+  /\bgive me the specific competitor set or market,? and i can turn this into a tighter action plan\.?/gi,
+];
+
 function cleanBriefText(value: unknown): string {
   let text = String(value || "")
     .replace(/\r\n/g, "\n")
@@ -25,6 +36,10 @@ function cleanBriefText(value: unknown): string {
     .trim();
 
   for (const pattern of INTERNAL_TEXT_PATTERNS) {
+    text = text.replace(pattern, "");
+  }
+
+  for (const pattern of TEMPLATE_TEXT_PATTERNS) {
     text = text.replace(pattern, "");
   }
 
@@ -47,7 +62,7 @@ function uniqueCleanLines(values: unknown[]): string[] {
     output.push(cleaned);
   }
 
-  return output.slice(0, 4);
+  return output.slice(0, 5);
 }
 
 export function formatBrief(
@@ -59,22 +74,15 @@ export function formatBrief(
     : [];
 
   const directAnswer = cleanBriefText(
-    points[0] ||
-      brief?.implications ||
-      `I checked ${brief?.topic || "the request"} and found enough to give you a direction.`,
+    points[0] || brief?.implications || brief?.recommendedAction || "",
   );
 
   const supportingPoints = points
     .filter((point) => point !== directAnswer)
-    .slice(0, 3);
+    .slice(0, 4);
   const pointLines = supportingPoints.length > 0
     ? `\n\n${supportingPoints.map((point) => `- ${point}`).join("\n")}`
     : "";
-
-  const rawNextStep = cleanBriefText(brief?.recommendedAction || "");
-  const nextStep = rawNextStep && !/review findings|determine next steps/i.test(rawNextStep)
-    ? rawNextStep
-    : "Give me the specific competitor set or market, and I can turn this into a tighter action plan.";
 
   const sources = Array.isArray(brief?.sources)
     ? uniqueCleanLines(brief.sources)
@@ -83,5 +91,5 @@ export function formatBrief(
     ? `\n\nSources:\n${sources.map((source) => `- ${source}`).join("\n")}`
     : "";
 
-  return `${directAnswer}${pointLines}\n\nNext move: ${nextStep}${sourceSection}`.trim();
+  return `${directAnswer}${pointLines}${sourceSection}`.trim();
 }
