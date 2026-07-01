@@ -105,6 +105,46 @@ export async function runMigrations(): Promise<void> {
       );
     `);
 
+    // Project memory (per-user durable context)
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS project_memory (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        user_id varchar NOT NULL REFERENCES users(id),
+        name varchar NOT NULL,
+        description text,
+        content text NOT NULL,
+        type text NOT NULL DEFAULT 'context',
+        is_active boolean DEFAULT true,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_project_memory_user_active
+      ON project_memory (user_id, is_active, updated_at DESC);
+    `);
+
+    // Scratchpad memory (temporary working context)
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS scratchpad_memory (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        user_id varchar NOT NULL REFERENCES users(id),
+        conversation_id varchar REFERENCES conversations(id) ON DELETE CASCADE,
+        content text NOT NULL,
+        tags text[],
+        expires_at timestamp NOT NULL,
+        created_at timestamp DEFAULT now()
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_scratchpad_memory_user_expires
+      ON scratchpad_memory (user_id, expires_at);
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_scratchpad_memory_conversation
+      ON scratchpad_memory (conversation_id);
+    `);
+
     console.log('[MIGRATIONS] Database setup completed successfully');
   } catch (error) {
     console.error('[MIGRATIONS] Failed to run migrations:', error);
