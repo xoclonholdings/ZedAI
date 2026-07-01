@@ -124,6 +124,7 @@ function defaultVoiceMemory(): ZedVoiceMemory {
       entry("Research Brief"),
       entry("Findings"),
       entry("Give me one more constraint"),
+      entry("(no response)"),
     ],
     domainLanguage: [
       entry("ZED"),
@@ -143,7 +144,7 @@ function defaultVoiceMemory(): ZedVoiceMemory {
     tonePreferences: [
       entry("Direct, specific, mobile-readable, and calm."),
       entry("Concise by default; depth only when requested or required by risk."),
-      entry("No generic consultant language, fake certainty, robotic report headings, or canned response templates."),
+      entry("No generic consultant language, fake certainty, robotic report headings, canned response templates, or placeholder text."),
     ],
     responsePatternsWorked: [
       entry("Answer first, then explain only the constraint needed to act."),
@@ -156,13 +157,15 @@ function defaultVoiceMemory(): ZedVoiceMemory {
       entry("Showing source trails, tool names, or workflow details without being asked."),
       entry("Treating old or internal memory as current external truth."),
       entry("Appending templated next-step language to every response."),
+      entry("Using empty output as an assistant response."),
     ],
     domainCommunicationRules: [
       entry("Do not present old data as current truth; verify it or state the date boundary."),
       entry("Use canonical memory when it is relevant, but do not expose private memory mechanics."),
       entry("Do not mimic the user's wording style closely; learn stable operating preferences instead."),
       entry("Avoid source lists unless the user asks for sources or the task requires citations."),
-      entry("Never add canned conversational fallback text. If a pipeline fails, report the concrete failure or missing input."),
+      entry("Never add canned conversational text. If a pipeline fails, report the concrete failure or missing input."),
+      entry("Never allow an empty assistant message to be stored or shown."),
     ],
     contextBehavior: [
       entry("Be direct for implementation, configuration, and operational decisions."),
@@ -222,12 +225,12 @@ function correctionRules(text: string): string[] {
   if (/\btoo generic\b|\bgeneric\b|\bconsultant\b/i.test(text)) rules.push("Replace generic consultant language with specific project-aware wording.");
   if (/\bask before\b|\bshould have asked\b|\bdon't assume\b|\bdo not assume\b/i.test(text)) rules.push("Ask one precise clarifying question before answering when a missing detail changes the result.");
   if (/\bnot my voice\b|\bimitat/i.test(text)) rules.push("Do not mimic the user's voice; maintain ZED's operational voice.");
-  if (/\btemplate|templated|canned|next move|no response/i.test(text)) rules.push("Never use canned conversational fallback text or expose empty response placeholders.");
+  if (/\btemplate|templated|canned|next move|no response|empty response|placeholder/i.test(text)) rules.push("Never use canned conversational text, response placeholders, or empty assistant output.");
   return rules;
 }
 
 function isLikelyVoiceCorrection(text: string): boolean {
-  return /\b(wording|tone|framing|phrasing|phrase|assumption|too generic|too robotic|too long|too verbose|more concise|less formal|ask before|should have asked|don't assume|do not assume|do not say|don't say|stop saying|avoid saying|say instead|use instead|instead say|instead use|approved wording|approved phrase|rejected wording|rejected phrase|not my voice|not zed|sounds like chatgpt|template|templated|canned|next move|no response)\b/i.test(text);
+  return /\b(wording|tone|framing|phrasing|phrase|assumption|too generic|too robotic|too long|too verbose|more concise|less formal|ask before|should have asked|don't assume|do not assume|do not say|don't say|stop saying|avoid saying|say instead|use instead|instead say|instead use|approved wording|approved phrase|rejected wording|rejected phrase|not my voice|not zed|sounds like chatgpt|template|templated|canned|next move|no response|empty response|placeholder)\b/i.test(text);
 }
 
 function extractAfter(text: string, patterns: RegExp[]): string[] {
@@ -283,6 +286,25 @@ function asksForExecution(message: string): boolean {
   return /\b(send|publish|deploy|delete|commit|push|transfer|buy|sell|trade|email|call|text)\b/i.test(message);
 }
 
+function deriveNoOutputResponse(draft: string, options: { userMessage: string; mode?: ZedVoiceMode }): string {
+  const original = String(draft || "").replace(/\s+/g, " ").trim();
+  const mode = options.mode || "chat";
+
+  if (/model host is not reachable|model host|provider/i.test(original)) {
+    return `Model provider failure while answering this ${mode} request: the active model host was unreachable.`;
+  }
+
+  if (/web search is unavailable|no search api|direct webpage fetch/i.test(original)) {
+    return `Web retrieval failure while answering this request: no readable live page content reached the response layer.`;
+  }
+
+  if (/\(no response\)/i.test(original)) {
+    return `Response generation failure while answering this ${mode} request: the upstream route returned an empty assistant payload.`;
+  }
+
+  return `Response generation failure while answering this ${mode} request: the response layer received no usable generated text.`;
+}
+
 export async function getZedVoiceMemory(): Promise<ZedVoiceMemory> {
   const existing = await MemoryService.getCoreMemory(ZED_VOICE_MEMORY_KEY);
   const memory = normalizeVoiceMemory(safeJsonParse<Partial<ZedVoiceMemory>>(existing?.value));
@@ -312,7 +334,7 @@ export async function buildZedVoicePrompt(params: { mode?: ZedVoiceMode } = {}):
   return [
     "## ZED Voice Memory",
     "ZED's voice is generated from canonical Voice Memory. Do not imitate the user. Use this memory to keep ZED stable through learned operating rules.",
-    "Never use canned response templates. Never add phrases like Next move, Recommended Action, Confidence Level, Research Brief, Findings, or placeholder text like (no response).",
+    "Never use canned response templates. Never add phrases like Next move, Recommended Action, Confidence Level, Research Brief, Findings, or placeholder text like (no response). Never return empty assistant output.",
     "### Voice principles",
     list(memory.voicePrinciples),
     "### Rejected language",
@@ -453,13 +475,14 @@ export async function presentZedResponseWithChecks(
     !/\b(confirm|approve|permission|before I)\b/i.test(content);
 
   if (shouldAskBeforeAnswering) {
-    content = "I need explicit approval before taking that action. Confirm the exact target and scope.";
+    content = "Execution blocked: explicit approval is required before ZED can claim that action was completed.";
     adjustments.push("blocked_unapproved_execution_claim");
   }
 
   content = content.replace(/\n{3,}/g, "\n\n").trim();
   if (!content) {
-    adjustments.push("empty_response_detected");
+    content = deriveNoOutputResponse(draft, options);
+    adjustments.push("derived_specific_no_output_response");
   }
 
   return {
