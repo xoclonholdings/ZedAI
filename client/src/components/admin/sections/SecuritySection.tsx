@@ -1,17 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, KeyRound, Lock, RefreshCw, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Lock, RefreshCw, UserPlus, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import AdminSecuritySettings from "@/components/settings/AdminSecuritySettings";
 import EnvValidatorCard from "@/components/admin/EnvValidatorCard";
 
-type SecurityView = "access" | "environment" | "audit";
+interface ManagedUser {
+  id: string;
+  username: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  isAdmin?: boolean;
+  isActive?: boolean;
+}
+
+const emptyUserForm = {
+  username: "",
+  password: "",
+  email: "",
+  firstName: "",
+  lastName: "",
+};
 
 export default function SecuritySection() {
-  const [view, setView] = useState<SecurityView>("access");
   const [events, setEvents] = useState<any[]>([]);
+  const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
+  const [userForm, setUserForm] = useState(emptyUserForm);
+  const [userNotice, setUserNotice] = useState<string | null>(null);
+  const [userError, setUserError] = useState<string | null>(null);
 
   async function fetchSecurityLog() {
     setLoading(true);
@@ -25,124 +46,247 @@ export default function SecuritySection() {
     setLoading(false);
   }
 
+  async function fetchUsers() {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/admin/users", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data.users || []);
+      }
+    } catch {}
+    setUsersLoading(false);
+  }
+
   useEffect(() => {
     void fetchSecurityLog();
+    void fetchUsers();
   }, []);
 
-  const counts = useMemo(
-    () => ({
-      events: events.length,
-      warnings: events.filter((evt) =>
-        String(evt.type || "").match(/fail|block|reject|error|lock/i),
-      ).length,
-    }),
-    [events],
-  );
+  function updateUserForm(field: keyof typeof emptyUserForm, value: string) {
+    setUserForm((current) => ({ ...current, [field]: value }));
+    setUserNotice(null);
+    setUserError(null);
+  }
+
+  async function handleCreateUser(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setUserNotice(null);
+    setUserError(null);
+
+    const username = userForm.username.trim();
+    const password = userForm.password;
+
+    if (!username) {
+      setUserError("Username is required.");
+      return;
+    }
+
+    if (!password) {
+      setUserError("Password is required.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setUserError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setIsCreatingUser(true);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          username,
+          password,
+          email: userForm.email.trim() || undefined,
+          firstName: userForm.firstName.trim() || undefined,
+          lastName: userForm.lastName.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to create user");
+      }
+
+      setUsers(data.users || []);
+      setUserForm(emptyUserForm);
+      setUserNotice("User created.");
+      await fetchSecurityLog();
+    } catch (err: any) {
+      setUserError(err?.message || "Failed to create user");
+    } finally {
+      setIsCreatingUser(false);
+    }
+  }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Security</h2>
-          <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-            Manage admin access, validate deployment configuration, and review security events from one focused control center.
-          </p>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={fetchSecurityLog}
-          disabled={loading}
-          className="zed-button text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw size={14} className={`mr-1 ${loading ? "animate-spin" : ""}`} />
-          Refresh Log
-        </Button>
-      </div>
+    <>
+      <AdminSecuritySettings />
+      <EnvValidatorCard />
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <SecurityViewCard
-          label="Access Control"
-          description="Admin phrase, sessions, lockouts, cookies."
-          active={view === "access"}
-          icon={KeyRound}
-          onClick={() => setView("access")}
-        />
-        <SecurityViewCard
-          label="Environment"
-          description="Required variables, URLs, secrets, deploy health."
-          active={view === "environment"}
-          icon={ShieldCheck}
-          onClick={() => setView("environment")}
-        />
-        <SecurityViewCard
-          label="Audit Log"
-          description={`${counts.events} events, ${counts.warnings} warnings.`}
-          active={view === "audit"}
-          icon={SlidersHorizontal}
-          onClick={() => setView("audit")}
-        />
-      </div>
+      <Card className="zed-glass border-white/10">
+        <CardContent className="space-y-4 pt-4">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl border border-white/10 bg-black/30 p-2 text-cyan-300">
+              <UserPlus size={18} />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Add Test User</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Create a non-admin login account for testing normal ZED access.
+              </p>
+            </div>
+          </div>
 
-      {view === "access" && <AdminSecuritySettings />}
-      {view === "environment" && <EnvValidatorCard />}
-      {view === "audit" && (
-        <SecurityAuditLog events={events} loading={loading} onRefresh={fetchSecurityLog} />
-      )}
-    </div>
-  );
-}
+          <form onSubmit={handleCreateUser} className="space-y-3">
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Username</span>
+                <input
+                  value={userForm.username}
+                  onChange={(e) => updateUserForm("username", e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50"
+                  placeholder="testuser"
+                  autoComplete="off"
+                />
+              </label>
 
-function SecurityViewCard({
-  label,
-  description,
-  active,
-  icon: Icon,
-  onClick,
-}: {
-  label: string;
-  description: string;
-  active: boolean;
-  icon: any;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-2xl border p-4 text-left transition-all ${
-        active
-          ? "border-cyan-400/35 bg-cyan-400/10 shadow-[0_0_30px_rgba(34,211,238,0.08)]"
-          : "border-white/10 bg-black/25 hover:border-white/20 hover:bg-black/35"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <div className="rounded-xl border border-white/10 bg-black/40 p-2">
-          <Icon size={15} className={active ? "text-cyan-300" : "text-foreground/70"} />
-        </div>
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Password</span>
+                <input
+                  type="password"
+                  value={userForm.password}
+                  onChange={(e) => updateUserForm("password", e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50"
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                />
+              </label>
+
+              <label className="space-y-1 text-sm">
+                <span className="text-muted-foreground">Email optional</span>
+                <input
+                  type="email"
+                  value={userForm.email}
+                  onChange={(e) => updateUserForm("email", e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50"
+                  placeholder="test@zed-ai.local"
+                  autoComplete="off"
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <label className="space-y-1 text-sm">
+                  <span className="text-muted-foreground">First name</span>
+                  <input
+                    value={userForm.firstName}
+                    onChange={(e) => updateUserForm("firstName", e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50"
+                    placeholder="Test"
+                    autoComplete="off"
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="text-muted-foreground">Last name</span>
+                  <input
+                    value={userForm.lastName}
+                    onChange={(e) => updateUserForm("lastName", e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50"
+                    placeholder="User"
+                    autoComplete="off"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {userNotice && (
+              <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-300">
+                {userNotice}
+              </div>
+            )}
+            {userError && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                {userError}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isCreatingUser}
+              className="rounded-xl zed-gradient"
+            >
+              <UserPlus size={14} className="mr-1" />
+              {isCreatingUser ? "Adding…" : "Add User"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="zed-glass border-white/10">
+        <CardContent className="space-y-4 pt-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl border border-white/10 bg-black/30 p-2 text-purple-300">
+                <Users size={18} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold">Managed Users</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Existing local users available for login testing.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchUsers}
+              disabled={usersLoading}
+              className="zed-button text-muted-foreground hover:text-foreground"
+            >
+              <RefreshCw size={14} className={`mr-1 ${usersLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
+
+          {usersLoading ? (
+            <div className="text-center text-muted-foreground py-6">Loading users…</div>
+          ) : users.length === 0 ? (
+            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-4 text-sm text-muted-foreground">
+              No managed users found.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm"
+                >
+                  <span className="font-medium text-white">{user.username}</span>
+                  <span className="text-muted-foreground">{user.email || "No email"}</span>
+                  <span className={`rounded-full border px-2 py-0.5 text-[11px] uppercase tracking-[0.14em] ${
+                    user.isActive === false
+                      ? "border-red-500/30 text-red-300"
+                      : "border-green-500/30 text-green-300"
+                  }`}>
+                    {user.isActive === false ? "Inactive" : "Active"}
+                  </span>
+                  <span className="rounded-full border border-purple-500/30 px-2 py-0.5 text-[11px] uppercase tracking-[0.14em] text-purple-300">
+                    {user.isAdmin ? "Admin" : "User"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between pt-4">
         <div>
-          <div className="text-sm font-medium">{label}</div>
-          <div className="mt-1 text-xs leading-5 text-muted-foreground">{description}</div>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function SecurityAuditLog({
-  events,
-  loading,
-  onRefresh,
-}: {
-  events: any[];
-  loading: boolean;
-  onRefresh: () => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between pt-1">
-        <div>
-          <h3 className="text-base font-semibold">Security Event Log</h3>
+          <h2 className="text-lg font-semibold">Security Event Log</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             Auth events, tier blocks, approvals, and audit trail.
           </p>
@@ -150,7 +294,7 @@ function SecurityAuditLog({
         <Button
           variant="ghost"
           size="sm"
-          onClick={onRefresh}
+          onClick={fetchSecurityLog}
           className="zed-button text-muted-foreground hover:text-foreground"
         >
           <RefreshCw size={14} className="mr-1" />
@@ -175,16 +319,18 @@ function SecurityAuditLog({
                 const isWarn =
                   evt.type?.includes("fail") ||
                   evt.type?.includes("block") ||
-                  evt.type?.includes("reject") ||
-                  evt.type?.includes("error");
-                const isOk = evt.type?.includes("success") || evt.type?.includes("approved");
+                  evt.type?.includes("reject");
+                const isOk =
+                  evt.type?.includes("success") || evt.type?.includes("approved");
                 return (
                   <div
                     key={i}
                     className="text-xs px-3 py-2 rounded-lg bg-white/5 border border-white/5 flex items-start gap-2"
                   >
                     <span className="text-muted-foreground shrink-0 w-[70px]">
-                      {evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : ""}
+                      {evt.timestamp
+                        ? new Date(evt.timestamp).toLocaleTimeString()
+                        : ""}
                     </span>
                     <span
                       className={`font-medium shrink-0 w-[160px] truncate ${
@@ -194,9 +340,10 @@ function SecurityAuditLog({
                       {evt.type || "unknown"}
                     </span>
                     <span className="text-foreground/70 truncate">{evt.detail || ""}</span>
-                    {isWarn && <AlertTriangle size={12} className="ml-auto shrink-0 text-red-300" />}
                     {evt.userId && (
-                      <span className="text-muted-foreground/50 shrink-0 ml-auto">{evt.userId}</span>
+                      <span className="text-muted-foreground/50 shrink-0 ml-auto">
+                        {evt.userId}
+                      </span>
                     )}
                   </div>
                 );
@@ -205,6 +352,6 @@ function SecurityAuditLog({
           </CardContent>
         </Card>
       )}
-    </div>
+    </>
   );
 }
