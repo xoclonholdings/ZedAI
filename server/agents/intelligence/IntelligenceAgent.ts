@@ -2,6 +2,12 @@ import fs from "fs/promises";
 import path from "path";
 import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
 import { webSearch, formatResultsForPrompt, type SearchResponse } from "../../services/WebSearchService";
+import {
+  fetchWebTargetsFromText,
+  formatWebPagesForPrompt,
+  hasWebsiteReferenceWithoutTarget,
+  type WebFetchResponse,
+} from "../../services/WebContentService";
 import { storeResearchBrief, querySimilarResearch } from "../../services/ChromaService";
 import { REPO_ROOT, HUB_LOG_DIR } from "../../utils/repoPaths";
 
@@ -77,12 +83,35 @@ export class IntelligenceAgent {
   static async research(request: ResearchRequest): Promise<ResearchBrief> {
     const skill = await this.loadSkill();
 
+    const directWeb = await fetchWebTargetsFromText(request.query);
+    const directWebBlock = formatWebPagesForPrompt(directWeb);
     const expandedQueries = this.expandKeywords(request.query);
     const searchResponses = await Promise.all(expandedQueries.map((query) => webSearch(query, 4)));
     const primarySearch = searchResponses[0];
     const searchBlock = searchResponses
       .map((response) => formatResultsForPrompt(response))
       .join("\n\n");
+
+    const noDirectTarget = directWeb.targets.length === 0;
+    const noSearchResults = searchResponses.every((response) => response.results.length === 0);
+    if (noDirectTarget && noSearchResults && hasWebsiteReferenceWithoutTarget(request.query)) {
+      const brief: ResearchBrief = {
+        topic: request.query,
+        date: new Date().toISOString(),
+        confidence: "high",
+        keyFindings: [
+          "I can visit and read a webpage when a URL is present in the request or recent conversation context.",
+          "This request refers to a website, but no specific URL was available to fetch.",
+          "I should ask for the URL instead of claiming ZED has no browsing capability.",
+        ],
+        implications: "ZED needs the exact link before it can verify or summarize that website.",
+        recommendedAction: "Send the website URL, then ask me to visit, inspect, summarize, or audit it.",
+        sources: [],
+        agent: "IntelligenceAgent",
+      };
+      await this.log(request, brief, expandedQueries, directWeb);
+      return brief;
+    }
 
     const priorResearch = await querySimilarResearch(request.query, 2);
     const priorBlock = priorResearch
@@ -99,9 +128,11 @@ Query: ${request.query}
 Depth: ${request.depth || "shallow"}
 User: ${request.userId}
 
+${directWebBlock}
+
 ${searchBlock}
 
-Use supplied project memory when it is relevant. Keep the answer compact and mobile-readable. Do not use tables unless explicitly requested.
+Use direct webpage content first when it is available. Search results are secondary. Use supplied project memory when it is relevant. Keep the answer compact and mobile-readable. Do not use tables unless explicitly requested. Never claim that ZED has no browsing or real-time network access when direct webpage content or search context is present. If no URL or source context is available, ask for the exact URL.
 
 Return this internal parse format exactly so the app can render it naturally:
 SUBJECT: [short topic]
@@ -119,10 +150,10 @@ NEXT_STEP: [specific thing to do next]`.trim();
       { lane: "research" },
     );
 
-    const brief = this.parseBrief(request.query, rawReply, primarySearch);
+    const brief = this.parseBrief(request.query, rawReply, primarySearch, directWeb);
 
     await storeResearchBrief(brief);
-    await this.log(request, brief, expandedQueries);
+    await this.log(request, brief, expandedQueries, directWeb);
 
     return brief;
   }
@@ -138,7 +169,12 @@ NEXT_STEP: [specific thing to do next]`.trim();
     );
   }
 
-  private static parseBrief(query: string, raw: string, search: SearchResponse): ResearchBrief {
+  private static parseBrief(
+    query: string,
+    raw: string,
+    search: SearchResponse,
+    directWeb?: WebFetchResponse,
+  ): ResearchBrief {
     const lines = raw.split("\n");
     const keyFindings: string[] = [];
     let inFindings = false;
@@ -165,15 +201,19 @@ NEXT_STEP: [specific thing to do next]`.trim();
       }
     }
 
-    const sources = search.results
+    const directSources = (directWeb?.pages || [])
+      .filter((page) => page.url)
+      .map((page) => `${page.title || "Fetched webpage"}: ${page.url}`);
+    const searchSources = search.results
       .filter((result) => result.title && result.url)
       .slice(0, 4)
       .map((result) => `${result.title}: ${result.url}`);
+    const sources = [...directSources, ...searchSources].slice(0, 6);
 
     return {
       topic: query,
       date: new Date().toISOString(),
-      confidence,
+      confidence: directSources.length > 0 ? "high" : confidence,
       keyFindings: keyFindings.length > 0 ? keyFindings : [raw.slice(0, 300)],
       implications: implications || "The source context was limited, so this should be treated as a starting point rather than a final answer.",
       recommendedAction: recommendedAction || "Give me one more constraint or target, and I can turn this into a cleaner action plan.",
@@ -186,6 +226,7 @@ NEXT_STEP: [specific thing to do next]`.trim();
     request: ResearchRequest,
     brief: ResearchBrief,
     expandedQueries: string[],
+    directWeb?: WebFetchResponse,
   ): Promise<void> {
     try {
       await fs.mkdir(LOG_DIR, { recursive: true });
@@ -199,6 +240,9 @@ NEXT_STEP: [specific thing to do next]`.trim();
         pointsCount: brief.keyFindings.length,
         sources: brief.sources,
         expandedQueries,
+        directWebTargets: directWeb?.targets.map((target) => target.url) || [],
+        directWebPages: directWeb?.pages.length || 0,
+        directWebErrors: directWeb?.errors || [],
       }) + "\n";
       await fs.appendFile(logFile, entry);
     } catch {}
