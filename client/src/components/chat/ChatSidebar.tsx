@@ -7,6 +7,7 @@ import {
   Clock,
   FolderKanban,
   GraduationCap,
+  Inbox,
   MessageSquare,
   PenTool,
   Search,
@@ -62,6 +63,12 @@ interface WorkspaceLink {
 type SidebarPanel = "projects" | "workspaces" | "history" | "settings";
 
 const WORKSPACE_LINKS: WorkspaceLink[] = [
+  {
+    label: "Inbox",
+    description: "ZED email mailbox",
+    path: "/inbox",
+    icon: Inbox,
+  },
   {
     label: "Research",
     description: "Markets, competitors, documents, trends",
@@ -282,6 +289,15 @@ export default function ChatSidebar({
           <TrendingUp size={18} />
         </Button>
         <Button
+          onClick={() => goTo("/inbox")}
+          variant="ghost"
+          size="sm"
+          className="w-10 h-10 zed-button rounded-xl text-muted-foreground hover:text-cyan-300"
+          title="Inbox"
+        >
+          <Inbox size={18} />
+        </Button>
+        <Button
           onClick={() => goTo("/history")}
           variant="ghost"
           size="sm"
@@ -341,7 +357,7 @@ export default function ChatSidebar({
                     : "border-white/10 bg-black/20 text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Inbox
+                All chats
               </button>
               <Button
                 variant="ghost"

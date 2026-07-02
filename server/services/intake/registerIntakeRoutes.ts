@@ -23,6 +23,7 @@ import { ChannelContextManager, type ChannelType } from "./ChannelContextManager
 import { VoiceCommandBridge } from "./VoiceCommandBridge";
 import { MessagingBridge, type MessagingTarget } from "./MessagingBridge";
 import { logRuntimeEvent } from "../RuntimeLogger";
+import { EmailInboxService } from "../EmailInboxService";
 
 function userIdFrom(req: any): string | null {
   return req?.user?.claims?.sub || req?.session?.userId || null;
@@ -178,10 +179,18 @@ export function registerIntakeRoutes(app: Express): void {
 
   app.post("/api/intake/email", verifyIntakeSecret, async (req: Request, res: Response) => {
     try {
-      const { from, subject, body, message_id, user_id } = req.body || {};
+      const { from, subject, body, message_id, user_id, received_at } = req.body || {};
       if (!from || (!body && !subject)) {
         return res.status(400).json({ error: "from and body/subject are required" });
       }
+      const inboxMessage = await EmailInboxService.recordIncoming({
+        from,
+        subject,
+        body,
+        message_id,
+        user_id,
+        received_at,
+      });
       const message = `${subject ? `Subject: ${subject}\n\n` : ""}${body || ""}`.trim();
       const result = await ExternalCommandGateway.receive({
         channel: "email",
@@ -190,7 +199,7 @@ export function registerIntakeRoutes(app: Express): void {
         metadata: { subject, message_id },
         user_id,
       });
-      res.json(result);
+      res.json({ ...result, inbox_message: inboxMessage });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "email intake failed" });
     }

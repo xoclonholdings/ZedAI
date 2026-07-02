@@ -17,6 +17,7 @@ import { registerApprovalRoutes } from "./routes-modules/approvals";
 import { registerMeRoutes } from "./routes-modules/me";
 import { registerKnowledgeRoutes } from "./routes-modules/knowledge";
 import { registerKnowledgeIngestionRoutes } from "./routes-modules/knowledge-ingestion";
+import { registerEmailInboxRoutes } from "./routes-modules/email-inbox";
 import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-and-misc";
 import { registerConversationCrudRoutes } from "./routes-modules/conversations-crud";
 import { registerConversationSendRoutes } from "./routes-modules/conversations-send";
@@ -74,6 +75,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // routes-modules/knowledge-ingestion.ts. This is service-owned and
   // produces candidate graph knowledge, not vector chunks.
   registerKnowledgeIngestionRoutes(app);
+
+  // Email inbox surface: reads connected ZED mailbox data and messages
+  // received through the email intake webhook.
+  registerEmailInboxRoutes(app);
 
   // ── Projects (CRUD + instructions + sources + conversation assignment) ─
   // Extracted to routes-modules/projects.ts.

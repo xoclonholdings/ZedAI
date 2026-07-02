@@ -20,6 +20,7 @@ import ProjectDetailPage from "@/pages/project-detail";
 import TradingPage from "@/pages/trading";
 import WorkspacePage from "@/pages/workspace";
 import HistoryPage from "@/pages/history";
+import InboxPage from "@/pages/inbox";
 
 installApiFetchPatch();
 
@@ -101,6 +102,10 @@ function Router() {
 
       <Route path="/history">
         {isAuthenticated ? <HistoryPage /> : <Login />}
+      </Route>
+
+      <Route path="/inbox">
+        {isAuthenticated ? <InboxPage /> : <Login />}
       </Route>
 
       <Route path="/flows">
