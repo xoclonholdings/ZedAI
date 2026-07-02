@@ -34,6 +34,11 @@ import {
   getPublicAdminSettings,
   loadAdminSettings,
 } from "../services/AdminSettingsStore";
+import {
+  extractWebTargets,
+  hasWebsiteReferenceWithoutTarget,
+} from "../services/WebContentService";
+import { isWebLookupIntent } from "../orchestrator/manager-agent/agent-selection";
 
 type ContextInquiryQuestion = {
   question: string;
@@ -71,6 +76,21 @@ function compactContextAssessment(
   };
 }
 
+function resolveReferencedWebpage(content: string, history: any[]): string {
+  if (extractWebTargets(content).length > 0) return content;
+  if (!hasWebsiteReferenceWithoutTarget(content)) return content;
+
+  for (const message of [...history].reverse()) {
+    const targets = extractWebTargets(String(message?.content || ""));
+    const target = targets[0];
+    if (target?.url) {
+      return `${content}\n\nReferenced webpage from recent conversation: ${target.url}`;
+    }
+  }
+
+  return content;
+}
+
 /**
  * Orchestrator + a handful of small one-shot endpoints. They live
  * together because each is too small to deserve its own module but
@@ -106,55 +126,63 @@ export function registerOrchestrateAndMiscRoutes(
         );
       }
 
-      try {
-        const contextAssessmentResult = await ContextInquiryEngine.assess({ userInput: message });
-        const assessment = contextAssessmentResult.assessment;
-        const topQuestion = selectTopContextQuestion(assessment.questions);
+      const messagesBeforeReply = conversationId
+        ? await storage.getMessagesByConversation(conversationId).catch(() => [])
+        : [];
+      const effectiveMessage = resolveReferencedWebpage(message, messagesBeforeReply);
+      const webLookupIntent = isWebLookupIntent(effectiveMessage) || isWebLookupIntent(message);
 
-        if (assessment.responsePolicy === "inquire_first" && topQuestion) {
-          const presented = await presentZedResponseWithChecks(formatContextInquiryReply(topQuestion.question), {
-            userMessage: message,
-            includeSources: false,
-            mode: "chat",
-            grounded: true,
-          });
-          const reply = presented.content;
-          const inquiryResponse = {
-            reply,
-            agent: "ManagerAgent",
-            requiresApproval: false,
-            metadata: {
-              contextInquiry: true,
-              contextAssessment: compactContextAssessment(assessment, topQuestion),
-            },
-          };
+      if (!webLookupIntent) {
+        try {
+          const contextAssessmentResult = await ContextInquiryEngine.assess({ userInput: message });
+          const assessment = contextAssessmentResult.assessment;
+          const topQuestion = selectTopContextQuestion(assessment.questions);
 
-          if (conversationId) {
-            await storage.createMessage(
-              insertMessageSchema.parse({
-                conversationId,
-                role: "assistant",
-                content: reply,
-                metadata: {
-                  agent: inquiryResponse.agent,
-                  requiresApproval: inquiryResponse.requiresApproval,
-                  contextInquiry: true,
-                  contextAssessment: inquiryResponse.metadata.contextAssessment,
-                },
-              }),
-            );
+          if (assessment.responsePolicy === "inquire_first" && topQuestion) {
+            const presented = await presentZedResponseWithChecks(formatContextInquiryReply(topQuestion.question), {
+              userMessage: message,
+              includeSources: false,
+              mode: "chat",
+              grounded: true,
+            });
+            const reply = presented.content;
+            const inquiryResponse = {
+              reply,
+              agent: "ManagerAgent",
+              requiresApproval: false,
+              metadata: {
+                contextInquiry: true,
+                contextAssessment: compactContextAssessment(assessment, topQuestion),
+              },
+            };
+
+            if (conversationId) {
+              await storage.createMessage(
+                insertMessageSchema.parse({
+                  conversationId,
+                  role: "assistant",
+                  content: reply,
+                  metadata: {
+                    agent: inquiryResponse.agent,
+                    requiresApproval: inquiryResponse.requiresApproval,
+                    contextInquiry: true,
+                    contextAssessment: inquiryResponse.metadata.contextAssessment,
+                  },
+                }),
+              );
+            }
+
+            return res.json(inquiryResponse);
           }
-
-          return res.json(inquiryResponse);
+        } catch (error) {
+          console.error("[ContextInquiry] Assessment failed:", error);
         }
-      } catch (error) {
-        console.error("[ContextInquiry] Assessment failed:", error);
       }
 
       const ip = req.ip || "";
       const knowledge = await KnowledgeService.buildContext({
         userId,
-        query: message,
+        query: effectiveMessage,
         conversationId,
         lane: "manager",
         injectedMemory: (
@@ -165,7 +193,7 @@ export function registerOrchestrateAndMiscRoutes(
         includeAdminFoundation: isAdminUser,
       });
       const strategicReasoning = ZedStrategicReasoningEngine.prepare({
-        userMessage: message,
+        userMessage: effectiveMessage,
         lane: "manager",
         knowledgePresent: Boolean(knowledge.prompt),
         currentContext: req.body?.context || {},
@@ -173,12 +201,12 @@ export function registerOrchestrateAndMiscRoutes(
       const cognitiveLane = strategicReasoning.active ? "strategy" : "manager";
       const voiceMode = strategicReasoning.active ? "strategy" : "chat";
       const governancePrompt = buildZedGovernancePrompt({
-        userMessage: message,
+        userMessage: effectiveMessage,
         lane: cognitiveLane,
         knowledgePresent: Boolean(knowledge.prompt),
       });
       const principlePrompt = ZedPrincipleEngine.buildPrompt({
-        userMessage: message,
+        userMessage: effectiveMessage,
         lane: cognitiveLane,
         isAdmin: isAdminUser,
         knowledgePresent: Boolean(knowledge.prompt),
@@ -197,7 +225,7 @@ export function registerOrchestrateAndMiscRoutes(
 
       const response = await ZedAutonomousOrchestrator.route({
         userId,
-        message,
+        message: effectiveMessage,
         conversationId,
         ip,
         targetAgent,
