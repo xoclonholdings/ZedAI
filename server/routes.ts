@@ -20,7 +20,7 @@ import { registerKnowledgeIngestionRoutes } from "./routes-modules/knowledge-ing
 import { registerEmailInboxRoutes } from "./routes-modules/email-inbox";
 import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-and-misc";
 import { registerConversationCrudRoutes } from "./routes-modules/conversations-crud";
-import { registerConversationSendRoutes } from "./routes-modules/conversations-send";
+import { registerConversationSendRoutes } from "./routes-modules/conversations-send-clean";
 
 let isDatabaseHealthy = false;
 
@@ -53,82 +53,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Session-scoped current-user surfaces (identity, personalization,
-  // avatar upload) — routes-modules/me.ts
   registerMeRoutes(app);
-
-  // Conversation CRUD + per-conversation files/upload + messages GET —
-  // routes-modules/conversations-crud.ts
   registerConversationCrudRoutes(app);
-
-  // POST /api/conversations/:id/messages — the big SSE handler. Carries
-  // the tier check, web-lookup short-circuit (ManagerAgent →
-  // IntelligenceAgent), memory + admin context injection, and the
-  // Ollama streaming pipeline. Lives in its own module because it pulls
-  // in the entire chat stack.
   registerConversationSendRoutes(app);
-
-  // Knowledge / memory endpoints — routes-modules/knowledge.ts
   registerKnowledgeRoutes(app);
-
-  // Structured knowledge ingestion + contextual inquiry endpoints —
-  // routes-modules/knowledge-ingestion.ts. This is service-owned and
-  // produces candidate graph knowledge, not vector chunks.
   registerKnowledgeIngestionRoutes(app);
-
-  // Email inbox surface: reads connected ZED mailbox data and messages
-  // received through the email intake webhook.
   registerEmailInboxRoutes(app);
-
-  // ── Projects (CRUD + instructions + sources + conversation assignment) ─
-  // Extracted to routes-modules/projects.ts.
   registerProjectRoutes(app);
-
-  // Orchestrator + voice stub + admin knowledge overview — packed
-  // together in routes-modules/orchestrate-and-misc.ts because each
-  // handler is small and they share dependencies (KnowledgeService,
-  // ManagerAgent, AdminSettingsStore).
   registerOrchestrateAndMiscRoutes(app, {
     isDatabaseHealthy: () => isDatabaseHealthy,
   });
-
-  // AI host connectivity test — extracted to routes-modules/ai-host-test.ts
   registerAiHostTestRoute(app);
-
-  // Admin settings (app prefs, personalization, integrations, managed
-  // users, integration status probes) — routes-modules/admin-settings.ts
   registerAdminSettingsRoutes(app);
-
-  // Ruleset YAML CRUD (raw + structured) — extracted to routes-modules/ruleset.ts.
-  // ManagerAgent cache flush happens inside the module on every write.
   registerRulesetRoutes(app);
-
-  // ── Diagnostics (admin status snapshot + provider routing + runtime) ─
-  // Extracted to routes-modules/diagnostics.ts. Database health is
-  // mutated by the boot pipeline, so we pass a getter callback.
   registerDiagnosticsRoutes(app, { isDatabaseHealthy: () => isDatabaseHealthy });
-
-  // ── Flows (admin CRUD + user-facing + run lifecycle) ──────────────
-  // Route-order requirement (/api/flows/runs before /api/flows/:id) is
-  // preserved inside the module.
   registerFlowRoutes(app);
-
-  // ── Trading Intelligence Phase 1 (education, analysis, simulation) ─
-  // ZCOS-owned trading services. No broker connections or live orders.
   registerTradingRoutes(app);
-
-  // Env validator — pure logic in services/EnvValidator.ts, thin route
-  // wrapper in routes-modules/env-validate.ts.
   registerEnvValidateRoute(app);
-
-  // Admin logs + client-log ingest + security log — routes-modules/admin-logs.ts
   registerAdminLogsRoutes(app);
-
-  // Approvals (queue + approve/:id + reject/:id, with the legacy entry
-  // shape + working-memory + conversation-confirmation helpers) —
-  // routes-modules/approvals.ts
   registerApprovalRoutes(app);
-
   registerExecutionRoutes(app);
   registerIntakeRoutes(app);
 
