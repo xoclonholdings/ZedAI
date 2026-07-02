@@ -64,7 +64,8 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 }
 
 function Router() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = !!user?.isAdmin;
 
   return (
     <Switch>
@@ -77,7 +78,7 @@ function Router() {
       </Route>
 
       <Route path="/admin">
-        {isAuthenticated ? <Admin /> : <Login />}
+        {!isAuthenticated ? <Login /> : isAdmin ? <Admin /> : <NotFound />}
       </Route>
 
       <Route path="/trading">
@@ -90,6 +91,10 @@ function Router() {
 
       <Route path="/workspaces/:workspace/tools/:id">
         {isAuthenticated ? <FlowDetailPage /> : <Login />}
+      </Route>
+
+      <Route path="/workspace">
+        {isAuthenticated ? <WorkspacePage /> : <Login />}
       </Route>
 
       <Route path="/workspaces/:workspace">

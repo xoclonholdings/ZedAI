@@ -242,7 +242,7 @@ export default function ChatSidebar({
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       if (data?.id) {
-        window.history.pushState({}, "", `/chat/${data.id}`);
+        navigate(`/chat/${data.id}`);
       }
       if (isMobile && onClose) onClose();
     },

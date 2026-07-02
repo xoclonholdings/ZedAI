@@ -360,6 +360,12 @@ export interface ContextAssessment {
   knowsAdoptionStatus: boolean;
   knowsRelationships: boolean;
   materialUncertainty: boolean;
+  inferredContext?: {
+    label: string;
+    confidence: number;
+    objectIds: string[];
+    reason: string;
+  } | null;
   contextScore: ContextScore;
   questions: ContextQuestion[];
   responsePolicy: "answer" | "inquire_first";

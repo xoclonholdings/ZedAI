@@ -87,7 +87,7 @@ export function registerAdminSettingsRoutes(app: Express): void {
     }
   });
 
-  app.patch("/api/admin/users/:id", isAdmin, async (req, res) => {
+  app.patch("/api/admin/users/:id", isAdmin, async (req: any, res) => {
     try {
       res.json({ users: await updateManagedUser(req.params.id, req.body || {}) });
     } catch (error: any) {

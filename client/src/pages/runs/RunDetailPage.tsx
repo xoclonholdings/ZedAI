@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { ChevronLeft, RefreshCw, RotateCcw, XCircle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -194,7 +196,11 @@ export function RunDetailPage() {
               <section className="rounded-2xl border border-white/10 bg-black/30 p-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Report</div>
                 <h2 className="mt-2 text-lg font-semibold">{run.report.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{run.report.executiveSummary}</p>
+                <div className="zed-markdown mt-3 text-sm leading-6 text-muted-foreground">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {normalizeMarkdown(run.report.executiveSummary)}
+                  </ReactMarkdown>
+                </div>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <ReportList title="Key Points" items={run.report.keyFindings} />
@@ -236,12 +242,27 @@ export function RunDetailPage() {
   );
 }
 
+function normalizeMarkdown(value: string): string {
+  return value
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/\|\s*Item\s*\|\s*Content\s*\|/gi, "| Item | Content |")
+    .trim();
+}
+
 function ReportList({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
       <div className="text-sm font-semibold">{title}</div>
-      <div className="mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
-        {items.length ? items.map((item, index) => <div key={`${title}-${index}`}>- {item}</div>) : <div>No items recorded.</div>}
+      <div className="zed-markdown mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
+        {items.length ? (
+          items.map((item, index) => (
+            <ReactMarkdown key={`${title}-${index}`} remarkPlugins={[remarkGfm]}>
+              {normalizeMarkdown(`- ${item}`)}
+            </ReactMarkdown>
+          ))
+        ) : (
+          <div>No items recorded.</div>
+        )}
       </div>
     </div>
   );

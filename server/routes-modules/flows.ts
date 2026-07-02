@@ -23,7 +23,7 @@ export function registerFlowRoutes(app: Express): void {
     res.json({ flows });
   });
 
-  app.get("/api/admin/flows/:id", isAdmin, async (req, res) => {
+  app.get("/api/admin/flows/:id", isAdmin, async (req: any, res) => {
     const flow = await FlowStore.getDefinition(req.params.id);
     if (!flow) return res.status(404).json({ error: "Not found" });
     res.json(flow);
@@ -38,25 +38,25 @@ export function registerFlowRoutes(app: Express): void {
     }
   });
 
-  app.put("/api/admin/flows/:id", isAdmin, async (req, res) => {
+  app.put("/api/admin/flows/:id", isAdmin, async (req: any, res) => {
     const flow = await FlowStore.updateDefinition(req.params.id, req.body);
     if (!flow) return res.status(404).json({ error: "Not found" });
     res.json(flow);
   });
 
-  app.post("/api/admin/flows/:id/publish", isAdmin, async (req, res) => {
+  app.post("/api/admin/flows/:id/publish", isAdmin, async (req: any, res) => {
     const flow = await FlowStore.publishDefinition(req.params.id);
     if (!flow) return res.status(404).json({ error: "Not found" });
     res.json(flow);
   });
 
-  app.post("/api/admin/flows/:id/archive", isAdmin, async (req, res) => {
+  app.post("/api/admin/flows/:id/archive", isAdmin, async (req: any, res) => {
     const flow = await FlowStore.archiveDefinition(req.params.id);
     if (!flow) return res.status(404).json({ error: "Not found" });
     res.json(flow);
   });
 
-  app.post("/api/admin/flows/:id/duplicate", isAdmin, async (req, res) => {
+  app.post("/api/admin/flows/:id/duplicate", isAdmin, async (req: any, res) => {
     const flow = await FlowStore.duplicateDefinition(req.params.id);
     if (!flow) return res.status(404).json({ error: "Not found" });
     res.json(flow);
@@ -87,20 +87,20 @@ export function registerFlowRoutes(app: Express): void {
     res.json({ runs });
   });
 
-  app.get("/api/flows/runs/:runId", isAuthenticated, async (req, res) => {
+  app.get("/api/flows/runs/:runId", isAuthenticated, async (req: any, res) => {
     const run = await FlowStore.getRun(req.params.runId);
     if (!run) return res.status(404).json({ error: "Not found" });
     res.json(run);
   });
 
-  app.get("/api/flows/runs/:runId/report", isAuthenticated, async (req, res) => {
+  app.get("/api/flows/runs/:runId/report", isAuthenticated, async (req: any, res) => {
     const run = await FlowStore.getRun(req.params.runId);
     if (!run) return res.status(404).json({ error: "Not found" });
     if (!run.report) return res.status(404).json({ error: "Report not generated yet" });
     res.json(run.report);
   });
 
-  app.get("/api/flows/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/flows/:id", isAuthenticated, async (req: any, res) => {
     const flow = await FlowStore.getDefinition(req.params.id);
     if (!flow || flow.status !== "published") {
       return res.status(404).json({ error: "Not found" });
@@ -149,20 +149,20 @@ export function registerFlowRoutes(app: Express): void {
     res.json(run);
   });
 
-  app.post("/api/flows/runs/:runId/resume", isAuthenticated, async (req, res) => {
+  app.post("/api/flows/runs/:runId/resume", isAuthenticated, async (req: any, res) => {
     const run = await FlowStore.getRun(req.params.runId);
     if (!run) return res.status(404).json({ error: "Not found" });
     void executeFlowRun(req.params.runId);
     res.json({ ok: true, runId: req.params.runId });
   });
 
-  app.post("/api/flows/runs/:runId/retry", isAuthenticated, async (req, res) => {
+  app.post("/api/flows/runs/:runId/retry", isAuthenticated, async (req: any, res) => {
     const run = await retryFlowRun(req.params.runId);
     if (!run) return res.status(404).json({ error: "Run not found" });
     res.json(run);
   });
 
-  app.post("/api/flows/runs/:runId/cancel", isAuthenticated, async (req, res) => {
+  app.post("/api/flows/runs/:runId/cancel", isAuthenticated, async (req: any, res) => {
     const run = await cancelFlowRun(req.params.runId, req.body?.reason);
     if (!run) return res.status(404).json({ error: "Run not found" });
     res.json(run);

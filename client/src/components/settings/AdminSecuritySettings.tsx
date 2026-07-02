@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Save, Shield } from "lucide-react";
+import { Save, Shield } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,20 +8,22 @@ import { Label } from "@/components/ui/label";
 
 type SecuritySettingsState = {
   adminUsername: string;
-  currentSecurePhrase: string;
+  securePhraseConfigured: boolean;
   sessionTimeoutMinutes: number;
   maxFailedAttempts: number;
   lockoutDurationMinutes: number;
   requireSecureCookies: boolean;
+  effectiveSecureCookies: boolean;
 };
 
 const defaults: SecuritySettingsState = {
   adminUsername: "Admin",
-  currentSecurePhrase: "",
+  securePhraseConfigured: false,
   sessionTimeoutMinutes: 45,
   maxFailedAttempts: 3,
   lockoutDurationMinutes: 15,
   requireSecureCookies: false,
+  effectiveSecureCookies: false,
 };
 
 export default function AdminSecuritySettings() {
@@ -34,7 +36,6 @@ export default function AdminSecuritySettings() {
     lockoutDurationMinutes: 15,
     requireSecureCookies: false,
   });
-  const [showCurrentPhrase, setShowCurrentPhrase] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   async function fetchSecuritySettings() {
@@ -45,7 +46,7 @@ export default function AdminSecuritySettings() {
 
       if (response.ok) {
         const data = await response.json();
-        setSecuritySettings(data);
+        setSecuritySettings({ ...defaults, ...data });
         setDraft({
           adminUsername: data.adminUsername || "Admin",
           newSecurePhrase: "",
@@ -125,29 +126,18 @@ export default function AdminSecuritySettings() {
               <p>Session timeout: {securitySettings.sessionTimeoutMinutes} minutes</p>
               <p>Max failed attempts: {securitySettings.maxFailedAttempts}</p>
               <p>Lockout duration: {securitySettings.lockoutDurationMinutes} minutes</p>
-              <p>Secure cookies: {securitySettings.requireSecureCookies ? "enabled" : "disabled"}</p>
+              <p>Secure cookies: {securitySettings.effectiveSecureCookies ? "enabled" : "disabled"}</p>
+              <p>Secure phrase: {securitySettings.securePhraseConfigured ? "configured" : "missing"}</p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Current Secure Phrase</Label>
-            <div className="flex items-center space-x-2">
-              <Input
-                type={showCurrentPhrase ? "text" : "password"}
-                value={securitySettings.currentSecurePhrase}
-                readOnly
-                className="zed-glass border-white/10 bg-black/20"
-              />
-
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setShowCurrentPhrase((prev) => !prev)}
-                className="zed-glass border-white/10"
-              >
-                {showCurrentPhrase ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
+            <Label className="text-sm font-medium">Secure Phrase Status</Label>
+            <Input
+              value={securitySettings.securePhraseConfigured ? "Configured" : "Not configured"}
+              readOnly
+              className="zed-glass border-white/10 bg-black/20"
+            />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

@@ -9,7 +9,7 @@
   "version": 1,
   "agents": ["research", "business", "finance", "content"],
   "triggerConditions": ["manual"],
-  "userFacingLabel": "Build Revenue",
+  "userFacingLabel": "Revenue Intelligence",
   "userFacingBlurb": "Find the highest-leverage way to turn an idea into income.",
   "icon": "TrendingUp",
   "stages": [

@@ -243,12 +243,13 @@ function preserveSecret<T extends Record<string, any>>(
   current: T,
   next: Partial<T> | undefined,
   key: keyof T,
-) {
+): string {
   if (!next || !(key in next)) return current[key];
   const incoming = next[key];
   if (typeof incoming === "string" && incoming.trim() === "") return current[key];
   if (incoming === "•••••• (set)") return current[key];
-  return incoming ?? current[key];
+  const value = incoming ?? current[key];
+  return typeof value === "string" ? value : "";
 }
 
 function mergeSecretAccounts(

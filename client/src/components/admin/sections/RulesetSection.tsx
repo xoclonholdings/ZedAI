@@ -46,7 +46,7 @@ export default function RulesetSection() {
     setRefreshing(true);
     try {
       const res = await fetch("/api/admin/ruleset/structured", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load ruleset");
+      if (!res.ok) throw new Error(`Failed to load ruleset (HTTP ${res.status})`);
       const raw = await res.json();
       const merged = cloneDefaults();
       const issues: string[] = [];

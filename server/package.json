@@ -9,7 +9,9 @@
     "start": "tsx index.ts",
     "smoke": "tsx scripts/smokeCheck.ts",
     "merge-memory": "tsx scripts/mergeMemorySources.ts",
-    "compact-memory": "tsx scripts/compactFoundationMemory.ts"
+    "compact-memory": "tsx scripts/compactFoundationMemory.ts",
+    "memory:foundation:dry-run": "tsx scripts/reparseFoundationMemoryToGraph.ts",
+    "memory:foundation:apply": "tsx scripts/reparseFoundationMemoryToGraph.ts --apply"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

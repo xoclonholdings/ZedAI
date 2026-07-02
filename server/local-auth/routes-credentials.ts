@@ -17,10 +17,8 @@ import {
  * Out-of-band credential paths:
  *
  *   POST /api/admin/verify-challenge   Admin recovery from lockout —
- *                                      either answer the static
- *                                      challenge or supply the secure
- *                                      phrase; success clears the IP's
- *                                      attempt counters.
+ *                                      a valid secure phrase clears the
+ *                                      IP's attempt counters.
  *   POST /api/auth/update-credentials  Logged-in user changes their
  *                                      own username/password.
  *   GET  /api/auth/current-credentials Light reflection used by the
@@ -30,16 +28,12 @@ import {
 export function registerCredentialRoutes(app: Express): void {
   app.post("/api/admin/verify-challenge", async (req: Request, res: Response) => {
     try {
-      const { challengeAnswer, securePhrase } = req.body || {};
+      const { securePhrase } = req.body || {};
       const settings = await loadAdminSettings();
-      const validAnswers = ["42", "xoclon", "diagnostic"];
-      const isValidChallenge =
-        typeof challengeAnswer === "string" &&
-        validAnswers.includes(challengeAnswer.toLowerCase());
       const isValidPhrase =
         typeof securePhrase === "string" && securePhrase === settings.auth.securePhrase;
 
-      if (isValidChallenge || isValidPhrase) {
+      if (isValidPhrase) {
         clearAttemptsForIp(getClientIp(req));
         return res.json({
           success: true,

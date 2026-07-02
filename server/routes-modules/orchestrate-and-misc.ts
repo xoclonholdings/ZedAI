@@ -232,8 +232,8 @@ export function registerOrchestrateAndMiscRoutes(
             metadata: {
               agent: governedResponse.agent,
               requiresApproval: governedResponse.requiresApproval,
-              autonomous: governedResponse.metadata?.autonomous,
-              flowRecommendation: governedResponse.metadata?.flowRecommendation,
+              autonomous: (governedResponse.metadata as Record<string, any> | undefined)?.autonomous,
+              flowRecommendation: (governedResponse.metadata as Record<string, any> | undefined)?.flowRecommendation,
               strategic: strategicReasoning.active,
             },
           }),

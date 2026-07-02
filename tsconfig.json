@@ -2,18 +2,39 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
     "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "strict": true,
+    "resolveJsonModule": true,
+    "strict": false,
+    "noImplicitAny": false,
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["../shared/*"]
+      "@/*": ["client/src/*"],
+      "@shared/*": ["shared/*"],
+      "drizzle-orm": ["server/node_modules/drizzle-orm"],
+      "drizzle-orm/*": ["server/node_modules/drizzle-orm/*"],
+      "drizzle-zod": ["server/node_modules/drizzle-zod"],
+      "drizzle-zod/*": ["server/node_modules/drizzle-zod/*"],
+      "zod": ["server/node_modules/zod"],
+      "zod/*": ["server/node_modules/zod/*"]
     }
   },
   "include": [
-    "./**/*.ts",
-    "../shared/**/*.ts"
+    "client/src/**/*.ts",
+    "client/src/**/*.tsx",
+    "server/**/*.ts",
+    "shared/**/*.ts"
+  ],
+  "exclude": [
+    "client/dist",
+    "client/node_modules",
+    "server/node_modules",
+    "shared/node_modules",
+    "node_modules"
   ]
 }

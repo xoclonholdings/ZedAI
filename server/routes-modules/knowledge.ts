@@ -71,10 +71,11 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.get("/api/knowledge/context", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const isAdminUser = !!req.user?.claims?.isAdmin;
       const query = String(req.query.q || "").trim();
       if (!query) return res.status(400).json({ error: "Query required" });
 
-      const hubMemory = await injectMemory("KnowledgeContext", { includeFoundation: true }).catch(
+      const hubMemory = await injectMemory("KnowledgeContext", { includeFoundation: isAdminUser }).catch(
         () => ({ formatted: "" }),
       );
       const knowledge = await KnowledgeService.buildContext({
@@ -84,9 +85,9 @@ export function registerKnowledgeRoutes(app: Express): void {
           typeof req.query.conversationId === "string"
             ? req.query.conversationId
             : undefined,
-        lane: "admin",
+        lane: isAdminUser ? "admin" : "chat",
         injectedMemory: hubMemory.formatted,
-        includeAdminFoundation: true,
+        includeAdminFoundation: isAdminUser,
       });
       res.json(knowledge);
     } catch (error: any) {
@@ -304,6 +305,10 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.patch("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { MemoryService } = await import("../services/memoryService");
+      const owned = (await MemoryService.getProjectMemory(req.user.claims.sub)).find(
+        (entry) => entry.id === req.params.id,
+      );
+      if (!owned) return res.status(404).json({ error: "Project memory not found" });
       const item = await MemoryService.updateProjectMemory(req.params.id, req.body || {});
       res.json({ item });
     } catch (error: any) {
@@ -314,6 +319,10 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.delete("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { MemoryService } = await import("../services/memoryService");
+      const owned = (await MemoryService.getProjectMemory(req.user.claims.sub)).find(
+        (entry) => entry.id === req.params.id,
+      );
+      if (!owned) return res.status(404).json({ error: "Project memory not found" });
       res.json({ success: await MemoryService.deleteProjectMemory(req.params.id) });
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to delete project memory" });
@@ -351,6 +360,10 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.delete("/api/knowledge/scratchpad/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { MemoryService } = await import("../services/memoryService");
+      const owned = (await MemoryService.getScratchpadMemory(req.user.claims.sub)).find(
+        (entry) => entry.id === req.params.id,
+      );
+      if (!owned) return res.status(404).json({ error: "Scratchpad memory not found" });
       res.json({ success: await MemoryService.deleteScratchpadMemory(req.params.id) });
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to delete scratchpad memory" });

@@ -33,6 +33,16 @@ export async function requireConversation(req: any, res: Response) {
   return conversation;
 }
 
+export async function requireOwnedConversation(req: any, res: Response) {
+  const conversation = await requireConversation(req, res);
+  if (!conversation) return null;
+  if (conversation.userId !== req.user?.claims?.sub) {
+    res.status(403).json({ error: "Forbidden" });
+    return null;
+  }
+  return conversation;
+}
+
 /** Wraps the users-table upsert in a try/catch — see /api/conversations
  *  create handler for why this is non-fatal. */
 export async function ensureSessionUserInDatabase(req: any): Promise<void> {
@@ -156,9 +166,8 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.post("/api/conversations/:id/archive", isAuthenticated, async (req: any, res) => {
     try {
-      const conversation = await requireConversation(req, res);
+      const conversation = await requireOwnedConversation(req, res);
       if (!conversation) return;
-      if (conversation.userId !== req.user.claims.sub) return res.status(403).json({ error: "Forbidden" });
       const updated = await storage.updateConversation(req.params.id, { isActive: false });
       res.json({ conversation: updated });
     } catch (err) {
@@ -169,9 +178,8 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.post("/api/conversations/:id/restore", isAuthenticated, async (req: any, res) => {
     try {
-      const conversation = await requireConversation(req, res);
+      const conversation = await requireOwnedConversation(req, res);
       if (!conversation) return;
-      if (conversation.userId !== req.user.claims.sub) return res.status(403).json({ error: "Forbidden" });
       const updated = await storage.updateConversation(req.params.id, { isActive: true });
       res.json({ conversation: updated });
     } catch (err) {
@@ -182,8 +190,8 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.get("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const conversation = await storage.getConversation(req.params.id);
-      if (!conversation) return res.status(404).json({ error: "Not found" });
+      const conversation = await requireOwnedConversation(req, res);
+      if (!conversation) return;
       res.json(conversation);
     } catch (err) {
       console.error(err);
@@ -193,6 +201,8 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.patch("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const conversation = await requireOwnedConversation(req, res);
+      if (!conversation) return;
       res.json(await storage.updateConversation(req.params.id, req.body));
     } catch (err) {
       console.error(err);
@@ -202,6 +212,8 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.delete("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const conversation = await requireOwnedConversation(req, res);
+      if (!conversation) return;
       await storage.deleteConversation(req.params.id);
       res.json({ success: true });
     } catch (err) {
@@ -236,7 +248,7 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.get("/api/conversations/:id/messages", isAuthenticated, async (req: any, res) => {
     try {
-      const conversation = await requireConversation(req, res);
+      const conversation = await requireOwnedConversation(req, res);
       if (!conversation) return;
       res.json(await storage.getMessagesByConversation(req.params.id));
     } catch (err) {
@@ -247,6 +259,8 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.get("/api/conversations/:id/files", isAuthenticated, async (req: any, res) => {
     try {
+      const conversation = await requireOwnedConversation(req, res);
+      if (!conversation) return;
       res.json(await storage.getFilesByConversation(req.params.id));
     } catch (err) {
       console.error(err);
@@ -261,7 +275,12 @@ export function registerConversationCrudRoutes(app: Express): void {
     async (req: any, res) => {
       try {
         const conversationId = req.params.id;
+        const conversation = await requireOwnedConversation(req, res);
         const files = req.files as any[];
+        if (!conversation) {
+          await Promise.allSettled((files || []).map((file) => cleanupFile(file.path)));
+          return;
+        }
         if (!files || files.length === 0) {
           return res.status(400).json({ error: "No files uploaded" });
         }

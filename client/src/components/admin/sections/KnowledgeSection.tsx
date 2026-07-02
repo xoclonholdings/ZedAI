@@ -4,6 +4,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { CoreView } from "./knowledge/CoreView";
+import { IdentityView } from "./knowledge/IdentityView";
 import { MetricCard, SectionIntro } from "./knowledge/atoms";
 import { OverviewView } from "./knowledge/OverviewView";
 import { ProjectView } from "./knowledge/ProjectView";
@@ -11,13 +12,17 @@ import { ScratchpadView } from "./knowledge/ScratchpadView";
 import {
   EMPTY_CORE_MEMORY,
   EMPTY_FOUNDATION_PROFILE,
+  EMPTY_IDENTITY_PROFILE,
   EMPTY_PROJECT_MEMORY,
   EMPTY_SCRATCHPAD,
   VIEW_META,
+  parseIdentityProfile,
   parseFoundationProfile,
+  serializeIdentityProfile,
   serializeFoundationProfile,
   type CoreMemoryDraft,
   type FoundationProfile,
+  type IdentityProfile,
   type KnowledgeOverview,
   type KnowledgeView,
   type ProjectMemoryDraft,
@@ -41,15 +46,22 @@ export default function KnowledgeSection() {
   const [coreDraft, setCoreDraft] = useState<CoreMemoryDraft>(EMPTY_CORE_MEMORY);
   const [foundationProfile, setFoundationProfile] =
     useState<FoundationProfile>(EMPTY_FOUNDATION_PROFILE);
+  const [identityProfile, setIdentityProfile] =
+    useState<IdentityProfile>(EMPTY_IDENTITY_PROFILE);
   const [projectStatus, setProjectStatus] = useState<SaveStatus>("idle");
   const [scratchpadStatus, setScratchpadStatus] = useState<SaveStatus>("idle");
   const [coreStatus, setCoreStatus] = useState<SaveStatus>("idle");
   const [foundationStatus, setFoundationStatus] = useState<SaveStatus>("idle");
+  const [identityStatus, setIdentityStatus] = useState<SaveStatus>("idle");
 
   const retrievedCount = useMemo(() => (results?.retrieved || []).length, [results]);
   const foundationPreview = useMemo(
     () => serializeFoundationProfile(foundationProfile),
     [foundationProfile],
+  );
+  const identityPreview = useMemo(
+    () => serializeIdentityProfile(identityProfile),
+    [identityProfile],
   );
   const currentViewMeta = VIEW_META[view];
   const CurrentViewIcon = currentViewMeta.icon;
@@ -76,6 +88,10 @@ export default function KnowledgeSection() {
         const foundationEntry = items.find((item: any) => item.key === "foundation_profile");
         if (foundationEntry?.value) {
           setFoundationProfile(parseFoundationProfile(String(foundationEntry.value)));
+        }
+        const identityEntry = items.find((item: any) => item.key === "identity");
+        if (identityEntry?.value) {
+          setIdentityProfile(parseIdentityProfile(String(identityEntry.value)));
         }
       }
     } catch {
@@ -241,6 +257,33 @@ export default function KnowledgeSection() {
     }
   }
 
+  async function saveIdentityProfile() {
+    if (!identityProfile.preferredName.trim() && !identityProfile.whoAmIAnswer.trim()) {
+      setIdentityStatus("error");
+      return;
+    }
+    setIdentityStatus("saving");
+    try {
+      const res = await fetch("/api/knowledge/core-memory/identity", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          description:
+            "Canonical owner/user identity profile. Use this before session ids when answering identity questions.",
+          value: identityPreview,
+          adminOnly: true,
+        }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      await refreshKnowledgeData();
+      setIdentityStatus("saved");
+      setTimeout(() => setIdentityStatus("idle"), 1800);
+    } catch {
+      setIdentityStatus("error");
+    }
+  }
+
   return (
     <div className="space-y-5">
       <SectionIntro
@@ -304,6 +347,16 @@ export default function KnowledgeSection() {
           searching={searching}
           results={results}
           onSearch={searchKnowledge}
+        />
+      ) : null}
+
+      {view === "identity" ? (
+        <IdentityView
+          identityProfile={identityProfile}
+          setIdentityProfile={setIdentityProfile}
+          identityPreview={identityPreview}
+          identityStatus={identityStatus}
+          onSaveIdentity={saveIdentityProfile}
         />
       ) : null}
 

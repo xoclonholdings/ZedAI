@@ -31,6 +31,15 @@ class MemoryCache {
     this.entries.clear();
   }
 
+  clearPattern(pattern: string): void {
+    const prefix = pattern.endsWith("*") ? pattern.slice(0, -1) : pattern;
+    for (const key of this.entries.keys()) {
+      if (key.startsWith(prefix)) {
+        this.entries.delete(key);
+      }
+    }
+  }
+
   size(): number {
     return this.entries.size;
   }

@@ -21,6 +21,7 @@ import type {
 
 import type { IStorage } from "./types";
 
+import { fallbackStorage } from "./fallback";
 import { UserDatabaseStorage } from "./UserDatabaseStorage";
 import { ConversationDatabaseStorage } from "./ConversationDatabaseStorage";
 import { MessageDatabaseStorage } from "./MessageDatabaseStorage";
@@ -252,6 +253,25 @@ class DatabaseStorage implements IStorage {
 
   async optimizeStorage(): Promise<void> {
     console.log("[STORAGE] Optimization completed");
+  }
+
+  async executeWithFallback<T>(
+    operationName: string,
+    dbOperation: () => Promise<T>,
+    fallbackKey: string,
+    defaultValue?: T
+  ): Promise<T> {
+    try {
+      const result = await dbOperation();
+      await fallbackStorage.store(fallbackKey, result);
+      return result;
+    } catch (error) {
+      console.warn(`[STORAGE] ${operationName} failed, checking fallback:`, error);
+      const fallback = await fallbackStorage.retrieve(fallbackKey);
+      if (fallback !== undefined) return fallback as T;
+      if (defaultValue !== undefined) return defaultValue;
+      throw error;
+    }
   }
 
   async trackAnalytics(

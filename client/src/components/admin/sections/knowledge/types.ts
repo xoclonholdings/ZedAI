@@ -1,4 +1,4 @@
-import { BrainCircuit, Database, FileStack, Layers } from "lucide-react";
+import { BrainCircuit, Database, FileStack, Fingerprint, Layers } from "lucide-react";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -45,7 +45,18 @@ export type FoundationProfile = {
   priorities: string;
 };
 
-export type KnowledgeView = "overview" | "project" | "scratchpad" | "core";
+export type IdentityProfile = {
+  preferredName: string;
+  formalName: string;
+  role: string;
+  relationshipToZed: string;
+  ventures: string;
+  operatingStyle: string;
+  whoAmIAnswer: string;
+  boundaries: string;
+};
+
+export type KnowledgeView = "overview" | "identity" | "project" | "scratchpad" | "core";
 
 export const EMPTY_PROJECT_MEMORY: ProjectMemoryDraft = {
   id: "",
@@ -75,6 +86,17 @@ export const EMPTY_FOUNDATION_PROFILE: FoundationProfile = {
   priorities: "",
 };
 
+export const EMPTY_IDENTITY_PROFILE: IdentityProfile = {
+  preferredName: "",
+  formalName: "",
+  role: "",
+  relationshipToZed: "",
+  ventures: "",
+  operatingStyle: "",
+  whoAmIAnswer: "",
+  boundaries: "",
+};
+
 export const VIEW_META: Record<
   KnowledgeView,
   { label: string; description: string; icon: typeof BrainCircuit }
@@ -83,6 +105,11 @@ export const VIEW_META: Record<
     label: "Overview",
     description: "Inspect knowledge health and retrieval quality.",
     icon: BrainCircuit,
+  },
+  identity: {
+    label: "Identity",
+    description: "Define who the current owner/user is and how ZED should answer identity questions.",
+    icon: Fingerprint,
   },
   project: {
     label: "Project Memory",
@@ -132,5 +159,34 @@ export function parseFoundationProfile(content: string): FoundationProfile {
     brand: extractSection(content, "Brand Voice"),
     principles: extractSection(content, "Operating Principles"),
     priorities: extractSection(content, "Strategic Priorities"),
+  };
+}
+
+export function serializeIdentityProfile(profile: IdentityProfile) {
+  return [
+    `## Preferred Name\n${profile.preferredName.trim() || "Not provided yet."}`,
+    `## Formal Name\n${profile.formalName.trim() || "Not provided yet."}`,
+    `## Role\n${profile.role.trim() || "Not provided yet."}`,
+    `## Relationship To ZED\n${profile.relationshipToZed.trim() || "Not provided yet."}`,
+    `## Ventures & Responsibilities\n${profile.ventures.trim() || "Not provided yet."}`,
+    `## Operating Style\n${profile.operatingStyle.trim() || "Not provided yet."}`,
+    `## Who Am I Answer\n${profile.whoAmIAnswer.trim() || "Not provided yet."}`,
+    `## Boundaries\n${profile.boundaries.trim() || "Not provided yet."}`,
+  ].join("\n\n");
+}
+
+export function parseIdentityProfile(content: string): IdentityProfile {
+  if (!content.includes("## ")) {
+    return { ...EMPTY_IDENTITY_PROFILE, whoAmIAnswer: content.trim() };
+  }
+  return {
+    preferredName: extractSection(content, "Preferred Name"),
+    formalName: extractSection(content, "Formal Name"),
+    role: extractSection(content, "Role"),
+    relationshipToZed: extractSection(content, "Relationship To ZED"),
+    ventures: extractSection(content, "Ventures & Responsibilities"),
+    operatingStyle: extractSection(content, "Operating Style"),
+    whoAmIAnswer: extractSection(content, "Who Am I Answer"),
+    boundaries: extractSection(content, "Boundaries"),
   };
 }

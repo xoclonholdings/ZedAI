@@ -15,6 +15,7 @@ export default function FlowDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
+  const [brief, setBrief] = useState("");
 
   const backPath = workspace ? `/workspaces/${workspace}` : "/chat";
   const backLabel = workspace ? "Workspace" : "Chat";
@@ -47,7 +48,14 @@ export default function FlowDetailPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          context: brief.trim()
+            ? {
+                userBrief: brief.trim(),
+                launchedFrom: workspace ? `${workspace} workspace` : "tool detail",
+              }
+            : {},
+        }),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
@@ -119,6 +127,22 @@ export default function FlowDetailPage() {
                 </span>
               </div>
             </div>
+
+            <section className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <label htmlFor="flow-brief" className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                Run Brief
+              </label>
+              <textarea
+                id="flow-brief"
+                value={brief}
+                onChange={(event) => setBrief(event.target.value)}
+                placeholder="Tell ZED what this run should work on. Include the goal, known facts, constraints, links or notes, and what a useful result should look like."
+                className="mt-3 min-h-28 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm leading-6 text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50"
+              />
+              <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
+                A brief makes the endpoint produce specific work instead of a generic readiness report.
+              </p>
+            </section>
 
             <div>
               <p className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">Steps</p>

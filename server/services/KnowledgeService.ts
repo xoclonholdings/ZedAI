@@ -43,6 +43,7 @@ export class KnowledgeService {
   static async buildContext(params: BuildKnowledgeContextParams): Promise<KnowledgeContext> {
     const lane = params.lane || "chat";
     const keywords = extractKeywords(params.query);
+    const includeAdminKnowledge = params.includeAdminFoundation === true;
 
     // Trim expired scratchpad entries before reading — best-effort,
     // failures here just mean we read a slightly larger working set.
@@ -74,6 +75,7 @@ export class KnowledgeService {
 
     // Keep only the priority keys, ordered as declared in CORE_PRIORITY_KEYS.
     const relevantCoreMemory = allCoreMemory
+      .filter((entry) => includeAdminKnowledge || entry.adminOnly === false)
       .filter((entry) =>
         CORE_PRIORITY_KEYS.includes(entry.key as (typeof CORE_PRIORITY_KEYS)[number]),
       )
@@ -141,7 +143,7 @@ export class KnowledgeService {
     const coreBlock = formatCoreMemory(
       relevantCoreMemory.map((entry) => ({ key: entry.key, value: entry.value })),
     );
-    const rulesetBlock = formatCoreMemory(rulesetMemory);
+    const rulesetBlock = includeAdminKnowledge ? formatCoreMemory(rulesetMemory) : "";
 
     const projectBlock =
       mergedProjectMemory.length > 0

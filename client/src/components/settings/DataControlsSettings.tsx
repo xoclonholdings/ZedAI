@@ -79,7 +79,7 @@ export default function DataControlsSettings() {
         )}
 
         <p className="text-muted-foreground text-sm">
-          Clears all conversation history from the server and resets local preferences to defaults.
+          Deletes your conversation history from the server and resets local preferences to defaults.
         </p>
 
         <div className="flex gap-2">
@@ -96,7 +96,7 @@ export default function DataControlsSettings() {
                 className="flex-1 gap-2"
               >
                 <Trash2 size={14} />
-                {state === "idle" && "Clear Local Data"}
+                {state === "idle" && "Delete My Conversations"}
                 {state === "confirming" && "Confirm — Delete Everything"}
                 {state === "clearing" && "Clearing…"}
               </Button>

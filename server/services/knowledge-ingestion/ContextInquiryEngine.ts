@@ -106,6 +106,82 @@ function findRelevantObjects(userInput: string, objects: KnowledgeObject[], expl
   return Array.from(new Map([...explicit, ...inferred].map((object) => [object.id, object])).values()).slice(0, 10);
 }
 
+function requestsProjectContext(userInput: string): boolean {
+  return /\b(research|competitor|competitors|market|business|niche|audience|positioning|strategy|next move|launch|customers)\b/i.test(userInput);
+}
+
+function hasExplicitProjectReference(userInput: string, objects: KnowledgeObject[]): boolean {
+  const normalizedInput = normalizeKey(userInput);
+  return objects.some((object) => {
+    if (!["project", "product", "company"].includes(object.type)) return false;
+    const names = [object.name, ...object.aliases]
+      .map(normalizeKey)
+      .filter((name) => /\b(zwap|zed|zcos|zebcom|zebulon|stepwise)\b/.test(name));
+    return names.some((name) => normalizedInput.includes(name));
+  });
+}
+
+function projectFamilyKey(name: string): string {
+  const normalized = normalizeKey(name);
+  if (/\bzwap\b/i.test(name) || /\bzwap\b/.test(normalized)) return "ZWAP";
+  if (/\bzed\b/i.test(name) || /\bzed\b/.test(normalized)) return "ZED";
+  if (/\bzcos\b/i.test(name) || /\bzcos\b/.test(normalized)) return "ZCOS";
+  return name
+    .replace(/\b(the|app|project|platform|system|promo|strategy|design|redesign|implementation|flow|plan)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function temporalWeight(object: KnowledgeObject): number {
+  if (["rejected", "superseded"].includes(object.temporalStatus)) return -3;
+  if (object.temporalStatus === "historical") return -1;
+  if (["approved", "current", "future", "draft", "unknown"].includes(object.temporalStatus)) return 0.4;
+  return 0;
+}
+
+function inferProjectContext(userInput: string, objects: KnowledgeObject[]): ContextAssessment["inferredContext"] {
+  if (!requestsProjectContext(userInput)) return null;
+  if (hasExplicitProjectReference(userInput, objects)) return null;
+
+  const projectObjects = objects.filter((object) => {
+    if (!["project", "product", "company", "concept", "feature", "goal"].includes(object.type)) return false;
+    if (["rejected", "superseded"].includes(object.temporalStatus)) return false;
+    if (/\bstepwise\b/i.test(object.name) && object.status !== "confirmed") return false;
+    return /\b(zwap|zed|zcos|zebcom|zebulon)\b/i.test([object.name, ...object.aliases, object.description].join(" "));
+  });
+
+  const grouped = new Map<string, { label: string; objects: KnowledgeObject[]; score: number }>();
+  for (const object of projectObjects) {
+    const label = projectFamilyKey(object.name);
+    if (!label || label.length < 3) continue;
+    const current = grouped.get(label) || { label, objects: [], score: 0 };
+    const evidenceScore = Math.min(2, object.evidence.length * 0.2);
+    const relationshipScore = Math.min(1, object.relatedObjectIds.length * 0.15);
+    const statusScore = object.status === "confirmed" ? 1.2 : object.status === "candidate" ? 0.55 : object.status === "conflicting" ? 0.25 : 0;
+    const nameScore = label === "ZWAP" ? 1.2 : label === "ZED" ? 0.4 : 0.2;
+    current.objects.push(object);
+    current.score += object.confidence + evidenceScore + relationshipScore + statusScore + temporalWeight(object) + nameScore;
+    grouped.set(label, current);
+  }
+
+  const ranked = [...grouped.values()]
+    .map((item) => ({
+      ...item,
+      confidence: Number(Math.min(0.92, (item.score / Math.max(1, item.objects.length * 2.7)) + Math.min(0.18, item.objects.length * 0.02)).toFixed(2)),
+    }))
+    .filter((item) => item.objects.length >= 3 && item.confidence >= 0.68)
+    .sort((a, b) => b.confidence - a.confidence || b.objects.length - a.objects.length);
+
+  const best = ranked[0];
+  if (!best) return null;
+  return {
+    label: best.label,
+    confidence: best.confidence,
+    objectIds: best.objects.slice(0, 10).map((object) => object.id),
+    reason: `${best.label} appears repeatedly in foundation-reparsed project knowledge and is the strongest available business/project context for this generic request.`,
+  };
+}
+
 function findRelevantConflicts(objects: KnowledgeObject[], conflicts: KnowledgeConflict[]): KnowledgeConflict[] {
   const ids = new Set(objects.map((object) => object.id));
   if (!ids.size) return [];
@@ -223,10 +299,18 @@ function createDecisionJournalEntry(input: ContextEngineInput, relevantObjects: 
 export class ContextInquiryEngine {
   static async assess(input: ContextEngineInput): Promise<ContextEngineResult> {
     const graph = await KnowledgeIngestionService.getGraph();
-    const relevantObjects = findRelevantObjects(input.userInput, graph.objects, input.candidateObjectIds);
+    const inferredContext = inferProjectContext(input.userInput, graph.objects);
+    const relevantObjects = findRelevantObjects(input.userInput, graph.objects, [
+      ...(input.candidateObjectIds || []),
+      ...(inferredContext?.objectIds || []),
+    ]);
     const relevantConflicts = findRelevantConflicts(relevantObjects, graph.conflicts);
     const contextScore = aggregateScore(relevantObjects, relevantConflicts);
     const questions = generateQuestions(relevantObjects, relevantConflicts, contextScore);
+    const canProceedWithAssumption =
+      Boolean(inferredContext) &&
+      inferredContext!.confidence >= 0.68 &&
+      requestsProjectContext(input.userInput);
 
     const knowsIdentity = relevantObjects.length > 0 && !contextScore.unknownFields.includes("identity");
     const knowsPurpose = relevantObjects.some((object) => object.description.length > 20 || object.currentTruth || object.historicalTruth);
@@ -236,6 +320,7 @@ export class ContextInquiryEngine {
     const knowsRelationships = relevantObjects.some((object) => object.relatedObjectIds.length > 0);
     const hasRelevantStoredContext = relevantObjects.length > 0;
     const materialUncertainty =
+      !canProceedWithAssumption &&
       hasRelevantStoredContext &&
       (relevantConflicts.some((conflict) => conflict.status === "unresolved") ||
         contextScore.completeness < 0.62 ||
@@ -250,6 +335,7 @@ export class ContextInquiryEngine {
       knowsAdoptionStatus,
       knowsRelationships,
       materialUncertainty,
+      inferredContext,
       contextScore,
       questions,
       responsePolicy: materialUncertainty ? "inquire_first" : "answer",

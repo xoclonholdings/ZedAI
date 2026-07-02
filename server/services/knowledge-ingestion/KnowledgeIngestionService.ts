@@ -31,6 +31,9 @@ interface StoredKnowledgeGraph extends KnowledgeGraphSnapshot {
     importedAt: string;
     sourceId: string;
     sourceName: string;
+    sourceUri?: string;
+    sourceTag?: string;
+    metadata?: Record<string, unknown>;
     createdObjectIds: string[];
     updatedObjectIds: string[];
     createdConflictIds: string[];
@@ -45,20 +48,51 @@ const STOP_WORDS = new Set([
   "after",
   "again",
   "also",
+  "add",
+  "additional",
+  "ask",
+  "based",
+  "best",
   "because",
   "before",
   "being",
   "between",
+  "build",
+  "can",
+  "confused",
   "could",
+  "create",
+  "don",
+  "download",
   "every",
+  "goal",
   "from",
   "have",
+  "how",
   "into",
+  "learn",
+  "make",
+  "more",
   "must",
   "never",
+  "next",
+  "not",
+  "nothing",
+  "nwe",
+  "off",
   "only",
+  "open",
   "other",
+  "remember",
+  "right",
+  "send",
+  "show",
   "should",
+  "start",
+  "summary",
+  "strong",
+  "substantially",
+  "suggested",
   "that",
   "their",
   "there",
@@ -70,7 +104,88 @@ const STOP_WORDS = new Set([
   "when",
   "where",
   "which",
+  "who",
   "while",
+  "your",
+]);
+
+const WEAK_OBJECT_NAMES = new Set([
+  "a",
+  "an",
+  "add",
+  "additional",
+  "apps",
+  "ask",
+  "and",
+  "are",
+  "be",
+  "based",
+  "best",
+  "build",
+  "but",
+  "can",
+  "clean summary",
+  "core strategy",
+  "confused",
+  "create",
+  "don",
+  "download",
+  "final structure",
+  "for",
+  "get",
+  "go",
+  "goal",
+  "here",
+  "how",
+  "instead",
+  "introduction",
+  "it",
+  "just",
+  "keep",
+  "learn",
+  "let",
+  "lets",
+  "make",
+  "more",
+  "most",
+  "next",
+  "not",
+  "now",
+  "nothing",
+  "nwe",
+  "off",
+  "one",
+  "open",
+  "pick",
+  "remember",
+  "right",
+  "send",
+  "set",
+  "show",
+  "start",
+  "summary",
+  "strong",
+  "substantially",
+  "suggested",
+  "target group a",
+  "then",
+  "there",
+  "they",
+  "this",
+  "tool",
+  "use",
+  "use spend",
+  "user",
+  "value",
+  "verdict",
+  "visible",
+  "what",
+  "who",
+  "why",
+  "wire",
+  "would",
+  "you",
+  "your",
 ]);
 
 const DOMAIN_HINTS: Array<{ domain: KnowledgeDomain; hints: string[] }> = [
@@ -247,10 +362,20 @@ function confidence(text: string, base = 0.58): number {
 }
 
 function subject(text: string, fallback: string): string {
-  const named = names(text)[0];
+  const named = names(text).find((name) => !isWeakObjectName(name));
   if (named) return named;
-  const top = terms(text, 3);
+  const top = terms(text, 8).filter((term) => !isWeakObjectName(term)).slice(0, 3);
   return top.length ? top.map((term) => term[0].toUpperCase() + term.slice(1)).join(" ") : fallback;
+}
+
+function isWeakObjectName(name: string): boolean {
+  const key = normalizeKey(name);
+  if (!key || key.length < 3) return true;
+  if (WEAK_OBJECT_NAMES.has(key)) return true;
+  const words = key.split(" ").filter(Boolean);
+  if (words.length > 0 && words.every((word) => WEAK_OBJECT_NAMES.has(word) || STOP_WORDS.has(word))) return true;
+  if (/^(option|step|phase|item|thing|stuff|part|section|example|note|question)\s*[a-z0-9]*$/i.test(key)) return true;
+  return false;
 }
 
 function evidence(source: SourceAnalysis, excerpt: string): SourceEvidence {
@@ -311,7 +436,9 @@ function objectFromUnit(unit: SemanticUnit, source: SourceAnalysis): KnowledgeOb
     id: stableId("obj", `${normalizeKey(objectName)}:${objectType(unit.text)}`),
     type: objectType(unit.text),
     name: objectName,
-    aliases: names(unit.text).filter((alias) => normalizeKey(alias) !== normalizeKey(objectName)).slice(0, 6),
+    aliases: names(unit.text)
+      .filter((alias) => normalizeKey(alias) !== normalizeKey(objectName) && !isWeakObjectName(alias))
+      .slice(0, 6),
     description: unit.text,
     created: nowIso(),
     updated: nowIso(),
@@ -356,6 +483,7 @@ function detectObjects(units: SemanticUnit[], source: SourceAnalysis): Knowledge
   const objects = new Map<string, KnowledgeObject>();
   for (const unit of units.filter((item) => importantTypes.has(item.type))) {
     const object = objectFromUnit(unit, source);
+    if (isWeakObjectName(object.name)) continue;
     const key = normalizeKey(`${object.type}:${object.name}`);
     const existing = objects.get(key);
     if (existing) {
@@ -443,7 +571,7 @@ function detectDecisions(objects: KnowledgeObject[], units: SemanticUnit[], sour
       date: unit.text.match(/\b20\d{2}\b/)?.[0] || null,
       confidence: unit.confidence,
       replacedBy: unit.text.match(/\b(replaced by|superseded by)\s+([^.;]+)/i)?.[2]?.trim() || null,
-      status: /\b(rejected|not adopted)\b/i.test(unit.text) ? "rejected" : "candidate",
+      status: (/\b(rejected|not adopted)\b/i.test(unit.text) ? "rejected" : "candidate") as KnowledgeStatus,
       sourceId,
       affectedObjectIds: objects
         .filter((object) => unit.text.includes(object.name) || object.aliases.some((alias) => unit.text.includes(alias)))
@@ -600,14 +728,38 @@ function graphSnapshot(graph: StoredKnowledgeGraph): KnowledgeGraphSnapshot {
   };
 }
 
-export class KnowledgeIngestionService {
-  static async ingest(input: RawKnowledgeInput): Promise<IngestionReport> {
-    const text = normalizeSpace(toText(input));
+function resolveImportId(input: RawKnowledgeInput, source: SourceAnalysis, importedAt: string): string {
+  const explicit = input.metadata?.importId;
+  return typeof explicit === "string" && explicit.trim()
+    ? explicit.trim()
+    : stableId("import", `${source.sourceId}:${importedAt}`);
+}
+
+function resolveSourceTag(input: RawKnowledgeInput): string | undefined {
+  const value = input.metadata?.source;
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function resolveImportMetadata(input: RawKnowledgeInput): Record<string, unknown> | undefined {
+  return input.metadata && Object.keys(input.metadata).length ? input.metadata : undefined;
+}
+
+function hasImportedSource(graph: StoredKnowledgeGraph, sourceId: string, importId: string): boolean {
+  if (graph.imports.some((entry) => entry.importId === importId || entry.sourceId === sourceId)) return true;
+  if (graph.objects.some((object) => object.source.sourceId === sourceId || object.evidence.some((item) => item.sourceId === sourceId))) return true;
+  if (graph.relationships.some((relationship) => relationship.sourceId === sourceId)) return true;
+  if (graph.decisions.some((decision) => decision.sourceId === sourceId)) return true;
+  if (graph.conflicts.some((conflict) => conflict.sourceIds.includes(sourceId))) return true;
+  return false;
+}
+
+async function processInput(input: RawKnowledgeInput, options: { persist: boolean }): Promise<IngestionReport> {
+    const text = normalizeSpace(toText(input.content));
     if (!text) throw new Error("content is required");
 
     const importedAt = nowIso();
     const source = analyzeSource(input, text);
-    const importId = stableId("import", `${source.sourceId}:${importedAt}`);
+    const importId = resolveImportId(input, source, importedAt);
     const semanticUnits = decompose(text, source);
     const extractedObjects = detectObjects(semanticUnits, source);
     const relationshipMap = detectRelationships(extractedObjects, semanticUnits, source.sourceId);
@@ -657,11 +809,24 @@ export class KnowledgeIngestionService {
     graph.decisions = addUnique(graph.decisions, detectedDecisions);
     graph.conflicts = [...graph.conflicts, ...newConflicts];
     graph.openQuestions = addUnique(graph.openQuestions, openQuestions);
-    graph.imports.unshift({ importId, importedAt, sourceId: source.sourceId, sourceName: source.primaryTopic, createdObjectIds, updatedObjectIds, createdConflictIds: newConflicts.map((conflict) => conflict.id) });
-    graph.imports = graph.imports.slice(0, 250);
+    if (!graph.imports.some((entry) => entry.importId === importId || entry.sourceId === source.sourceId)) {
+      graph.imports.unshift({
+        importId,
+        importedAt,
+        sourceId: source.sourceId,
+        sourceName: source.primaryTopic,
+        sourceUri: source.origin,
+        sourceTag: resolveSourceTag(input),
+        metadata: resolveImportMetadata(input),
+        createdObjectIds,
+        updatedObjectIds,
+        createdConflictIds: newConflicts.map((conflict) => conflict.id),
+      });
+      graph.imports = graph.imports.slice(0, 250);
+    }
     graph.version += 1;
     graph.updatedAt = nowIso();
-    await saveGraph(graph);
+    if (options.persist) await saveGraph(graph);
 
     const snapshot = graphSnapshot(graph);
     const reasoningIndexes = indexes(snapshot);
@@ -715,6 +880,59 @@ export class KnowledgeIngestionService {
       },
       graph: snapshot,
     };
+}
+
+export class KnowledgeIngestionService {
+  static async ingest(input: RawKnowledgeInput): Promise<IngestionReport> {
+    return processInput(input, { persist: true });
+  }
+
+  static async preview(input: RawKnowledgeInput): Promise<IngestionReport> {
+    return processInput(input, { persist: false });
+  }
+
+  static async getImportStatus(input: RawKnowledgeInput): Promise<{
+    sourceId: string;
+    importId: string;
+    alreadyImported: boolean;
+  }> {
+    const text = normalizeSpace(toText(input.content));
+    if (!text) throw new Error("content is required");
+    const source = analyzeSource(input, text);
+    const importId = resolveImportId(input, source, nowIso());
+    const graph = await loadGraph();
+    return {
+      sourceId: source.sourceId,
+      importId,
+      alreadyImported: hasImportedSource(graph, source.sourceId, importId),
+    };
+  }
+
+  static async backfillImportMetadata(input: RawKnowledgeInput): Promise<boolean> {
+    const text = normalizeSpace(toText(input.content));
+    if (!text) throw new Error("content is required");
+    const source = analyzeSource(input, text);
+    const importId = resolveImportId(input, source, nowIso());
+    const graph = await loadGraph();
+    let changed = false;
+
+    graph.imports = graph.imports.map((entry) => {
+      if (entry.importId !== importId && entry.sourceId !== source.sourceId) return entry;
+      const sourceUri = entry.sourceUri || source.origin;
+      const sourceTag = entry.sourceTag || resolveSourceTag(input);
+      const metadata = entry.metadata || resolveImportMetadata(input);
+      if (sourceUri !== entry.sourceUri || sourceTag !== entry.sourceTag || metadata !== entry.metadata) {
+        changed = true;
+      }
+      return { ...entry, sourceUri, sourceTag, metadata };
+    });
+
+    if (changed) {
+      graph.updatedAt = nowIso();
+      await saveGraph(graph);
+    }
+
+    return changed;
   }
 
   static async getGraph(): Promise<KnowledgeGraphSnapshot> {

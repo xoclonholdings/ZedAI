@@ -37,7 +37,7 @@ async function ensureAuthenticatedSession(
       /* destroy() needs a callback even when we ignore the result */
     });
     await logSecurityEvent({
-      type: "auth.session.expired",
+      type: "auth.session_expired",
       userId,
       ip: getClientIp(req),
       detail: "Session timed out",

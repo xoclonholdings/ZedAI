@@ -84,6 +84,14 @@ export class ManagerAgent {
               lane: "manager",
             })
           ).prompt;
+    const suppliedPrinciplePrompt =
+      typeof request.context?.principlePrompt === "string"
+        ? request.context.principlePrompt
+        : "";
+    const suppliedStrategicPrompt =
+      typeof request.context?.strategicPrompt === "string"
+        ? request.context.strategicPrompt
+        : "";
 
     const agent = await selectAgent(request.message, config, request.targetAgent);
     const responseMode = responseModeForAgent(agent);
@@ -108,7 +116,9 @@ export class ManagerAgent {
     const voicePrompt = await buildZedVoicePrompt({ mode: voiceMode });
     const agentContext = [
       governancePrompt,
+      suppliedPrinciplePrompt,
       principlePrompt,
+      suppliedStrategicPrompt,
       strategicReasoning.prompt,
       voicePrompt,
       knowledgePrompt,

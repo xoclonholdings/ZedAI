@@ -22,8 +22,8 @@ async function main() {
   }
 
   const businessManager = settings.agents.find((agent) => agent.key === "BusinessManagerAgent");
-  if (!businessManager || businessManager.status !== "planned") {
-    throw new Error("Business Manager Agent is missing or not marked as planned");
+  if (!businessManager || businessManager.status !== "active") {
+    throw new Error("Business Manager Agent is missing or not marked as active");
   }
 
   if (!settings.integrations.gusto) {
@@ -37,7 +37,8 @@ async function main() {
         repoRoot: REPO_ROOT,
         hubDir: HUB_DIR,
         adminUsername: settings.auth.adminUsername,
-        plannedBusinessIntegration: settings.integrations.gusto.status,
+        businessManagerStatus: businessManager.status,
+        gustoIntegrationStatus: settings.integrations.gusto.status,
       },
       null,
       2,

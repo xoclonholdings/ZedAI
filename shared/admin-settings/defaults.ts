@@ -34,7 +34,7 @@ export const defaultAppSettings: AppSettings = {
 };
 
 export const defaultPersonalizationSettings: PersonalizationSettings = {
-  displayName: "Admin",
+  displayName: "",
   preferredLanguage: "English",
   colorScheme: "dark",
   compactMessages: false,

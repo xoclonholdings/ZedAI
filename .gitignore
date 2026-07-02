@@ -3,7 +3,13 @@ zed-backend/node_modules
 client/dist
 models/
 hub/config/admin-settings.json
+hub/logs/
+hub/shared-memory/curation/
+hub/shared-memory/foundation-reparse/
+hub/shared-memory/knowledge-graph/
 hub/sessions/
+server/hub/logs/
+shared/package-lock.json
 
 # Local Netlify folder
 .netlify

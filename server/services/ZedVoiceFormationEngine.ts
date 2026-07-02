@@ -235,7 +235,13 @@ function isLikelyVoiceCorrection(text: string): boolean {
 
 function extractAfter(text: string, patterns: RegExp[]): string[] {
   return patterns
-    .map((pattern) => text.match(pattern)?.[1]?.trim().replace(/[.!?]+$/, ""))
+    .map((pattern) =>
+      text
+        .match(pattern)?.[1]
+        ?.trim()
+        .replace(/[.!?].*$/, "")
+        .replace(/[.!?]+$/, ""),
+    )
     .filter((value): value is string => Boolean(value && value.length >= 2 && value.length <= 160));
 }
 
@@ -252,7 +258,10 @@ function removeRejectedLanguage(content: string, memory: ZedVoiceMemory): string
 function removeLeakage(content: string): string {
   return content
     .split("\n")
-    .filter((line) => !/\b(system prompt|developer message|internal parse format|memory context|tool call|ollama|chroma|vector store|scratchpad memory|source_strength|next_step:|points:|meaning:)\b/i.test(line.trim()))
+    .filter((line) => !/\b(system prompt|developer message|internal parse format|memory context|tool call|ollama|chroma|vector store|scratchpad memory|source_strength|next_step:|points:|meaning:|brave search|web search via|search provider|configured model synthesis|agent routing|backend logs?|internal prompts?)\b/i.test(line.trim()))
+    .filter((line) => !/\buser_[a-z0-9_]+\b/i.test(line.trim()))
+    .filter((line) => !/\binternal\s+(session|user|database)?\s*id\b/i.test(line.trim()))
+    .filter((line) => !/\b[A-Z][A-Za-z0-9& -]{2,80}\s+workflow\b/.test(line.trim()))
     .join("\n")
     .trim();
 }
@@ -276,6 +285,25 @@ function hasRoboticHeading(content: string): boolean {
 
 function isMobileUseful(content: string): boolean {
   return content.split("\n").every((line) => line.length <= 180 || /^```/.test(line));
+}
+
+function enforceMobileReadability(content: string): string {
+  return content
+    .split("\n")
+    .map((line) => {
+      if (line.length <= 180 || /^```/.test(line.trim())) return line;
+
+      return line
+        .replace(/([.!?])\s+(?=[A-Z0-9])/g, "$1\n")
+        .replace(/;\s+/g, ";\n")
+        .split("\n")
+        .flatMap((segment) => {
+          if (segment.length <= 180) return [segment];
+          return segment.replace(/,\s+/g, ",\n").split("\n");
+        })
+        .join("\n");
+    })
+    .join("\n");
 }
 
 function wantsDepth(message: string): boolean {
@@ -478,6 +506,10 @@ export async function presentZedResponseWithChecks(
     content = "Execution blocked: explicit approval is required before ZED can claim that action was completed.";
     adjustments.push("blocked_unapproved_execution_claim");
   }
+
+  const beforeMobileReadability = content;
+  content = enforceMobileReadability(content);
+  if (content !== beforeMobileReadability) adjustments.push("enforced_mobile_readability");
 
   content = content.replace(/\n{3,}/g, "\n\n").trim();
   if (!content) {

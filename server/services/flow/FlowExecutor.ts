@@ -97,6 +97,117 @@ function buildStagePrompt(opts: {
     .join("\n");
 }
 
+function hasUsableUserContext(context: Record<string, unknown>): boolean {
+  return Object.values(context || {}).some((value) => {
+    if (typeof value === "string") return value.trim().length >= 12;
+    if (Array.isArray(value)) return value.length > 0;
+    if (value && typeof value === "object") return Object.keys(value).length > 0;
+    return value !== undefined && value !== null;
+  });
+}
+
+function textFromContext(context: Record<string, unknown>): string {
+  const direct = context.userBrief || context.prompt || context.goal || context.task || context.subject;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+  const serialized = JSON.stringify(context || {}, null, 2);
+  return serialized === "{}" ? "" : serialized;
+}
+
+function isPlaceholderOutput(output: string): boolean {
+  const normalized = output.toLowerCase();
+  return (
+    /\bplaceholder\b/.test(normalized) ||
+    /\boutput \(template\)/.test(normalized) ||
+    /\blist of 3-5\b/.test(normalized) ||
+    /\blorem ipsum\b/.test(normalized) ||
+    /\btbd\b/.test(normalized)
+  );
+}
+
+function buildLocalStageOutput(opts: {
+  flow: FlowDefinition;
+  stage: FlowStage;
+  priorOutputs: Record<string, unknown>;
+  initialContext: Record<string, unknown>;
+  providerError?: string;
+}): string {
+  const { flow, stage, priorOutputs, initialContext, providerError } = opts;
+  const brief = textFromContext(initialContext);
+  const hasContext = hasUsableUserContext(initialContext);
+  const priorText = Object.entries(priorOutputs)
+    .map(([name, output]) => `${name}: ${typeof output === "string" ? output : JSON.stringify(output)}`)
+    .join("\n")
+    .slice(0, 1600);
+  const stepList = stage.steps
+    .sort((a, b) => a.order - b.order)
+    .map((step) => `- ${step.label}${step.detail ? `: ${step.detail}` : ""}`)
+    .join("\n");
+  const missingContext = hasContext
+    ? "None blocking. This result used the provided run brief and earlier stage outputs."
+    : "A user brief is needed for tailored analysis. Add the subject, goal, constraints, available data, and desired outcome before rerunning for a personalized result.";
+
+  const evidence = [
+    `Flow purpose: ${flow.purpose || flow.description}`,
+    `Stage goal: ${stage.description || stage.name}`,
+    brief ? `User brief: ${brief}` : "",
+    priorText ? `Prior stage context available: yes` : "Prior stage context available: no",
+  ].filter(Boolean);
+
+  return [
+    `## ${stage.name}`,
+    "",
+    "### Decision",
+    hasContext
+      ? `Proceed with ${stage.name.toLowerCase()} using the supplied run context.`
+      : `Do not invent details. Produce a context-readiness result and identify the exact information needed to complete ${stage.name.toLowerCase()}.`,
+    "",
+    "### Evidence Used",
+    ...evidence.map((item) => `- ${item}`),
+    providerError ? `- Provider unavailable: ${providerError}` : "",
+    "",
+    "### Work Completed",
+    stepList || "- No explicit steps were defined, so the stage was completed from the flow purpose and stage goal.",
+    "",
+    "### Findings",
+    hasContext
+      ? [
+          `- The stage can operate on the provided brief: ${brief.slice(0, 220)}${brief.length > 220 ? "..." : ""}`,
+          priorText
+            ? "- Earlier stage output was carried forward through the shared flow context."
+            : "- No earlier stage output exists yet, so this stage is the baseline for downstream work.",
+          "- The output is intentionally constrained to evidence available in this run.",
+        ].join("\n")
+      : [
+          "- The run was launched without enough user-specific context to create tailored conclusions.",
+          "- Required context: target subject or objective, current state, constraints, success criteria, and any source material.",
+          "- The flow remains clickable and executable, but recommendations are limited until those inputs exist.",
+        ].join("\n"),
+    "",
+    "### Risks And Tradeoffs",
+    hasContext
+      ? "- Local execution avoids blocking the workflow when the model provider is unavailable, but it cannot infer hidden facts or browse external sources."
+      : "- Continuing without a brief would create generic output, so this stage stops at readiness analysis instead of pretending to know the missing facts.",
+    "",
+    "### Next Actions",
+    hasContext
+      ? [
+          "- Review the findings before accepting downstream recommendations.",
+          "- Add more source material to the run context if the next stage needs deeper precision.",
+          "- Rerun after provider access is restored for model-expanded analysis if needed.",
+        ].join("\n")
+      : [
+          "- Return to the tool launch screen and enter a concise brief.",
+          "- Include the specific problem, goal, known facts, constraints, and desired output format.",
+          "- Rerun the flow so downstream stages can produce tailored work.",
+        ].join("\n"),
+    "",
+    "### Missing Information",
+    `- ${missingContext}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 const inFlight = new Set<string>();
 
 export async function executeFlowRun(runId: string): Promise<void> {
@@ -136,7 +247,11 @@ export async function executeFlowRun(runId: string): Promise<void> {
         return;
       }
 
-      if (stage.requiresApproval && stageRun.status === "pending") {
+      const existingApproval = stageRun.approvalId
+        ? run.approvals.find((approval) => approval.id === stageRun.approvalId)
+        : undefined;
+
+      if (stage.requiresApproval && stageRun.status === "pending" && existingApproval?.status !== "approved") {
         const approvalId = stageRun.approvalId || (await createStageApproval(run, flow, stage));
         const approvalRecord: FlowApprovalRecord = {
           id: approvalId,
@@ -221,10 +336,32 @@ async function runStage(
     });
     const systemPrompt = SYSTEM_PROMPTS[stage.assignedAgent as FlowAgentKey] || SYSTEM_PROMPTS.manager;
     const lane = laneForAgent(stage.assignedAgent);
-    const reply = await executeProviderChat(
-      [{ role: "user", content: prompt }],
-      { systemPrompt, lane: lane as any },
-    );
+    let reply: string;
+    try {
+      reply = await executeProviderChat(
+        [{ role: "user", content: prompt }],
+        { systemPrompt, lane: lane as any },
+      );
+      if (isPlaceholderOutput(reply)) {
+        throw new Error("Provider returned placeholder/template output");
+      }
+    } catch (err: any) {
+      const providerError = err?.message || String(err);
+      reply = buildLocalStageOutput({
+        flow,
+        stage,
+        priorOutputs,
+        initialContext: run.context || {},
+        providerError,
+      });
+      await logRuntimeEvent({
+        level: "warn",
+        source: "server",
+        event: "flow.stage.local_executor",
+        detail: `${flow.slug} :: ${stage.name} used local structured executor`,
+        context: { runId, stageId: stage.id, agent: stage.assignedAgent, providerError },
+      });
+    }
 
     await markStage(runId, stage.id, {
       status: "completed",
@@ -365,10 +502,11 @@ export async function approveCurrentStage(
   );
 
   await markStage(runId, run.currentStageId, {
-    status: "completed",
-    completedAt: new Date().toISOString(),
+    status: "pending",
+    completedAt: undefined,
     notes: note ? `Approved: ${note}` : "Approved",
-    output: note ? `Approved: ${note}` : "Approved",
+    output: undefined,
+    error: undefined,
   });
   await FlowStore.updateRun(runId, { status: "running", approvals });
   void executeFlowRun(runId);
@@ -433,6 +571,9 @@ export async function retryFlowRun(runId: string): Promise<FlowRun | null> {
   const updated = await FlowStore.updateRun(runId, {
     status: "running",
     stageRuns,
+    errors: [],
+    report: undefined,
+    completedAt: undefined,
   });
   void executeFlowRun(runId);
   return updated;
@@ -461,13 +602,22 @@ async function buildReport(run: FlowRun, flow: FlowDefinition): Promise<FlowRepo
       return { stage, text };
     });
 
+  const outputTexts = outputs.map(({ stage, text }) => {
+    const cleaned = text.trim();
+    return `### ${stage.name}\n${cleaned || "Stage completed without text output."}`;
+  });
+
   return {
     id: `report-${randomUUID()}`,
     title: `${flow.name} Run Report`,
     createdAt: new Date().toISOString(),
-    executiveSummary:
-      outputs[0]?.text?.slice(0, 600) || `${flow.name} completed with ${completedStages.length} completed stages.`,
-    keyFindings: outputs.map(({ stage, text }) => `${stage.name}: ${text.slice(0, 240)}`),
+    executiveSummary: outputTexts.length
+      ? outputTexts.join("\n\n")
+      : `${flow.name} completed with ${completedStages.length} completed stages.`,
+    keyFindings: outputs.map(({ stage, text }) => {
+      const cleaned = text.replace(/[#*_`|<>]/g, "").replace(/\s+/g, " ").trim();
+      return `${stage.name}: ${cleaned.slice(0, 240)}`;
+    }),
     decisions: run.approvals.map((approval) => `${approval.stageId}: ${approval.status}`),
     approvals: run.approvals,
     actionsTaken: completedStages.map((stage) => `Completed stage: ${stage.name}`),

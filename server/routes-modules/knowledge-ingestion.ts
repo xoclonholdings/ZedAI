@@ -27,7 +27,7 @@ function normalizeImportBody(body: any): RawKnowledgeInput {
 }
 
 export function registerKnowledgeIngestionRoutes(app: Express): void {
-  app.post("/api/knowledge-ingestion/import", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/knowledge-ingestion/import", isAdmin, async (req: Request, res: Response) => {
     try {
       const report = await KnowledgeIngestionService.ingest(normalizeImportBody(req.body || {}));
       res.json(report);
@@ -36,7 +36,7 @@ export function registerKnowledgeIngestionRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/knowledge-ingestion/graph", isAuthenticated, async (_req: Request, res: Response) => {
+  app.get("/api/knowledge-ingestion/graph", isAdmin, async (_req: Request, res: Response) => {
     try {
       res.json({ graph: await KnowledgeIngestionService.getGraph() });
     } catch (error: any) {
@@ -44,7 +44,7 @@ export function registerKnowledgeIngestionRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/knowledge-ingestion/indexes", isAuthenticated, async (_req: Request, res: Response) => {
+  app.get("/api/knowledge-ingestion/indexes", isAdmin, async (_req: Request, res: Response) => {
     try {
       res.json({ indexes: await KnowledgeIngestionService.getReasoningIndexes() });
     } catch (error: any) {

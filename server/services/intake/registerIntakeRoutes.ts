@@ -40,7 +40,7 @@ function verifyIntakeSecret(req: Request, res: Response, next: NextFunction) {
   if (!expected) return next();
   const provided =
     (req.headers["x-zed-intake-secret"] as string | undefined) ||
-    (req.query.secret as string | undefined);
+    (typeof req.query.secret === "string" ? req.query.secret : undefined);
   if (provided && provided === expected) return next();
   void logRuntimeEvent({
     level: "warn",
@@ -116,7 +116,7 @@ export function registerIntakeRoutes(app: Express): void {
     }
   });
 
-  app.get("/api/intake/context/:user_id", isAdmin, async (req: Request, res: Response) => {
+  app.get("/api/intake/context/:user_id", isAdmin, async (req: any, res: Response) => {
     try {
       const ctx = await ChannelContextManager.get(req.params.user_id);
       if (!ctx) return res.status(404).json({ error: "context not found" });

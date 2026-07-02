@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useAuth } from "@/components/auth/UseAuth";
 
 import ChatBackground from "./ChatBackground";
@@ -42,6 +43,7 @@ export default function ChatArea({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const abortRef = useRef<AbortController | null>(null);
   const { ensureConversationTitle } = useConversationMutations(conversation, conversationId);
 
@@ -86,8 +88,7 @@ export default function ChatArea({
     }
 
     const newConversationId = newConversation.id as string;
-    window.history.pushState({}, "", `/chat/${newConversationId}`);
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    navigate(`/chat/${newConversationId}`);
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
 
     return newConversationId;
@@ -141,8 +142,7 @@ export default function ChatArea({
     await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     setUploadConversationId(null);
     setShowFileUpload(false);
-    window.history.pushState({}, "", "/chat");
-    window.dispatchEvent(new PopStateEvent("popstate"));
+    navigate("/chat");
   }
 
   function handleFileUpload() {

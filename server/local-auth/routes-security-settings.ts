@@ -24,13 +24,15 @@ export function registerSecuritySettingsRoutes(app: Express): void {
     isAdmin,
     async (_req: Request, res: Response) => {
       const settings = await getPublicAdminSettings();
+      const hostedCrossOrigin = Boolean(process.env.FRONTEND_URL?.trim());
       res.json({
         adminUsername: settings.auth.adminUsername,
-        currentSecurePhrase: settings.auth.securePhrase,
+        securePhraseConfigured: Boolean(settings.auth.securePhrase),
         sessionTimeoutMinutes: settings.auth.sessionTimeoutMinutes,
         maxFailedAttempts: settings.auth.maxFailedAttempts,
         lockoutDurationMinutes: settings.auth.lockoutDurationMinutes,
         requireSecureCookies: settings.auth.requireSecureCookies,
+        effectiveSecureCookies: hostedCrossOrigin || settings.auth.requireSecureCookies,
       });
     },
   );
@@ -49,6 +51,19 @@ export function registerSecuritySettingsRoutes(app: Express): void {
           requireSecureCookies,
         } = req.body || {};
 
+        if (newSecurePhrase && String(newSecurePhrase).trim().length < 8) {
+          return res.status(400).json({ error: "Secure phrase must be at least 8 characters" });
+        }
+        if (sessionTimeoutMinutes !== undefined && Number(sessionTimeoutMinutes) < 5) {
+          return res.status(400).json({ error: "Session timeout must be at least 5 minutes" });
+        }
+        if (maxFailedAttempts !== undefined && Number(maxFailedAttempts) < 1) {
+          return res.status(400).json({ error: "Max failed attempts must be at least 1" });
+        }
+        if (lockoutDurationMinutes !== undefined && Number(lockoutDurationMinutes) < 1) {
+          return res.status(400).json({ error: "Lockout duration must be at least 1 minute" });
+        }
+
         const auth = await updateAuthSettings({
           adminUsername: adminUsername?.trim(),
           securePhrase: newSecurePhrase?.trim(),
@@ -63,11 +78,13 @@ export function registerSecuritySettingsRoutes(app: Express): void {
           message: "Security settings updated successfully",
           settings: {
             adminUsername: auth.adminUsername,
-            securePhrase: auth.securePhrase,
+            securePhraseConfigured: Boolean(auth.securePhrase),
             sessionTimeoutMinutes: auth.sessionTimeoutMinutes,
             maxFailedAttempts: auth.maxFailedAttempts,
             lockoutDurationMinutes: auth.lockoutDurationMinutes,
             requireSecureCookies: auth.requireSecureCookies,
+            effectiveSecureCookies:
+              Boolean(process.env.FRONTEND_URL?.trim()) || auth.requireSecureCookies,
           },
         });
       } catch (error: any) {
