@@ -8,6 +8,7 @@
     "dev": "tsx watch --ignore '../client/**' index.ts",
     "start": "tsx index.ts",
     "smoke": "tsx scripts/smokeCheck.ts",
+    "verify:execution": "tsx scripts/executionVerification.ts",
     "merge-memory": "tsx scripts/mergeMemorySources.ts",
     "compact-memory": "tsx scripts/compactFoundationMemory.ts",
     "memory:foundation:dry-run": "tsx scripts/reparseFoundationMemoryToGraph.ts",

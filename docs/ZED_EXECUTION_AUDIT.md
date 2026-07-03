@@ -42,6 +42,44 @@ Latest verification run:
 - PASS: `.\server\node_modules\.bin\tsc.cmd --noEmit -p .\tsconfig.json` from repo root
 - NOT RUN: live browser/API chat trace test, live website fetch test, SMTP dispatch test, admin denial HTTP test. These require running server/session credentials and, for external actions, configured provider credentials.
 
+## 2026-07-02 Completion Verification Update
+
+The follow-up completion pass added `server/scripts/executionVerification.ts` and `npm run verify:execution` in `server`. This script uses deterministic local fixtures and restores runtime JSON files after tests. It does not require Ollama/OpenAI, external web access, SMTP credentials, or a database.
+
+Verified PASS items:
+
+| Area | Verified status | Evidence | Exact verification |
+|---|---|---|---|
+| Route selection | PASS | `server/orchestrator/manager-agent/agent-selection.ts` | `npm run verify:execution` asserts research, finance, business, and operations route decisions. It also verifies classifier fallback metadata with `ZED_ROUTER_DISABLE_LLM_CLASSIFIER=true`. |
+| Email-address routing bug | PASS | `server/orchestrator/manager-agent/agent-selection.ts`, `server/services/WebContentService.ts` | `npm run verify:execution` proves `test@example.com` no longer triggers web routing. |
+| Direct URL fetch and page discovery | PASS for local deterministic fetch/discovery | `server/services/WebContentService.ts` | Local HTTP fixture verifies homepage fetch, same-origin `/blog` discovery, fetched metadata, and readable blog content. |
+| Prior website reference resolution | PASS | `server/services/ChatExecutionService.ts` | Test verifies "that website" resolves from assistant message metadata before raw text scanning. |
+| Empty upstream output rejection | PASS | `server/services/ChatExecutionService.ts`, `server/core/providers/provider-helpers.ts` | Test forces empty upstream route output and asserts `executionStatus=failed`, `failureReason=upstream_empty_output`, and no empty assistant message is stored. |
+| Chat trace metadata | PASS | `server/services/ChatExecutionService.ts` | Test asserts route, selected agent, file/project/workspace flags, trace id, and assistant message metadata. |
+| Project context injection | PASS | `server/services/ZedContextBuilder.ts`, `server/services/ProjectFilingStore.ts` | Test creates/restores a project fixture with Project Orchid instructions and verifies context text/meta. |
+| File context injection | PASS | `server/services/ChatExecutionService.ts` | Test patches conversation files and verifies `fileContextUsed=true` plus `filesReferenced[]`. |
+| Operation approval payload | PASS | `server/agents/operations/OperationsAgent.ts`, `server/services/approval/AgentApprovalAdapter.ts`, `server/routes-modules/approvals.ts` | Test creates/restores an approval task and verifies dispatch payload is stored on the task log. |
+| Provider-disabled execution failure | PASS | `server/services/execution/DigitalExecutionService.ts` | Test verifies disabled email provider returns failed `providerDisabled` and `mocked=false`. |
+| Real SMTP code path | PASS for code wiring, UNVERIFIED for live delivery | `server/services/execution/DigitalExecutionService.ts` | Code now resolves SMTP from env/admin settings and calls `nodemailer.sendMail`. Live delivery requires credentials. |
+| Trading chat paper trade write | PASS | `server/agents/finance/FinanceAgent.ts`, `server/zcos/trading/TradingStore.ts` | Test writes/restores a paper trade and verifies the created `recordId` exists in `paper-trades.json`. |
+| Flow stage agent execution | PASS for direct stage adapter | `server/services/flow/FlowExecutor.ts` | Test calls exported `executeAgentStage` for a finance stage and verifies `stageExecutionType=agent`, `agentInvoked=FinanceAgent`, and service trace. Published end-to-end flow run remains UNVERIFIED. |
+| Admin denial | PASS for middleware | `server/local-auth/middleware.ts`, `server/routes-modules/orchestrate-and-misc.ts` | Test calls `isAdmin` with a normal user session and verifies 403/no next call. Full HTTP session test remains UNVERIFIED. |
+
+Latest full verification suite:
+
+- PASS: `npm.cmd run smoke` in `server`
+- PASS: `npm.cmd run build` in `client`
+- PASS: `.\server\node_modules\.bin\tsc.cmd --noEmit -p .\tsconfig.json`
+- PASS: `.\node_modules\.bin\tsx.cmd scripts\executionVerification.ts` in `server`
+
+Remaining UNVERIFIED items after completion pass:
+
+- Live SMTP delivery with real provider credentials.
+- Live external website fetch against `https://zwap.online` from the deployed/runtime environment.
+- Full authenticated browser/API chat trace inspection using real sessions.
+- Full published research flow run through `/api/flows/*`.
+- Anonymous/normal/admin HTTP authorization tests against a running server.
+
 ## Capability Matrix
 
 | Capability | User-facing entry point | Backend route(s) | Service/agent/engine involved | Exists | Wired | Functional | Utilized by ZED | Evidence files | Failure mode | Required fix | Verification test |

@@ -18,8 +18,10 @@
 import fs from "fs/promises";
 import path from "path";
 import { HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
+import { loadAdminSettings } from "../AdminSettingsStore";
 import { logRuntimeEvent } from "../RuntimeLogger";
 import type { TaskExecutionPlan } from "./TaskExecutionEngine";
+import type { EmailAccount } from "../../../shared/adminSettings";
 
 const DIGITAL_LOG_PATH = path.resolve(
   HUB_SHARED_MEMORY_DIR,
@@ -65,6 +67,8 @@ export interface DigitalExecutionResult {
   next_steps: string[];
   mocked?: boolean;
   failureReason?: string;
+  providerUsed?: string;
+  messageId?: string;
 }
 
 interface DigitalExecutionLogEntry {
@@ -137,23 +141,62 @@ export class DigitalExecutionService {
       };
     }
 
-    if (!liveProvider) {
+    const account = await this.resolveEmailAccount(payload);
+    if (!liveProvider || !account) {
       return {
         status: "failed",
         result: `Email provider disabled; no email was sent to ${payload.to}.`,
         next_steps: [
-          "Set EMAIL_PROVIDER_ENABLED=true and configure a real provider before dispatch.",
+          "Set EMAIL_PROVIDER_ENABLED=true and configure SMTP host, port, username, password, and from address before dispatch.",
         ],
         mocked: false,
-        failureReason: "providerDisabled",
+        failureReason: !liveProvider ? "providerDisabled" : "providerNotConfigured",
       };
     }
 
-    return {
-      status: "success",
-      result: `Email dispatched to ${payload.to} via configured provider.`,
-      next_steps: ["Poll for delivery status and update the task lifecycle."],
-    };
+    try {
+      const nodemailer = await this.loadNodemailer();
+      if (!nodemailer) {
+        return {
+          status: "failed",
+          result: "Email dispatch failed: nodemailer is not available at runtime.",
+          next_steps: ["Install/verify nodemailer and retry the approved dispatch."],
+          mocked: false,
+          failureReason: "emailProviderMissing",
+        };
+      }
+
+      const transporter = nodemailer.createTransport({
+        host: account.smtpHost,
+        port: account.smtpPort,
+        secure: account.smtpPort === 465,
+        auth: { user: account.username, pass: account.password },
+      });
+
+      const info = await transporter.sendMail({
+        from: account.fromName ? `"${account.fromName}" <${account.fromAddress}>` : account.fromAddress,
+        to: payload.to,
+        subject: payload.subject,
+        text: payload.body,
+      });
+
+      return {
+        status: "success",
+        result: `Email dispatched to ${payload.to} via ${account.smtpHost}.`,
+        next_steps: ["Poll for delivery status and update the task lifecycle."],
+        mocked: false,
+        providerUsed: account.provider,
+        messageId: info?.messageId,
+      };
+    } catch (err: any) {
+      return {
+        status: "failed",
+        result: `Email dispatch failed: ${err?.message || "unknown SMTP error"}.`,
+        next_steps: ["Check SMTP credentials, host, port, and provider security settings before retrying."],
+        mocked: false,
+        failureReason: "smtpDispatchFailed",
+      };
+    }
   }
 
   private static async submitForm(payload: DigitalFormPayload): Promise<DigitalExecutionResult> {
@@ -282,6 +325,68 @@ export class DigitalExecutionService {
       return JSON.stringify(payload).slice(0, 240);
     } catch {
       return "[unserializable payload]";
+    }
+  }
+
+  private static async resolveEmailAccount(payload: DigitalEmailPayload): Promise<EmailAccount | null> {
+    const envAccount = this.emailAccountFromEnv();
+    if (envAccount) return envAccount;
+
+    const settings = await loadAdminSettings().catch(() => null);
+    const email = settings?.integrations?.email;
+    if (!email?.enabled) return null;
+    const accounts = email.accounts || [];
+    const requestedFrom = payload.from?.trim().toLowerCase();
+    const account =
+      (requestedFrom
+        ? accounts.find((item) => item.fromAddress?.trim().toLowerCase() === requestedFrom)
+        : null) ||
+      accounts.find((item) => item.fromAddress && item.smtpHost && item.smtpPort && item.username && item.password);
+    if (account) return account;
+
+    if (email.fromAddress && email.smtpHost && email.smtpPort && email.username && email.password) {
+      return {
+        id: "legacy-email-account",
+        label: email.fromAddress,
+        provider: email.provider || "smtp",
+        fromName: email.fromName || "ZED",
+        fromAddress: email.fromAddress,
+        smtpHost: email.smtpHost,
+        smtpPort: email.smtpPort,
+        username: email.username,
+        password: email.password,
+      };
+    }
+
+    return null;
+  }
+
+  private static emailAccountFromEnv(): EmailAccount | null {
+    const smtpHost = process.env.EMAIL_SMTP_HOST || process.env.SMTP_HOST;
+    const smtpPort = Number(process.env.EMAIL_SMTP_PORT || process.env.SMTP_PORT || 0);
+    const username = process.env.EMAIL_SMTP_USER || process.env.SMTP_USER;
+    const password = process.env.EMAIL_SMTP_PASSWORD || process.env.SMTP_PASSWORD;
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_FROM;
+    if (!smtpHost || !smtpPort || !username || !password || !fromAddress) return null;
+    return {
+      id: "env-email-account",
+      label: fromAddress,
+      provider: "smtp",
+      fromName: process.env.EMAIL_FROM_NAME || "ZED",
+      fromAddress,
+      smtpHost,
+      smtpPort,
+      username,
+      password,
+    };
+  }
+
+  private static async loadNodemailer(): Promise<any | null> {
+    try {
+      const mod = await import("nodemailer");
+      return (mod as any).default || mod;
+    } catch {
+      return null;
     }
   }
 }

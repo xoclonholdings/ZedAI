@@ -72,6 +72,19 @@ export interface ChatExecutionTrace {
   fileContextUsed: boolean;
 }
 
+export interface ChatExecutionTestHooks {
+  injectedMemory?: () => Promise<{ formatted: string }>;
+  contextAssessment?: () => Promise<any>;
+  knowledgeContext?: () => Promise<any>;
+  adminContext?: () => Promise<any>;
+  fileContext?: () => Promise<{ prompt: string; filesReferenced: string[]; failedFiles: string[] }>;
+  voicePrompt?: () => Promise<string>;
+  route?: (request: any) => Promise<any>;
+  present?: (draft: string, options: any) => Promise<{ content: string; adjustments: string[] }>;
+  reflect?: (input: any) => Promise<void>;
+  log?: (entry: any) => Promise<void>;
+}
+
 function emptyOutput(value: unknown): boolean {
   return !String(value || "")
     .replace(/\(no response\)/gi, "")
@@ -115,7 +128,7 @@ function findPriorWebUrlFromMetadata(history: any[]): string | undefined {
   return undefined;
 }
 
-function resolveReferencedWebpage(content: string, history: any[]): string {
+export function resolveReferencedWebpageForTest(content: string, history: any[]): string {
   if (extractWebTargets(content).length > 0) return content;
   if (!hasWebsiteReferenceWithoutTarget(content)) return content;
 
@@ -175,7 +188,7 @@ async function saveAssistantMessage(
 }
 
 export class ChatExecutionService {
-  static async execute(input: ChatExecutionInput): Promise<Record<string, any>> {
+  static async execute(input: ChatExecutionInput, hooks: ChatExecutionTestHooks = {}): Promise<Record<string, any>> {
     const trace: ChatExecutionTrace = {
       traceId: randomUUID(),
       conversationId: input.conversationId,
@@ -218,19 +231,21 @@ export class ChatExecutionService {
       const history = input.conversationId
         ? await storage.getMessagesByConversation(input.conversationId).catch(() => [])
         : [];
-      const effectiveMessage = resolveReferencedWebpage(input.message, history);
+      const effectiveMessage = resolveReferencedWebpageForTest(input.message, history);
       const webLookupIntent = isWebLookupIntent(effectiveMessage) || isWebLookupIntent(input.message);
       trace.detectedIntent = webLookupIntent ? "web_research" : "manager";
 
       if (!webLookupIntent) {
         try {
           trace.servicesInvoked.push("ContextInquiryEngine.assess");
-          const contextAssessmentResult = await ContextInquiryEngine.assess({ userInput: input.message });
+          const contextAssessmentResult = hooks.contextAssessment
+            ? await hooks.contextAssessment()
+            : await ContextInquiryEngine.assess({ userInput: input.message });
           const assessment = contextAssessmentResult.assessment;
           const topQuestion = selectTopContextQuestion(assessment.questions);
 
           if (assessment.responsePolicy === "inquire_first" && topQuestion) {
-            const presented = await presentZedResponseWithChecks(questionOnly(topQuestion.question), {
+            const presented = await (hooks.present || presentZedResponseWithChecks)(questionOnly(topQuestion.question), {
               userMessage: input.message,
               includeSources: false,
               mode: "chat",
@@ -256,7 +271,7 @@ export class ChatExecutionService {
         } catch (error: any) {
           trace.executionStatus = "partial";
           trace.fallbackReason = `context_inquiry_failed:${error?.message || String(error)}`;
-          await logRuntimeEvent({
+          await (hooks.log || logRuntimeEvent)({
             level: "warn",
             source: "server",
             event: "chat.context_inquiry.failed",
@@ -266,35 +281,43 @@ export class ChatExecutionService {
         }
       }
 
-      const injectedMemory = await injectMemory("ManagerAgent", {
-        includeFoundation: Boolean(input.isAdmin),
-      }).catch(() => ({ formatted: "" }));
+      const injectedMemory = hooks.injectedMemory
+        ? await hooks.injectedMemory()
+        : await injectMemory("ManagerAgent", {
+            includeFoundation: Boolean(input.isAdmin),
+          }).catch(() => ({ formatted: "" }));
       if (injectedMemory.formatted) trace.memorySources.push("MemoryInjector");
 
       trace.servicesInvoked.push("KnowledgeService.buildContext");
-      const knowledge = await KnowledgeService.buildContext({
-        userId: input.userId,
-        query: effectiveMessage,
-        conversationId: input.conversationId,
-        lane: "manager",
-        injectedMemory: injectedMemory.formatted,
-        includeAdminFoundation: Boolean(input.isAdmin),
-      });
+      const knowledge = hooks.knowledgeContext
+        ? await hooks.knowledgeContext()
+        : await KnowledgeService.buildContext({
+            userId: input.userId,
+            query: effectiveMessage,
+            conversationId: input.conversationId,
+            lane: "manager",
+            injectedMemory: injectedMemory.formatted,
+            includeAdminFoundation: Boolean(input.isAdmin),
+          });
       trace.retrievalMode = (knowledge as any).retrievalMode || "knowledge_context";
       if (knowledge.prompt) trace.memorySources.push("KnowledgeService");
 
       trace.servicesInvoked.push("buildZedAdminContext");
-      const adminContext = await buildZedAdminContext({
-        userId: input.userId,
-        conversationId: input.conversationId,
-        projectId: input.projectId || input.context?.projectId,
-        workspaceId: input.workspaceId || input.context?.workspaceId,
-      } as any);
+      const adminContext = hooks.adminContext
+        ? await hooks.adminContext()
+        : await buildZedAdminContext({
+            userId: input.userId,
+            conversationId: input.conversationId,
+            projectId: input.projectId || input.context?.projectId,
+            workspaceId: input.workspaceId || input.context?.workspaceId,
+          } as any);
       trace.projectContextUsed = Boolean(adminContext.meta.projectInstructions || adminContext.meta.projectSourceCount);
       trace.projectSources = adminContext.meta.projectSourceCount ? ["ProjectFilingStore"] : [];
       trace.sourceCount = adminContext.meta.projectSourceCount || 0;
 
-      const fileContext = await buildFileContext(input.conversationId);
+      const fileContext = hooks.fileContext
+        ? await hooks.fileContext()
+        : await buildFileContext(input.conversationId);
       trace.filesReferenced = fileContext.filesReferenced;
       trace.fileContextUsed = Boolean(fileContext.prompt);
       if (fileContext.prompt) trace.memorySources.push("conversation_files");
@@ -322,7 +345,9 @@ export class ChatExecutionService {
         isAdmin: Boolean(input.isAdmin),
         knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt),
       });
-      const voicePrompt = await buildZedVoicePrompt({ mode: voiceMode });
+      const voicePrompt = hooks.voicePrompt
+        ? await hooks.voicePrompt()
+        : await buildZedVoicePrompt({ mode: voiceMode });
       const cognitiveKnowledgePrompt = [
         governancePrompt,
         principlePrompt,
@@ -337,7 +362,7 @@ export class ChatExecutionService {
         .join("\n\n");
 
       trace.servicesInvoked.push("ZedAutonomousOrchestrator.route", "ManagerAgent.route");
-      const response = await ZedAutonomousOrchestrator.route({
+      const routeRequest = {
         userId: input.userId,
         message: effectiveMessage,
         conversationId: input.conversationId,
@@ -351,7 +376,10 @@ export class ChatExecutionService {
           isAdmin: Boolean(input.isAdmin),
           strategic: strategicReasoning.active,
         },
-      });
+      };
+      const response = hooks.route
+        ? await hooks.route(routeRequest)
+        : await ZedAutonomousOrchestrator.route(routeRequest);
 
       const upstreamEmpty = emptyOutput(response.reply);
       const upstreamTemplate = !upstreamEmpty && hasTemplateLeakage(response.reply);
@@ -360,7 +388,7 @@ export class ChatExecutionService {
         trace.failureReason = upstreamEmpty ? "upstream_empty_output" : "upstream_template_output";
       }
 
-      const presented = await presentZedResponseWithChecks(
+      const presented = await (hooks.present || presentZedResponseWithChecks)(
         trace.executionStatus === "failed"
           ? `Execution failed: ${trace.failureReason}.`
           : response.reply,
@@ -411,7 +439,7 @@ export class ChatExecutionService {
         ...metadata,
       });
 
-      await ZedReflectionEngine.reflectAfterReply({
+      await (hooks.reflect || ZedReflectionEngine.reflectAfterReply)({
         userId: input.userId,
         conversationId: input.conversationId,
         userMessage: input.message,
@@ -421,7 +449,7 @@ export class ChatExecutionService {
         requiresApproval: response.requiresApproval,
         tags: ["orchestrate", "cognitive-core", trace.selectedAgent || "unknown-agent"],
       }).catch((error) => {
-        void logRuntimeEvent({
+        void (hooks.log || logRuntimeEvent)({
           level: "warn",
           source: "server",
           event: "reflection.failed",
@@ -430,7 +458,7 @@ export class ChatExecutionService {
         });
       });
 
-      await logRuntimeEvent({
+      await (hooks.log || logRuntimeEvent)({
         level: trace.executionStatus === "failed" ? "error" : "info",
         source: "server",
         event: "chat.execution.trace",
@@ -447,7 +475,7 @@ export class ChatExecutionService {
     } catch (error: any) {
       trace.executionStatus = "failed";
       trace.failureReason = error?.message || String(error);
-      await logRuntimeEvent({
+      await (hooks.log || logRuntimeEvent)({
         level: "error",
         source: "server",
         event: "chat.execution.failed",

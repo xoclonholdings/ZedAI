@@ -129,7 +129,7 @@ function isPlaceholderOutput(output: string): boolean {
   );
 }
 
-async function executeAgentStage(opts: {
+export async function executeAgentStage(opts: {
   run: FlowRun;
   flow: FlowDefinition;
   stage: FlowStage;

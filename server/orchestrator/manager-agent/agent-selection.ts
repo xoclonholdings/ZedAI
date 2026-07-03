@@ -20,11 +20,16 @@ export interface AgentSelectionDecision {
  */
 export function isWebLookupIntent(message: string): boolean {
   const lower = message.toLowerCase();
+  const hasBareDomain = [...message.matchAll(/\b[a-z0-9-]+(\.[a-z0-9-]+)+\/?[^\s)]*/gi)]
+    .some((match) => {
+      const index = match.index ?? -1;
+      return !(index > 0 && message[index - 1] === "@");
+    });
 
   const hasUrl =
     /\bhttps?:\/\/[^\s)]+/i.test(message) ||
     /\bwww\.[^\s)]+/i.test(message) ||
-    /\b[a-z0-9-]+(\.[a-z0-9-]+)+\/?[^\s)]*/i.test(message);
+    hasBareDomain;
 
   const webIntentPhrases = [
     "visit",
@@ -375,7 +380,9 @@ export async function selectAgentWithTrace(
     };
   }
 
-  const classified = await classifyWithLlm(message);
+  const classified = process.env.ZED_ROUTER_DISABLE_LLM_CLASSIFIER === "true"
+    ? null
+    : await classifyWithLlm(message);
   if (classified) {
     return {
       selectedAgent: classified,

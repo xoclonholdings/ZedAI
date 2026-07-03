@@ -50,6 +50,8 @@ export function extractWebTargets(text: string): WebTarget[] {
   const matches = new Set<string>();
   for (const pattern of [URL_PATTERN, WWW_PATTERN, DOMAIN_PATTERN]) {
     for (const match of text.matchAll(pattern)) {
+      const index = match.index ?? -1;
+      if (index > 0 && text[index - 1] === "@") continue;
       if (match[0]) matches.add(match[0]);
     }
   }
