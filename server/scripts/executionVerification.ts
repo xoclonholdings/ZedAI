@@ -266,6 +266,34 @@ async function testChatTraceAndFileContext() {
     assert.equal(failed.metadata.executionStatus, "failed");
     assert.equal(failed.metadata.failureReason, "upstream_empty_output");
     assert(!savedMessages.some((message) => message.role === "assistant" && !String(message.content || "").trim()));
+
+    const templated = await ChatExecutionService.execute(
+      {
+        userId: "verify-user",
+        message: "Search for my social profiles.",
+        conversationId: "verify-conversation",
+        route: "/api/orchestrate",
+        persistUserMessage: true,
+      },
+      {
+        injectedMemory: async () => ({ formatted: "" }),
+        contextAssessment: async () => ({ assessment: { responsePolicy: "answer_direct", materialUncertainty: false, questions: [] } }),
+        knowledgeContext: async () => ({ prompt: "", retrievalMode: "test" }),
+        adminContext: async () => ({ text: "", meta: {} }),
+        voicePrompt: async () => "voice prompt",
+        present: async (draft: string) => ({ content: draft, adjustments: [] }),
+        reflect: async () => undefined,
+        log: async () => undefined,
+        route: async () => ({
+          reply: "No public profile matched.\n\nNext move: Give me one more constraint or target, and I can turn this into a cleaner action plan.",
+          agent: "IntelligenceAgent",
+          metadata: {},
+        }),
+      },
+    );
+    assert.equal(templated.metadata.executionStatus, "failed");
+    assert.equal(templated.metadata.failureReason, "upstream_template_output");
+    assert(!String(templated.reply || "").includes("Next move"));
   } finally {
     (storage as any).createMessage = originalCreateMessage;
     (storage as any).getMessagesByConversation = originalGetMessages;

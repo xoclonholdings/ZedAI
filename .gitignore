@@ -7,7 +7,9 @@ hub/flows/
 hub/logs/
 hub/shared-memory/curation/
 hub/shared-memory/foundation-reparse/
+hub/shared-memory/execution/
 hub/shared-memory/knowledge-graph/
+hub/shared-memory/working/trading-intelligence.md
 hub/sessions/
 server/hub/logs/
 shared/package-lock.json

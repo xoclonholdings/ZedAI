@@ -92,7 +92,14 @@ function emptyOutput(value: unknown): boolean {
 }
 
 function hasTemplateLeakage(value: string): boolean {
-  return /^\s*(next move|recommended action|confidence level|research brief|key findings)\s*:?/im.test(value);
+  const text = String(value || "");
+  return [
+    /^\s*(next move|recommended action|confidence level|research brief|key findings)\s*:?/im,
+    /\bnext\s+move\s*:/i,
+    /\bgive me one more constraint\b/i,
+    /\bturn this into (?:an executable|a cleaner|a tighter)\b/i,
+    /\bproduce a report instead of a loose chat answer\b/i,
+  ].some((pattern) => pattern.test(text));
 }
 
 function normalizeFailureReason(error: any, trace: ChatExecutionTrace): string {
@@ -242,6 +249,7 @@ export class ChatExecutionService {
       const effectiveMessage = resolveReferencedWebpageForTest(input.message, history);
       const webLookupIntent = isWebLookupIntent(effectiveMessage) || isWebLookupIntent(input.message);
       trace.detectedIntent = webLookupIntent ? "web_research" : "manager";
+      let contextInquiryPrompt = "";
 
       if (!webLookupIntent) {
         try {
@@ -253,28 +261,14 @@ export class ChatExecutionService {
           const topQuestion = selectTopContextQuestion(assessment.questions);
 
           if (assessment.responsePolicy === "inquire_first" && topQuestion) {
-            const presented = await (hooks.present || presentZedResponseWithChecks)(questionOnly(topQuestion.question), {
-              userMessage: input.message,
-              includeSources: false,
-              mode: "chat",
-              grounded: true,
-            });
-            trace.presentationAdjustments.push(...presented.adjustments);
-            const metadata = {
-              agent: "ManagerAgent",
-              requiresApproval: false,
-              contextInquiry: true,
-              contextAssessment: compactContextAssessment(assessment, topQuestion),
-              executionTrace: trace,
-            };
-            await saveAssistantMessage(input.conversationId, presented.content, metadata);
-            return {
-              reply: presented.content,
-              agent: "ManagerAgent",
-              requiresApproval: false,
-              metadata,
-              trace,
-            };
+            contextInquiryPrompt = [
+              "## Context Inquiry Signal",
+              "Stored context has material uncertainty. Do not stop with a canned clarification.",
+              "Proceed with the best grounded answer when possible. Ask exactly one specific question only if the missing fact would make execution wrong.",
+              `Top missing fact: ${questionOnly(topQuestion.question)}`,
+              `Context assessment: ${JSON.stringify(compactContextAssessment(assessment, topQuestion))}`,
+            ].join("\n");
+            trace.fallbackReason = "context_inquiry_used_as_reasoning_signal";
           }
         } catch (error: any) {
           trace.executionStatus = "partial";
@@ -362,6 +356,7 @@ export class ChatExecutionService {
         strategicReasoning.prompt,
         voicePrompt,
         getZedResponsePolicy(voiceMode),
+        contextInquiryPrompt,
         adminContext.text,
         fileContext.prompt,
         knowledge.prompt,

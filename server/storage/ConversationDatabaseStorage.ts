@@ -1,4 +1,5 @@
 import { eq, desc, and, or, sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 import {
   type Conversation,
@@ -19,6 +20,11 @@ export class ConversationDatabaseStorage {
     const cacheKey = this.generateCacheKey("conversation", id);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) {
+      const fallback = await fallbackStorage.retrieve(`conversation_${id}`);
+      if (fallback) memoryCache.set(cacheKey, fallback, 300000);
+      return fallback;
+    }
 
     try {
       const [conversation] = await db
@@ -41,6 +47,11 @@ export class ConversationDatabaseStorage {
     const cacheKey = this.generateCacheKey("user_conversations", userId);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) {
+      const fallback = (await fallbackStorage.retrieve(`user_conversations_${userId}`)) || [];
+      memoryCache.set(cacheKey, fallback, 120000);
+      return fallback;
+    }
 
     try {
       const result = await db
@@ -60,6 +71,24 @@ export class ConversationDatabaseStorage {
   }
 
   async createConversation(data: InsertConversation): Promise<Conversation> {
+    if (!db) {
+      const conversation = {
+        id: randomUUID(),
+        ...data,
+        preview: (data as any).preview ?? null,
+        isActive: data.isActive ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as Conversation;
+      const listKey = `user_conversations_${data.userId}`;
+      const existing = ((await fallbackStorage.retrieve(listKey)) || []) as Conversation[];
+      await fallbackStorage.store(`conversation_${conversation.id}`, conversation);
+      await fallbackStorage.store(listKey, [conversation, ...existing.filter((item) => item.id !== conversation.id)]);
+      memoryCache.delete(this.generateCacheKey("user_conversations", data.userId));
+      memoryCache.set(this.generateCacheKey("conversation", conversation.id), conversation, 300000);
+      return conversation;
+    }
+
     const [conversation] = await db
       .insert(conversations)
       .values(data)
@@ -71,6 +100,9 @@ export class ConversationDatabaseStorage {
 
     try {
       await fallbackStorage.store(`conversation_${conversation.id}`, conversation);
+      const listKey = `user_conversations_${conversation.userId}`;
+      const existing = ((await fallbackStorage.retrieve(listKey)) || []) as Conversation[];
+      await fallbackStorage.store(listKey, [conversation, ...existing.filter((item) => item.id !== conversation.id)]);
     } catch (error) {
       console.warn("[CONVO STORAGE] fallback store failed:", error);
     }
@@ -83,6 +115,18 @@ export class ConversationDatabaseStorage {
     updates: Partial<Conversation>
   ): Promise<Conversation | undefined> {
     const fallbackKey = `conversation_${id}`;
+    if (!db) {
+      const existing = await fallbackStorage.retrieve(fallbackKey);
+      if (!existing) return undefined;
+      const updated = { ...existing, ...updates, updatedAt: new Date() } as Conversation;
+      await fallbackStorage.store(fallbackKey, updated);
+      const listKey = `user_conversations_${updated.userId}`;
+      const list = ((await fallbackStorage.retrieve(listKey)) || []) as Conversation[];
+      await fallbackStorage.store(listKey, [updated, ...list.filter((item) => item.id !== id)]);
+      memoryCache.delete(this.generateCacheKey("conversation", id));
+      memoryCache.delete(this.generateCacheKey("user_conversations", updated.userId));
+      return updated;
+    }
 
     const [updated] = await db
       .update(conversations)
@@ -107,13 +151,26 @@ export class ConversationDatabaseStorage {
   }
 
   async deleteConversation(id: string): Promise<boolean> {
+    const conversation = await this.getConversation(id);
+
     try {
       await fallbackStorage.delete(`conversation_${id}`);
+      if (conversation) {
+        const listKey = `user_conversations_${conversation.userId}`;
+        const list = ((await fallbackStorage.retrieve(listKey)) || []) as Conversation[];
+        await fallbackStorage.store(listKey, list.filter((item) => item.id !== id));
+      }
     } catch (error) {
       console.warn("[CONVO STORAGE] fallback delete failed:", error);
     }
 
-    const conversation = await this.getConversation(id);
+    if (!db) {
+      if (conversation) {
+        memoryCache.delete(this.generateCacheKey("conversation", id));
+        memoryCache.delete(this.generateCacheKey("user_conversations", conversation.userId));
+      }
+      return Boolean(conversation);
+    }
 
     try {
       const result = await db

@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface FileUploadProps {
   conversationId: string;
-  onUpload: (files: any[]) => void;
+  onUpload: (files: File[], result: { conversationId?: string; files?: unknown[] }) => void;
   onClose: () => void;
 }
 
@@ -54,18 +54,25 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, files) => {
+      const uploadedCount = Array.isArray(data?.files) ? data.files.length : files.length;
       toast({
         title: "Upload successful",
-        description: `${data.files.length} file(s) processed successfully`
+        description: `${uploadedCount} file(s) processed successfully`
       });
       
       // Refresh files list
       queryClient.invalidateQueries({ 
         queryKey: ["/api/conversations", conversationId, "files"] 
       });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations", conversationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations"],
+      });
       
-      onUpload(uploadingFiles.map(uf => uf.file));
+      onUpload(files, data);
       setUploadingFiles([]);
     },
     onError: (error) => {

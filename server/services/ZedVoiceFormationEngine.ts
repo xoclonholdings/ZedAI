@@ -267,7 +267,34 @@ function removeLeakage(content: string): string {
 }
 
 function removeCannedResponseLanguage(content: string): string {
-  return content
+  const lines = content.replace(/\r\n/g, "\n").split("\n");
+  const kept: string[] = [];
+  let skippingTemplateParagraph = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const isTemplateStart =
+      /^\s*(?:[-*]\s*)?(next\s+move|recommended\s+action|confidence(?:\s+level)?|research\s+brief|key\s+findings)\s*:?/i.test(line) ||
+      /\bgive me one more constraint\b/i.test(line) ||
+      /\bturn this into (?:an executable|a cleaner|a tighter)\b/i.test(line);
+
+    if (isTemplateStart) {
+      skippingTemplateParagraph = true;
+      continue;
+    }
+
+    if (skippingTemplateParagraph) {
+      if (!trimmed) {
+        skippingTemplateParagraph = false;
+      }
+      continue;
+    }
+
+    kept.push(line);
+  }
+
+  return kept
+    .join("\n")
     .replace(/^\s*next\s+move\s*:\s*/gim, "")
     .replace(/^\s*recommended\s+action\s*:\s*/gim, "")
     .replace(/^\s*confidence(?:\s+level)?\s*:\s*/gim, "")
@@ -275,6 +302,8 @@ function removeCannedResponseLanguage(content: string): string {
     .replace(/\(no response\)/gi, "")
     .replace(/\bgive me one more constraint or target,? and i can turn this into a cleaner action plan\.?/gi, "")
     .replace(/\bgive me the specific competitor set or market,? and i can turn this into a tighter action plan\.?/gi, "")
+    .replace(/\bi can turn this into an executable zed action\.?[\s\S]*?(?=\n\n|$)/gi, "")
+    .replace(/\bit can structure the research, collect findings, and produce a report instead of a loose chat answer\.?/gi, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }

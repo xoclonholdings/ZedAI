@@ -18,8 +18,7 @@ import { getActiveProviderDefaultModel } from "../core/providers/provider-config
 
 /**
  * Conversation CRUD + per-conversation files/upload + the messages
- * list endpoint. The POST /messages SSE handler lives in its own
- * module because of its size.
+ * list endpoint.
  */
 
 /** Used by every handler that takes :id — fetches the conversation,
@@ -307,7 +306,7 @@ export function registerConversationCrudRoutes(app: Express): void {
           }
           await cleanupFile(file.path);
         }
-        res.json({ files: processedFiles });
+        res.json({ conversationId, files: processedFiles });
       } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Upload failed" });

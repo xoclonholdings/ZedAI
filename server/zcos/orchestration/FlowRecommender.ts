@@ -46,7 +46,7 @@ const INTENT_PATTERNS: IntentPattern[] = [
       "find",
       "analyze",
     ],
-    reason: "It can structure the research, collect findings, and produce a report instead of a loose chat answer.",
+    reason: "Use a tracked research flow when the user explicitly wants a multi-step run.",
   },
   {
     category: "learning",

@@ -147,11 +147,20 @@ export default function ChatArea({
     navigate("/chat");
   }
 
-  function handleFileUpload() {
-    if (activeUploadConversationId) {
+  function handleFileUpload(_files?: File[], result?: { conversationId?: string }) {
+    const uploadedConversationId = result?.conversationId || activeUploadConversationId;
+    if (uploadedConversationId) {
+      setUploadConversationId(uploadedConversationId);
       queryClient.invalidateQueries({
-        queryKey: ["/api/conversations", activeUploadConversationId, "files"],
+        queryKey: ["/api/conversations", uploadedConversationId, "files"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/conversations", uploadedConversationId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      if (conversationId !== uploadedConversationId) {
+        navigate(`/chat/${uploadedConversationId}`);
+      }
     }
     setShowFileUpload(false);
   }

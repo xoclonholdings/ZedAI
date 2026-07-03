@@ -1,5 +1,5 @@
 import { eq, desc, asc } from "drizzle-orm";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 
 import {
   type File,
@@ -21,6 +21,11 @@ export class FileDatabaseStorage {
     const cacheKey = this.generateCacheKey("file", id);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) {
+      const fallback = await fallbackStorage.retrieve(`file_${id}`);
+      if (fallback) memoryCache.set(cacheKey, fallback, 300000);
+      return fallback;
+    }
 
     try {
       const [file] = await db.select().from(files).where(eq(files.id, id));
@@ -40,6 +45,12 @@ export class FileDatabaseStorage {
     const cacheKey = this.generateCacheKey("conversation_files", conversationId);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    const fallbackKey = `conversation_files_${conversationId}`;
+    if (!db) {
+      const fallback = ((await fallbackStorage.retrieve(fallbackKey)) || []) as File[];
+      memoryCache.set(cacheKey, fallback, 180000);
+      return fallback;
+    }
 
     try {
       const result = await db
@@ -59,15 +70,29 @@ export class FileDatabaseStorage {
   }
 
   async createFile(data: InsertFile): Promise<File> {
-    const fallbackKey = `file_${data.id}`;
+    const id = randomUUID();
+    const fallbackKey = `file_${id}`;
 
-    const [file] = await db.insert(files).values(data).returning();
+    if (!db) {
+      const file = {
+        id,
+        ...data,
+        extractedContent: data.extractedContent ?? null,
+        analysis: data.analysis ?? null,
+        createdAt: new Date(),
+      } as File;
+      await this.storeFallbackFile(file);
+      return file;
+    }
+
+    const [file] = await db.insert(files).values({ id, ...data } as any).returning();
 
     memoryCache.delete(
       this.generateCacheKey("conversation_files", data.conversationId)
     );
 
     await fallbackStorage.store(fallbackKey, file);
+    await this.storeFallbackFile(file);
 
     return file;
   }
@@ -77,6 +102,13 @@ export class FileDatabaseStorage {
     updates: Partial<File>
   ): Promise<File | undefined> {
     const fallbackKey = `file_${id}`;
+    if (!db) {
+      const existing = await fallbackStorage.retrieve(fallbackKey);
+      if (!existing) return undefined;
+      const updated = { ...existing, ...updates } as File;
+      await this.storeFallbackFile(updated);
+      return updated;
+    }
 
     const [updated] = await db
       .update(files)
@@ -97,9 +129,17 @@ export class FileDatabaseStorage {
   }
 
   async deleteFile(id: string): Promise<boolean> {
-    await fallbackStorage.delete(`file_${id}`);
-
     const file = await this.getFile(id);
+    await fallbackStorage.delete(`file_${id}`);
+    if (file) {
+      const listKey = `conversation_files_${file.conversationId}`;
+      const list = ((await fallbackStorage.retrieve(listKey)) || []) as File[];
+      await fallbackStorage.store(listKey, list.filter((item) => item.id !== id));
+      memoryCache.delete(this.generateCacheKey("conversation_files", file.conversationId));
+      memoryCache.delete(this.generateCacheKey("file", id));
+    }
+
+    if (!db) return Boolean(file);
 
     try {
       if (file) {
@@ -129,6 +169,7 @@ export class FileDatabaseStorage {
     chunkData: string,
     chunkSize: number
   ): Promise<boolean> {
+    if (!db) return false;
     try {
       const checksum = createHash("md5").update(chunkData).digest("hex");
 
@@ -150,6 +191,7 @@ export class FileDatabaseStorage {
   async getFileChunks(
     fileId: string
   ): Promise<{ chunkIndex: number; chunkData: string; chunkSize: number }[]> {
+    if (!db) return [];
     return await db
       .select({
         chunkIndex: fileStorage.chunkIndex,
@@ -159,5 +201,19 @@ export class FileDatabaseStorage {
       .from(fileStorage)
       .where(eq(fileStorage.fileId, fileId))
       .orderBy(asc(fileStorage.chunkIndex));
+  }
+
+  private async storeFallbackFile(file: File): Promise<void> {
+    await fallbackStorage.store(`file_${file.id}`, file);
+    const listKey = `conversation_files_${file.conversationId}`;
+    const existing = ((await fallbackStorage.retrieve(listKey)) || []) as File[];
+    const next = [file, ...existing.filter((item) => item.id !== file.id)].sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+    await fallbackStorage.store(listKey, next);
+    memoryCache.delete(this.generateCacheKey("file", file.id));
+    memoryCache.delete(this.generateCacheKey("conversation_files", file.conversationId));
   }
 }
