@@ -258,7 +258,7 @@ function removeRejectedLanguage(content: string, memory: ZedVoiceMemory): string
 function removeLeakage(content: string): string {
   return content
     .split("\n")
-    .filter((line) => !/\b(system prompt|developer message|internal parse format|memory context|tool call|ollama|chroma|vector store|scratchpad memory|source_strength|next_step:|points:|meaning:|brave search|web search via|search provider|configured model synthesis|agent routing|backend logs?|internal prompts?)\b/i.test(line.trim()))
+    .filter((line) => !/\b(system prompt|developer message|internal parse format|memory context|tool call|chroma|vector store|scratchpad memory|source_strength|next_step:|points:|meaning:|brave search|web search via|search provider|configured model synthesis|agent routing|backend logs?|internal prompts?)\b/i.test(line.trim()))
     .filter((line) => !/\buser_[a-z0-9_]+\b/i.test(line.trim()))
     .filter((line) => !/\binternal\s+(session|user|database)?\s*id\b/i.test(line.trim()))
     .filter((line) => !/\b[A-Z][A-Za-z0-9& -]{2,80}\s+workflow\b/.test(line.trim()))

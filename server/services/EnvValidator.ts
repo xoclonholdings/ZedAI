@@ -140,10 +140,6 @@ function pushProviderChecks(
     const urlCheck = checkUrl(env, "CLAUDE_BASE_URL");
     if (urlCheck) checks.push(urlCheck);
   }
-  if (provider === "ollama") {
-    const urlCheck = checkUrl(env, "OLLAMA_URL");
-    if (urlCheck) checks.push(urlCheck);
-  }
 }
 
 function pushSessionSecretCheck(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
@@ -272,14 +268,14 @@ export function validateEnv(
       name: "MODEL_PROVIDER",
       severity: "error",
       message: "Not set. Active provider cannot be determined.",
-      hint: 'Set to one of: "openai", "claude", "ollama", "claw-temp".',
+      hint: 'Set to one of: "openai", "claude", "claw-temp".',
     });
-  } else if (!["openai", "claude", "ollama", "claw-temp"].includes(provider)) {
+  } else if (!["openai", "claude", "claw-temp"].includes(provider)) {
     checks.push({
       name: "MODEL_PROVIDER",
       severity: "error",
       message: `Unknown value "${provider}".`,
-      hint: 'Must be one of: "openai", "claude", "ollama", "claw-temp".',
+      hint: 'Must be one of: "openai", "claude", "claw-temp".',
     });
   } else {
     checks.push({

@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
+import { generateChatFromProvider } from "../../services/ModelProviderService";
 import { webSearch, formatResultsForPrompt, type SearchResponse } from "../../services/WebSearchService";
 import {
   fetchWebTargetsFromText,
@@ -160,7 +160,7 @@ POINTS:
 MEANING: [what this means for the user]
 NEXT_STEP: [specific thing to do next]`.trim();
 
-    const rawReply = await generateChatFromOllama(
+    const rawReply = await generateChatFromProvider(
       [{ role: "user", content: request.query }],
       systemPrompt,
       { lane: "research" },
@@ -175,7 +175,7 @@ NEXT_STEP: [specific thing to do next]`.trim();
   }
 
   static async synthesize(documents: string[], topic: string): Promise<string> {
-    return generateChatFromOllama(
+    return generateChatFromProvider(
       [{
         role: "user",
         content: `Synthesize these documents about "${topic}" into a clear, concise answer:\n\n${documents.join("\n\n---\n\n")}`,

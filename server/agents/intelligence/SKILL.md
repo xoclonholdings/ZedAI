@@ -26,7 +26,7 @@ You are the Intelligence Agent for ZED AI. You work in the background, monitorin
 - Feed findings to Operations Agent for content and strategy
 
 ## Tools Available
-- Ollama (qwen2.5:7b for synthesis, llava-phi3 for vision tasks)
+- Active configured model provider for synthesis and vision tasks
 - Web search APIs (Serper/Brave — when enabled in access.yaml)
 - GitHub API (read-only — when enabled in access.yaml)
 - arXiv, RSS feed monitoring

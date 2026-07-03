@@ -1,7 +1,7 @@
 import type { Express } from "express";
 
 import { isAdmin, isAuthenticated } from "../localAuth";
-import { checkOllamaHealth } from "../services/Ollama/OllamaService";
+import { checkModelProviderHealth } from "../services/ModelProviderService";
 import {
   getActiveProviderName,
   getProviderRoutingSummary,
@@ -33,9 +33,7 @@ export function registerDiagnosticsRoutes(
       const config = getProviderRuntimeConfig();
       const target = getResolvedTargetName({ lane: "chat" });
       const provider = getActiveProviderName({ lane: "chat" });
-      // probeUrl must reflect the ACTIVE provider's base URL, not always
-      // Ollama — otherwise the admin Provider Routing card shows
-      // "localhost:11434" even when chat actually goes to Lightning.
+      // probeUrl must reflect the active provider's cloud endpoint.
       const probeUrl =
         provider === "openai"
           ? config.openai.baseUrl
@@ -43,11 +41,8 @@ export function registerDiagnosticsRoutes(
             ? config.claude.baseUrl
             : provider === "claw-temp"
               ? config.clawTemp.baseUrl
-              : config.ollama.baseUrl;
+              : config.openai.baseUrl;
 
-      const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:|\/|$)/i.test(
-        probeUrl,
-      );
       const targetHost = (() => {
         try {
           return new URL(probeUrl).host;
@@ -55,13 +50,11 @@ export function registerDiagnosticsRoutes(
           return probeUrl;
         }
       })();
-      const locationLabel = isLocal
-        ? "Local"
-        : /lightning/i.test(probeUrl)
+      const locationLabel = /lightning/i.test(probeUrl)
           ? "Lightning"
           : targetHost || "Remote";
 
-      const ollamaHealth = await checkOllamaHealth();
+      const aiHealth = await checkModelProviderHealth();
       const model = getActiveProviderDefaultModel(config);
 
       res.json({
@@ -70,9 +63,9 @@ export function registerDiagnosticsRoutes(
         target,
         target_url: probeUrl,
         location_label: locationLabel,
-        is_local: isLocal,
-        status: ollamaHealth.status,
-        available_models: ollamaHealth.models,
+        is_local: false,
+        status: aiHealth.status,
+        available_models: aiHealth.models,
         lane_models: {
           chat: config.laneModels.chat || "",
           manager: config.laneModels.manager || "",
@@ -89,7 +82,7 @@ export function registerDiagnosticsRoutes(
 
   // Admin Overview's system snapshot.
   app.get("/api/admin/system-status", isAdmin, async (_req, res) => {
-    const ollama = await checkOllamaHealth();
+    const aiHealth = await checkModelProviderHealth();
     const providerConfig = getProviderRuntimeConfig();
     const activeProvider = getActiveProviderName({ lane: "chat" });
     const routingSummary = getProviderRoutingSummary();
@@ -111,10 +104,10 @@ export function registerDiagnosticsRoutes(
     });
     res.json({
       system: "ZED",
-      ollama: {
-        status: ollama.status,
-        models: ollama.models,
-        provider: ollama.provider || "ollama",
+      aiProvider: {
+        status: aiHealth.status,
+        models: aiHealth.models,
+        provider: aiHealth.provider || activeProvider,
       },
       aiHost: {
         provider: activeProvider,
@@ -143,7 +136,7 @@ export function registerDiagnosticsRoutes(
   // Admin → Overview's Provider Routing card pulls this.
   app.get("/api/admin/provider-diagnostics", isAdmin, async (_req, res) => {
     const providerConfig = getProviderRuntimeConfig();
-    const health = await checkOllamaHealth();
+    const health = await checkModelProviderHealth();
     const activeProvider = getActiveProviderName({ lane: "chat" });
     const routingSummary = getProviderRoutingSummary();
     const defaultModel = getActiveProviderDefaultModel(providerConfig);
@@ -155,7 +148,6 @@ export function registerDiagnosticsRoutes(
       config: {
         defaultModel,
         target,
-        ollamaBaseUrl: providerConfig.ollama.baseUrl,
         clawBaseUrl: providerConfig.clawTemp.baseUrl,
         clawMode: providerConfig.clawTemp.mode,
         openaiConfigured: Boolean(providerConfig.openai.apiKey),

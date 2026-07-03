@@ -145,10 +145,10 @@ export function ParametersForm({
     <div className="space-y-4">
       <FormInput label="External API Budget USD" type="number" value={file.costs.external_api_budget_usd ?? 0} onChange={(v) => update((d) => { d.costs.external_api_budget_usd = Number(v) || 0; })} />
       <ToggleRow
-        label="Ollama Is Free"
-        checked={!!file.costs.ollama_is_free}
-        onCheckedChange={(c) => update((d) => { d.costs.ollama_is_free = c; })}
-        description="Treat the default local/open model lane as zero-cost in budget logic."
+        label="Provider Free Mode"
+        checked={!!file.costs.provider_free_mode}
+        onCheckedChange={(c) => update((d) => { d.costs.provider_free_mode = c; })}
+        description="Only enable this when the active provider is contractually unmetered."
       />
       <ToggleRow
         label="Alert On External Calls"

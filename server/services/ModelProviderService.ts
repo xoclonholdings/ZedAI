@@ -2,34 +2,33 @@ import {
   checkActiveProviderHealth,
   executeProviderChat,
   executeProviderPrompt,
+  getActiveProviderName,
   getProviderRoutingSummary,
   getResolvedTargetName,
-  getActiveProviderName,
   streamProviderChat,
-} from "../../core/providers/provider-executor";
-import { getProviderRuntimeConfig } from "../../core/providers/provider-config";
-import type { ProviderExecutionOptions, ProviderMessage } from "../../core/providers/provider-interface";
+} from "../core/providers/provider-executor";
+import { getProviderRuntimeConfig } from "../core/providers/provider-config";
+import type {
+  ProviderExecutionOptions,
+  ProviderMessage,
+} from "../core/providers/provider-interface";
 
 const runtimeConfig = getProviderRuntimeConfig();
 const routingSummary = getProviderRoutingSummary();
 
 const providerDefaultModel =
-  runtimeConfig.activeProvider === "ollama"
-    ? runtimeConfig.ollama.model
-    : runtimeConfig.activeProvider === "openai"
-      ? runtimeConfig.openai.model
-      : runtimeConfig.activeProvider === "claude"
-        ? runtimeConfig.claude.model
-        : runtimeConfig.clawTemp.model;
+  runtimeConfig.activeProvider === "openai"
+    ? runtimeConfig.openai.model
+    : runtimeConfig.activeProvider === "claude"
+      ? runtimeConfig.claude.model
+      : runtimeConfig.clawTemp.model;
 
 const providerTarget =
-  runtimeConfig.activeProvider === "ollama"
-    ? runtimeConfig.ollama.baseUrl
-    : runtimeConfig.activeProvider === "openai"
-      ? runtimeConfig.openai.baseUrl
-      : runtimeConfig.activeProvider === "claude"
-        ? runtimeConfig.claude.baseUrl
-        : runtimeConfig.clawTemp.baseUrl;
+  runtimeConfig.activeProvider === "openai"
+    ? runtimeConfig.openai.baseUrl
+    : runtimeConfig.activeProvider === "claude"
+      ? runtimeConfig.claude.baseUrl
+      : runtimeConfig.clawTemp.baseUrl;
 
 console.log(`[boot] active provider: ${runtimeConfig.activeProvider}`);
 console.log(`[boot] target URL:      ${providerTarget || "(none)"}`);
@@ -50,26 +49,29 @@ console.log(
 
 if (runtimeConfig.clawTemp.baseUrl) {
   console.log(
-    `[boot] legacy remote runner configured: ${runtimeConfig.clawTemp.baseUrl} (${runtimeConfig.clawTemp.mode})`,
+    `[boot] remote runner configured: ${runtimeConfig.clawTemp.baseUrl} (${runtimeConfig.clawTemp.mode})`,
   );
 }
 
-export type OllamaMessage = ProviderMessage;
+export type ModelProviderMessage = ProviderMessage;
 
-export async function generateFromOllama(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
+export async function generateFromProvider(
+  prompt: string,
+  options?: ProviderExecutionOptions,
+): Promise<string> {
   try {
     return await executeProviderPrompt(prompt, {
       ...options,
       model: options?.model || runtimeConfig.activeModel,
     });
   } catch (err) {
-    console.error("[OllamaService] generateFromOllama failed:", err);
+    console.error("[ModelProviderService] generateFromProvider failed:", err);
     throw err;
   }
 }
 
-export async function generateChatFromOllama(
-  messages: OllamaMessage[],
+export async function generateChatFromProvider(
+  messages: ModelProviderMessage[],
   systemPrompt?: string,
   options?: ProviderExecutionOptions,
 ): Promise<string> {
@@ -80,13 +82,13 @@ export async function generateChatFromOllama(
       systemPrompt: options?.systemPrompt || systemPrompt,
     });
   } catch (err) {
-    console.error("[OllamaService] generateChatFromOllama failed:", err);
+    console.error("[ModelProviderService] generateChatFromProvider failed:", err);
     throw err;
   }
 }
 
-export async function streamChatFromOllama(
-  messages: OllamaMessage[],
+export async function streamChatFromProvider(
+  messages: ModelProviderMessage[],
   systemPrompt: string | undefined,
   onToken: (token: string) => void,
   onDone: () => void | Promise<void>,
@@ -110,7 +112,7 @@ export async function transcribeAudio(_audioBuffer: Buffer): Promise<string> {
   return "[Voice transcription requires Whisper model. Text input is recommended.]";
 }
 
-export async function checkOllamaHealth(): Promise<{
+export async function checkModelProviderHealth(): Promise<{
   status: "online" | "offline";
   models: string[];
   provider?: string;

@@ -1,5 +1,5 @@
-ollama:
-  host: "http://localhost:11434"
+ai_host:
+  host: ""
   shared_with_zeta_core: true
   timeout_ms: 60000
 

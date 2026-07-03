@@ -14,11 +14,12 @@ import {
 import { db } from "../db";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 import { logSecurityEvent } from "../services/SecurityAudit";
+import { getActiveProviderDefaultModel } from "../core/providers/provider-config";
 
 /**
  * Conversation CRUD + per-conversation files/upload + the messages
  * list endpoint. The POST /messages SSE handler lives in its own
- * module (conversations-send.ts) because of its size.
+ * module because of its size.
  */
 
 /** Used by every handler that takes :id — fetches the conversation,
@@ -133,7 +134,7 @@ export function registerConversationCrudRoutes(app: Express): void {
           userId,
           title: req.body.title || "New Chat",
           mode: req.body.mode || "chat",
-          model: "ollama",
+          model: req.body.model || getActiveProviderDefaultModel(),
           isActive: true,
         }),
       );

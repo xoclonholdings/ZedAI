@@ -213,12 +213,12 @@ async function verifyLiveHttp(baseUrl: string): Promise<CheckResult[]> {
     await createManagedUser({
       username: `live_verify_${Date.now()}`,
       password: normalPassword,
-      email: "live-verify@zed-ai.local",
+      email: "live-verify@zed-ai.test",
       firstName: "Live",
       lastName: "Verify",
     });
     const updated = await loadAdminSettings();
-    const tempUser = [...updated.users].reverse().find((user) => user.email === "live-verify@zed-ai.local");
+    const tempUser = [...updated.users].reverse().find((user) => user.email === "live-verify@zed-ai.test");
     const normalJar = makeCookieJar();
     const normalLogin = await requestJson(
       normalizedBase,
@@ -306,9 +306,9 @@ async function main() {
   const settings = await loadAdminSettings();
   const results: CheckResult[] = [
     {
-      name: "local_config_snapshot",
+      name: "runtime_config_snapshot",
       status: "PASS",
-      detail: "Loaded local admin settings and environment presence without printing secrets.",
+      detail: "Loaded runtime admin settings and environment presence without printing secrets.",
       metadata: configSnapshot(settings),
     },
     await verifyExternalWebFetch(),

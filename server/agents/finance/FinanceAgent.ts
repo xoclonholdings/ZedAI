@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
+import { generateChatFromProvider } from "../../services/ModelProviderService";
 import { formatResultsForPrompt, webSearch } from "../../services/WebSearchService";
 import { querySimilarResearch, storeResearchBrief } from "../../services/ChromaService";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
@@ -288,7 +288,7 @@ ${searchBlock}
 
 Return a direct operator-style response. Avoid vague motivation language.`.trim();
 
-    const reply = await generateChatFromOllama([{ role: "user", content: request.task }], systemPrompt, {
+    const reply = await generateChatFromProvider([{ role: "user", content: request.task }], systemPrompt, {
       lane: "finance",
     });
     await storeResearchBrief({

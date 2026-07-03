@@ -12,7 +12,6 @@ interface RuntimeStatus {
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
-  ollama: "Ollama",
   openai: "OpenAI",
   claude: "Claude",
   "claw-temp": "Remote runner",
@@ -20,7 +19,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 
 function prettyModel(model: string): string {
   if (!model) return "unknown";
-  // Strip an Ollama tag suffix to keep the footer compact ("qwen2.5:7b" -> "qwen2.5").
+  // Strip tag suffixes to keep the footer compact ("model:variant" -> "model").
   const base = model.split(":")[0];
   if (!base) return model;
   return base

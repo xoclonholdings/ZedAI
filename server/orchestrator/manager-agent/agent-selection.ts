@@ -1,4 +1,4 @@
-import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
+import { generateChatFromProvider } from "../../services/ModelProviderService";
 import { logRuntimeEvent } from "../../services/RuntimeLogger";
 
 import type { AgentName, HubConfig, OrchestratorRequest } from "./types";
@@ -64,7 +64,7 @@ export function isWebLookupIntent(message: string): boolean {
 }
 
 /**
- * Ask the local model to classify the message into one of four
+ * Ask the configured model provider to classify the message into one of four
  * lanes. Returns null if the model is unreachable or replies with
  * something we don't recognize — caller falls back to keywords.
  */
@@ -88,7 +88,7 @@ export async function classifyWithLlm(message: string): Promise<AgentName | null
   ].join("\n");
 
   try {
-    const reply = await generateChatFromOllama(
+    const reply = await generateChatFromProvider(
       [{ role: "user", content: trimmed.slice(0, 1200) }],
       systemPrompt,
       { lane: "manager" },

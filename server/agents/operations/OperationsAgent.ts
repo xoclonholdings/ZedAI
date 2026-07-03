@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { generateChatFromOllama } from "../../services/Ollama/OllamaService";
+import { generateChatFromProvider } from "../../services/ModelProviderService";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR, REPO_ROOT } from "../../utils/repoPaths";
@@ -98,7 +98,7 @@ ${capabilityBlock}${knowledgeBlock}
 User: ${request.userId}
 ConversationID: ${request.conversationId || "none"}`.trim();
 
-    const reply = await generateChatFromOllama([{ role: "user", content: request.message }], systemPrompt, {
+    const reply = await generateChatFromProvider([{ role: "user", content: request.message }], systemPrompt, {
       lane: "operations",
     });
     const requiresApproval = this.checkApprovalRequired(request.message, reply);

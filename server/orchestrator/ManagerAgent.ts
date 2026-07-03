@@ -35,7 +35,7 @@ function responseModeForAgent(agent: string): ZedResponseMode {
  * Front door for every agent-mode message. Walks tier enforcement,
  * builds the knowledge context, picks a lane, dispatches to the
  * right agent, and normalizes the response back into the shared
- * OrchestratorResponse shape that conversations-send.ts and
+ * OrchestratorResponse shape that the chat execution service and
  * orchestrate-and-misc.ts both speak.
  *
  * The actual dispatching pieces live in ./manager-agent/:

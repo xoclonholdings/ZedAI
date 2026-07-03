@@ -2,7 +2,7 @@ import type { Express } from "express";
 
 import { isAdmin, isAuthenticated } from "../localAuth";
 import { KnowledgeCurationEngine } from "../services/KnowledgeCurationEngine";
-import { checkOllamaHealth } from "../services/Ollama/OllamaService";
+import { checkModelProviderHealth } from "../services/ModelProviderService";
 import {
   getActiveProviderName,
   getResolvedTargetName,
@@ -25,7 +25,6 @@ import { ChatExecutionService } from "../services/ChatExecutionService";
  *   POST /api/voice/transcribe      Stub for future Whisper integration
  *   GET  /api/admin/knowledge/overview  Counts + curation health for the admin Knowledge tab
  *   GET  /api/admin/system-test     Cheap admin-only status probe
- *   POST /api/chat                  Legacy compatibility wrapper through ChatExecutionService
  */
 export function registerOrchestrateAndMiscRoutes(
   app: Express,
@@ -115,30 +114,13 @@ export function registerOrchestrateAndMiscRoutes(
   });
 
   app.get("/api/admin/system-test", isAdmin, async (_req, res) => {
-    const ollama = await checkOllamaHealth();
+    const aiHealth = await checkModelProviderHealth();
     res.json({
       system: "ZED",
       ai: getActiveProviderName({ lane: "chat" }),
       target: getResolvedTargetName({ lane: "chat" }),
-      ollama: ollama.status,
+      aiProvider: aiHealth.status,
       database: opts.isDatabaseHealthy() ? "connected" : "offline",
     });
-  });
-
-  app.post("/api/chat", isAuthenticated, async (req: any, res) => {
-    const result = await ChatExecutionService.execute({
-      userId: req.user.claims.sub,
-      message: req.body?.message,
-      conversationId: req.body?.conversationId,
-      route: "/api/chat",
-      ip: req.ip || "",
-      isAdmin: Boolean(req.user?.claims?.isAdmin),
-      context: req.body?.context,
-      projectId: req.body?.projectId,
-      workspaceId: req.body?.workspaceId,
-      persistUserMessage: Boolean(req.body?.conversationId),
-    });
-    const status = result.error === "message_required" ? 400 : result.error ? 500 : 200;
-    res.status(status).json(result);
   });
 }

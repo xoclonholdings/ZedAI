@@ -20,7 +20,6 @@ import { registerKnowledgeIngestionRoutes } from "./routes-modules/knowledge-ing
 import { registerEmailInboxRoutes } from "./routes-modules/email-inbox";
 import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-and-misc";
 import { registerConversationCrudRoutes } from "./routes-modules/conversations-crud";
-import { registerConversationSendRoutes } from "./routes-modules/conversations-send-clean";
 
 let isDatabaseHealthy = false;
 
@@ -55,7 +54,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   registerMeRoutes(app);
   registerConversationCrudRoutes(app);
-  registerConversationSendRoutes(app);
   registerKnowledgeRoutes(app);
   registerKnowledgeIngestionRoutes(app);
   registerEmailInboxRoutes(app);

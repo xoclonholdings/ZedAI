@@ -34,18 +34,19 @@ export function AccessForm({
     });
   }
 
-  if (activeSection === "ollama") {
+  if (activeSection === "ai_host") {
+    const aiHost = file.ai_host || {};
     return (
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <FormInput label="Host" value={file.ollama.host || ""} onChange={(v) => update((d) => { d.ollama.host = v; })} />
-          <FormInput label="Timeout Ms" type="number" value={file.ollama.timeout_ms ?? 0} onChange={(v) => update((d) => { d.ollama.timeout_ms = Number(v) || 0; })} />
+          <FormInput label="Provider Endpoint" value={aiHost.host || ""} onChange={(v) => update((d) => { d.ai_host.host = v; })} />
+          <FormInput label="Timeout Ms" type="number" value={aiHost.timeout_ms ?? 0} onChange={(v) => update((d) => { d.ai_host.timeout_ms = Number(v) || 0; })} />
         </div>
         <ToggleRow
-          label="Shared With Zeta Core"
-          checked={!!file.ollama.shared_with_zeta_core}
-          onCheckedChange={(c) => update((d) => { d.ollama.shared_with_zeta_core = c; })}
-          description="Indicates whether the model host is shared with the wider Zeta Core environment."
+          label="Shared Cloud Endpoint"
+          checked={!!aiHost.shared_with_zeta_core}
+          onCheckedChange={(c) => update((d) => { d.ai_host.shared_with_zeta_core = c; })}
+          description="Indicates whether the configured model endpoint is shared with the wider Zeta Core environment."
         />
       </div>
     );

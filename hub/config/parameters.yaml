@@ -1,9 +1,9 @@
 model_selection:
-  primary: "qwen2.5:7b"
-  fallback: "llama3.2"
-  vision: "llava-phi3"
-  embedding: "nomic-embed-text"
-  selection_strategy: "try_primary_then_fallback"
+  primary: "gpt-4o-mini"
+  fallback: "claude-3-5-sonnet-latest"
+  vision: "gpt-4o-mini"
+  embedding: "text-embedding-3-small"
+  selection_strategy: "active_provider_then_configured_fallback"
 
 generation_defaults:
   temperature: 0.7
@@ -44,6 +44,6 @@ memory:
   context_injection_max_chars: 3000
 
 costs:
-  ollama_is_free: true
+  provider_free_mode: false
   external_api_budget_usd: 0
   alert_on_external_calls: true

@@ -2,9 +2,9 @@ import type { Express } from "express";
 
 import { isAdmin } from "../localAuth";
 import {
-  checkOllamaHealth,
-  generateChatFromOllama,
-} from "../services/Ollama/OllamaService";
+  checkModelProviderHealth,
+  generateChatFromProvider,
+} from "../services/ModelProviderService";
 import {
   getActiveProviderName,
   getResolvedTargetName,
@@ -27,7 +27,7 @@ import { logRuntimeEvent } from "../services/RuntimeLogger";
 export function registerAiHostTestRoute(app: Express): void {
   app.post("/api/admin/ai-host/test", isAdmin, async (_req, res) => {
     try {
-      const health = await checkOllamaHealth();
+      const health = await checkModelProviderHealth();
       const provider = getActiveProviderName({ lane: "chat" });
       const target = getResolvedTargetName({ lane: "chat" });
       const providerConfig = getProviderRuntimeConfig();
@@ -41,7 +41,7 @@ export function registerAiHostTestRoute(app: Express): void {
       const startedAt = Date.now();
 
       try {
-        reply = await generateChatFromOllama(
+        reply = await generateChatFromProvider(
           [{ role: "user", content: "Reply with READY only." }],
           undefined,
           { lane: "manager" },

@@ -7,7 +7,7 @@ Repository: `xoclonholdings/ZedAI`
 
 - Overall System Status: PARTIAL, with P0 chat/orchestration wiring improved on 2026-07-02.
 - Highest Severity Issue: Provider-backed external actions still require configured credentials and runtime verification. Chat now creates structured approval/dispatch metadata, but live SMTP/calendar/API execution remains UNVERIFIED without credentials.
-- Primary Root Cause: ZED had multiple chat execution paths and capability-specific services that were not consistently reached from normal requests. The active implementation now routes `/api/orchestrate`, `/api/chat`, and `/api/conversations/:id/messages` through `ChatExecutionService`, but several downstream providers remain credential-gated.
+- Primary Root Cause: ZED previously had multiple chat execution paths and capability-specific services that were not consistently reached from normal requests. The active implementation now keeps `/api/orchestrate` as the only registered chat execution endpoint; downstream provider execution remains credential-gated.
 
 Build verification:
 
@@ -23,7 +23,7 @@ These fixes were applied after the baseline audit. Items below are verified only
 
 | Area | Status after fix | Evidence | Verification |
 |---|---|---|---|
-| Authoritative chat path | PARTIAL: `/api/orchestrate`, `/api/chat`, and `/api/conversations/:id/messages` now call `ChatExecutionService`; legacy SSE shape is preserved as a wrapper. | `server/services/ChatExecutionService.ts`, `server/routes-modules/orchestrate-and-misc.ts`, `server/routes-modules/conversations-send-clean.ts`, `server/routes-modules/conversations-send.ts` | TypeScript noEmit PASS. Runtime login/chat trace still needs browser/API verification. |
+| Authoritative chat path | PASS for static route wiring: `/api/orchestrate` is the only registered chat execution endpoint. Legacy `/api/chat`, `POST /api/conversations/:id/messages`, and unused `sendChatMessage` were removed. | `server/services/ChatExecutionService.ts`, `server/routes-modules/orchestrate-and-misc.ts`, `server/routes.ts`, deleted `server/routes-modules/conversations-send-clean.ts`, deleted `server/routes-modules/conversations-send.ts`, deleted `client/src/components/chat/chat-area/sendChatMessage.ts` | Static search PASS after legacy-removal pass. Runtime login/chat trace was not rerun after removal per operator instruction. |
 | Empty/template output handling | PARTIAL: shared executor rejects empty/template upstream output as failed execution metadata before storage; client no longer invents "No response"; provider helper returns empty text instead of placeholder text. | `server/services/ChatExecutionService.ts`, `client/src/components/chat/chat-area/sendAgentMessage.ts`, `server/core/providers/provider-helpers.ts` | Static search confirms active direct placeholders removed outside sanitizer/policy text. Forced empty-provider runtime test remains UNVERIFIED. |
 | Execution trace IDs | PARTIAL: chat responses and assistant metadata now include `traceId`, route, selected agent, classifier result, service/tool arrays, provider, context flags, file refs, presentation adjustments, status, failure, and mocked flag. | `server/services/ChatExecutionService.ts`, `server/orchestrator/ManagerAgent.ts`, `server/orchestrator/manager-agent/agent-selection.ts` | TypeScript noEmit PASS. End-to-end runtime trace inspection remains UNVERIFIED. |
 | ManagerAgent routing evidence | PARTIAL: selection now returns structured classifier/fallback metadata and selected-agent service lists. | `server/orchestrator/manager-agent/agent-selection.ts`, `server/orchestrator/ManagerAgent.ts` | Static/type verification PASS. Route prompt tests remain UNVERIFIED. |
@@ -44,7 +44,7 @@ Latest verification run:
 
 ## 2026-07-02 Completion Verification Update
 
-The follow-up completion pass added `server/scripts/executionVerification.ts` and `npm run verify:execution` in `server`. This script uses deterministic local fixtures and restores runtime JSON files after tests. It does not require Ollama/OpenAI, external web access, SMTP credentials, or a database.
+The follow-up completion pass added `server/scripts/executionVerification.ts` and `npm run verify:execution` in `server`. This script uses deterministic in-process fixtures and restores runtime JSON files after tests. It does not require a model provider, external web access, SMTP credentials, or a database.
 
 Verified PASS items:
 
@@ -52,7 +52,7 @@ Verified PASS items:
 |---|---|---|---|
 | Route selection | PASS | `server/orchestrator/manager-agent/agent-selection.ts` | `npm run verify:execution` asserts research, finance, business, and operations route decisions. It also verifies classifier fallback metadata with `ZED_ROUTER_DISABLE_LLM_CLASSIFIER=true`. |
 | Email-address routing bug | PASS | `server/orchestrator/manager-agent/agent-selection.ts`, `server/services/WebContentService.ts` | `npm run verify:execution` proves `test@example.com` no longer triggers web routing. |
-| Direct URL fetch and page discovery | PASS for local deterministic fetch/discovery | `server/services/WebContentService.ts` | Local HTTP fixture verifies homepage fetch, same-origin `/blog` discovery, fetched metadata, and readable blog content. |
+| Direct URL fetch and page discovery | PASS for deterministic fetch/discovery | `server/services/WebContentService.ts` | In-process HTTP fixture verifies homepage fetch, same-origin `/blog` discovery, fetched metadata, and readable blog content. |
 | Prior website reference resolution | PASS | `server/services/ChatExecutionService.ts` | Test verifies "that website" resolves from assistant message metadata before raw text scanning. |
 | Empty upstream output rejection | PASS | `server/services/ChatExecutionService.ts`, `server/core/providers/provider-helpers.ts` | Test forces empty upstream route output and asserts `executionStatus=failed`, `failureReason=upstream_empty_output`, and no empty assistant message is stored. |
 | Chat trace metadata | PASS | `server/services/ChatExecutionService.ts` | Test asserts route, selected agent, file/project/workspace flags, trace id, and assistant message metadata. |
@@ -94,32 +94,54 @@ Verified PASS items:
 | Live normal-user admin denial | PASS | `server/services/AdminSettingsStore.ts`, `server/local-auth/middleware.ts` | The verifier created a temporary normal user, logged in, received HTTP 403 from `GET /api/admin/settings`, and restored `admin-settings.json`. |
 | Live `/api/orchestrate` trace response | PASS for trace visibility | `server/services/ChatExecutionService.ts`, `server/scripts/liveExecutionVerification.ts` | The verifier received an execution trace with `traceId`, `route=/api/orchestrate`, `detectedIntent=web_research`, `servicesInvoked[]`, `executionStatus=failed`, and provider metadata. |
 | Offline memory/message storage guards | PASS | `server/storage/MemoryDatabaseStorage.ts`, `server/storage/MessageDatabaseStorage.ts` | Offline mode now short-circuits DB-null reads and returns fallback records for message/memory writes instead of throwing `db.insert` before trace creation. |
-| Provider failure metadata | PASS | `server/services/ChatExecutionService.ts` | Missing local Ollama now reports `modelProviderUnavailable:ollama:http://localhost:11434` instead of generic `fetch failed`. |
+| Provider failure metadata | PASS | `server/services/ChatExecutionService.ts` | Missing model-provider credentials/endpoint now reports `modelProviderUnavailable:<provider>:<target>` instead of generic `fetch failed`. |
 
 Remaining PARTIAL / UNVERIFIED after live pass:
 
-- Chat runtime completion is PARTIAL in this shell because no model provider is reachable. Live trace works, but the request ends with `executionStatus=failed` and `failureReason=modelProviderUnavailable:ollama:http://localhost:11434`.
+- Chat runtime completion is PARTIAL in this shell because no cloud model provider credentials are visible. Live trace works, but a real answer requires a configured provider such as OpenAI, Claude, or the remote gateway.
 - Search-provider execution remains PARTIAL because no Brave/Serper keys are visible. Direct URL fetch is verified and does not depend on those keys.
 - Live SMTP delivery remains UNVERIFIED because `EMAIL_PROVIDER_ENABLED` is false and no complete SMTP env/admin account is configured.
 - Full published flow execution through `/api/flows/*` remains UNVERIFIED.
 - Deployed-environment verification remains UNVERIFIED; all live HTTP tests above were against `http://127.0.0.1:5000`.
+
+## 2026-07-03 Provider Default Correction
+
+ZED no longer treats a local model provider as part of the active runtime.
+
+- PASS: `server/core/providers/provider-config.ts` now defaults to `openai` when no model provider is configured.
+- PASS: `MODEL_PROVIDER=ollama` is not accepted by the provider config.
+- PASS: new conversations now default to the active configured model instead of `ollama`.
+- PASS: schema and migration defaults now use `gpt-4o-mini` instead of `ollama`.
+- PASS: admin/runtime diagnostics now expose `aiProvider` instead of an `ollama` status object.
+- PASS: local-provider implementation files and the `server/services/Ollama/*` wrapper were removed from active source.
+
+## 2026-07-03 Legacy Removal Update
+
+The legacy-removal pass removed shadow chat paths and local-provider code instead of preserving compatibility wrappers.
+
+- PASS: `server/routes.ts` no longer registers `POST /api/conversations/:id/messages`.
+- PASS: `server/routes-modules/orchestrate-and-misc.ts` no longer registers `POST /api/chat`.
+- PASS: `client/src/components/chat/chat-area/sendChatMessage.ts` was deleted; current chat UI continues to use `sendAgentMessage.ts` and `/api/orchestrate`.
+- PASS: `server/core/providers/ollama-provider.ts`, `server/services/Ollama/OllamaService.ts`, and `server/services/Ollama/OllamaContextBuilder.ts` were deleted.
+- PASS: admin ruleset state now uses `ai_host` and `provider_free_mode` instead of local-provider-specific keys.
+- NOT RUN: build, smoke, noEmit, and live verification were not rerun after this cleanup because the operator explicitly said no more running things.
 
 ## Capability Matrix
 
 | Capability | User-facing entry point | Backend route(s) | Service/agent/engine involved | Exists | Wired | Functional | Utilized by ZED | Evidence files | Failure mode | Required fix | Verification test |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Primary chat dispatch | `/chat`, `ChatArea` composer | `POST /api/orchestrate` | `ZedAutonomousOrchestrator`, `ManagerAgent`, selected agent, response governance | yes | yes | partial | yes | `client/src/components/chat/ChatArea.tsx`, `client/src/components/chat/chat-area/sendAgentMessage.ts`, `server/routes-modules/orchestrate-and-misc.ts`, `server/zcos/orchestration/ZedAutonomousOrchestrator.ts`, `server/orchestrator/ManagerAgent.ts` | No streaming in active path; failures return governed fallback JSON. | Add trace IDs and structured execution proof to `/api/orchestrate`; expose real selected-agent, service calls, and provider status. | Login, send a normal prompt, assert `/api/orchestrate` stores user/assistant messages and metadata.agent. |
-| Legacy SSE chat route | Not imported by current `ChatArea` | `POST /api/conversations/:id/messages` | Memory injection, web shortcut, direct model lane | yes | partial | unverified | no in current UI | `server/routes-modules/conversations-send.ts`, `client/src/components/chat/chat-area/sendChatMessage.ts`, `rg sendChatMessage` | Registered but shadowed; active UI does not import `sendChatMessage`. Contains `(no response)` and direct-model bypass paths. | Either remove/deprecate or make current UI use it intentionally. Keep one chat route. | Static import test: fail CI if `sendChatMessage` is unused while route remains registered. |
-| ManagerAgent orchestration | `/chat`, `/api/orchestrate`, legacy route web path | `POST /api/orchestrate` | `ManagerAgent.route`, `selectAgent`, LLM classifier, keyword fallback | yes | yes | partial | yes | `server/orchestrator/ManagerAgent.ts`, `server/orchestrator/manager-agent/agent-selection.ts` | LLM classifier failure silently falls back to keywords; selected agents mostly generate text rather than execute tools. | Log route decision, classifier result, fallback reason, selected agent, and tool calls into response metadata and runtime logs. | Send finance/business/research/operations prompts and assert expected `metadata.agent` and runtime route log. |
+| Legacy SSE chat route | Removed | none | none | no | no | not applicable | no | deleted `server/routes-modules/conversations-send.ts`, deleted `server/routes-modules/conversations-send-clean.ts`, deleted `client/src/components/chat/chat-area/sendChatMessage.ts`, `server/routes.ts` | Previously shadowed `/api/orchestrate` and carried different execution semantics. | No further fix required unless a new streaming path is intentionally designed on top of `ChatExecutionService`. | Static search: no `registerConversationSendRoutes`, no `sendChatMessage`, no registered `POST /api/conversations/:id/messages`. |
+| ManagerAgent orchestration | `/chat`, `/api/orchestrate` | `POST /api/orchestrate` | `ManagerAgent.route`, `selectAgent`, LLM classifier, keyword fallback | yes | yes | partial | yes | `server/orchestrator/ManagerAgent.ts`, `server/orchestrator/manager-agent/agent-selection.ts` | Runtime provider completion remains credential-gated. | Keep route decision, classifier result, fallback reason, selected agent, and tool calls in response metadata and runtime logs. | Send finance/business/research/operations prompts and assert expected `metadata.agent` and runtime route log. |
 | Research and direct URL fetch | Chat web prompts, `/api/orchestrate` | `/api/orchestrate`; legacy `/messages` | `IntelligenceAgent`, `WebContentService`, `WebSearchService`, `ChromaService` | yes | yes | partial | yes for web intents | `server/agents/intelligence/IntelligenceAgent.ts`, `server/services/WebContentService.ts`, `server/services/WebSearchService.ts` | Direct URLs are fetched. Search only works with Brave/Serper keys. No site crawling or `/blog` discovery beyond URLs in text/recent history. | Add explicit crawl/discovery service for "quote the blog page"; return fetch/search attempt metadata and source URLs by default for research. | Prompt with a local test URL and verify fetched page content appears; prompt "visit the blog page" and verify discovery works or asks for URL. |
-| Prior webpage reference resolution | Follow-up prompt like "read that site" | `/api/orchestrate`; legacy `/messages` | `resolveReferencedWebpage`, `extractWebTargets` | yes | yes | partial | yes | `server/routes-modules/orchestrate-and-misc.ts`, `server/routes-modules/conversations-send.ts`, `server/services/WebContentService.ts` | Only looks for explicit URL in recent message history; does not use stored source objects or browser session state. | Store fetched URL/page metadata in message metadata and resolve by conversation state, not raw text scan only. | Ask with URL, then "quote the page"; assert second request fetches same URL without re-supplying it. |
+| Prior webpage reference resolution | Follow-up prompt like "read that site" | `/api/orchestrate` | `resolveReferencedWebpage`, `extractWebTargets` | yes | yes | partial | yes | `server/services/ChatExecutionService.ts`, `server/services/WebContentService.ts` | Uses stored message/source metadata first; runtime still depends on fetch availability. | Keep source metadata persisted and add deployed-runtime regression test. | Ask with URL, then "quote the page"; assert second request fetches same URL without re-supplying it. |
 | Memory and knowledge injection | Chat/orchestrate; Admin Knowledge; Settings memory | `/api/knowledge/*`, `/api/context/assess`, `/api/orchestrate` | `KnowledgeService`, `MemoryService`, `MemoryInjector`, `FoundationMemoryService`, `ChromaService` | yes | yes | partial | yes | `server/services/KnowledgeService.ts`, `server/services/MemoryInjector.ts`, `server/services/ChromaService.ts`, `server/routes-modules/knowledge.ts` | Chroma fallback is chronological file reads, not semantic similarity. Foundation memory only injected for admin/admin foundation flag. Memory can dominate answers if not validated by model. | Add retrieval trace, scores, source types, and whether memory changed final answer. Use real embeddings or mark fallback retrieval as chronological. | Create a project memory fact, ask related and unrelated questions, assert only related prompt receives it and response changes. |
 | Voice and presentation governance | All orchestrate/chat responses | In-process post-processing | `ZedVoiceFormationEngine`, `ZedResponseGovernance` | yes | yes | partial | yes | `server/services/ZedVoiceFormationEngine.ts`, `server/services/ZedResponseGovernance.ts`, `server/routes-modules/orchestrate-and-misc.ts` | Masks upstream empty/template output by deriving a cleaner failure message; can hide execution failure details unless metadata/logs are checked. | Preserve `presentation.adjustments` and upstream failure reason in metadata. Do not strip evidence needed for debugging. | Force empty upstream response and assert user sees concrete failure plus server metadata records `derived_specific_no_output_response`. |
 | Reflection/reasoning engines | Chat/orchestrate responses | In-process | `ZedReflectionEngine`, `ZedPrincipleEngine`, `ZedStrategicReasoningEngine`, `ContextInquiryEngine` | yes | yes | partial | yes | `server/routes-modules/orchestrate-and-misc.ts`, `server/orchestrator/ManagerAgent.ts`, `server/services/ZedReflectionEngine.ts`, `server/services/ZedPrincipleEngine.ts`, `server/services/ZedStrategicReasoningEngine.ts`, `server/services/knowledge-ingestion/ContextInquiryEngine.ts` | Principle/strategic engines only add prompt text. Reflection writes summaries after replies; it does not alter the current answer. Context inquiry can block with "I need one detail..." when graph uncertainty triggers. | Treat these as prompt-governance, not execution engines. Add tests proving strategic prompt affects outputs or downgrade naming. | Trigger strategic and non-strategic prompts; assert metadata includes active triggers and reflection storage decision. |
 | Admin settings/users/security/logs | `/admin` | `/api/admin/*`, `/api/client-log` | Admin settings store, security audit, runtime logger | yes | yes | partial | yes for admin UI | `client/src/pages/admin.tsx`, `server/routes-modules/admin-settings.ts`, `server/routes-modules/admin-logs.ts`, `server/localAuth.ts` | Most admin surfaces are CRUD/status; some status probes require credentials. `/api/admin/system-test` is unauthenticated. | Protect `/api/admin/system-test` or rename as public health if intended. Add admin-route auth tests. | Anonymous GET to all `/api/admin/*` routes should be 401/403 except explicitly public login-email. |
 | Authentication and users | `/login`, route guards | `/api/login`, `/api/logout`, `/api/admin/login/*`, `/api/me` | Local auth modules, sessions, managed users | yes | yes | partial | yes | `server/local-auth/routes-login.ts`, `server/local-auth/routes-admin-otp.ts`, `server/local-auth/middleware.ts`, `client/src/App.tsx` | Runtime depends on session secret/admin env/settings. Public admin email hint is intentionally exposed. | Add integration tests for normal user denied admin UI and admin API. Validate `SESSION_SECRET` before boot in production. | Login as non-admin, request `/api/admin/settings`, expect 403. |
 | Workspaces/projects/history | `/workspace`, `/workspaces/:workspace`, `/projects/:id`, `/history` | `/api/projects`, `/api/conversations`, `/api/flows/runs` | Project filing store, conversation CRUD, flow store | yes | yes | partial | partial | `client/src/App.tsx`, `client/src/pages/workspace.tsx`, `client/src/pages/project-detail.tsx`, `server/routes-modules/projects.ts`, `server/services/ZedContextBuilder.ts` | Project instructions/sources only reach prompts when a conversation is assigned to project; selected workspace route does not automatically constrain chat context. | Include workspace/project id in chat dispatch payload and prompt context. | Assign conversation to project with instructions; ask related prompt; assert `buildZedAdminContext` includes project section. |
-| Flows/runs/approvals | `/flows`, `/workspaces/:workspace/tools/:id`, `/history/:runId` | `/api/flows/*`, `/api/admin/flows/*` | `FlowStore`, `ZcosFlowEngine`, `FlowExecutor` | yes | yes | partial | partial | `server/routes-modules/flows.ts`, `server/services/FlowStore.ts`, `server/zcos/flows/ZcosFlowEngine.ts`, `server/services/flow/FlowExecutor.ts` | Flows execute model-stage prompts or local structured fallback. They do not call the same specialized agents/services as chat; stage agents are model prompt labels. | Wire stage execution to actual agents/tools by lane, or rename as "model workflow stages." | Run a published flow; assert each stage has output, provider/local executor event, approval handling, and final report. |
+| Flows/runs/approvals | `/flows`, `/workspaces/:workspace/tools/:id`, `/history/:runId` | `/api/flows/*`, `/api/admin/flows/*` | `FlowStore`, `ZcosFlowEngine`, `FlowExecutor` | yes | yes | partial | partial | `server/routes-modules/flows.ts`, `server/services/FlowStore.ts`, `server/zcos/flows/ZcosFlowEngine.ts`, `server/services/flow/FlowExecutor.ts` | Flows execute model-stage prompts or deterministic structured fallback. They do not call the same specialized agents/services as chat; stage agents are model prompt labels. | Wire stage execution to actual agents/tools by lane, or rename as "model workflow stages." | Run a published flow; assert each stage has output, provider/deterministic executor event, approval handling, and final report. |
 | Approval queue | Admin approvals, agent/flow approval gates | `/api/admin/approval-queue`, `/api/admin/approve/:id`, `/api/admin/reject/:id`, `/api/approval/*` | `AgentApprovalAdapter`, `ApprovalDecisionHandler`, `ExecutionApprovalHandler` | yes | yes | partial | yes for approval-required tasks | `server/routes-modules/approvals.ts`, `server/services/approval/*`, `server/services/execution/execution-routes/approval.ts` | Approvals record/decide tasks, but chat agents usually stop at draft/approval required and do not resume real provider action automatically. | Connect approval decision to dispatch/resume for the originating action. | Ask to send email, approve task, verify actual dispatch service is called or explicitly remains draft-only. |
 | Trading workspace and finance routing | `/trading`, chat finance prompts | `/api/trading/*`, `/api/orchestrate` | `FinanceAgent`, `TradingStore`, scanner/thesis/governance engines | yes | yes | partial | partial | `client/src/pages/trading.tsx`, `server/routes-modules/trading.ts`, `server/agents/finance/FinanceAgent.ts`, `server/zcos/trading/*` | Trading UI can create simulation records. Chat finance requests analyze and read stores/search; chat does not call trading CRUD to create paper trades. No broker/live execution by design. | Add explicit chat-to-trading actions for "log paper trade" with field validation and approval-safe storage. | Chat "log this paper trade..." with required fields; assert `/api/trading/paper-trades` equivalent storage occurs or ZED asks for missing fields. |
 | Email/calendar/external integrations | Admin Integrations, Inbox, intake endpoints, operations prompts | `/api/admin/settings/integrations`, `/api/inbox/email`, `/api/intake/*`, `/api/operational/orchestrate` | `EmailInboxService`, `MessagingBridge`, `DigitalExecutionService`, `GitHubIntegrationService`, `FirewallIntegrationService` | partial | partial | partial/untested | partial | `server/services/EmailInboxService.ts`, `server/services/intake/MessagingBridge.ts`, `server/services/execution/DigitalExecutionService.ts`, `server/services/ZedContextBuilder.ts` | Normal chat describes/drafts actions. `DigitalExecutionService` sends mock success unless env flags are set. Calendar is only draft payload via `SchedulingAssistant`, not provider send. | Replace mock success with explicit `mocked: true`; wire operations approval to real dispatch services. | Configure SMTP/Twilio test credentials, approve outbound action, assert provider API called and task outcome stored. |
@@ -142,7 +164,7 @@ Remaining PARTIAL / UNVERIFIED after live pass:
 
 - Severity: P0
 - Feature: Template/fallback leakage and masking
-- Evidence: `ZedAutonomousOrchestrator.appendFlowSuggestion` appends `Next move:`; `ZedVoiceFormationEngine` strips rejected/canned phrases and derives failure text from empty output; legacy `conversations-send.ts` passes `result.reply || "(no response)"` and `fullResponse || "(no response)"`.
+- Evidence: historical baseline found `ZedAutonomousOrchestrator.appendFlowSuggestion` and legacy chat fallbacks. Current source removed the legacy conversation-send files and stores flow suggestions as structured metadata.
 - Root Cause: Presentation layer compensates for upstream failures/templates instead of forcing route-level failure states.
 - Impact: Users may see cleaned but misleading output; debugging loses the original execution failure.
 - Required Fix: Reject empty/template upstream outputs before presentation; store failure metadata; remove `Next move` appending from runtime path or make it structured metadata.
@@ -152,7 +174,7 @@ Remaining PARTIAL / UNVERIFIED after live pass:
 
 - Severity: P0
 - Feature: Duplicate/shadow chat pipeline
-- Evidence: Current `ChatArea` imports `sendAgentMessage`; `sendChatMessage` is unused; both `/api/orchestrate` and `/api/conversations/:id/messages` are registered and contain different routing logic.
+- Evidence: Current `ChatArea` imports `sendAgentMessage`; `sendChatMessage` and the `POST /api/conversations/:id/messages` route files were removed during the legacy-removal pass.
 - Root Cause: New orchestrate path was added without removing or converging the older SSE message route.
 - Impact: Behavior depends on caller path. Fixes to one chat route may not affect the other.
 - Required Fix: Make one authoritative chat route. Move streaming support into `/api/orchestrate` or route both endpoints through a shared handler.
@@ -212,11 +234,11 @@ Actual primary path:
 
 `client/src/pages/chat.tsx -> ChatArea.handleSend -> sendAgentMessage -> POST /api/orchestrate -> ContextInquiryEngine optional block -> KnowledgeService/MemoryInjector/ZedContextBuilder prompt context -> ZedAutonomousOrchestrator.route -> ManagerAgent.route -> selected agent -> presentZedResponseWithChecks -> store assistant message`
 
-The active UI path is not streaming. `sendAgentMessage` sets local optimistic messages after a JSON response. The registered SSE route in `conversations-send.ts` is shadowed by the current UI.
+The active UI path is not streaming. `sendAgentMessage` sets local optimistic messages after a JSON response. The legacy SSE route was removed, so streaming now requires a new intentionally designed `/api/orchestrate` streaming implementation.
 
 Execution bypasses:
 
-- `/api/chat` is an unauthenticated single-shot legacy route and directly calls `generateFromOllama`.
+- `/api/chat` was previously a single-shot legacy route with direct model bypass behavior; it has been removed.
 - `/api/conversations/:id/messages` is registered and can bypass `ZedAutonomousOrchestrator`; it calls `ManagerAgent` only for web lookup, otherwise direct model lane.
 - Active `/api/orchestrate` does call `ManagerAgent`, so the main UI is not completely bypassing orchestration.
 
@@ -245,7 +267,7 @@ Actual:
 Limit:
 
 - Agent outputs affect final response, but most agents are text generators, not tool executors.
-- Agent selection has duplicate web-intent logic in `conversations-send.ts` and `manager-agent/agent-selection.ts`.
+- Agent selection no longer has duplicate web-intent logic in a conversation-send route because that route was removed.
 - Classifier fallback is keyword-based and logged, but response does not expose trace metadata.
 
 Required fix:
@@ -399,7 +421,7 @@ Actual:
 
 Failure mode:
 
-- Stage execution is provider chat or local fallback, not actual service/agent execution.
+- Stage execution is provider chat or deterministic fallback, not actual service/agent execution.
 - Flow recommendation from chat is appended text, not an executable launch.
 
 Required fix:
@@ -471,8 +493,8 @@ Status: FAIL/PARTIAL depending system.
 
 Dead or shadowed:
 
-- `client/src/components/chat/chat-area/sendChatMessage.ts`: unused by current chat UI.
-- `POST /api/conversations/:id/messages`: registered but shadowed by `/api/orchestrate` in primary UI.
+- `client/src/components/chat/chat-area/sendChatMessage.ts`: removed.
+- `POST /api/conversations/:id/messages`: removed.
 - `client/src/components/social/SocialFeed.tsx`: exported but no active import found.
 - `server/services/workflow/ExternalContextBridge.ts`: placeholder by file comment and returned messages.
 - `server/services/flow/FlowExecutor.ts`: service exists but route execution uses `server/zcos/flows/ZcosFlowEngine.ts`; no route import found for this older executor.
@@ -486,11 +508,9 @@ Decorative or mostly prompt-only:
 
 ## Execution Bypass Findings
 
-1. `/api/chat` bypasses auth, conversations, memory persistence, `ManagerAgent`, and ZCOS.
-2. Legacy `/api/conversations/:id/messages` bypasses `ZedAutonomousOrchestrator` and only uses `ManagerAgent` for web lookup.
-3. Flow stages bypass actual agent classes and call provider chat directly.
-4. Operations/business/finance agents bypass execution services and only draft/plan/register approvals.
-5. Admin integration settings are injected into prompts, but prompt visibility is not the same as service invocation.
+1. Flow stages can still bypass full route-level chat orchestration when invoked from flow execution.
+2. Some operations/business/finance requests still depend on provider credentials and approval dispatch state.
+3. Admin integration settings are injected into prompts, but prompt visibility is not the same as service invocation.
 
 ## Template / Placeholder Leakage
 
@@ -498,11 +518,7 @@ Active or user-reaching:
 
 - `server/zcos/orchestration/ZedAutonomousOrchestrator.ts`: appends `Next move: I can turn this into an executable ZED action...`; presentation strips the label but keeps generic suggestion body. Replace with structured `flowRecommendation` metadata and UI affordance.
 - `client/src/components/chat/chat-area/sendAgentMessage.ts`: `data?.reply || data?.error || "No response"` can reach users on empty response. Replace with typed error handling.
-- `server/routes-modules/orchestrate-and-misc.ts`: fallback reply "ZED's model host is not reachable..." reaches users on `/api/chat` failure. Acceptable only if paired with provider diagnostics.
-
-Shadowed or non-primary but still registered:
-
-- `server/routes-modules/conversations-send.ts`: `result.reply || "(no response)"`, `fullResponse || "(no response)"`, and direct model-host fallback.
+- No active legacy chat fallback route remains registered after the legacy-removal pass.
 
 Internal/sanitizer patterns:
 
@@ -512,7 +528,7 @@ Internal/sanitizer patterns:
 
 ### P0
 
-1. Unify chat routes: route current UI, SSE, and legacy chat through one shared orchestrate handler.
+1. Keep `/api/orchestrate` as the only chat execution endpoint and add a new intentional streaming endpoint only if needed.
 2. Add execution trace IDs and metadata to `/api/orchestrate`.
 3. Replace empty/template response fallbacks with typed route-level failure states.
 4. Wire approved operations to real dispatch or explicitly mark them draft-only.
@@ -528,10 +544,9 @@ Internal/sanitizer patterns:
 
 ### P2
 
-1. Remove unused `sendChatMessage` or re-enable it intentionally.
-2. Remove or reclassify placeholder systems.
-3. Add static dead-code checks for services/components with no imports.
-4. Add admin settings preview showing which settings are prompt-only versus executable.
+1. Remove or reclassify placeholder systems.
+2. Add static dead-code checks for services/components with no imports.
+3. Add admin settings preview showing which settings are prompt-only versus executable.
 
 ## Verification Plan
 
@@ -572,7 +587,7 @@ Run after fixes:
 
 8. Flow execution:
    - Run a published flow.
-   - Assert each stage records whether it used actual agent/tool/provider/local fallback.
+   - Assert each stage records whether it used actual agent/tool/provider/deterministic fallback.
 
 9. Trading chat:
    - Ask to log a paper trade with complete fields.
@@ -585,9 +600,7 @@ Run after fixes:
 ## Files Requiring Immediate Changes
 
 - `client/src/components/chat/chat-area/sendAgentMessage.ts`
-- `client/src/components/chat/chat-area/sendChatMessage.ts`
 - `server/routes-modules/orchestrate-and-misc.ts`
-- `server/routes-modules/conversations-send.ts`
 - `server/zcos/orchestration/ZedAutonomousOrchestrator.ts`
 - `server/orchestrator/ManagerAgent.ts`
 - `server/orchestrator/manager-agent/agent-selection.ts`

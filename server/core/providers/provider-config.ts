@@ -1,4 +1,4 @@
-export type ProviderName = "ollama" | "openai" | "claude" | "claw-temp";
+export type ProviderName = "openai" | "claude" | "claw-temp";
 
 export type ProviderLane =
   | "chat"
@@ -16,7 +16,7 @@ export interface ProviderRuntimeConfig {
    *   MODEL_CHAT, MODEL_MANAGER, MODEL_OPERATIONS,
    *   MODEL_RESEARCH, MODEL_BUSINESS, MODEL_FINANCE.
    * When a lane has no explicit override, the provider falls back to
-   * the per-provider default (OPENAI_MODEL / OLLAMA_MODEL / etc.) and
+   * the per-provider default (OPENAI_MODEL / CLAUDE_MODEL / etc.) and
    * finally to MODEL_NAME.
    */
   laneModels: Partial<Record<ProviderLane, string>>;
@@ -27,11 +27,6 @@ export interface ProviderRuntimeConfig {
    * branching on every provider type.
    */
   targets: Record<string, { provider: ProviderName; model: string }>;
-  ollama: {
-    baseUrl: string;
-    model: string;
-    fallbackModel: string;
-  };
   openai: {
     baseUrl: string;
     apiKey: string;
@@ -59,7 +54,6 @@ function trimTrailingSlash(value: string): string {
 function normalizeProviderName(value?: string): ProviderName | null {
   const normalized = (value || "").trim().toLowerCase();
 
-  if (normalized === "ollama") return "ollama";
   if (normalized === "openai") return "openai";
   if (normalized === "claude" || normalized === "anthropic") return "claude";
 
@@ -124,7 +118,7 @@ export function resolveModelForLane(
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const remoteInferenceUrl = trimTrailingSlash(process.env.REMOTE_INFERENCE_URL || "");
-  const remoteInferenceMode = (process.env.REMOTE_INFERENCE_MODE || "ollama")
+  const remoteInferenceMode = (process.env.REMOTE_INFERENCE_MODE || "openai")
     .trim()
     .toLowerCase();
 
@@ -135,17 +129,13 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const activeProvider =
     configuredProvider ||
     (remoteInferenceUrl
-      ? remoteInferenceMode === "ollama"
-        ? "ollama"
-        : "claw-temp"
-      : "ollama");
+      ? "claw-temp"
+      : "openai");
 
-  const ollamaModel = process.env.OLLAMA_MODEL || process.env.MODEL_NAME || "qwen2.5:7b";
   const openaiModel = process.env.OPENAI_MODEL || process.env.MODEL_NAME || "gpt-4o-mini";
   const claudeModel =
     process.env.CLAUDE_MODEL || process.env.MODEL_NAME || "claude-3-5-sonnet-latest";
-  const clawModel =
-    process.env.CLAW_MODEL || process.env.MODEL_NAME || process.env.OLLAMA_MODEL || "qwen2.5:7b";
+  const clawModel = process.env.CLAW_MODEL || process.env.MODEL_NAME || "gpt-4o-mini";
 
   const activeModel =
     process.env.MODEL_NAME ||
@@ -154,32 +144,22 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
       ? openaiModel
       : activeProvider === "claude"
         ? claudeModel
-        : activeProvider === "claw-temp"
-          ? clawModel
-          : ollamaModel);
+        : clawModel);
+  const targets: ProviderRuntimeConfig["targets"] = {
+    [openaiModel]: { provider: "openai", model: openaiModel },
+    [claudeModel]: { provider: "claude", model: claudeModel },
+    [clawModel]: { provider: "claw-temp", model: clawModel },
+    [activeModel]: { provider: activeProvider, model: activeModel },
+    openai: { provider: "openai", model: openaiModel },
+    claude: { provider: "claude", model: claudeModel },
+    "claw-temp": { provider: "claw-temp", model: clawModel },
+  };
 
   return {
     activeProvider,
     activeModel,
     laneModels: buildLaneModels(),
-    targets: {
-      [ollamaModel]: { provider: "ollama", model: ollamaModel },
-      [openaiModel]: { provider: "openai", model: openaiModel },
-      [claudeModel]: { provider: "claude", model: claudeModel },
-      [clawModel]: { provider: "claw-temp", model: clawModel },
-      [activeModel]: { provider: activeProvider, model: activeModel },
-      ollama: { provider: "ollama", model: ollamaModel },
-      openai: { provider: "openai", model: openaiModel },
-      claude: { provider: "claude", model: claudeModel },
-      "claw-temp": { provider: "claw-temp", model: clawModel },
-    },
-    ollama: {
-      baseUrl: trimTrailingSlash(
-        process.env.OLLAMA_URL || remoteInferenceUrl || "http://localhost:11434",
-      ),
-      model: ollamaModel,
-      fallbackModel: process.env.OLLAMA_FALLBACK_MODEL || "llama3.2",
-    },
+    targets,
     openai: {
       baseUrl: trimTrailingSlash(process.env.OPENAI_BASE_URL || "https://api.openai.com/v1"),
       apiKey: process.env.OPENAI_API_KEY || "",
@@ -220,8 +200,7 @@ export function getActiveProviderDefaultModel(
       return config.claude.model;
     case "claw-temp":
       return config.clawTemp.model;
-    case "ollama":
     default:
-      return config.ollama.model;
+      return config.openai.model;
   }
 }

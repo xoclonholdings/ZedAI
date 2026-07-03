@@ -19,9 +19,10 @@ export function AiHostPanel({
   test: AiHostTestState;
   onTest: () => void;
 }) {
-  const isOnline = status?.ollama?.status === "online";
-  const providerLabel = status?.ollama?.provider || "—";
-  const models: string[] = status?.ollama?.models || [];
+  const aiProvider = status?.aiProvider || {};
+  const isOnline = aiProvider.status === "online";
+  const providerLabel = aiProvider.provider || "-";
+  const models: string[] = aiProvider.models || [];
   return (
     <div className="rounded-xl border border-white/10 bg-black/30 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -40,12 +41,12 @@ export function AiHostPanel({
             size={13}
             className={`mr-1 ${test.status === "testing" ? "animate-spin" : ""}`}
           />
-          {test.status === "testing" ? "Testing…" : "Test"}
+          {test.status === "testing" ? "Testing..." : "Test"}
         </Button>
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <StatusDot online={isOnline} />
-        <span className="capitalize">{status?.ollama?.status || "unknown"}</span>
+        <span className="capitalize">{aiProvider.status || "unknown"}</span>
         <Badge
           variant="secondary"
           className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"

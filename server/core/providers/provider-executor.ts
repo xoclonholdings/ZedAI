@@ -1,7 +1,6 @@
 import { ClaudeProvider } from "./claude-provider";
 import { ClawTempProvider } from "./claw-provider-temp";
 import { OpenAIProvider } from "./openai-provider";
-import { OllamaProvider } from "./ollama-provider";
 import { getProviderRuntimeConfig, type ProviderName } from "./provider-config";
 import { splitIntoTokens } from "./provider-helpers";
 import type {
@@ -19,9 +18,8 @@ function buildProvider(name: ProviderName): ModelProvider {
       return new ClaudeProvider();
     case "claw-temp":
       return new ClawTempProvider();
-    case "ollama":
     default:
-      return new OllamaProvider();
+      return new OpenAIProvider();
   }
 }
 
@@ -47,9 +45,8 @@ export function getResolvedTargetName(_options?: ProviderExecutionOptions): stri
       return config.claude.baseUrl;
     case "claw-temp":
       return config.clawTemp.baseUrl;
-    case "ollama":
     default:
-      return config.ollama.baseUrl;
+      return config.openai.baseUrl;
   }
 }
 
@@ -85,7 +82,7 @@ export async function executeProviderChat(
 }
 
 /**
- * No silent fallback to local Ollama. If the active provider fails,
+ * No silent fallback to another provider. If the active provider fails,
  * the caller sees the real error from upstream — caller decides how
  * to surface it.
  */

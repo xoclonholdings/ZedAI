@@ -63,11 +63,11 @@ export const FILE_META: Record<
   },
   "access.yaml": {
     label: "Access",
-    description: "Model host, local services, external APIs, filesystem paths, and trust model.",
+    description: "Cloud model endpoint, runtime services, external APIs, filesystem paths, and trust model.",
     icon: Server,
     sections: [
-      { key: "ollama", label: "AI Host", description: "Remote/local model host and timeout behavior." },
-      { key: "local_services", label: "Local Services", description: "Database, vector store, and log store declarations." },
+      { key: "ai_host", label: "AI Host", description: "Cloud model endpoint and timeout behavior." },
+      { key: "local_services", label: "Runtime Services", description: "Database, vector store, and log store declarations." },
       { key: "external_apis", label: "External APIs", description: "Policy and approved integration inventory." },
       { key: "paths", label: "Paths", description: "Hub roots and storage directories." },
       { key: "trust_model", label: "Trust Model", description: "Current trust mode and multi-user readiness." },
@@ -116,10 +116,10 @@ export const DEFAULT_RULESETS: RulesetMap = {
     },
     routing: { orchestrator_timeout_ms: 30000, parallel_agents: false, log_routing_decisions: true, routing_log_path: "" },
     memory: { working_memory_max_entries: 50, episodic_max_entries: 500, semantic_store_max_mb: 100, context_injection_max_chars: 3000 },
-    costs: { ollama_is_free: true, external_api_budget_usd: 0, alert_on_external_calls: true },
+    costs: { provider_free_mode: false, external_api_budget_usd: 0, alert_on_external_calls: true },
   },
   "access.yaml": {
-    ollama: { host: "", shared_with_zeta_core: true, timeout_ms: 60000 },
+    ai_host: { host: "", shared_with_zeta_core: true, timeout_ms: 60000 },
     local_services: { database: "", vector_store: "", log_store: "" },
     external_apis: {
       policy: "",
