@@ -40,7 +40,7 @@ export async function fetchWithTimeout(
 }
 
 export function extractAssistantText(payload: any): string {
-  if (!payload) return "(no response)";
+  if (!payload) return "";
   if (typeof payload === "string") return payload;
   if (typeof payload.reply === "string") return payload.reply;
   if (typeof payload.response === "string") return payload.response;
@@ -60,5 +60,5 @@ export function extractAssistantText(payload: any): string {
     if (typeof choice.message?.content === "string") return choice.message.content;
     if (typeof choice.text === "string") return choice.text;
   }
-  return "(no response)";
+  return "";
 }

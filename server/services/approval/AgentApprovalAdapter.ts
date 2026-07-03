@@ -42,6 +42,10 @@ export interface AgentApprovalInput {
   task_type_hint?: TaskType;
   /** Free-form capabilities the agent/service flagged for context. */
   capabilities?: string[];
+  dispatch?: {
+    action_type: "email" | "form_submit" | "api_call";
+    payload: Record<string, unknown>;
+  };
 }
 
 export interface AgentApprovalResult {
@@ -58,6 +62,7 @@ export class AgentApprovalAdapter {
         agent: input.agent,
         capabilities: input.capabilities,
         draft_preview: input.draft.slice(0, 600),
+        dispatch: input.dispatch,
       },
     });
 
@@ -73,6 +78,7 @@ export class AgentApprovalAdapter {
       task.id,
       "info",
       `Draft from ${input.agent}: ${input.draft.slice(0, 240)}${input.draft.length > 240 ? "..." : ""}`,
+      input.dispatch ? { dispatch: input.dispatch } : undefined,
     );
 
     const verdict = await ApprovalWatchdog.evaluate(task);

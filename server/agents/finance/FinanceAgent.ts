@@ -24,6 +24,9 @@ export interface FinanceAgentResponse {
   message: string;
   requiresApproval?: boolean;
   capabilities: string[];
+  tradingAction?: "log_paper_trade" | "missing_paper_trade_fields" | "show_journal" | "analyze_setup";
+  recordId?: string;
+  missingFields?: string[];
 }
 
 function isStructuralAudit(task: string) {
@@ -109,6 +112,32 @@ function expandFinanceQueries(task: string): string[] {
   return Array.from(queries).slice(0, 5);
 }
 
+function parseNumberAfter(task: string, label: string): number | undefined {
+  const match = task.match(new RegExp(`\\b${label}\\s+(-?\\d+(?:\\.\\d+)?)`, "i"));
+  if (!match) return undefined;
+  const value = Number(match[1]);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function parsePaperTrade(task: string) {
+  if (!/\blog (a )?paper trade\b|\bpaper trade\b/i.test(task)) return null;
+  const symbol = task.match(/\b([A-Z]{1,6})(?:\s+(long|short)\b|\b)/)?.[1]?.toUpperCase();
+  const direction = task.match(/\b(long|short)\b/i)?.[1]?.toLowerCase() as "long" | "short" | undefined;
+  const entry = parseNumberAfter(task, "entry");
+  const stop = parseNumberAfter(task, "stop");
+  const target = parseNumberAfter(task, "target");
+  const thesis = task.match(/\b(?:thesis|reason)\s+(.+)$/i)?.[1]?.trim();
+  const missingFields = [
+    !symbol ? "symbol" : "",
+    !direction ? "direction" : "",
+    entry === undefined ? "entry" : "",
+    stop === undefined ? "stop" : "",
+    target === undefined ? "target" : "",
+    !thesis ? "entryReason" : "",
+  ].filter(Boolean);
+  return { symbol, direction, entry, stop, target, thesis, missingFields };
+}
+
 function capabilityLabel(capability: string) {
   switch (capability) {
     case "crypto-web3":
@@ -144,6 +173,45 @@ export class FinanceAgent {
 
   static async process(request: FinanceAgentRequest): Promise<FinanceAgentResponse> {
     const skill = await this.loadSkill();
+    const paperTrade = parsePaperTrade(request.task);
+    if (paperTrade) {
+      const capabilities = ["trading intelligence"];
+      if (paperTrade.missingFields.length > 0) {
+        return {
+          agent: "FinanceAgent",
+          capabilities,
+          requiresApproval: false,
+          tradingAction: "missing_paper_trade_fields",
+          missingFields: paperTrade.missingFields,
+          message: `I can log that paper trade after these fields are supplied: ${paperTrade.missingFields.join(", ")}.`,
+        };
+      }
+      const record = await TradingStore.openPaperTrade({
+        userId: request.userId,
+        market: "US",
+        assetClass: "stock",
+        symbol: paperTrade.symbol!,
+        direction: paperTrade.direction!,
+        entry: paperTrade.entry!,
+        stop: paperTrade.stop!,
+        target: paperTrade.target!,
+        size: 1,
+        riskAmount: Math.abs(paperTrade.entry! - paperTrade.stop!),
+        entryReason: paperTrade.thesis!,
+        screenshots: [],
+        lessonsLearned: [],
+        ruleViolations: [],
+      });
+      return {
+        agent: "FinanceAgent",
+        capabilities,
+        requiresApproval: false,
+        tradingAction: "log_paper_trade",
+        recordId: record.id,
+        message: `Paper trade logged: ${record.symbol} ${record.direction} entry ${record.entry}, stop ${record.stop}, target ${record.target}. Record ID: ${record.id}.`,
+      };
+    }
+
     const auditMode = isStructuralAudit(request.task);
     const capabilities = detectCapabilities(request.task);
     const scope = capabilities.length > 0 ? capabilities : ["trading-intelligence", "capital-risk"];

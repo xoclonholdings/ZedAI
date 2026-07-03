@@ -10,9 +10,6 @@ import { logSecurityEvent } from "../services/SecurityAudit";
 
 const WORKING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 
-/** Reshape a TaskRecord into the legacy approval-queue entry the admin
- *  UI was originally built against, so the front-end doesn't have to
- *  re-learn the new task lifecycle shape. */
 function legacyEntryShape(task: any) {
   const draftLog = (task.logs || [])
     .map((l: any) => l.message || "")
@@ -39,16 +36,14 @@ function legacyEntryShape(task: any) {
     approvalStatus: task.approval_status,
     approvalRole: task.approval_role,
     approvalReason: task.approval_reason,
-    executionResult: task.last_result?.execution_result || null,
+    executionResult: task.last_result?.execution_result || task.last_result || null,
   };
 }
 
-/** Append an "approved & executed" footprint to working memory and
- *  post a confirmation bubble to the conversation when one is attached. */
 async function postApprovalConfirmationToConversation(task: any): Promise<string> {
   const timestamp = new Date().toISOString();
   const message = task.plan?.summary || `Task ${task.id}`;
-  const summary = `\n## [${timestamp}] ✅ APPROVED & EXECUTED — User: ${task.user_id}\n**Request**: ${message}\n`;
+  const summary = `\n## [${timestamp}] APPROVED - User: ${task.user_id}\n**Request**: ${message}\n`;
   try {
     await fs.appendFile(WORKING_MEMORY_PATH, summary);
   } catch (err) {
@@ -56,7 +51,7 @@ async function postApprovalConfirmationToConversation(task: any): Promise<string
   }
   if (task.conversation_id) {
     try {
-      const execMessage = `✅ **Action Approved**\n\nYour request has been reviewed and approved by the admin.\n\n**Request**: ${message}`;
+      const execMessage = `**Action Approved**\n\nYour request has been reviewed and approved by the admin. Dispatch status is recorded on the task.\n\n**Request**: ${message}`;
       await storage.createMessage(
         insertMessageSchema.parse({
           conversationId: task.conversation_id,
@@ -69,6 +64,14 @@ async function postApprovalConfirmationToConversation(task: any): Promise<string
     }
   }
   return `Approved at ${timestamp}${task.conversation_id ? " and posted to conversation" : ""}.`;
+}
+
+function getDispatchFromTask(task: any): any | null {
+  for (const log of [...(task.logs || [])].reverse()) {
+    const dispatch = log?.context?.dispatch;
+    if (dispatch?.action_type && dispatch?.payload) return dispatch;
+  }
+  return null;
 }
 
 export function registerApprovalRoutes(app: Express): void {
@@ -89,8 +92,7 @@ export function registerApprovalRoutes(app: Express): void {
       const recent = tasks
         .filter((t) => t.approval_status === "approved" || t.approval_status === "rejected")
         .slice(0, 10);
-      const merged = [...interesting, ...recent];
-      res.json({ version: "2.0", entries: merged.map(legacyEntryShape) });
+      res.json({ version: "2.0", entries: [...interesting, ...recent].map(legacyEntryShape) });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to read approval queue" });
     }
@@ -111,7 +113,21 @@ export function registerApprovalRoutes(app: Express): void {
       if (!result.ok || !result.task) {
         return res.status(404).json({ error: result.message });
       }
-      const exec = await postApprovalConfirmationToConversation(result.task);
+
+      let executionResult = await postApprovalConfirmationToConversation(result.task);
+      const dispatch = getDispatchFromTask(result.task);
+      let dispatchResult: any = null;
+      if (dispatch) {
+        const { ExecutionPipeline } = await import("../services/execution/ExecutionPipeline");
+        dispatchResult = await ExecutionPipeline.dispatch({
+          task_id: result.task.id,
+          action_type: dispatch.action_type,
+          payload: dispatch.payload,
+          notes: "Dispatched after admin approval.",
+        });
+        executionResult = dispatchResult.digital_result?.result || executionResult;
+      }
+
       await logSecurityEvent({
         type: "approval.approved",
         userId: req.user?.claims?.sub,
@@ -119,7 +135,13 @@ export function registerApprovalRoutes(app: Express): void {
       });
       res.json({
         success: true,
-        entry: { ...legacyEntryShape(result.task), executionResult: exec },
+        entry: { ...legacyEntryShape(dispatchResult?.task || result.task), executionResult },
+        dispatch: dispatchResult
+          ? {
+              routedTo: dispatchResult.routed_to,
+              digitalResult: dispatchResult.digital_result,
+            }
+          : null,
       });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Approve failed" });
@@ -146,7 +168,7 @@ export function registerApprovalRoutes(app: Express): void {
       await logSecurityEvent({
         type: "approval.rejected",
         userId: req.user?.claims?.sub,
-        detail: `Rejected task ${id}: ${(result.task.plan?.summary || "").slice(0, 80)} — ${reason || "no reason"}`,
+        detail: `Rejected task ${id}: ${(result.task.plan?.summary || "").slice(0, 80)} - ${reason || "no reason"}`,
       });
       res.json({ success: true, entry: legacyEntryShape(result.task) });
     } catch (err: any) {

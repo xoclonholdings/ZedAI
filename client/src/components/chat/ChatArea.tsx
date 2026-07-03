@@ -28,6 +28,7 @@ export default function ChatArea({
   conversation,
   messages,
   conversationId,
+  selectedProjectId,
   isMobile = false,
   onOpenSidebar,
 }: ChatAreaProps) {
@@ -117,6 +118,7 @@ export default function ChatArea({
     await sendAgentMessage({
       message,
       convId: convId!,
+      projectId: selectedProjectId || undefined,
       abortRef,
       setIsStreaming,
       setLocalMessages,

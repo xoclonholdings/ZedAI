@@ -9,6 +9,8 @@ export interface WebPageResult {
   text: string;
   status: number;
   contentType?: string;
+  links?: string[];
+  fetchedAt?: string;
 }
 
 export interface WebFetchResponse {
@@ -102,6 +104,21 @@ function htmlToText(html: string): { title?: string; text: string } {
   return { title, text };
 }
 
+function extractLinks(html: string, baseUrl: string): string[] {
+  const links = new Set<string>();
+  for (const match of html.matchAll(/<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>/gi)) {
+    const href = match[1];
+    if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) continue;
+    try {
+      const resolved = new URL(href, baseUrl);
+      links.add(resolved.toString());
+    } catch {
+      /* ignore invalid href */
+    }
+  }
+  return Array.from(links).slice(0, 100);
+}
+
 async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
@@ -119,6 +136,7 @@ async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
     const contentType = res.headers.get("content-type") || "";
     const raw = await res.text();
     const parsed = contentType.includes("html") ? htmlToText(raw) : { text: raw.replace(/\s+/g, " ").trim() };
+    const links = contentType.includes("html") ? extractLinks(raw, res.url || target.url) : [];
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
@@ -130,18 +148,97 @@ async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
       text: parsed.text.slice(0, 12_000),
       status: res.status,
       contentType,
+      links,
+      fetchedAt: new Date().toISOString(),
     };
   } finally {
     clearTimeout(timeout);
   }
 }
 
+const PAGE_TYPE_ALIASES: Record<string, string[]> = {
+  blog: ["blog", "posts", "article", "articles", "insights"],
+  about: ["about", "company", "team"],
+  pricing: ["pricing", "plans"],
+  contact: ["contact", "support"],
+  docs: ["docs", "documentation", "developer"],
+  news: ["news", "press"],
+};
+
+function requestedPageTypes(text: string): string[] {
+  const lower = text.toLowerCase();
+  return Object.entries(PAGE_TYPE_ALIASES)
+    .filter(([type, aliases]) =>
+      lower.includes(`${type} page`) ||
+      lower.includes(`/${type}`) ||
+      aliases.some((alias) => new RegExp(`\\b${alias}\\b`, "i").test(lower)),
+    )
+    .map(([type]) => type);
+}
+
+function sameOrigin(url: string, origin: string): boolean {
+  try {
+    return new URL(url).origin === origin;
+  } catch {
+    return false;
+  }
+}
+
+function discoveryTargets(text: string, pages: WebPageResult[], existing: Set<string>): WebTarget[] {
+  const types = requestedPageTypes(text);
+  if (types.length === 0 || pages.length === 0) return [];
+
+  const targets: WebTarget[] = [];
+  for (const page of pages) {
+    let origin = "";
+    try {
+      origin = new URL(page.url).origin;
+    } catch {
+      continue;
+    }
+    const candidateLinks = (page.links || [])
+      .filter((link) => sameOrigin(link, origin))
+      .filter((link) => {
+        const lower = link.toLowerCase();
+        return types.some((type) => PAGE_TYPE_ALIASES[type].some((alias) => lower.includes(alias)));
+      });
+
+    for (const url of candidateLinks) {
+      if (existing.has(url)) continue;
+      existing.add(url);
+      targets.push({ original: url, url });
+      if (targets.length >= 4) return targets;
+    }
+
+    for (const type of types) {
+      const conventional = new URL(`/${type}`, origin).toString();
+      if (existing.has(conventional)) continue;
+      existing.add(conventional);
+      targets.push({ original: conventional, url: conventional });
+      if (targets.length >= 4) return targets;
+    }
+  }
+
+  return targets;
+}
+
 export async function fetchWebTargetsFromText(text: string, limit = 3): Promise<WebFetchResponse> {
   const targets = extractWebTargets(text).slice(0, limit);
   const pages: WebPageResult[] = [];
   const errors: Array<{ url: string; error: string }> = [];
+  const seen = new Set(targets.map((target) => target.url));
 
   for (const target of targets) {
+    try {
+      const page = await fetchOnePage(target);
+      if (page.text) pages.push(page);
+    } catch (err: any) {
+      errors.push({ url: target.url, error: err?.message || String(err) });
+    }
+  }
+
+  for (const target of discoveryTargets(text, pages, seen)) {
+    targets.push(target);
     try {
       const page = await fetchOnePage(target);
       if (page.text) pages.push(page);

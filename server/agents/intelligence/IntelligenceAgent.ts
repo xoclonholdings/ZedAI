@@ -32,6 +32,18 @@ export interface ResearchBrief {
   recommendedAction: string;
   sources: string[];
   agent: "IntelligenceAgent";
+  web?: {
+    pages: Array<{
+      url: string;
+      title?: string;
+      status: number;
+      contentType?: string;
+      extractedTextPreview: string;
+      fetchedAt?: string;
+    }>;
+    errors: Array<{ url: string; error: string }>;
+    quote?: { text: string; url: string };
+  };
 }
 
 export class IntelligenceAgent {
@@ -108,6 +120,10 @@ export class IntelligenceAgent {
         recommendedAction: "Send the website URL, then ask me to visit, inspect, summarize, or audit it.",
         sources: [],
         agent: "IntelligenceAgent",
+        web: {
+          pages: [],
+          errors: directWeb.errors,
+        },
       };
       await this.log(request, brief, expandedQueries, directWeb);
       return brief;
@@ -209,6 +225,10 @@ NEXT_STEP: [specific thing to do next]`.trim();
       .slice(0, 4)
       .map((result) => `${result.title}: ${result.url}`);
     const sources = [...directSources, ...searchSources].slice(0, 6);
+    const quote = this.extractRequestedQuote(query, directWeb);
+    if (quote) {
+      keyFindings.unshift(`"${quote.text}"`);
+    }
 
     return {
       topic: query,
@@ -216,10 +236,38 @@ NEXT_STEP: [specific thing to do next]`.trim();
       confidence: directSources.length > 0 ? "high" : confidence,
       keyFindings: keyFindings.length > 0 ? keyFindings : [raw.slice(0, 300)],
       implications: implications || "The source context was limited, so this should be treated as a starting point rather than a final answer.",
-      recommendedAction: recommendedAction || "Give me one more constraint or target, and I can turn this into a cleaner action plan.",
+      recommendedAction: recommendedAction || "",
       sources,
       agent: "IntelligenceAgent",
+      web: {
+        pages: (directWeb?.pages || []).map((page) => ({
+          url: page.url,
+          title: page.title,
+          status: page.status,
+          contentType: page.contentType,
+          extractedTextPreview: page.text.slice(0, 500),
+          fetchedAt: page.fetchedAt,
+        })),
+        errors: directWeb?.errors || [],
+        quote,
+      },
     };
+  }
+
+  private static extractRequestedQuote(
+    query: string,
+    directWeb?: WebFetchResponse,
+  ): { text: string; url: string } | undefined {
+    if (!/\bquote|direct quote|exact words\b/i.test(query)) return undefined;
+    for (const page of directWeb?.pages || []) {
+      const sentences = page.text
+        .split(/(?<=[.!?])\s+/)
+        .map((sentence) => sentence.trim())
+        .filter((sentence) => sentence.length >= 40 && sentence.length <= 220);
+      const picked = sentences[0];
+      if (picked) return { text: picked, url: page.url };
+    }
+    return undefined;
   }
 
   private static async log(

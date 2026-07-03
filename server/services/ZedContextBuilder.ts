@@ -35,6 +35,8 @@ interface AdminContextOptions {
    *  so the builder can pull in that project's instructions + sources. */
   userId?: string;
   conversationId?: string;
+  projectId?: string;
+  workspaceId?: string;
 }
 
 async function loadYamlFile(file: string): Promise<any | null> {
@@ -223,10 +225,11 @@ export async function buildZedAdminContext(
   // project's instructions and source list into the prompt. This is
   // what makes "Sources" and "Instructions" in the admin / project
   // UI actually flow into the AI on every call.
-  if (opts.userId && opts.conversationId) {
+  if (opts.userId && (opts.conversationId || opts.projectId)) {
     try {
       const projects = await listProjects(opts.userId);
       const project = projects.find((p) =>
+        (opts.projectId && p.id === opts.projectId) ||
         (p.conversationIds || []).includes(opts.conversationId!),
       );
       if (project) {

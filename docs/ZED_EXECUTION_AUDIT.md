@@ -5,9 +5,9 @@ Repository: `xoclonholdings/ZedAI`
 
 ## Executive Status
 
-- Overall System Status: PARTIAL
-- Highest Severity Issue: ZED's primary chat path does route through `ManagerAgent`, but many claimed capabilities stop at model-generated drafts, plans, mock execution, or UI CRUD. External operation is not consistently invoked during real chat requests.
-- Primary Root Cause: Execution boundaries are split across chat/orchestrate, ZCOS flows, operational endpoints, and admin-configured integrations, but normal ZED requests only call the selected agent and model provider. Most provider-backed actions require separate endpoints or manual UI workflows and are not connected back into the main chat outcome.
+- Overall System Status: PARTIAL, with P0 chat/orchestration wiring improved on 2026-07-02.
+- Highest Severity Issue: Provider-backed external actions still require configured credentials and runtime verification. Chat now creates structured approval/dispatch metadata, but live SMTP/calendar/API execution remains UNVERIFIED without credentials.
+- Primary Root Cause: ZED had multiple chat execution paths and capability-specific services that were not consistently reached from normal requests. The active implementation now routes `/api/orchestrate`, `/api/chat`, and `/api/conversations/:id/messages` through `ChatExecutionService`, but several downstream providers remain credential-gated.
 
 Build verification:
 
@@ -16,6 +16,31 @@ Build verification:
 - PASS: `..\server\node_modules\.bin\tsc.cmd --noEmit -p ..\tsconfig.json` from `server`
 
 Important workspace note: `server/routes-modules/orchestrate-and-misc.ts` was already modified before this audit.
+
+## 2026-07-02 Execution Wiring Update
+
+These fixes were applied after the baseline audit. Items below are verified only to the level stated.
+
+| Area | Status after fix | Evidence | Verification |
+|---|---|---|---|
+| Authoritative chat path | PARTIAL: `/api/orchestrate`, `/api/chat`, and `/api/conversations/:id/messages` now call `ChatExecutionService`; legacy SSE shape is preserved as a wrapper. | `server/services/ChatExecutionService.ts`, `server/routes-modules/orchestrate-and-misc.ts`, `server/routes-modules/conversations-send-clean.ts`, `server/routes-modules/conversations-send.ts` | TypeScript noEmit PASS. Runtime login/chat trace still needs browser/API verification. |
+| Empty/template output handling | PARTIAL: shared executor rejects empty/template upstream output as failed execution metadata before storage; client no longer invents "No response"; provider helper returns empty text instead of placeholder text. | `server/services/ChatExecutionService.ts`, `client/src/components/chat/chat-area/sendAgentMessage.ts`, `server/core/providers/provider-helpers.ts` | Static search confirms active direct placeholders removed outside sanitizer/policy text. Forced empty-provider runtime test remains UNVERIFIED. |
+| Execution trace IDs | PARTIAL: chat responses and assistant metadata now include `traceId`, route, selected agent, classifier result, service/tool arrays, provider, context flags, file refs, presentation adjustments, status, failure, and mocked flag. | `server/services/ChatExecutionService.ts`, `server/orchestrator/ManagerAgent.ts`, `server/orchestrator/manager-agent/agent-selection.ts` | TypeScript noEmit PASS. End-to-end runtime trace inspection remains UNVERIFIED. |
+| ManagerAgent routing evidence | PARTIAL: selection now returns structured classifier/fallback metadata and selected-agent service lists. | `server/orchestrator/manager-agent/agent-selection.ts`, `server/orchestrator/ManagerAgent.ts` | Static/type verification PASS. Route prompt tests remain UNVERIFIED. |
+| Research/web execution | PARTIAL: direct URL fetch retains page metadata, bounded same-origin discovery supports blog/about/pricing/contact/docs/news, quote requests extract a quote from fetched content, and prior website references resolve from metadata first. | `server/services/WebContentService.ts`, `server/agents/intelligence/IntelligenceAgent.ts`, `server/services/ChatExecutionService.ts` | TypeScript noEmit PASS. Live fetch tests require network/runtime and remain UNVERIFIED. |
+| Presentation masking | PARTIAL: flow suggestions are metadata-only; presentation adjustments are saved; empty output now records `upstream_output_empty_preserved_failure`. | `server/zcos/orchestration/ZedAutonomousOrchestrator.ts`, `server/services/ZedVoiceFormationEngine.ts`, `server/services/ChatExecutionService.ts` | Static/type verification PASS. Forced empty upstream runtime test remains UNVERIFIED. |
+| Operations approvals | PARTIAL: operations requests produce structured tasks and approval ids; approval route attempts `ExecutionPipeline.dispatch` when dispatch payload exists; disabled providers return `providerDisabled` failure instead of mock success. | `server/agents/operations/OperationsAgent.ts`, `server/services/approval/AgentApprovalAdapter.ts`, `server/routes-modules/approvals.ts`, `server/services/execution/DigitalExecutionService.ts` | TypeScript noEmit PASS. SMTP/live dispatch remains UNVERIFIED without credentials. |
+| Project/file context | PARTIAL: chat payload includes selected project id; context builder accepts direct `projectId`; chat executor injects conversation file extracted content and records file/project metadata. | `client/src/components/chat/ChatArea.tsx`, `client/src/components/chat/chat-area/sendAgentMessage.ts`, `server/services/ZedContextBuilder.ts`, `server/services/ChatExecutionService.ts` | TypeScript/client build PASS. Project/file runtime prompts remain UNVERIFIED. |
+| Flows | PARTIAL: flow stages call real agents for research, finance, operations, and business lanes; model-only/local stages are explicitly marked in stage output. | `server/services/flow/FlowExecutor.ts` | TypeScript noEmit PASS. Published flow runtime run remains UNVERIFIED. |
+| Trading chat | PARTIAL: finance chat can parse and write complete paper-trade log requests to `TradingStore.openPaperTrade`; missing fields are reported specifically. | `server/agents/finance/FinanceAgent.ts` | TypeScript noEmit PASS. Runtime record creation remains UNVERIFIED. |
+| Admin security | PARTIAL: `/api/admin/system-test` now uses `isAdmin`; registered admin routes reviewed by static search show `isAdmin` guards. | `server/routes-modules/orchestrate-and-misc.ts`, `server/routes-modules/*` | Static verification PASS. Anonymous/normal-user HTTP denial tests remain UNVERIFIED. |
+
+Latest verification run:
+
+- PASS: `npm.cmd run smoke` in `server`
+- PASS: `npm.cmd run build` in `client`
+- PASS: `.\server\node_modules\.bin\tsc.cmd --noEmit -p .\tsconfig.json` from repo root
+- NOT RUN: live browser/API chat trace test, live website fetch test, SMTP dispatch test, admin denial HTTP test. These require running server/session credentials and, for external actions, configured provider credentials.
 
 ## Capability Matrix
 

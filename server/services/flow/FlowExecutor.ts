@@ -3,6 +3,11 @@ import path from "path";
 import { randomUUID } from "crypto";
 
 import { executeProviderChat } from "../../core/providers/provider-executor";
+import { OperationsAgent } from "../../agents/operations/OperationsAgent";
+import { IntelligenceAgent } from "../../agents/intelligence/IntelligenceAgent";
+import { BusinessManagerAgent } from "../../agents/business-manager/BusinessManagerAgent";
+import { FinanceAgent } from "../../agents/finance/FinanceAgent";
+import { formatBrief } from "../../orchestrator/manager-agent/format";
 import { AgentApprovalAdapter } from "../approval/AgentApprovalAdapter";
 import { ApprovalDecisionHandler } from "../approval/ApprovalDecisionHandler";
 import { FlowStore } from "../FlowStore";
@@ -122,6 +127,80 @@ function isPlaceholderOutput(output: string): boolean {
     /\blorem ipsum\b/.test(normalized) ||
     /\btbd\b/.test(normalized)
   );
+}
+
+async function executeAgentStage(opts: {
+  run: FlowRun;
+  flow: FlowDefinition;
+  stage: FlowStage;
+  prompt: string;
+}): Promise<Record<string, unknown> | null> {
+  const { run, stage, prompt } = opts;
+  const agent = stage.assignedAgent;
+  if (!agent || !["research", "finance", "operations", "business"].includes(agent)) return null;
+
+  if (agent === "research") {
+    const brief = await IntelligenceAgent.research({
+      userId: run.userId,
+      query: prompt,
+      depth: "deep",
+      conversationId: run.conversationId,
+    });
+    return {
+      stageId: stage.id,
+      stageExecutionType: "agent",
+      agentInvoked: "IntelligenceAgent",
+      servicesInvoked: ["IntelligenceAgent.research", "WebContentService.fetchWebTargetsFromText", "WebSearchService.webSearch"],
+      output: formatBrief(brief, { includeSources: true }),
+      metadata: { brief },
+    };
+  }
+
+  if (agent === "finance") {
+    const response = await FinanceAgent.process({
+      userId: run.userId,
+      task: prompt,
+      conversationId: run.conversationId,
+    });
+    return {
+      stageId: stage.id,
+      stageExecutionType: "agent",
+      agentInvoked: "FinanceAgent",
+      servicesInvoked: ["FinanceAgent.process"],
+      output: response.message,
+      metadata: response,
+    };
+  }
+
+  if (agent === "operations") {
+    const response = await OperationsAgent.process({
+      userId: run.userId,
+      message: prompt,
+      conversationId: run.conversationId,
+    });
+    return {
+      stageId: stage.id,
+      stageExecutionType: "agent",
+      agentInvoked: "OperationsAgent",
+      servicesInvoked: ["OperationsAgent.process", ...(response.requiresApproval ? ["AgentApprovalAdapter.register"] : [])],
+      output: response.reply,
+      metadata: response,
+    };
+  }
+
+  const response = await BusinessManagerAgent.process({
+    userId: run.userId,
+    task: prompt,
+    conversationId: run.conversationId,
+  });
+  return {
+    stageId: stage.id,
+    stageExecutionType: "agent",
+    agentInvoked: "BusinessManagerAgent",
+    servicesInvoked: ["BusinessManagerAgent.process"],
+    output: response.message,
+    metadata: response,
+  };
 }
 
 function buildLocalStageOutput(opts: {
@@ -336,31 +415,56 @@ async function runStage(
     });
     const systemPrompt = SYSTEM_PROMPTS[stage.assignedAgent as FlowAgentKey] || SYSTEM_PROMPTS.manager;
     const lane = laneForAgent(stage.assignedAgent);
-    let reply: string;
-    try {
-      reply = await executeProviderChat(
-        [{ role: "user", content: prompt }],
-        { systemPrompt, lane: lane as any },
-      );
-      if (isPlaceholderOutput(reply)) {
-        throw new Error("Provider returned placeholder/template output");
+    let reply: string | Record<string, unknown>;
+    const agentStage = await executeAgentStage({ run, flow, stage, prompt }).catch((err: any) => ({
+      stageId: stage.id,
+      stageExecutionType: "agent",
+      agentInvoked: stage.assignedAgent,
+      servicesInvoked: [],
+      failure: err?.message || String(err),
+    }));
+    if (agentStage) {
+      reply = agentStage;
+    } else {
+      try {
+        const modelReply = await executeProviderChat(
+          [{ role: "user", content: prompt }],
+          { systemPrompt, lane: lane as any },
+        );
+        if (isPlaceholderOutput(modelReply)) {
+          throw new Error("Provider returned placeholder/template output");
+        }
+        reply = {
+          stageId: stage.id,
+          stageExecutionType: "model_only",
+          agentInvoked: null,
+          servicesInvoked: [],
+          output: modelReply,
+        };
+      } catch (err: any) {
+        const providerError = err?.message || String(err);
+        reply = {
+          stageId: stage.id,
+          stageExecutionType: "local_structured",
+          agentInvoked: null,
+          servicesInvoked: [],
+          failure: providerError,
+          output: buildLocalStageOutput({
+            flow,
+            stage,
+            priorOutputs,
+            initialContext: run.context || {},
+            providerError,
+          }),
+        };
+        await logRuntimeEvent({
+          level: "warn",
+          source: "server",
+          event: "flow.stage.local_executor",
+          detail: `${flow.slug} :: ${stage.name} used local structured executor`,
+          context: { runId, stageId: stage.id, agent: stage.assignedAgent, providerError },
+        });
       }
-    } catch (err: any) {
-      const providerError = err?.message || String(err);
-      reply = buildLocalStageOutput({
-        flow,
-        stage,
-        priorOutputs,
-        initialContext: run.context || {},
-        providerError,
-      });
-      await logRuntimeEvent({
-        level: "warn",
-        source: "server",
-        event: "flow.stage.local_executor",
-        detail: `${flow.slug} :: ${stage.name} used local structured executor`,
-        context: { runId, stageId: stage.id, agent: stage.assignedAgent, providerError },
-      });
     }
 
     await markStage(runId, stage.id, {
@@ -380,7 +484,7 @@ async function runStage(
       ...(run.context || {}),
       lastStageId: stage.id,
       lastStageName: stage.name,
-      lastStageOutput: reply,
+      lastStageOutput: typeof reply === "string" ? reply : (reply as any).output || JSON.stringify(reply),
     };
     run = (await FlowStore.updateRun(runId, {
       outputs: nextOutputs,

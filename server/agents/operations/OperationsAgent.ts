@@ -25,12 +25,20 @@ export interface AgentResponse {
   actions?: AgentAction[];
   requiresApproval?: boolean;
   pendingApproval?: string;
+  task?: StructuredOperationTask;
 }
 
 export interface AgentAction {
   type: "task_created" | "draft_created" | "memory_written" | "approval_required";
   description: string;
   data?: any;
+}
+
+export interface StructuredOperationTask {
+  actionType: "send_email" | "draft_email" | "schedule_calendar_item" | "send_message" | "create_task" | "general";
+  requiresApproval: boolean;
+  dispatchPayload?: Record<string, any>;
+  providerStatus?: "enabled" | "disabled" | "draft_only";
 }
 
 export class OperationsAgent {
@@ -68,6 +76,7 @@ export class OperationsAgent {
     const email = settings.integrations.email;
     const telephony = settings.integrations.telephony;
     const knowledgeBlock = request.memoryContext ? `\n\n${request.memoryContext}` : "";
+    const task = this.parseStructuredTask(request.message, email.enabled);
 
     const capabilityBlock = `## Executive Capability Surface
 - Email lane: ${email.enabled ? `${email.status} via ${email.provider}` : "not configured"}
@@ -95,12 +104,12 @@ ConversationID: ${request.conversationId || "none"}`.trim();
     const requiresApproval = this.checkApprovalRequired(request.message, reply);
 
     if (requiresApproval) {
+      const pending = await this.queueForApproval(request, reply, task);
       actions.push({
         type: "approval_required",
         description: "This action requires ADMIN approval before execution",
-        data: { message: request.message, draft: reply },
+        data: { message: request.message, draft: reply, task, approvalId: pending },
       });
-      await this.queueForApproval(request, reply);
     }
 
     await this.writeToMemory(request, reply, actions);
@@ -111,7 +120,56 @@ ConversationID: ${request.conversationId || "none"}`.trim();
       agent: "OperationsAgent",
       actions,
       requiresApproval,
+      pendingApproval: actions.find((action) => action.type === "approval_required")?.data?.approvalId,
+      task,
     };
+  }
+
+  private static parseStructuredTask(message: string, emailEnabled: boolean): StructuredOperationTask {
+    const lower = message.toLowerCase();
+    if (/\bsend an? email\b|\bsend email\b|\breply by email\b/.test(lower)) {
+      const to = message.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0];
+      const saying = message.match(/\bsaying\s+([\s\S]+)$/i)?.[1]?.trim();
+      return {
+        actionType: "send_email",
+        requiresApproval: true,
+        providerStatus: emailEnabled ? "enabled" : "disabled",
+        dispatchPayload: {
+          to,
+          subject: "Message from ZED",
+          body: saying || message,
+        },
+      };
+    }
+    if (/\bdraft an? email\b|\bdraft email\b/.test(lower)) {
+      return {
+        actionType: "draft_email",
+        requiresApproval: false,
+        providerStatus: "draft_only",
+      };
+    }
+    if (/\bschedule\b|\bcalendar\b|\bmeeting\b|\bappointment\b/.test(lower)) {
+      return {
+        actionType: "schedule_calendar_item",
+        requiresApproval: true,
+        providerStatus: "draft_only",
+      };
+    }
+    if (/\bsend (a )?message\b|\btext\b/.test(lower)) {
+      return {
+        actionType: "send_message",
+        requiresApproval: true,
+        providerStatus: "disabled",
+      };
+    }
+    if (/\bcreate (a )?task\b|\btodo\b|\bto-do\b/.test(lower)) {
+      return {
+        actionType: "create_task",
+        requiresApproval: false,
+        providerStatus: "enabled",
+      };
+    }
+    return { actionType: "general", requiresApproval: false, providerStatus: "enabled" };
   }
 
   private static checkApprovalRequired(message: string, _reply: string): boolean {
@@ -132,17 +190,28 @@ ConversationID: ${request.conversationId || "none"}`.trim();
     return approvalTriggers.some((trigger) => lower.includes(trigger));
   }
 
-  private static async queueForApproval(request: AgentRequest, draft: string): Promise<void> {
+  private static async queueForApproval(
+    request: AgentRequest,
+    draft: string,
+    task: StructuredOperationTask,
+  ): Promise<string | undefined> {
     try {
-      await AgentApprovalAdapter.register({
+      const dispatch =
+        task.actionType === "send_email" && task.dispatchPayload
+          ? { action_type: "email" as const, payload: task.dispatchPayload }
+          : undefined;
+      const registered = await AgentApprovalAdapter.register({
         user_id: request.userId,
         conversation_id: request.conversationId || null,
         message: request.message,
-        draft,
+        draft: `${draft}\n\nDispatch payload:\n${JSON.stringify(task, null, 2)}`,
         agent: "OperationsAgent",
+        dispatch,
       });
+      return registered.task_id;
     } catch (err) {
       console.warn("[OperationsAgent] Approval registration failed:", err);
+      return undefined;
     }
   }
 

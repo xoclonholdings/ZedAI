@@ -7,6 +7,8 @@ interface SendAgentMessageArgs {
   message: string;
   convId: string;
   agentTarget?: AgentTarget;
+  projectId?: string;
+  workspaceId?: string;
   abortRef?: MutableRefObject<AbortController | null>;
   setIsStreaming: Dispatch<SetStateAction<boolean>>;
   setLocalMessages: Dispatch<SetStateAction<Message[]>>;
@@ -23,6 +25,8 @@ export async function sendAgentMessage({
   message,
   convId,
   agentTarget,
+  projectId,
+  workspaceId,
   abortRef,
   setIsStreaming,
   setLocalMessages,
@@ -46,6 +50,8 @@ export async function sendAgentMessage({
   try {
     const payload: Record<string, unknown> = { message, conversationId: convId };
     if (agentTarget) payload.targetAgent = agentTarget;
+    if (projectId) payload.projectId = projectId;
+    if (workspaceId) payload.workspaceId = workspaceId;
 
     const res = await fetch("/api/orchestrate", {
       method: "POST",
@@ -71,7 +77,7 @@ export async function sendAgentMessage({
           data?.error ||
           `ZED request failed: HTTP ${res.status} ${res.statusText || ""}`.trim();
     } else {
-      replyContent = data?.reply || data?.error || "No response";
+      replyContent = data?.reply || data?.error || "Execution failed: server returned no reply content.";
     }
 
     setLocalMessages((prev) => {
@@ -84,7 +90,11 @@ export async function sendAgentMessage({
           conversationId: convId,
           role: "assistant" as const,
           content: replyContent,
-          metadata: { agent: data?.agent || "ManagerAgent" },
+          metadata: {
+            agent: data?.agent || "ManagerAgent",
+            ...(data?.metadata || {}),
+            trace: data?.trace,
+          },
           createdAt: new Date(),
         },
       ];

@@ -514,7 +514,7 @@ export async function presentZedResponseWithChecks(
   content = content.replace(/\n{3,}/g, "\n\n").trim();
   if (!content) {
     content = deriveNoOutputResponse(draft, options);
-    adjustments.push("derived_specific_no_output_response");
+    adjustments.push("upstream_output_empty_preserved_failure");
   }
 
   return {

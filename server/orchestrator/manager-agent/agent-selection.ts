@@ -3,6 +3,16 @@ import { logRuntimeEvent } from "../../services/RuntimeLogger";
 
 import type { AgentName, HubConfig, OrchestratorRequest } from "./types";
 
+export interface AgentSelectionDecision {
+  selectedAgent: AgentName;
+  detectedIntent: string;
+  classifierResult: AgentName | null;
+  classifierFailed: boolean;
+  fallbackUsed?: "keyword";
+  fallbackReason?: string;
+  targetAgent?: OrchestratorRequest["targetAgent"];
+}
+
 /**
  * URL / web-research intent detection. Capability-level, not lane-
  * level — even if a legacy caller supplies another target, a message
@@ -304,6 +314,14 @@ export async function selectAgent(
   config: HubConfig,
   targetAgent?: OrchestratorRequest["targetAgent"],
 ): Promise<AgentName> {
+  return (await selectAgentWithTrace(message, config, targetAgent)).selectedAgent;
+}
+
+export async function selectAgentWithTrace(
+  message: string,
+  config: HubConfig,
+  targetAgent?: OrchestratorRequest["targetAgent"],
+): Promise<AgentSelectionDecision> {
   if (isWebLookupIntent(message)) {
     await logRuntimeEvent({
       level: "info",
@@ -311,16 +329,71 @@ export async function selectAgent(
       event: "manager.route.web_intent",
       detail: "Web / URL lookup intent routed to IntelligenceAgent",
     });
-    return "IntelligenceAgent";
+    return {
+      selectedAgent: "IntelligenceAgent",
+      detectedIntent: "web_research",
+      classifierResult: null,
+      classifierFailed: false,
+      targetAgent,
+    };
   }
 
-  if (targetAgent === "operations") return "OperationsAgent";
-  if (targetAgent === "research") return "IntelligenceAgent";
-  if (targetAgent === "business") return "BusinessManagerAgent";
-  if (targetAgent === "finance") return "FinanceAgent";
+  if (targetAgent === "operations") {
+    return {
+      selectedAgent: "OperationsAgent",
+      detectedIntent: "explicit_target",
+      classifierResult: null,
+      classifierFailed: false,
+      targetAgent,
+    };
+  }
+  if (targetAgent === "research") {
+    return {
+      selectedAgent: "IntelligenceAgent",
+      detectedIntent: "explicit_target",
+      classifierResult: null,
+      classifierFailed: false,
+      targetAgent,
+    };
+  }
+  if (targetAgent === "business") {
+    return {
+      selectedAgent: "BusinessManagerAgent",
+      detectedIntent: "explicit_target",
+      classifierResult: null,
+      classifierFailed: false,
+      targetAgent,
+    };
+  }
+  if (targetAgent === "finance") {
+    return {
+      selectedAgent: "FinanceAgent",
+      detectedIntent: "explicit_target",
+      classifierResult: null,
+      classifierFailed: false,
+      targetAgent,
+    };
+  }
 
   const classified = await classifyWithLlm(message);
-  if (classified) return classified;
+  if (classified) {
+    return {
+      selectedAgent: classified,
+      detectedIntent: "llm_classifier",
+      classifierResult: classified,
+      classifierFailed: false,
+      targetAgent,
+    };
+  }
 
-  return classifyWithKeywords(message, config);
+  const keywordAgent = classifyWithKeywords(message, config);
+  return {
+    selectedAgent: keywordAgent,
+    detectedIntent: "keyword_classifier",
+    classifierResult: null,
+    classifierFailed: true,
+    fallbackUsed: "keyword",
+    fallbackReason: "llm_classifier_unavailable_or_unmapped",
+    targetAgent,
+  };
 }

@@ -17,7 +17,7 @@ import {
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 
 import { flushHubConfig, loadHubConfig } from "./manager-agent/config";
-import { isWebLookupIntent, selectAgent } from "./manager-agent/agent-selection";
+import { isWebLookupIntent, selectAgentWithTrace } from "./manager-agent/agent-selection";
 import { formatBrief } from "./manager-agent/format";
 import { logRouting } from "./manager-agent/routing-log";
 import type {
@@ -93,7 +93,8 @@ export class ManagerAgent {
         ? request.context.strategicPrompt
         : "";
 
-    const agent = await selectAgent(request.message, config, request.targetAgent);
+    const routeDecision = await selectAgentWithTrace(request.message, config, request.targetAgent);
+    const agent = routeDecision.selectedAgent;
     const responseMode = responseModeForAgent(agent);
     const strategicReasoning = ZedStrategicReasoningEngine.prepare({
       userMessage: request.message,
@@ -132,6 +133,19 @@ export class ManagerAgent {
 
     let reply: string;
     let extra: Partial<OrchestratorResponse> = {};
+    const baseMetadata = {
+      intent: routeDecision.detectedIntent,
+      actionType: "agent_response",
+      selectedAgent: agent,
+      classifierResult: routeDecision.classifierResult,
+      classifierFailed: routeDecision.classifierFailed,
+      fallbackUsed: routeDecision.fallbackUsed,
+      fallbackReason: routeDecision.fallbackReason,
+      executedServices: [] as string[],
+      servicesInvoked: [] as string[],
+      toolsInvoked: [] as string[],
+      strategic: strategicReasoning.active,
+    };
 
     switch (agent) {
       case "IntelligenceAgent": {
@@ -147,7 +161,16 @@ export class ManagerAgent {
         };
         const brief = await IntelligenceAgent.research(researchReq);
         reply = formatBrief(brief, { includeSources });
-        extra = { metadata: { brief } };
+        extra = {
+          metadata: {
+            ...baseMetadata,
+            actionType: "research",
+            executedServices: ["IntelligenceAgent.research"],
+            servicesInvoked: ["WebContentService.fetchWebTargetsFromText", "WebSearchService.webSearch", "ChromaService.querySimilarResearch"],
+            brief,
+            web: (brief as any).web,
+          },
+        };
         break;
       }
 
@@ -168,10 +191,13 @@ export class ManagerAgent {
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
           metadata: {
+            ...baseMetadata,
+            actionType: resp.requiresApproval ? "approval_required" : "business_analysis",
+            executedServices: ["BusinessManagerAgent.process"],
+            servicesInvoked: ["BusinessManagerAgent.process"],
             planned: resp.planned,
             capabilities: resp.capabilities,
             integration: "Business Operations",
-            strategic: strategicReasoning.active,
           },
         };
       }
@@ -192,7 +218,19 @@ export class ManagerAgent {
           }),
           agent: resp.agent,
           requiresApproval: resp.requiresApproval,
-          metadata: { capabilities: resp.capabilities, strategic: strategicReasoning.active },
+          metadata: {
+            ...baseMetadata,
+            actionType: (resp as any).tradingAction ? "trading_action" : "finance_analysis",
+            executedServices: ["FinanceAgent.process"],
+            servicesInvoked: [
+              "FinanceAgent.process",
+              ...(resp as any).tradingAction ? ["TradingStore.openPaperTrade"] : ["WebSearchService.webSearch", "TradingStore.getPerformance"],
+            ],
+            capabilities: resp.capabilities,
+            tradingAction: (resp as any).tradingAction,
+            recordId: (resp as any).recordId,
+            missingFields: (resp as any).missingFields,
+          },
         };
       }
 
@@ -209,7 +247,16 @@ export class ManagerAgent {
         reply = opResp.reply;
         extra = {
           requiresApproval: opResp.requiresApproval,
-          metadata: { actions: opResp.actions, strategic: strategicReasoning.active },
+          pendingApproval: opResp.pendingApproval,
+          metadata: {
+            ...baseMetadata,
+            actionType: opResp.requiresApproval ? "approval_required" : "operations_response",
+            executedServices: ["OperationsAgent.process"],
+            servicesInvoked: ["OperationsAgent.process", ...(opResp.requiresApproval ? ["AgentApprovalAdapter.register"] : [])],
+            actions: opResp.actions,
+            operationTask: (opResp as any).task,
+            pendingApproval: opResp.pendingApproval,
+          },
         };
         break;
       }
@@ -226,6 +273,10 @@ export class ManagerAgent {
       reply,
       agent,
       ...extra,
+      metadata: {
+        ...baseMetadata,
+        ...(extra.metadata || {}),
+      },
     };
   }
 

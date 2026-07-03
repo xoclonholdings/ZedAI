@@ -63,6 +63,8 @@ export interface DigitalExecutionResult {
   status: "success" | "failed";
   result: string;
   next_steps: string[];
+  mocked?: boolean;
+  failureReason?: string;
 }
 
 interface DigitalExecutionLogEntry {
@@ -137,11 +139,13 @@ export class DigitalExecutionService {
 
     if (!liveProvider) {
       return {
-        status: "success",
-        result: `MOCK email queued to ${payload.to} subject "${payload.subject}".`,
+        status: "failed",
+        result: `Email provider disabled; no email was sent to ${payload.to}.`,
         next_steps: [
-          "Set EMAIL_PROVIDER_ENABLED=true and configure a real provider to send live email.",
+          "Set EMAIL_PROVIDER_ENABLED=true and configure a real provider before dispatch.",
         ],
+        mocked: false,
+        failureReason: "providerDisabled",
       };
     }
 
@@ -163,9 +167,11 @@ export class DigitalExecutionService {
     const liveSubmit = process.env.DIGITAL_FORM_LIVE === "true";
     if (!liveSubmit) {
       return {
-        status: "success",
-        result: `MOCK form submission to ${payload.endpoint} accepted.`,
+        status: "failed",
+        result: `Digital form provider disabled; no submission was sent to ${payload.endpoint}.`,
         next_steps: ["Set DIGITAL_FORM_LIVE=true to enable real form submission."],
+        mocked: false,
+        failureReason: "providerDisabled",
       };
     }
 
@@ -188,9 +194,11 @@ export class DigitalExecutionService {
     const liveApi = process.env.DIGITAL_API_LIVE === "true";
     if (!liveApi) {
       return {
-        status: "success",
-        result: `MOCK ${payload.method} ${payload.url} accepted.`,
+        status: "failed",
+        result: `Digital API provider disabled; ${payload.method} ${payload.url} was not called.`,
         next_steps: ["Set DIGITAL_API_LIVE=true to enable real outbound API calls."],
+        mocked: false,
+        failureReason: "providerDisabled",
       };
     }
 
@@ -227,6 +235,8 @@ export class DigitalExecutionService {
       status: "failed",
       result: message,
       next_steps,
+      mocked: false,
+      failureReason: message,
     };
   }
 
