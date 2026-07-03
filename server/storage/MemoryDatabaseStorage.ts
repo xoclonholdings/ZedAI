@@ -1,4 +1,5 @@
 import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 import {
   type CoreMemory,
@@ -25,6 +26,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("core_memory", key);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) return null;
 
     try {
       const [memory] = await db
@@ -45,6 +47,21 @@ export class MemoryDatabaseStorage {
 
   async upsertCoreMemory(data: InsertCoreMemory): Promise<CoreMemory> {
     const fallbackKey = `core_memory_${data.key}`;
+
+    if (!db) {
+      const timestamp = new Date();
+      const memory = {
+        id: randomUUID(),
+        ...data,
+        description: data.description ?? null,
+        adminOnly: data.adminOnly ?? true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } as CoreMemory;
+      memoryCache.delete(this.generateCacheKey("core_memory", data.key));
+      await fallbackStorage.store(fallbackKey, memory);
+      return memory;
+    }
 
     const [memory] = await db
       .insert(coreMemory)
@@ -69,6 +86,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("all_core_memory");
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) return [];
 
     try {
       const result = await db
@@ -89,6 +107,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("project_memory", userId);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) return [];
 
     try {
       const result = await db
@@ -116,6 +135,22 @@ export class MemoryDatabaseStorage {
   ): Promise<ProjectMemory> {
     const fallbackKey = `project_memory_${data.userId}`;
 
+    if (!db) {
+      const timestamp = new Date();
+      const memory = {
+        id: randomUUID(),
+        ...data,
+        description: data.description ?? null,
+        type: data.type ?? "context",
+        isActive: data.isActive ?? true,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      } as ProjectMemory;
+      memoryCache.delete(this.generateCacheKey("project_memory", data.userId));
+      await fallbackStorage.store(fallbackKey, memory);
+      return memory;
+    }
+
     const [memory] = await db
       .insert(projectMemory)
       .values(data)
@@ -134,6 +169,22 @@ export class MemoryDatabaseStorage {
     id: string,
     updates: Partial<InsertProjectMemory>
   ): Promise<ProjectMemory> {
+    if (!db) {
+      const updated = {
+        id,
+        userId: updates.userId || "offline",
+        name: updates.name || "Offline project memory",
+        description: updates.description ?? null,
+        content: updates.content || "",
+        type: updates.type || "context",
+        isActive: updates.isActive ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as ProjectMemory;
+      await fallbackStorage.store(`project_memory_${id}`, updated);
+      return updated;
+    }
+
     const [updated] = await db
       .update(projectMemory)
       .set({ ...updates, updatedAt: new Date() })
@@ -181,6 +232,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("scratchpad_memory", userId);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) return [];
 
     try {
       const now = new Date();
@@ -209,6 +261,19 @@ export class MemoryDatabaseStorage {
     data: InsertScratchpadMemory
   ): Promise<ScratchpadMemory> {
     const fallbackKey = `scratchpad_memory_${data.userId}`;
+
+    if (!db) {
+      const memory = {
+        id: randomUUID(),
+        ...data,
+        conversationId: data.conversationId ?? null,
+        tags: data.tags ?? null,
+        createdAt: new Date(),
+      } as ScratchpadMemory;
+      memoryCache.delete(this.generateCacheKey("scratchpad_memory", data.userId));
+      await fallbackStorage.store(fallbackKey, memory);
+      return memory;
+    }
 
     const [memory] = await db
       .insert(scratchpadMemory)
@@ -251,6 +316,8 @@ export class MemoryDatabaseStorage {
   }
 
   async cleanupExpiredScratchpadMemory(): Promise<void> {
+    if (!db) return;
+
     try {
       const now = new Date();
 

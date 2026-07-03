@@ -1,4 +1,5 @@
 import { eq, asc } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 import {
   type Message,
@@ -19,6 +20,7 @@ export class MessageDatabaseStorage {
     const cacheKey = this.generateCacheKey("messages", conversationId);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
+    if (!db) return [];
 
     try {
       const result = await db
@@ -40,6 +42,21 @@ export class MessageDatabaseStorage {
   async createMessage(data: InsertMessage): Promise<Message> {
     const fallbackKey = `messages_${data.conversationId}`;
 
+    if (!db) {
+      const message = {
+        id: randomUUID(),
+        ...data,
+        metadata: data.metadata ?? null,
+        createdAt: new Date(),
+      } as Message;
+      await fallbackStorage.store(fallbackKey, {
+        message,
+        timestamp: Date.now(),
+      });
+      memoryCache.delete(this.generateCacheKey("messages", data.conversationId));
+      return message;
+    }
+
     const [message] = await db
       .insert(messages)
       .values(data)
@@ -59,6 +76,20 @@ export class MessageDatabaseStorage {
     if (data.length === 0) return [];
 
     const fallbackKey = `messages_batch_${Date.now()}`;
+
+    if (!db) {
+      const result = data.map((item) => ({
+        id: randomUUID(),
+        ...item,
+        metadata: item.metadata ?? null,
+        createdAt: new Date(),
+      })) as Message[];
+      await fallbackStorage.store(fallbackKey, result);
+      for (const conversationId of new Set(data.map((item) => item.conversationId))) {
+        memoryCache.delete(this.generateCacheKey("messages", conversationId));
+      }
+      return result;
+    }
 
     const result = await db
       .insert(messages)

@@ -3,6 +3,7 @@ zed-backend/node_modules
 client/dist
 models/
 hub/config/admin-settings.json
+hub/flows/
 hub/logs/
 hub/shared-memory/curation/
 hub/shared-memory/foundation-reparse/

@@ -95,6 +95,14 @@ function hasTemplateLeakage(value: string): boolean {
   return /^\s*(next move|recommended action|confidence level|research brief|key findings)\s*:?/im.test(value);
 }
 
+function normalizeFailureReason(error: any, trace: ChatExecutionTrace): string {
+  const message = error?.message || String(error);
+  if (/fetch failed|ECONNREFUSED|ECONNRESET|model host|provider/i.test(message)) {
+    return `modelProviderUnavailable:${trace.providerUsed || "unknown"}:${trace.providerTarget || "unknown"}`;
+  }
+  return message;
+}
+
 function questionOnly(question: string): string {
   const cleaned = question.trim().replace(/\s+/g, " ");
   return /[?.!]$/.test(cleaned) ? cleaned : `${cleaned}?`;
@@ -474,7 +482,7 @@ export class ChatExecutionService {
       };
     } catch (error: any) {
       trace.executionStatus = "failed";
-      trace.failureReason = error?.message || String(error);
+      trace.failureReason = normalizeFailureReason(error, trace);
       await (hooks.log || logRuntimeEvent)({
         level: "error",
         source: "server",

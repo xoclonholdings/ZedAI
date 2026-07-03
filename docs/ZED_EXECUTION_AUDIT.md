@@ -80,6 +80,30 @@ Remaining UNVERIFIED items after completion pass:
 - Full published research flow run through `/api/flows/*`.
 - Anonymous/normal/admin HTTP authorization tests against a running server.
 
+## 2026-07-03 Live Runtime Verification Update
+
+The follow-up live pass added `server/scripts/liveExecutionVerification.ts` and `npm run verify:live` in `server`. The script prints configuration presence only; it does not print secrets. It optionally uses `LIVE_ZED_BASE_URL` to verify a running server with real HTTP sessions.
+
+Verified PASS items:
+
+| Area | Verified status | Evidence | Exact verification |
+|---|---|---|---|
+| Live external direct fetch | PASS | `server/services/WebContentService.ts`, `server/scripts/liveExecutionVerification.ts` | `npm.cmd run verify:live` fetched `https://zwap.online`, discovered `https://zwap.online/blog`, and read both pages with HTTP 200. |
+| Live anonymous admin denial | PASS | `server/local-auth/middleware.ts`, `server/routes-modules/admin-settings.ts` | `LIVE_ZED_BASE_URL=http://127.0.0.1:5000 npm.cmd run verify:live` returned HTTP 401 for anonymous `GET /api/admin/settings`. |
+| Live admin allow | PASS | `server/local-auth/routes-login.ts`, `server/routes-modules/admin-settings.ts` | The verifier logged in with the local admin secure phrase and received HTTP 200 from `GET /api/admin/settings`. |
+| Live normal-user admin denial | PASS | `server/services/AdminSettingsStore.ts`, `server/local-auth/middleware.ts` | The verifier created a temporary normal user, logged in, received HTTP 403 from `GET /api/admin/settings`, and restored `admin-settings.json`. |
+| Live `/api/orchestrate` trace response | PASS for trace visibility | `server/services/ChatExecutionService.ts`, `server/scripts/liveExecutionVerification.ts` | The verifier received an execution trace with `traceId`, `route=/api/orchestrate`, `detectedIntent=web_research`, `servicesInvoked[]`, `executionStatus=failed`, and provider metadata. |
+| Offline memory/message storage guards | PASS | `server/storage/MemoryDatabaseStorage.ts`, `server/storage/MessageDatabaseStorage.ts` | Offline mode now short-circuits DB-null reads and returns fallback records for message/memory writes instead of throwing `db.insert` before trace creation. |
+| Provider failure metadata | PASS | `server/services/ChatExecutionService.ts` | Missing local Ollama now reports `modelProviderUnavailable:ollama:http://localhost:11434` instead of generic `fetch failed`. |
+
+Remaining PARTIAL / UNVERIFIED after live pass:
+
+- Chat runtime completion is PARTIAL in this shell because no model provider is reachable. Live trace works, but the request ends with `executionStatus=failed` and `failureReason=modelProviderUnavailable:ollama:http://localhost:11434`.
+- Search-provider execution remains PARTIAL because no Brave/Serper keys are visible. Direct URL fetch is verified and does not depend on those keys.
+- Live SMTP delivery remains UNVERIFIED because `EMAIL_PROVIDER_ENABLED` is false and no complete SMTP env/admin account is configured.
+- Full published flow execution through `/api/flows/*` remains UNVERIFIED.
+- Deployed-environment verification remains UNVERIFIED; all live HTTP tests above were against `http://127.0.0.1:5000`.
+
 ## Capability Matrix
 
 | Capability | User-facing entry point | Backend route(s) | Service/agent/engine involved | Exists | Wired | Functional | Utilized by ZED | Evidence files | Failure mode | Required fix | Verification test |
