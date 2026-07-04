@@ -14,6 +14,7 @@ import type {
   AppSettings,
   IntegrationsSettings,
   PersonalizationSettings,
+  VoiceSettings,
 } from "./types";
 
 export const defaultAppSettings: AppSettings = {
@@ -246,4 +247,20 @@ export const defaultIntegrations: IntegrationsSettings = {
     provider: "Browser Speech API",
   },
   custom: [],
+};
+
+/**
+ * Sensible first-run values for the "How Zed sounds" surface.
+ * Chosen so a fresh install feels neutral — not too casual, not too
+ * professional; balanced tone; treats you as a thinking partner.
+ */
+export const defaultVoiceSettings: VoiceSettings = {
+  tone: "balanced",
+  formality: 60,
+  perspective: "partner",
+  responseLength: "balanced",
+  showReasoning: false,
+  plainLanguage: true,
+  codeBlocks: true,
+  prohibitedPhrases: [],
 };

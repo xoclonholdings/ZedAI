@@ -2,10 +2,12 @@ import type {
   AppSettings,
   IntegrationsSettings,
   PersonalizationSettings,
+  VoiceSettings,
 } from "../../shared/adminSettings";
 import {
   defaultAppSettings,
   defaultPersonalizationSettings,
+  defaultVoiceSettings,
 } from "../../shared/adminSettings";
 
 import { updateAdminSettings } from "./admin-settings/io";
@@ -68,6 +70,28 @@ export async function updatePersonalizationSettings(
     personalization: { ...current.personalization, ...nextPersonalization },
   }));
   return settings.personalization;
+}
+
+/**
+ * Voice settings ("How Zed sounds"). Partial patches are shallow-
+ * merged into current; missing fields keep their previous value.
+ * mergeSettings clamps + normalizes on the way back out so the
+ * runtime prompt builder never sees invalid data.
+ */
+export async function updateVoiceSettings(nextVoice: Partial<VoiceSettings>) {
+  const settings = await updateAdminSettings((current) => ({
+    ...current,
+    voice: { ...(current.voice || defaultVoiceSettings), ...nextVoice },
+  }));
+  return settings.voice;
+}
+
+export async function resetVoiceSettings() {
+  const settings = await updateAdminSettings((current) => ({
+    ...current,
+    voice: { ...defaultVoiceSettings },
+  }));
+  return settings.voice;
 }
 
 /**

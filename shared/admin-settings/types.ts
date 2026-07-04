@@ -348,6 +348,43 @@ export interface CustomIntegration {
 
 // ─── Composite ────────────────────────────────────────────────────────
 
+/**
+ * User-facing "how Zed sounds" settings, exposed through the admin
+ * Settings UI in plain English. Runtime translates these values into
+ * a compact prompt fragment (see server/services/voiceSettings.ts)
+ * that shapes tone, formality, length, reasoning visibility, plain-
+ * language preference, code formatting, and prohibited phrases on
+ * every generation.
+ *
+ * These live alongside the four legacy ruleset YAMLs during the
+ * transition. New behaviour reads from these fields; the YAMLs
+ * remain as legacy fallback until the plain-language surface covers
+ * every category.
+ */
+export type VoiceTone = "warm" | "balanced" | "direct" | "playful";
+export type VoicePerspective =
+  | "partner"
+  | "advisor"
+  | "straight-shooter"
+  | "devils-advocate";
+export type VoiceResponseLength = "concise" | "balanced" | "thorough";
+
+export interface VoiceSettings {
+  tone: VoiceTone;
+  /** 0 = casual, 100 = professional. Sits between the two endpoints. */
+  formality: number;
+  perspective: VoicePerspective;
+  responseLength: VoiceResponseLength;
+  /** Include a short "why" after answers. */
+  showReasoning: boolean;
+  /** Avoid jargon and technical terms unless asked. */
+  plainLanguage: boolean;
+  /** Wrap code in syntax-highlighted blocks. */
+  codeBlocks: boolean;
+  /** Phrases Zed shouldn't use, one per entry. */
+  prohibitedPhrases: string[];
+}
+
 export interface AdminSettings {
   auth: AuthSettings;
   app: AppSettings;
@@ -355,4 +392,5 @@ export interface AdminSettings {
   agents: AgentDefinition[];
   integrations: IntegrationsSettings;
   users: ManagedUser[];
+  voice: VoiceSettings;
 }

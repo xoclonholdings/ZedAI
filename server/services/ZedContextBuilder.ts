@@ -5,6 +5,7 @@ import yaml from "js-yaml";
 import { HUB_CONFIG_DIR } from "../utils/repoPaths";
 import { loadAdminSettings } from "./AdminSettingsStore";
 import { listProjects } from "./ProjectFilingStore";
+import { voiceSettingsToPrompt } from "./voiceSettings";
 
 /**
  * Builds the "live admin context" that gets injected into ZED's system
@@ -25,6 +26,7 @@ interface BuiltContext {
     enabledIntegrations: string[];
     customIntegrations: string[];
     parametersCount: number;
+    voiceApplied: boolean;
     projectInstructions?: boolean;
     projectSourceCount?: number;
   };
@@ -80,8 +82,23 @@ export async function buildZedAdminContext(
     enabledIntegrations: [],
     customIntegrations: [],
     parametersCount: 0,
+    voiceApplied: false,
   };
   const sections: string[] = [];
+
+  // ── 0. "How Zed sounds" — the plain-English voice surface ─────────
+  // Placed first so it anchors the model's voice before any of the
+  // older YAML dumps below. Falls through silently if the settings
+  // aren't loadable (fresh install with no settings file).
+  try {
+    const settings = await loadAdminSettings();
+    if (settings.voice) {
+      sections.push(voiceSettingsToPrompt(settings.voice));
+      meta.voiceApplied = true;
+    }
+  } catch {
+    /* non-fatal — YAML fallback below still applies */
+  }
 
   // ── 1. Ruleset (personality, security, parameters, access) ─────────
   const ruleset: Record<string, any> = {};

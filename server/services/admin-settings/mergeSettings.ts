@@ -1,9 +1,10 @@
-import type { AdminSettings } from "../../../shared/adminSettings";
+import type { AdminSettings, VoiceSettings } from "../../../shared/adminSettings";
 import {
   defaultAgentDefinitions,
   defaultAppSettings,
   defaultIntegrations,
   defaultPersonalizationSettings,
+  defaultVoiceSettings,
 } from "../../../shared/adminSettings";
 
 import { defaultAuthSettings, normalizeUsers } from "./auth-helpers";
@@ -144,6 +145,46 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
       custom: normalizeCustomIntegrations(raw),
     },
     users: normalizeUsers(auth, raw?.users),
+    voice: mergeVoiceSettings(raw?.voice),
+  };
+}
+
+/**
+ * Voice settings merge: apply defaults for any missing field, clamp
+ * the formality slider to [0, 100], and force prohibitedPhrases to
+ * an array of trimmed non-empty strings so the runtime prompt
+ * builder doesn't have to defend against garbage.
+ */
+function mergeVoiceSettings(raw: Partial<VoiceSettings> | undefined | null): VoiceSettings {
+  const source = raw || {};
+  const formalityRaw =
+    typeof source.formality === "number" ? source.formality : defaultVoiceSettings.formality;
+  const formality = Math.max(0, Math.min(100, Math.round(formalityRaw)));
+
+  const prohibitedPhrases = Array.isArray(source.prohibitedPhrases)
+    ? source.prohibitedPhrases
+        .map((p) => (typeof p === "string" ? p.trim() : ""))
+        .filter(Boolean)
+    : defaultVoiceSettings.prohibitedPhrases;
+
+  return {
+    tone: source.tone ?? defaultVoiceSettings.tone,
+    formality,
+    perspective: source.perspective ?? defaultVoiceSettings.perspective,
+    responseLength: source.responseLength ?? defaultVoiceSettings.responseLength,
+    showReasoning:
+      typeof source.showReasoning === "boolean"
+        ? source.showReasoning
+        : defaultVoiceSettings.showReasoning,
+    plainLanguage:
+      typeof source.plainLanguage === "boolean"
+        ? source.plainLanguage
+        : defaultVoiceSettings.plainLanguage,
+    codeBlocks:
+      typeof source.codeBlocks === "boolean"
+        ? source.codeBlocks
+        : defaultVoiceSettings.codeBlocks,
+    prohibitedPhrases,
   };
 }
 
