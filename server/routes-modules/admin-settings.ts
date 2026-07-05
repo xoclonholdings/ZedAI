@@ -6,10 +6,12 @@ import {
   getPublicAdminSettings,
   listManagedUsers,
   resetAppSettings,
+  resetVoiceSettings,
   updateAppSettings,
   updateIntegrationSettings,
   updateManagedUser,
   updatePersonalizationSettings,
+  updateVoiceSettings,
 } from "../services/AdminSettingsStore";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "../services/GitHubIntegrationService";
 import { getFirewallIntegrationStatus } from "../services/FirewallIntegrationService";
@@ -48,6 +50,26 @@ export function registerAdminSettingsRoutes(app: Express): void {
       res.json(await updatePersonalizationSettings(req.body || {}));
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to update personalization" });
+    }
+  });
+
+  // ── Voice ("How Zed sounds") ───────────────────────────────────────
+  // Partial patches supported — the UI PUTs one field at a time on
+  // change / blur, so the reducer accepts any subset of VoiceSettings
+  // and mergeSettings clamps + normalizes on load.
+  app.put("/api/admin/settings/voice", isAdmin, async (req, res) => {
+    try {
+      res.json(await updateVoiceSettings(req.body || {}));
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update voice settings" });
+    }
+  });
+
+  app.post("/api/admin/settings/voice/reset", isAdmin, async (_req, res) => {
+    try {
+      res.json(await resetVoiceSettings());
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to reset voice settings" });
     }
   });
 

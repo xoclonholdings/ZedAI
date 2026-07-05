@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
 import AdminNav from "@/components/admin/AdminNav";
+import SettingsSection from "@/components/admin/sections/SettingsSection";
 import KnowledgeSection from "@/components/admin/sections/KnowledgeSection";
 import ToolsSection from "@/components/admin/sections/FlowsSection";
 import IntegrationsSection from "@/components/admin/sections/IntegrationsSection";
@@ -19,7 +20,7 @@ import zedLogo from "@assets/Zed_logo.png";
 export default function Admin() {
   const [, navigate] = useLocation();
   const { user } = useAuth() as { user?: any };
-  const [section, setSection] = useState<AdminSection>("integrations");
+  const [section, setSection] = useState<AdminSection>("settings");
 
   // Approvals are managed at the shell so the nav-tab badge stays accurate
   // even when the user isn't on the Approvals tab.
@@ -102,6 +103,7 @@ export default function Admin() {
       <AdminNav active={section} onSelect={setSection} pendingApprovals={pendingCount} />
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+        {section === "settings" && <SettingsSection />}
         {section === "tools" && <ToolsSection />}
         {section === "knowledge" && <KnowledgeSection />}
         {section === "integrations" && <IntegrationsSection />}

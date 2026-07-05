@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 export type AdminSection =
+  | "settings"
   | "knowledge"
   | "integrations"
   | "ruleset"
