@@ -23,6 +23,16 @@ export interface ProviderExecutionOptions {
   model?: string;
   systemPrompt?: string;
   lane?: ProviderLane;
+  /**
+   * Generation parameters. When any of these are set, providers forward
+   * them into the request body; when unset, provider-executor derives
+   * them from the admin voice settings so a user picking "Concise +
+   * Direct" in Settings actually shapes the model call, not just the
+   * prompt.
+   */
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
 }
 
 export interface ProviderHealth {
