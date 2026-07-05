@@ -251,6 +251,18 @@ export class ChatExecutionService {
       trace.detectedIntent = webLookupIntent ? "web_research" : "manager";
       let contextInquiryPrompt = "";
 
+      // If Context Inquiry finds a genuinely high-priority missing fact
+      // AND the previous assistant turn wasn't itself a clarifying
+      // question, we short-circuit the whole cognitive core and return
+      // the question as ZED's reply. That's what makes Zed feel like
+      // it's actually reasoning: on a clear "I need to know X before I
+      // can answer well" it pauses instead of blindly answering.
+      let pauseAndAsk: {
+        reply: string;
+        question: any;
+        assessment: any;
+      } | null = null;
+
       if (!webLookupIntent) {
         try {
           trace.servicesInvoked.push("ContextInquiryEngine.assess");
@@ -269,6 +281,31 @@ export class ChatExecutionService {
               `Context assessment: ${JSON.stringify(compactContextAssessment(assessment, topQuestion))}`,
             ].join("\n");
             trace.fallbackReason = "context_inquiry_used_as_reasoning_signal";
+
+            // 0.86 matches the priority threshold ContextInquiryEngine
+            // uses internally to consider a question strong enough to
+            // flag as material uncertainty. Below that, we still
+            // inject the question as a reasoning signal (above), but
+            // let the model decide how to weight it.
+            const priorityHighEnough = Number(topQuestion.priority) >= 0.86;
+            // Don't ask twice in a row — if the previous assistant
+            // message was itself a clarifying question, the user just
+            // answered it, and it would be a bad experience to
+            // immediately pause again on a new tangent.
+            const priorAssistant = [...history]
+              .slice(0, -1)
+              .reverse()
+              .find((m: any) => m.role === "assistant");
+            const priorWasClarifying =
+              Boolean(priorAssistant?.metadata?.clarifyingQuestion) === true;
+
+            if (priorityHighEnough && !priorWasClarifying) {
+              pauseAndAsk = {
+                reply: questionOnly(topQuestion.question),
+                question: topQuestion,
+                assessment,
+              };
+            }
           }
         } catch (error: any) {
           trace.executionStatus = "partial";
@@ -281,6 +318,52 @@ export class ChatExecutionService {
             context: { traceId: trace.traceId, conversationId: input.conversationId },
           });
         }
+      }
+
+      // Short-circuit for pause-and-ask. Everything below (memory,
+      // knowledge, admin context, principle, strategic, voice, model
+      // call, presentation, reflection) is skipped — we save the
+      // question as a normal assistant message with metadata that
+      // marks it as clarifying so downstream (this loop, next turn)
+      // can detect it.
+      if (pauseAndAsk) {
+        const { reply, question, assessment } = pauseAndAsk;
+        trace.executionStatus = "success";
+        trace.detectedIntent = "clarify";
+        trace.selectedAgent = "ContextInquiryEngine";
+        trace.fallbackReason = "context_inquiry_paused_and_asked";
+
+        const metadata = {
+          agent: "ContextInquiryEngine",
+          actionType: "clarifying_question",
+          clarifyingQuestion: true,
+          questionPriority: Number(question.priority),
+          questionCategory: question.category,
+          contextAssessment: compactContextAssessment(assessment, question),
+          executionTrace: trace,
+        };
+
+        await saveAssistantMessage(input.conversationId, reply, metadata).catch(() => null);
+
+        await (hooks.log || logRuntimeEvent)({
+          level: "info",
+          source: "server",
+          event: "chat.context_inquiry.paused",
+          detail: `Paused to ask: ${reply.slice(0, 120)}`,
+          context: {
+            traceId: trace.traceId,
+            conversationId: input.conversationId,
+            questionPriority: Number(question.priority),
+            questionCategory: question.category,
+          },
+        });
+
+        return {
+          reply,
+          agent: "ContextInquiryEngine",
+          metadata,
+          trace,
+        };
       }
 
       const injectedMemory = hooks.injectedMemory
