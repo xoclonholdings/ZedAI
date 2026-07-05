@@ -147,6 +147,14 @@ export default function ChatMessage({
               ZED
             </span>
             <Sparkles size={9} className="text-purple-300" />
+            {(message.metadata as any)?.clarifyingQuestion ? (
+              <span
+                className="ml-0.5 inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/[0.08] px-1.5 py-[1px] text-[9px] font-medium uppercase tracking-[0.06em] text-cyan-200"
+                title="Zed paused to ask a clarifying question — answer it and Zed will continue."
+              >
+                Clarifying
+              </span>
+            ) : null}
           </div>
 
           <article
