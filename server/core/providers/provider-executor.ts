@@ -7,8 +7,49 @@ import type {
   ModelProvider,
   ProviderExecutionOptions,
   ProviderHealth,
+  ProviderLane,
   ProviderMessage,
 } from "./provider-interface";
+
+/**
+ * Load voice settings and derive generation params, filling in any
+ * that the caller left blank. Kept dynamically imported so provider-
+ * executor stays a leaf module without a hard dependency cycle back
+ * up into services/.
+ *
+ * A per-call file read is fine at ZED's request volume; if that ever
+ * matters, this is the place to memoize with a small TTL.
+ */
+async function mergeVoiceDerivedParams(
+  options?: ProviderExecutionOptions,
+): Promise<ProviderExecutionOptions | undefined> {
+  const temperatureSet = typeof options?.temperature === "number";
+  const maxTokensSet = typeof options?.maxTokens === "number";
+  const topPSet = typeof options?.topP === "number";
+  if (temperatureSet && maxTokensSet && topPSet) return options;
+
+  try {
+    const [{ loadAdminSettings }, { deriveGenerationParams }] = await Promise.all([
+      import("../../services/AdminSettingsStore"),
+      import("../../services/voiceSettingsToGeneration"),
+    ]);
+    const settings = await loadAdminSettings();
+    if (!settings.voice) return options;
+    const lane: ProviderLane = options?.lane || "chat";
+    const derived = deriveGenerationParams(settings.voice, lane);
+    return {
+      ...(options || {}),
+      temperature: temperatureSet ? options!.temperature : derived.temperature,
+      maxTokens: maxTokensSet ? options!.maxTokens : derived.maxTokens,
+      topP: topPSet ? options!.topP : derived.topP,
+    };
+  } catch {
+    // Voice settings unavailable (fresh install / disk error) — fall
+    // through with whatever the caller supplied. Providers will use
+    // their own defaults when the fields are undefined.
+    return options;
+  }
+}
 
 function buildProvider(name: ProviderName): ModelProvider {
   switch (name) {
@@ -71,14 +112,14 @@ export async function executeProviderPrompt(
   prompt: string,
   options?: ProviderExecutionOptions,
 ): Promise<string> {
-  return getActiveProvider().executePrompt(prompt, options);
+  return getActiveProvider().executePrompt(prompt, await mergeVoiceDerivedParams(options));
 }
 
 export async function executeProviderChat(
   messages: ProviderMessage[],
   options?: ProviderExecutionOptions,
 ): Promise<string> {
-  return getActiveProvider().executeChat(messages, options);
+  return getActiveProvider().executeChat(messages, await mergeVoiceDerivedParams(options));
 }
 
 /**
@@ -94,13 +135,14 @@ export async function streamProviderChat(
   onError: (err: Error) => void | Promise<void>,
 ): Promise<void> {
   const provider = getActiveProvider();
+  const merged = await mergeVoiceDerivedParams(options);
 
   if (provider.streamChat) {
     let streamFailed: Error | null = null;
     try {
       await provider.streamChat(
         messages,
-        options,
+        merged,
         onToken,
         onDone,
         (err) => {
@@ -117,7 +159,7 @@ export async function streamProviderChat(
   // Provider doesn't natively support streaming — split a single response
   // into pseudo-tokens. Same single-attempt semantics: failures surface upstream.
   try {
-    const reply = await provider.executeChat(messages, options);
+    const reply = await provider.executeChat(messages, merged);
     for (const token of splitIntoTokens(reply)) onToken(token);
     await onDone();
   } catch (err) {

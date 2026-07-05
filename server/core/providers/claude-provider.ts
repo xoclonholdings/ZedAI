@@ -26,6 +26,22 @@ export class ClaudeProvider implements ModelProvider {
 
   async executeChat(messages: ProviderMessage[], options?: ProviderExecutionOptions): Promise<string> {
     const config = this.ensureConfigured();
+    const requestBody: Record<string, unknown> = {
+      model: this.resolveModel(options),
+      system: options?.systemPrompt,
+      // Anthropic requires max_tokens on every messages call. Default
+      // to a modest ceiling and let voice-derived settings override.
+      max_tokens: typeof options?.maxTokens === "number" ? options.maxTokens : 1024,
+      messages: messages
+        .filter((message) => message.role !== "system")
+        .map((message) => ({
+          role: message.role === "assistant" ? "assistant" : "user",
+          content: message.content,
+        })),
+    };
+    if (typeof options?.temperature === "number") requestBody.temperature = options.temperature;
+    if (typeof options?.topP === "number") requestBody.top_p = options.topP;
+
     const response = await fetch(`${config.baseUrl}/messages`, {
       method: "POST",
       headers: {
@@ -33,17 +49,7 @@ export class ClaudeProvider implements ModelProvider {
         "x-api-key": config.apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify({
-        model: this.resolveModel(options),
-        system: options?.systemPrompt,
-        max_tokens: 1024,
-        messages: messages
-          .filter((message) => message.role !== "system")
-          .map((message) => ({
-            role: message.role === "assistant" ? "assistant" : "user",
-            content: message.content,
-          })),
-      }),
+      body: JSON.stringify(requestBody),
     });
     if (!response.ok) {
       const body = await response.text().catch(() => "");

@@ -67,6 +67,17 @@ export class OpenAIProvider implements ModelProvider {
           : message.content,
     }));
 
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages: formattedMessages,
+    };
+    // Forward derived generation params when supplied. Only include
+    // set fields so the request stays clean for upstreams that reject
+    // unknown values.
+    if (typeof options?.temperature === "number") requestBody.temperature = options.temperature;
+    if (typeof options?.maxTokens === "number") requestBody.max_tokens = options.maxTokens;
+    if (typeof options?.topP === "number") requestBody.top_p = options.topP;
+
     const response = await fetch(
       `${config.baseUrl}/chat/completions`,
       {
@@ -75,10 +86,7 @@ export class OpenAIProvider implements ModelProvider {
           "Content-Type": "application/json",
           Authorization: `Bearer ${config.apiKey}`,
         },
-        body: JSON.stringify({
-          model,
-          messages: formattedMessages,
-        }),
+        body: JSON.stringify(requestBody),
       },
     );
 

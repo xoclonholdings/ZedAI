@@ -30,25 +30,33 @@ export class ClawTempProvider implements ModelProvider {
       [...messages].reverse().find((message) => message.role === "user")?.content ||
       buildPromptFromMessages(messages, options?.systemPrompt);
 
+    const requestBody: Record<string, unknown> = {
+      model: options?.model || resolveModelForLane(options?.lane, config.model),
+      message: userMessage,
+      messages,
+      system_prompt: options?.systemPrompt,
+    };
+    // Only include generation params when set, so custom upstreams
+    // (Lightning, remote runners) can ignore unrecognized fields
+    // rather than fail on schema mismatch.
+    if (typeof options?.temperature === "number") requestBody.temperature = options.temperature;
+    if (typeof options?.maxTokens === "number") requestBody.max_tokens = options.maxTokens;
+    if (typeof options?.topP === "number") requestBody.top_p = options.topP;
+
     const response = await fetchWithTimeout(
       `${config.baseUrl}${config.chatPath}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: options?.model || resolveModelForLane(options?.lane, config.model),
-          message: userMessage,
-          messages,
-          system_prompt: options?.systemPrompt,
-        }),
+        body: JSON.stringify(requestBody),
       },
       config.timeoutMs,
     );
 
     if (!response.ok) {
-      const body = await response.text().catch(() => "");
+      const errorBody = await response.text().catch(() => "");
       throw new Error(
-        `Remote inference ${response.status}${body ? `: ${body.slice(0, 220)}` : ""}`,
+        `Remote inference ${response.status}${errorBody ? `: ${errorBody.slice(0, 220)}` : ""}`,
       );
     }
 
