@@ -1,367 +1,335 @@
-import { useEffect, useState } from "react";
-import { type LucideIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { integrationMeta, type IntegrationKey } from "@/components/admin/types";
-
-import { AiHostPanel, type AiHostTestState } from "./integrations/AiHostPanel";
-import { CustomIntegrationsPanel } from "./integrations/CustomIntegrationsPanel";
-import { MultiAccountPanel } from "./integrations/MultiAccountPanel";
-import { SimpleIntegrationPanel } from "./integrations/SimpleIntegrationPanel";
 import {
-  ACCOUNT_INTEGRATIONS,
-  ACCOUNT_TEMPLATES,
-  EmptyIntegrationCard,
-  type CustomIntegrationDraft,
-  type IntegrationsSettings,
-  type SaveStatus,
-} from "./integrations/shared";
+  LoadErrorBanner,
+  SaveIndicator,
+  SettingGroup,
+  SettingRow,
+} from "./settings/atoms";
 
-const INTEGRATION_GROUPS: Array<{
-  title: string;
+/**
+ * Plain-language Integrations surface.
+ *
+ * Replaces the previous token / client-ID / refresh-token forms
+ * with "Connect [Service]" cards. Each row shows honest connection
+ * status. Behind each Connect button:
+ *   - If Zed's backend has an OAuth flow wired for the service,
+ *     tapping Connect starts the redirect.
+ *   - If not yet wired, the row is disabled with a plain-language
+ *     "Sign-in isn't set up yet" note. No jargon leaks.
+ *
+ * The nested account panels (SimpleIntegrationPanel, MultiAccount
+ * Panel, account-forms) still live under ./integrations/ and are
+ * reachable from a separate Advanced surface for engineers who
+ * need to paste raw credentials — that's a follow-up.
+ */
+
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+interface IntegrationRow {
+  key: string;
+  label: string;
   description: string;
-  keys: IntegrationKey[];
-}> = [
-  {
-    title: "Core System",
-    description: "Model hosting, releases, repo access, firewall, and custom extensions.",
-    keys: ["aiHost", "deployment", "github", "firewall", "custom"],
-  },
+  oauthReady: boolean;
+  connectedFn: (integrations: any) => { connected: boolean; account?: string };
+}
+
+const GROUPS: Array<{ title: string; items: IntegrationRow[] }> = [
   {
     title: "Communication",
-    description: "Email, Google, phone, and voice inputs for ZED operations.",
-    keys: ["email", "google", "telephony", "voiceTranscription"],
-  },
-  {
-    title: "Business Ops",
-    description: "Revenue, customers, payroll, files, campaigns, and business execution.",
-    keys: [
-      "businessOperations",
-      "payments",
-      "crm",
-      "accounting",
-      "gusto",
-      "cloudStorage",
-      "socialPublishing",
+    items: [
+      {
+        key: "google",
+        label: "Google (Gmail, Calendar, Drive)",
+        description: "Sign in to Google so Zed can read and send Gmail, view your calendar, and open files in Drive.",
+        oauthReady: false,
+        connectedFn: (i) => {
+          const acc = (i?.google?.accounts || [])[0];
+          return {
+            connected: Boolean(acc?.hasCredentials),
+            account: acc?.label,
+          };
+        },
+      },
+      {
+        key: "email",
+        label: "Email (other providers)",
+        description: "Connect a non-Google email account so Zed can send outbound mail on your behalf.",
+        oauthReady: false,
+        connectedFn: (i) => {
+          const acc = (i?.email?.accounts || [])[0];
+          return {
+            connected: Boolean(acc?.hasPassword),
+            account: acc?.fromAddress || acc?.label,
+          };
+        },
+      },
+      {
+        key: "telephony",
+        label: "Phone & voicemail",
+        description: "Give Zed a phone number for calls, voicemail, and text messages.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.telephony?.hasApiKey),
+          account: i?.telephony?.phoneNumber,
+        }),
+      },
     ],
   },
   {
-    title: "Trading & Finance",
-    description: "Analysis-only market tooling for Phase 1 trading intelligence.",
-    keys: ["tradingView", "marketData", "kalshi"],
+    title: "Work",
+    items: [
+      {
+        key: "github",
+        label: "GitHub",
+        description: "Sign in to GitHub so Zed can read repos, open issues, and post pull requests when you approve.",
+        oauthReady: false,
+        connectedFn: (i) => {
+          const acc = (i?.github?.accounts || [])[0];
+          return {
+            connected: Boolean(acc?.hasToken),
+            account: acc?.owner ? `${acc.owner}/${acc.repo || ""}` : acc?.label,
+          };
+        },
+      },
+      {
+        key: "deployment",
+        label: "Deployment",
+        description: "Connect your host so Zed can trigger deploys when you approve.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.deployment?.hasAccessToken),
+          account: i?.deployment?.provider,
+        }),
+      },
+      {
+        key: "cloudStorage",
+        label: "Cloud files",
+        description: "Sign in to Drive, Dropbox, or OneDrive so Zed can pull in documents.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.cloudStorage?.hasAccessToken),
+          account: i?.cloudStorage?.provider,
+        }),
+      },
+    ],
+  },
+  {
+    title: "Money",
+    items: [
+      {
+        key: "payments",
+        label: "Payments",
+        description: "Sign in to Stripe, PayPal, or Square so Zed can send invoices and see revenue.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.payments?.hasSecretKey),
+          account: i?.payments?.provider,
+        }),
+      },
+      {
+        key: "accounting",
+        label: "Accounting",
+        description: "Connect QuickBooks, Xero, or Wave so Zed can pull cashflow and reporting.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.accounting?.hasCredentials),
+          account: i?.accounting?.provider,
+        }),
+      },
+    ],
+  },
+  {
+    title: "Content & audience",
+    items: [
+      {
+        key: "socialPublishing",
+        label: "Social publishing",
+        description: "Sign in to your social accounts so Zed can draft and publish (with approval).",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.socialPublishing?.hasAccessToken),
+          account: i?.socialPublishing?.provider,
+        }),
+      },
+      {
+        key: "crm",
+        label: "CRM",
+        description: "Connect your CRM so Zed can see and update contacts and deals.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.crm?.hasApiKey),
+          account: i?.crm?.provider,
+        }),
+      },
+    ],
+  },
+  {
+    title: "Research & trading",
+    items: [
+      {
+        key: "marketData",
+        label: "Market data",
+        description: "Connect a market data provider so Zed can pull price and fundamentals.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.marketData?.hasApiKey),
+          account: i?.marketData?.provider,
+        }),
+      },
+      {
+        key: "tradingView",
+        label: "TradingView",
+        description: "Send TradingView chart snapshots and alerts to Zed's trading journal.",
+        oauthReady: false,
+        connectedFn: (i) => ({
+          connected: Boolean(i?.tradingView?.hasAlertWebhookSecret),
+        }),
+      },
+    ],
   },
 ];
 
 export default function IntegrationsSection() {
-  const [draft, setDraft] = useState<IntegrationsSettings | null>(null);
-  const [active, setActive] = useState<IntegrationKey>("aiHost");
-  const [loading, setLoading] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [aiHostStatus, setAiHostStatus] = useState<any>(null);
-  const [aiHostTest, setAiHostTest] = useState<AiHostTestState>({ status: "idle" });
-  const [editingAccount, setEditingAccount] = useState<string | null>(null);
+  const [integrations, setIntegrations] = useState<any>(null);
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [loadError, setLoadError] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
-  async function fetchSettings() {
-    setLoading(true);
+  const load = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/settings", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setDraft(data.integrations);
-      }
+      if (!res.ok) throw new Error(`Failed to load (${res.status})`);
+      const data = await res.json();
+      setIntegrations(data.integrations || {});
+      setLoadError(false);
     } catch {
-      /* ignore — surface via save status when the user retries */
+      setLoadError(true);
     }
-    setLoading(false);
-  }
-
-  async function fetchAiHostStatus() {
-    try {
-      const res = await fetch("/api/admin/system-status", { credentials: "include" });
-      if (res.ok) setAiHostStatus(await res.json());
-    } catch {
-      /* ignore — the panel will just show "unknown" */
-    }
-  }
-
-  useEffect(() => {
-    void fetchSettings();
-    void fetchAiHostStatus();
   }, []);
 
-  async function save() {
-    if (!draft) return;
-    setSaveStatus("saving");
-    try {
-      const res = await fetch("/api/admin/settings/integrations", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ [active]: draft[active] }),
-      });
-      if (!res.ok) throw new Error("save failed");
-      const updated = await res.json();
-      setDraft((prev: any) => ({ ...prev, [active]: updated[active] }));
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch {
-      setSaveStatus("error");
-    }
-  }
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  async function saveCustom(items: CustomIntegrationDraft[]) {
-    setSaveStatus("saving");
-    try {
-      const res = await fetch("/api/admin/settings/integrations", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ custom: items }),
-      });
-      if (!res.ok) throw new Error("save failed");
-      const updated = await res.json();
-      setDraft((prev: any) => ({ ...prev, custom: updated.custom || [] }));
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch {
-      setSaveStatus("error");
-    }
-  }
-
-  function updateActiveField(key: string, value: any) {
-    setDraft((prev: any) => ({
-      ...prev,
-      [active]: { ...prev?.[active], [key]: value },
-    }));
-    setSaveStatus("idle");
-  }
-
-  function updateAccount(accountId: string, patch: any) {
-    setDraft((prev: any) => ({
-      ...prev,
-      [active]: {
-        ...prev?.[active],
-        accounts: (prev?.[active]?.accounts || []).map((a: any) =>
-          a.id === accountId ? { ...a, ...patch } : a,
-        ),
-      },
-    }));
-    setSaveStatus("idle");
-  }
-
-  function addAccount() {
-    const id = `${active}-${Date.now()}`;
-    const template = ACCOUNT_TEMPLATES[active as keyof typeof ACCOUNT_TEMPLATES];
-    if (!template) return;
-    const newAccount = { ...template, id };
-    setDraft((prev: any) => ({
-      ...prev,
-      [active]: {
-        ...prev?.[active],
-        accounts: [...(prev?.[active]?.accounts || []), newAccount],
-      },
-    }));
-    setEditingAccount(id);
-    setSaveStatus("idle");
-  }
-
-  function removeAccount(accountId: string) {
-    if (!window.confirm("Remove this account?")) return;
-    setDraft((prev: any) => ({
-      ...prev,
-      [active]: {
-        ...prev?.[active],
-        accounts: (prev?.[active]?.accounts || []).filter((a: any) => a.id !== accountId),
-      },
-    }));
-    setEditingAccount(null);
-    setSaveStatus("idle");
-  }
-
-  async function testAiHost() {
-    setAiHostTest({ status: "testing" });
-    try {
-      const res = await fetch("/api/admin/ai-host/test", {
-        method: "POST",
-        credentials: "include",
-      });
-      let data: any = null;
+  const disconnect = useCallback(
+    async (row: IntegrationRow) => {
+      const label = row.label.replace(/\s*\(.*\)/, "");
+      if (!window.confirm(`Disconnect ${label}? Zed will stop using this account.`)) return;
+      setStatus("saving");
+      setErrorMessage(undefined);
       try {
-        data = await res.json();
-      } catch {
-        /* upstream may return non-JSON on failure */
-      }
-      if (!res.ok) {
-        setAiHostTest({
-          status: "error",
-          detail: data?.error || `HTTP ${res.status}`,
-          payload: data,
+        const res = await fetch(`/api/admin/integrations/${row.key}/disconnect`, {
+          method: "POST",
+          credentials: "include",
         });
-        return;
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || `Disconnect failed (${res.status})`);
+        }
+        await load();
+        setStatus("saved");
+        window.setTimeout(() => setStatus("idle"), 1500);
+      } catch (err: any) {
+        setErrorMessage(err?.message);
+        setStatus("error");
       }
-      if (data?.chat?.status === "ok") {
-        setAiHostTest({ status: "ok", detail: data.chat.reply, payload: data });
-      } else {
-        setAiHostTest({
-          status: "error",
-          detail: data?.chat?.error || "Provider returned an error.",
-          payload: data,
-        });
-      }
-      await fetchAiHostStatus();
-    } catch (e: any) {
-      setAiHostTest({
-        status: "error",
-        detail: e?.message || "Network error",
-      });
-    }
+    },
+    [load],
+  );
+
+  const connect = useCallback((row: IntegrationRow) => {
+    if (!row.oauthReady) return;
+    // Real OAuth wiring lands in a follow-up PR. The endpoint below
+    // is the future entry point — right now it 404s, which is fine
+    // because oauthReady=false gates the button from being clickable.
+    window.location.href = `/api/admin/integrations/${row.key}/connect/start`;
+  }, []);
+
+  const header = useMemo(
+    () => (
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+            Connections
+          </h2>
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+            Sign in to the services you want Zed to reach — email, calendar, files, deploy, and so on. Zed handles the technical bits behind the scenes. No tokens or keys to paste.
+          </p>
+        </div>
+        <SaveIndicator status={status} errorMessage={errorMessage} />
+      </header>
+    ),
+    [status, errorMessage],
+  );
+
+  if (!integrations && !loadError) {
+    return (
+      <div>
+        {header}
+        <div className="text-[13.5px] text-white/50">Loading…</div>
+      </div>
+    );
   }
 
-  const selectedDraft = draft?.[active];
-
   return (
-    <>
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold">Integrations</h2>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Connect ZED to the systems it can operate with. Use setup links where available; secrets stay server-side.
-        </p>
-      </div>
+    <div>
+      {header}
+      {loadError && <LoadErrorBanner onRetry={() => void load()} />}
 
-      <div className="space-y-3">
-        {INTEGRATION_GROUPS.map((group) => (
-          <div key={group.title} className="rounded-2xl border border-white/10 bg-black/20 p-3">
-            <div className="mb-2">
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                {group.title}
-              </div>
-              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                {group.description}
-              </p>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {group.keys.map((key) => (
-                <IntegrationCard
-                  key={key}
-                  integrationKey={key}
-                  active={active === key}
-                  draft={draft}
-                  onSelect={() => {
-                    setActive(key);
-                    setEditingAccount(null);
-                    setSaveStatus("idle");
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+      {GROUPS.map((group, groupIndex) => (
+        <SettingGroup
+          key={group.title}
+          title={group.title}
+          count={group.items.length}
+          collapsible
+          defaultCollapsed={groupIndex > 0}
+        >
+          {group.items.map((row) => {
+            const state = integrations ? row.connectedFn(integrations) : { connected: false };
+            return (
+              <SettingRow
+                key={row.key}
+                label={
+                  state.connected && state.account
+                    ? `${row.label} — ${state.account}`
+                    : row.label
+                }
+                description={row.description}
+              >
+                {state.connected ? (
+                  <button
+                    type="button"
+                    onClick={() => void disconnect(row)}
+                    className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/80 hover:text-red-300 hover:border-red-400/40 transition-colors active:opacity-80"
+                  >
+                    Disconnect
+                  </button>
+                ) : row.oauthReady ? (
+                  <button
+                    type="button"
+                    onClick={() => connect(row)}
+                    className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
+                  >
+                    Connect
+                  </button>
+                ) : (
+                  <span
+                    className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5 text-[12.5px] text-white/40"
+                    title="Sign-in for this service isn't set up on Zed yet."
+                  >
+                    Sign-in not set up yet
+                  </span>
+                )}
+              </SettingRow>
+            );
+          })}
+        </SettingGroup>
+      ))}
 
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">{integrationMeta[active].label}</div>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {integrationMeta[active].description}
-            </p>
-          </div>
-          <span className="shrink-0 rounded-full border border-white/10 bg-black/30 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-            {integrationStatusLabel(active, draft)}
-          </span>
-        </div>
-
-        {loading ? (
-          <div className="text-center text-muted-foreground py-8 text-sm">Loading…</div>
-        ) : active === "aiHost" ? (
-          <AiHostPanel status={aiHostStatus} test={aiHostTest} onTest={testAiHost} />
-        ) : active === "custom" ? (
-          <CustomIntegrationsPanel
-            items={(draft?.custom || []) as CustomIntegrationDraft[]}
-            onChange={(items) => setDraft((prev: any) => ({ ...prev, custom: items }))}
-            onSave={() => saveCustom((draft?.custom || []) as CustomIntegrationDraft[])}
-            saveStatus={saveStatus}
-          />
-        ) : ACCOUNT_INTEGRATIONS.has(active) ? (
-          <MultiAccountPanel
-            integrationKey={active}
-            draft={selectedDraft}
-            editingAccount={editingAccount}
-            onSetEditing={setEditingAccount}
-            onToggleEnabled={(v) => updateActiveField("enabled", v)}
-            onAdd={addAccount}
-            onRemove={removeAccount}
-            onAccountUpdate={updateAccount}
-            onSave={save}
-            saveStatus={saveStatus}
-          />
-        ) : !selectedDraft ? (
-          <EmptyIntegrationCard />
-        ) : (
-          <SimpleIntegrationPanel
-            draft={selectedDraft}
-            onUpdate={updateActiveField}
-            onSave={save}
-            saveStatus={saveStatus}
-          />
-        )}
-      </div>
-    </>
+      <p className="mt-8 pt-5 border-t border-white/[0.06] text-[12.5px] text-white/40 leading-snug max-w-[62ch]">
+        Some services still need Zed to be registered with them before you can sign in — that's what "Sign-in not set up yet" means. As each one is registered, its Connect button turns on automatically.
+      </p>
+    </div>
   );
-}
-
-function IntegrationCard({
-  integrationKey,
-  active,
-  draft,
-  onSelect,
-}: {
-  integrationKey: IntegrationKey;
-  active: boolean;
-  draft: IntegrationsSettings | null;
-  onSelect: () => void;
-}) {
-  const meta = integrationMeta[integrationKey];
-  const Icon = meta.icon as LucideIcon;
-  const enabled = integrationEnabled(integrationKey, draft);
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`flex min-h-[76px] items-start gap-2 rounded-xl border p-3 text-left transition-all ${
-        active
-          ? "border-cyan-400/40 bg-white/10 text-white"
-          : "border-white/10 bg-black/20 text-muted-foreground hover:border-white/20 hover:text-foreground"
-      }`}
-    >
-      <Icon size={15} className={active ? "mt-0.5 text-cyan-300" : "mt-0.5"} />
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-foreground">{meta.label}</span>
-          <span
-            className={`h-2 w-2 shrink-0 rounded-full ${enabled ? "bg-emerald-400" : "bg-white/20"}`}
-          />
-        </span>
-        <span className="mt-1 line-clamp-2 block text-[11px] leading-relaxed text-muted-foreground">
-          {meta.description}
-        </span>
-      </span>
-    </button>
-  );
-}
-
-function integrationEnabled(key: IntegrationKey, draft: IntegrationsSettings | null): boolean {
-  if (key === "custom") return !!draft?.custom?.length;
-  if (key === "aiHost") return true;
-  return !!draft?.[key]?.enabled;
-}
-
-function integrationStatusLabel(key: IntegrationKey, draft: IntegrationsSettings | null): string {
-  if (key === "custom") return `${draft?.custom?.length || 0} custom`;
-  if (key === "aiHost") return "system";
-  const selected = draft?.[key];
-  if (!selected) return "not loaded";
-  if (selected.status) return selected.status;
-  if (ACCOUNT_INTEGRATIONS.has(key)) return `${selected.accounts?.length || 0} connected`;
-  return selected.enabled ? "enabled" : "disabled";
 }
