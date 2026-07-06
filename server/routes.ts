@@ -13,6 +13,7 @@ import { registerAiHostTestRoute } from "./routes-modules/ai-host-test";
 import { registerRulesetRoutes } from "./routes-modules/ruleset";
 import { registerAdminSettingsRoutes } from "./routes-modules/admin-settings";
 import { registerAdminLogsRoutes } from "./routes-modules/admin-logs";
+import { registerAdminSubsystemRoutes } from "./routes-modules/admin-subsystems";
 import { registerApprovalRoutes } from "./routes-modules/approvals";
 import { registerMeRoutes } from "./routes-modules/me";
 import { registerKnowledgeRoutes } from "./routes-modules/knowledge";
@@ -69,6 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerTradingRoutes(app);
   registerEnvValidateRoute(app);
   registerAdminLogsRoutes(app);
+  registerAdminSubsystemRoutes(app);
   registerApprovalRoutes(app);
   registerExecutionRoutes(app);
   registerIntakeRoutes(app);
