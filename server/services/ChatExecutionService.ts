@@ -433,16 +433,21 @@ export class ChatExecutionService {
       const voicePrompt = hooks.voicePrompt
         ? await hooks.voicePrompt()
         : await buildZedVoicePrompt({ mode: voiceMode });
+      // Cognitive Core order per SPEC.md § Cognitive Core:
+      //   1. Context Inquiry   2. Principle   3. Strategic
+      //   4. Knowledge         5. Voice        6. Reflection (post-response)
+      // Governance sits first as a hard control frame; response
+      // policy sits last so its style guardrails win any ties.
       const cognitiveKnowledgePrompt = [
         governancePrompt,
+        contextInquiryPrompt,
         principlePrompt,
         strategicReasoning.prompt,
-        voicePrompt,
-        getZedResponsePolicy(voiceMode),
-        contextInquiryPrompt,
         adminContext.text,
         fileContext.prompt,
         knowledge.prompt,
+        voicePrompt,
+        getZedResponsePolicy(voiceMode),
       ]
         .filter(Boolean)
         .join("\n\n");

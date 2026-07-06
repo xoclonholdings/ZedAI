@@ -116,14 +116,23 @@ export class ManagerAgent {
       isAdmin: Boolean(request.context?.isAdmin),
     });
     const voicePrompt = await buildZedVoicePrompt({ mode: voiceMode });
+    // Cognitive Core order per SPEC.md § Cognitive Core:
+    //   1. Context Inquiry (upstream in ChatExecutionService)
+    //   2. Principle   3. Strategic   4. Knowledge
+    //   5. Voice        6. Reflection (post-response)
+    // Governance sits first as a hard control frame; response
+    // policy sits last so its style guardrails win any ties.
+    // suppliedPrinciplePrompt / suppliedStrategicPrompt come from
+    // the caller and are pinned next to their engine outputs so a
+    // caller-supplied override slots into the right cognitive slot.
     const agentContext = [
       governancePrompt,
       suppliedPrinciplePrompt,
       principlePrompt,
       suppliedStrategicPrompt,
       strategicReasoning.prompt,
-      voicePrompt,
       knowledgePrompt,
+      voicePrompt,
       getZedResponsePolicy(voiceMode),
     ]
       .filter(Boolean)
