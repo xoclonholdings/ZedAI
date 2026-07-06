@@ -117,9 +117,9 @@ export default function RulesetSection() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold">Ruleset</h2>
-          <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-            Pick a rules domain and section from dropdowns, then edit the structured form underneath. No raw YAML required.
+          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">Rules (advanced)</h2>
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+            The lower-level rules that shape how Zed behaves. Most people never open this tab — the Settings tab already covers the friendly versions. Only touch this if you know exactly what you're changing.
           </p>
         </div>
         <Button

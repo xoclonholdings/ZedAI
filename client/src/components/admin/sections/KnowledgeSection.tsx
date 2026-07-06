@@ -287,8 +287,8 @@ export default function KnowledgeSection() {
   return (
     <div className="space-y-5">
       <SectionIntro
-        title="Knowledge"
-        description="Use one focused dropdown to inspect retrieval, manage durable memory, clean temporary context, or edit canonical core memory."
+        title="What Zed knows"
+        description="Everything Zed remembers about you and your work. Long-term facts, active projects, temporary notes from this session, and what you're teaching it right now."
         action={
           <Button
             variant="outline"

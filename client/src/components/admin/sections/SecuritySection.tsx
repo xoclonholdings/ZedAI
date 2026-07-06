@@ -125,6 +125,12 @@ export default function SecuritySection() {
 
   return (
     <>
+      <header className="mb-6">
+        <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">Security & users</h2>
+        <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+          Who can sign in, session timeouts, and the security event log. If you're the only user right now, most of this is just here for later.
+        </p>
+      </header>
       <AdminSecuritySettings />
       <EnvValidatorCard />
 
