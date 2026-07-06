@@ -13,7 +13,9 @@
     "merge-memory": "tsx scripts/mergeMemorySources.ts",
     "compact-memory": "tsx scripts/compactFoundationMemory.ts",
     "memory:foundation:dry-run": "tsx scripts/reparseFoundationMemoryToGraph.ts",
-    "memory:foundation:apply": "tsx scripts/reparseFoundationMemoryToGraph.ts --apply"
+    "memory:foundation:apply": "tsx scripts/reparseFoundationMemoryToGraph.ts --apply",
+    "memory:reparse-objects": "tsx scripts/reparseBaseMemoryToObjects.ts --dry-run --write-markdown",
+    "memory:reparse-objects:apply": "tsx scripts/reparseBaseMemoryToObjects.ts --apply --write-markdown"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
