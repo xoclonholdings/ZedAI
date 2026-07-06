@@ -120,7 +120,7 @@ export default function ToolsSection() {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="space-y-1">
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">Tools</h2>
-          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
             Reusable actions Zed knows how to run. Create a tool once, then Zed can use it across conversations. You can review, publish, duplicate, or archive tools here.
           </p>
         </div>

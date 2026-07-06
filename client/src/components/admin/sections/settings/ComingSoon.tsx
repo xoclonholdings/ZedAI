@@ -13,14 +13,14 @@ export function ComingSoon({ category }: { category: SettingsCategory }) {
         <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
           {category.label}
         </h2>
-        <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+        <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
           {category.description}
         </p>
       </header>
 
       <div className="rounded-xl border border-dashed border-white/10 p-6 text-[13px] text-white/55 leading-relaxed">
         <p className="text-white/80 font-medium">Not built yet.</p>
-        <p className="mt-2 max-w-[58ch]">
+        <p className="mt-2 max-w-full sm:max-w-[58ch]">
           This category will land in a follow-up. Until then, the
           behaviour it describes is controlled by the raw fields in
           the{" "}

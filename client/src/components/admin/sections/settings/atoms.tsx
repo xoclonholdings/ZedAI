@@ -97,7 +97,7 @@ export function SettingRow({ label, description, children, stack = false }: Sett
         <div>
           <label className="block text-[14.5px] font-medium text-white/90">{label}</label>
           {description && (
-            <p className="mt-0.5 text-[13px] text-white/50 max-w-[58ch] leading-snug">
+            <p className="mt-0.5 text-[13px] text-white/50 max-w-full sm:max-w-[58ch] leading-snug">
               {description}
             </p>
           )}
@@ -112,7 +112,7 @@ export function SettingRow({ label, description, children, stack = false }: Sett
       <div className="min-w-0">
         <label className="block text-[14.5px] font-medium text-white/90">{label}</label>
         {description && (
-          <p className="mt-0.5 text-[13px] text-white/50 max-w-[58ch] leading-snug">
+          <p className="mt-0.5 text-[13px] text-white/50 max-w-full sm:max-w-[58ch] leading-snug">
             {description}
           </p>
         )}
