@@ -8,47 +8,64 @@ import {
   Users,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
+
+/**
+ * Plain-language main menu for the user Settings modal.
+ *
+ * This surface reads on mobile, mirrors the row style used across
+ * the /admin panel (label + one-line description + chevron), and
+ * uses friendlier copy than the previous jargon list. Nothing about
+ * what each row leads to has changed — same section keys, same
+ * downstream components — just what the user reads.
+ */
 
 interface SettingsMainMenuProps {
   isAdmin?: boolean;
   onNavigate: (section: string) => void;
 }
 
-const menuItems = [
+interface MenuItem {
+  key: string;
+  label: string;
+  description: string;
+  icon: typeof User;
+  color: string;
+}
+
+const menuItems: MenuItem[] = [
   {
     key: "preferences",
     label: "Preferences",
-    description: "Profile, display, voice, notifications",
+    description: "Your name, how the app looks, and how Zed talks back.",
     icon: User,
     color: "text-cyan-400",
   },
   {
     key: "memory",
-    label: "My Memory",
-    description: "Personal context ZED should remember",
+    label: "About you",
+    description: "What Zed remembers about you between conversations.",
     icon: Brain,
     color: "text-blue-400",
   },
   {
     key: "workspace",
-    label: "Workspace",
-    description: "Projects, workspaces, rules, data controls",
+    label: "Projects & workspaces",
+    description: "Organize what Zed's working on. Set project scope and privacy.",
     icon: SlidersHorizontal,
     color: "text-purple-400",
   },
   {
     key: "security",
-    label: "Security",
-    description: "Account session, logout, admin policy",
+    label: "Sign-in & session",
+    description: "How long you stay signed in. Sign out of this device.",
     icon: Lock,
     color: "text-red-400",
   },
   {
     key: "archived",
-    label: "Archived Chats",
-    description: "Restore or permanently delete archived chats",
+    label: "Archived chats",
+    description: "Chats you've hidden. Restore them or delete for good.",
     icon: Archive,
     color: "text-orange-400",
   },
@@ -60,49 +77,43 @@ export default function SettingsMainMenu({
 }: SettingsMainMenuProps) {
   const { user } = useAuth();
   const compact = !!user?.personalization?.compactMessages;
-  const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
-  const rowClass = compact ? "p-3" : "p-4";
-  const labelClass = fontSize === "small" ? "text-sm" : fontSize === "large" ? "text-base" : "text-sm";
+  const padding = compact ? "py-3" : "py-3.5";
 
   return (
-    <div className="space-y-2">
+    <div>
       {menuItems.map(({ key, label, description, icon: Icon, color }) => (
-        <Button
+        <button
           key={key}
-          variant="ghost"
+          type="button"
           onClick={() => onNavigate(key)}
-          className={`h-auto w-full justify-between text-left zed-glass rounded-xl ${rowClass}`}
+          className={`w-full ${padding} border-t border-white/[0.06] first:border-t-0 flex items-center gap-4 text-left transition-colors active:opacity-70`}
         >
-          <div className="flex min-w-0 items-start gap-3">
-            <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${color}`} />
-            <span className="min-w-0">
-              <span className={`block ${labelClass}`}>{label}</span>
-              <span className="mt-0.5 block truncate text-[11px] leading-4 text-muted-foreground">
-                {description}
-              </span>
-            </span>
+          <Icon className={`h-5 w-5 shrink-0 ${color}`} />
+          <div className="min-w-0 flex-1">
+            <div className="text-[14.5px] font-medium text-white/90">{label}</div>
+            <div className="mt-0.5 text-[12.5px] text-white/50 leading-snug">
+              {description}
+            </div>
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </Button>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
+        </button>
       ))}
 
       {isAdmin && (
-        <Button
-          variant="ghost"
+        <button
+          type="button"
           onClick={() => onNavigate("admin")}
-          className={`h-auto w-full justify-between text-left zed-glass rounded-xl ${rowClass}`}
+          className={`w-full ${padding} border-t border-white/[0.06] flex items-center gap-4 text-left transition-colors active:opacity-70`}
         >
-          <div className="flex min-w-0 items-start gap-3">
-            <Users className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
-            <span className="min-w-0">
-              <span className={`block ${labelClass}`}>Admin Panel</span>
-              <span className="mt-0.5 block truncate text-[11px] leading-4 text-muted-foreground">
-                Providers, ruleset, approvals, logs
-              </span>
-            </span>
+          <Users className="h-5 w-5 shrink-0 text-green-400" />
+          <div className="min-w-0 flex-1">
+            <div className="text-[14.5px] font-medium text-white/90">Admin Panel</div>
+            <div className="mt-0.5 text-[12.5px] text-white/50 leading-snug">
+              Connections, approvals, activity, security — the full admin surface.
+            </div>
           </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </Button>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/40" />
+        </button>
       )}
     </div>
   );

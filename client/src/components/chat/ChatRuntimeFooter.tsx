@@ -11,10 +11,14 @@ interface RuntimeStatus {
   status: "online" | "offline";
 }
 
+// The "openai" provider key here just means the runtime is speaking
+// OpenAI's API protocol — it does NOT mean OpenAI is the model host.
+// The actual host is Lightning AI (reached via the claw-provider-temp
+// path). Show the honest name to the user.
 const PROVIDER_LABELS: Record<string, string> = {
-  openai: "OpenAI",
+  openai: "Lightning AI",
   claude: "Claude",
-  "claw-temp": "Remote runner",
+  "claw-temp": "Lightning AI",
 };
 
 function prettyModel(model: string): string {
