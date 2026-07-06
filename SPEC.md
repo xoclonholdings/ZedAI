@@ -494,15 +494,7 @@ The backend is deployed to Render; configuration lives in the Render dashboard
 
 ### Legacy Docs
 
-The following locations are legacy reference material and should not be treated as canonical without verification:
-
-- `zed-docs/`
-- `docs/legacy/Agentic_Guide.md`
-- `docs/legacy/Agentic_Guide_Add_On.md`
-- `docs/legacy/SKILL.md`
-- agent-specific skill markdown under `server/agents/**`
-
-If one of those files conflicts with this spec or the code, the code and `SPEC.md` win.
+Agent-specific skill markdown lives under `server/agents/**`. Those files are per-agent behavior notes; if one conflicts with this spec or the code, the code and `SPEC.md` win. The earlier `zed-docs/` tree and `docs/legacy/` files (Agentic_Guide*, SKILL.md) were removed in Phase 3 cleanup — they referenced Ollama, Netlify Functions, and the retired `/api/chat` route and were long superseded.
 
 ## Maintenance Checklist
 
