@@ -12,6 +12,7 @@
 import type {
   AgentDefinition,
   AppSettings,
+  ApprovalSettings,
   IntegrationsSettings,
   PersonalizationSettings,
   VoiceSettings,
@@ -263,4 +264,26 @@ export const defaultVoiceSettings: VoiceSettings = {
   plainLanguage: true,
   codeBlocks: true,
   prohibitedPhrases: [],
+};
+
+/**
+ * Conservative defaults: anything that reaches out externally or
+ * touches money / data / credentials defaults to "ask." Internal
+ * scheduling / task creation defaults to "auto" so Zed feels
+ * useful out of the box without any config.
+ */
+export const defaultApprovalSettings: ApprovalSettings = {
+  sendEmail: "ask",
+  scheduleCalendar: "ask",
+  cancelAppointment: "ask",
+  sendMessage: "ask",
+  reachOutToContacts: "ask",
+  postToSocial: "ask",
+  publishContent: "ask",
+  makePayment: "ask",
+  sendInvoice: "ask",
+  deleteData: "ask",
+  updateCredentials: "ask",
+  deployCode: "ask",
+  createTask: "auto",
 };

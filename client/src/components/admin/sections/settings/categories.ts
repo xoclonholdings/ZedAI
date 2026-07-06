@@ -6,7 +6,6 @@
 
 export type SettingsCategoryId =
   | "voice"
-  | "auto-actions"
   | "approval"
   | "tools"
   | "length-style"
@@ -30,18 +29,11 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     ready: true,
   },
   {
-    id: "auto-actions",
-    label: "What Zed does automatically",
-    description:
-      "Actions Zed is allowed to take on your behalf without checking in first.",
-    ready: false,
-  },
-  {
     id: "approval",
     label: "What needs your approval",
     description:
-      "Actions Zed drafts and shows to you before doing anything.",
-    ready: false,
+      "For each thing Zed might do — send emails, post, pay, delete — choose Auto, Ask me, or Never.",
+    ready: true,
   },
   {
     id: "tools",

@@ -1,10 +1,12 @@
 import type {
   AppSettings,
+  ApprovalSettings,
   IntegrationsSettings,
   PersonalizationSettings,
   VoiceSettings,
 } from "../../shared/adminSettings";
 import {
+  defaultApprovalSettings,
   defaultAppSettings,
   defaultPersonalizationSettings,
   defaultVoiceSettings,
@@ -92,6 +94,27 @@ export async function resetVoiceSettings() {
     voice: { ...defaultVoiceSettings },
   }));
   return settings.voice;
+}
+
+/**
+ * Approval settings ("What needs your approval"). Partial patches
+ * are shallow-merged; mergeSettings clamps unknown modes to "ask" so
+ * a corrupted on-disk value never silently escalates to "auto."
+ */
+export async function updateApprovalSettings(nextApprovals: Partial<ApprovalSettings>) {
+  const settings = await updateAdminSettings((current) => ({
+    ...current,
+    approvals: { ...(current.approvals || defaultApprovalSettings), ...nextApprovals },
+  }));
+  return settings.approvals;
+}
+
+export async function resetApprovalSettings() {
+  const settings = await updateAdminSettings((current) => ({
+    ...current,
+    approvals: { ...defaultApprovalSettings },
+  }));
+  return settings.approvals;
 }
 
 /**

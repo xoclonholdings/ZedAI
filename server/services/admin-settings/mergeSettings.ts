@@ -1,6 +1,12 @@
-import type { AdminSettings, VoiceSettings } from "../../../shared/adminSettings";
+import type {
+  AdminSettings,
+  ApprovalMode,
+  ApprovalSettings,
+  VoiceSettings,
+} from "../../../shared/adminSettings";
 import {
   defaultAgentDefinitions,
+  defaultApprovalSettings,
   defaultAppSettings,
   defaultIntegrations,
   defaultPersonalizationSettings,
@@ -146,6 +152,54 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
     },
     users: normalizeUsers(auth, raw?.users),
     voice: mergeVoiceSettings(raw?.voice),
+    approvals: mergeApprovalSettings(raw?.approvals),
+  };
+}
+
+/**
+ * Approval settings merge: apply defaults for any missing category,
+ * clamp unknown modes to "ask" (the safe default) so a bad on-disk
+ * value never sneaks through as "auto" (would silently start doing
+ * things without asking).
+ */
+function mergeApprovalSettings(
+  raw: Partial<ApprovalSettings> | undefined | null,
+): ApprovalSettings {
+  const source = raw || {};
+  const validModes: readonly ApprovalMode[] = ["auto", "ask", "never"];
+  const normalize = (
+    key: keyof ApprovalSettings,
+    fallback: ApprovalMode,
+  ): ApprovalMode => {
+    const value = (source as Record<string, unknown>)[key];
+    if (typeof value !== "string") return fallback;
+    return validModes.includes(value as ApprovalMode)
+      ? (value as ApprovalMode)
+      : "ask";
+  };
+  return {
+    sendEmail: normalize("sendEmail", defaultApprovalSettings.sendEmail),
+    scheduleCalendar: normalize("scheduleCalendar", defaultApprovalSettings.scheduleCalendar),
+    cancelAppointment: normalize(
+      "cancelAppointment",
+      defaultApprovalSettings.cancelAppointment,
+    ),
+    sendMessage: normalize("sendMessage", defaultApprovalSettings.sendMessage),
+    reachOutToContacts: normalize(
+      "reachOutToContacts",
+      defaultApprovalSettings.reachOutToContacts,
+    ),
+    postToSocial: normalize("postToSocial", defaultApprovalSettings.postToSocial),
+    publishContent: normalize("publishContent", defaultApprovalSettings.publishContent),
+    makePayment: normalize("makePayment", defaultApprovalSettings.makePayment),
+    sendInvoice: normalize("sendInvoice", defaultApprovalSettings.sendInvoice),
+    deleteData: normalize("deleteData", defaultApprovalSettings.deleteData),
+    updateCredentials: normalize(
+      "updateCredentials",
+      defaultApprovalSettings.updateCredentials,
+    ),
+    deployCode: normalize("deployCode", defaultApprovalSettings.deployCode),
+    createTask: normalize("createTask", defaultApprovalSettings.createTask),
   };
 }
 
