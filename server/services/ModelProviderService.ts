@@ -108,6 +108,51 @@ export async function streamChatFromProvider(
   );
 }
 
+/**
+ * SPEC.md § Hidden Reasoning and Response Governance (line 111):
+ *   "Streaming chat buffers generated model text until the Voice +
+ *   Presentation layer can apply presentZedResponse /
+ *   presentZedResponseWithChecks before the response is sent to the
+ *   client."
+ *
+ * So even when we stream, we must buffer server-side and let Voice +
+ * Presentation transform the complete text before it reaches the
+ * user. This helper does that: it streams from the provider (which
+ * gives us provider-timeout resilience and lets a slow generation
+ * keep the connection alive) and returns the buffered complete text
+ * to the caller, who then hands it to presentZedResponse as usual.
+ *
+ * Callers that used generateChatFromProvider can swap to this without
+ * changing anything else in their agent flow — output shape is
+ * identical.
+ */
+export async function generateBufferedStreamFromProvider(
+  messages: ModelProviderMessage[],
+  systemPrompt: string | undefined,
+  options?: ProviderExecutionOptions,
+): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    const chunks: string[] = [];
+    void streamProviderChat(
+      messages,
+      {
+        ...options,
+        model: options?.model || runtimeConfig.activeModel,
+        systemPrompt: options?.systemPrompt || systemPrompt,
+      },
+      (token) => {
+        chunks.push(token);
+      },
+      () => {
+        resolve(chunks.join(""));
+      },
+      (err) => {
+        reject(err);
+      },
+    );
+  });
+}
+
 export async function transcribeAudio(_audioBuffer: Buffer): Promise<string> {
   return "[Voice transcription requires Whisper model. Text input is recommended.]";
 }

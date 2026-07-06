@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { generateChatFromProvider } from "../../services/ModelProviderService";
+import { generateBufferedStreamFromProvider } from "../../services/ModelProviderService";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { decideApprovalPolicy } from "../../services/approvalPolicy";
@@ -133,9 +133,15 @@ ConversationID: ${request.conversationId || "none"}`.trim();
       };
     }
 
-    const reply = await generateChatFromProvider([{ role: "user", content: request.message }], systemPrompt, {
-      lane: "operations",
-    });
+    // Stream-then-buffer per SPEC.md line 111: provider streams to
+    // server, server buffers, presentZedResponse (applied upstream)
+    // acts on complete text before it reaches the client. Gains
+    // provider-timeout resilience without changing user-visible UX.
+    const reply = await generateBufferedStreamFromProvider(
+      [{ role: "user", content: request.message }],
+      systemPrompt,
+      { lane: "operations" },
+    );
     // policy.mode is "auto" or "ask" here. "auto" means dispatch
     // without gating; "ask" queues for admin approval.
     const requiresApproval = policy.mode === "ask";
