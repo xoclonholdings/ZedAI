@@ -10,40 +10,29 @@ import {
 /**
  * Plain-language Integrations surface — per-provider rows.
  *
- * Each service that Zed can connect to is its own row. Tap Connect
- * to open a small dialog that asks for the ONE thing needed to
- * sign in (an app password, a personal access token, a webhook URL —
- * whatever the provider actually issues to a normal user). No
- * client-ID/secret/refresh-token soup.
- *
- * Providers that need Zed to be registered with them first (real
- * OAuth apps for Gmail, Twitter, etc.) show "Sign-in not set up yet"
- * — honest, no false Connect. As each OAuth backend lands, the
- * provider's row flips to Connect automatically.
- *
- * Each group also has an "+ Add custom" row so a user can enter a
- * provider that isn't listed. That writes into integrations.custom
- * on the server side (already supported).
+ * Each service is one row. Tap Connect and a dialog walks the user
+ * through, step by step, how to grab the credential the provider
+ * issues to normal users, with a direct link to the provider page.
+ * No client-ID/secret/refresh-token jargon. If a provider has no
+ * plain-user credential path at all, we say so honestly rather
+ * than pretending.
  */
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-/**
- * A single provider entry. `patch` returns the JSON patch that gets
- * PUT'd to /api/admin/settings/integrations when the user submits
- * the dialog's single field. `connectedFn` inspects the loaded
- * integrations state to decide whether the row shows Connect or
- * Disconnect.
- */
 interface Provider {
   key: string;
   label: string;
+  /** Plain-English label for the single field the user pastes. */
   fieldLabel: string;
-  fieldHelp: string;
-  oauthReady?: boolean;
+  /** Ordered steps the user follows to obtain the credential. */
+  steps: string[];
+  /** Direct link to the provider page where the credential is made. */
+  helpUrl?: string;
+  /** Reads current integrations state to decide connected vs. not. */
   connectedFn: (integrations: any) => { connected: boolean; account?: string };
+  /** Builds the JSON patch for /api/admin/settings/integrations. */
   patch: (value: string) => any;
-  disconnectPatch?: any;
 }
 
 interface ProviderGroup {
@@ -63,8 +52,14 @@ const GROUPS: ProviderGroup[] = [
         key: "gmail",
         label: "Gmail",
         fieldLabel: "Gmail app password",
-        fieldHelp:
-          "In your Google account → Security → 2-Step Verification → App passwords, generate one for Zed. Paste it here.",
+        helpUrl: "https://myaccount.google.com/apppasswords",
+        steps: [
+          "Tap the link below to open Google's App passwords page.",
+          "If you're asked to turn on 2-Step Verification first, do that.",
+          "Type “Zed” as the app name and tap Create.",
+          "Google shows a 16-character password. Copy it.",
+          "Paste it into the field below and tap Save.",
+        ],
         connectedFn: (i) => {
           const acc = (i?.email?.accounts || []).find((a: any) => a.provider === "gmail");
           return { connected: Boolean(acc?.hasPassword), account: acc?.fromAddress };
@@ -91,8 +86,14 @@ const GROUPS: ProviderGroup[] = [
         key: "outlook",
         label: "Outlook / Microsoft 365",
         fieldLabel: "Outlook app password",
-        fieldHelp:
-          "In your Microsoft account → Security → Advanced security options → App passwords, create one for Zed.",
+        helpUrl: "https://account.microsoft.com/security",
+        steps: [
+          "Tap the link to open Microsoft account security.",
+          "Under Advanced security options, find App passwords.",
+          "Create a new app password and name it “Zed”.",
+          "Copy the generated password.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => {
           const acc = (i?.email?.accounts || []).find((a: any) => a.provider === "outlook");
           return { connected: Boolean(acc?.hasPassword), account: acc?.fromAddress };
@@ -119,8 +120,14 @@ const GROUPS: ProviderGroup[] = [
         key: "icloud",
         label: "iCloud Mail",
         fieldLabel: "iCloud app-specific password",
-        fieldHelp:
-          "At appleid.apple.com → Sign-In and Security → App-Specific Passwords, generate one for Zed.",
+        helpUrl: "https://appleid.apple.com/account/manage",
+        steps: [
+          "Tap the link to open your Apple ID account page and sign in.",
+          "Under Sign-In and Security, tap App-Specific Passwords.",
+          "Tap the + to generate a new one and name it “Zed”.",
+          "Apple shows the password. Copy it.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => {
           const acc = (i?.email?.accounts || []).find((a: any) => a.provider === "icloud");
           return { connected: Boolean(acc?.hasPassword), account: acc?.fromAddress };
@@ -146,25 +153,6 @@ const GROUPS: ProviderGroup[] = [
     ],
   },
   {
-    title: "Google (Gmail read, Calendar, Drive)",
-    description: "For reading Gmail, seeing your calendar, and opening Drive files.",
-    supportsCustom: false,
-    providers: [
-      {
-        key: "google-oauth",
-        label: "Google account",
-        fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => {
-          const acc = (i?.google?.accounts || [])[0];
-          return { connected: Boolean(acc?.hasCredentials), account: acc?.label };
-        },
-        patch: () => ({}),
-      },
-    ],
-  },
-  {
     title: "GitHub",
     description: "So Zed can read repos and post pull requests when you approve.",
     supportsCustom: false,
@@ -172,9 +160,17 @@ const GROUPS: ProviderGroup[] = [
       {
         key: "github",
         label: "GitHub personal access token",
-        fieldLabel: "Personal access token",
-        fieldHelp:
-          "At github.com/settings/tokens, create a fine-grained token for Zed. Give it repo read + issues write scopes.",
+        fieldLabel: "Personal access token (starts with ghp_ or github_pat_)",
+        helpUrl: "https://github.com/settings/tokens?type=beta",
+        steps: [
+          "Tap the link to open GitHub's fine-grained tokens page.",
+          "Tap Generate new token.",
+          "Name it “Zed”. Set expiration to whatever you're comfortable with.",
+          "Pick the repositories Zed should reach.",
+          "Under Repository permissions, give Contents: Read + Pull requests: Read/Write + Issues: Read/Write.",
+          "Tap Generate token and copy it.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => {
           const acc = (i?.github?.accounts || [])[0];
           return {
@@ -208,7 +204,13 @@ const GROUPS: ProviderGroup[] = [
         key: "render",
         label: "Render",
         fieldLabel: "Render API key",
-        fieldHelp: "In your Render dashboard → Account Settings → API Keys, create one for Zed.",
+        helpUrl: "https://dashboard.render.com/u/settings",
+        steps: [
+          "Tap the link to open your Render account settings.",
+          "Scroll to API Keys and tap Create API Key.",
+          "Name it “Zed” and copy the key.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.deployment?.provider === "render" && !!i?.deployment?.hasAccessToken,
         }),
@@ -218,7 +220,13 @@ const GROUPS: ProviderGroup[] = [
         key: "netlify",
         label: "Netlify",
         fieldLabel: "Netlify personal access token",
-        fieldHelp: "In Netlify → User settings → Applications → Personal access tokens, create one.",
+        helpUrl: "https://app.netlify.com/user/applications#personal-access-tokens",
+        steps: [
+          "Tap the link to open Netlify's Applications page.",
+          "Under Personal access tokens, tap New access token.",
+          "Name it “Zed” and copy the token.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.deployment?.provider === "netlify" && !!i?.deployment?.hasAccessToken,
         }),
@@ -228,7 +236,13 @@ const GROUPS: ProviderGroup[] = [
         key: "vercel",
         label: "Vercel",
         fieldLabel: "Vercel access token",
-        fieldHelp: "In Vercel → Settings → Tokens, create one for Zed.",
+        helpUrl: "https://vercel.com/account/tokens",
+        steps: [
+          "Tap the link to open Vercel Account → Tokens.",
+          "Tap Create Token, name it “Zed”.",
+          "Copy the token before you close the page — Vercel only shows it once.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.deployment?.provider === "vercel" && !!i?.deployment?.hasAccessToken,
         }),
@@ -238,7 +252,13 @@ const GROUPS: ProviderGroup[] = [
         key: "railway",
         label: "Railway",
         fieldLabel: "Railway API token",
-        fieldHelp: "In Railway → Account Settings → Tokens, create one.",
+        helpUrl: "https://railway.app/account/tokens",
+        steps: [
+          "Tap the link to open Railway's Account Tokens page.",
+          "Tap Create Token and name it “Zed”.",
+          "Copy the token.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.deployment?.provider === "railway" && !!i?.deployment?.hasAccessToken,
         }),
@@ -252,35 +272,45 @@ const GROUPS: ProviderGroup[] = [
     supportsCustom: true,
     providers: [
       {
-        key: "gdrive",
-        label: "Google Drive",
-        fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.cloudStorage?.provider === "gdrive" && !!i?.cloudStorage?.hasAccessToken,
-        }),
-        patch: () => ({}),
-      },
-      {
         key: "dropbox",
         label: "Dropbox",
         fieldLabel: "Dropbox access token",
-        fieldHelp: "At dropbox.com/developers/apps, create an app and generate an access token.",
+        helpUrl: "https://www.dropbox.com/developers/apps",
+        steps: [
+          "Tap the link to open Dropbox's App Console.",
+          "Tap Create app. Pick Scoped access and Full Dropbox.",
+          "Name it “Zed” and create the app.",
+          "On the app page, scroll to Generated access token and tap Generate.",
+          "Copy the token that appears.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.cloudStorage?.provider === "dropbox" && !!i?.cloudStorage?.hasAccessToken,
         }),
         patch: (value) => ({ cloudStorage: { provider: "dropbox", accessToken: value } }),
       },
       {
-        key: "onedrive",
-        label: "OneDrive",
+        key: "gdrive-info",
+        label: "Google Drive (info only)",
         fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.cloudStorage?.provider === "onedrive" && !!i?.cloudStorage?.hasAccessToken,
-        }),
+        steps: [
+          "Google Drive doesn't offer a paste-a-key path for the kind of access Zed needs.",
+          "This one needs a real Google sign-in flow, which isn't set up.",
+          "Until that lands, use Dropbox or a custom entry for Drive-like access.",
+        ],
+        connectedFn: () => ({ connected: false }),
+        patch: () => ({}),
+      },
+      {
+        key: "onedrive-info",
+        label: "OneDrive (info only)",
+        fieldLabel: "",
+        steps: [
+          "OneDrive doesn't offer a paste-a-key path for the access Zed needs.",
+          "This one needs a real Microsoft sign-in flow, which isn't set up.",
+          "Until that lands, use Dropbox or a custom entry.",
+        ],
+        connectedFn: () => ({ connected: false }),
         patch: () => ({}),
       },
     ],
@@ -293,34 +323,46 @@ const GROUPS: ProviderGroup[] = [
       {
         key: "stripe",
         label: "Stripe",
-        fieldLabel: "Stripe secret key",
-        fieldHelp:
-          "In Stripe → Developers → API keys, use the secret key. Use a restricted key if you can.",
+        fieldLabel: "Stripe secret key (starts with sk_live_ or sk_test_)",
+        helpUrl: "https://dashboard.stripe.com/apikeys",
+        steps: [
+          "Tap the link to open Stripe → Developers → API keys.",
+          "Under Standard keys, reveal the Secret key.",
+          "For safety, consider creating a Restricted key instead so Zed only has the permissions it needs.",
+          "Copy the key.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.payments?.provider === "stripe" && !!i?.payments?.hasSecretKey,
         }),
         patch: (value) => ({ payments: { provider: "stripe", secretKey: value } }),
       },
       {
-        key: "paypal",
-        label: "PayPal",
-        fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.payments?.provider === "paypal" && !!i?.payments?.hasSecretKey,
-        }),
-        patch: () => ({}),
-      },
-      {
         key: "square",
         label: "Square",
         fieldLabel: "Square access token",
-        fieldHelp: "In your Square developer dashboard → Applications → Credentials.",
+        helpUrl: "https://developer.squareup.com/apps",
+        steps: [
+          "Tap the link to open the Square Developer Dashboard.",
+          "Create an application named “Zed” (or reuse one you have).",
+          "Under Credentials, copy your Access token. Use Sandbox for testing.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.payments?.provider === "square" && !!i?.payments?.hasSecretKey,
         }),
         patch: (value) => ({ payments: { provider: "square", secretKey: value } }),
+      },
+      {
+        key: "paypal-info",
+        label: "PayPal (info only)",
+        fieldLabel: "",
+        steps: [
+          "PayPal's normal-user login can't be used for API access — even with a business account, they require a full app registration.",
+          "This one isn't set up. Use Stripe or Square in the meantime.",
+        ],
+        connectedFn: () => ({ connected: false }),
+        patch: () => ({}),
       },
     ],
   },
@@ -330,36 +372,42 @@ const GROUPS: ProviderGroup[] = [
     supportsCustom: true,
     providers: [
       {
-        key: "quickbooks",
-        label: "QuickBooks",
-        fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.accounting?.provider === "quickbooks" && !!i?.accounting?.hasCredentials,
-        }),
-        patch: () => ({}),
-      },
-      {
-        key: "xero",
-        label: "Xero",
-        fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.accounting?.provider === "xero" && !!i?.accounting?.hasCredentials,
-        }),
-        patch: () => ({}),
-      },
-      {
         key: "wave",
         label: "Wave",
         fieldLabel: "Wave full-access token",
-        fieldHelp: "In your Wave account, generate a full-access token for API use.",
+        helpUrl: "https://developer.waveapps.com/hc/en-us/articles/360019762711",
+        steps: [
+          "Tap the link to open Wave's developer article on tokens.",
+          "Follow the “Get a token” steps — it's a one-time paste.",
+          "Copy the full-access token that Wave shows you.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.accounting?.provider === "wave" && !!i?.accounting?.hasCredentials,
         }),
         patch: (value) => ({ accounting: { provider: "wave", refreshToken: value, clientId: "wave", clientSecret: "" } }),
+      },
+      {
+        key: "quickbooks-info",
+        label: "QuickBooks (info only)",
+        fieldLabel: "",
+        steps: [
+          "QuickBooks doesn't offer a paste-a-key path for a normal user — it requires a full app registration.",
+          "This one isn't set up. Wave works today.",
+        ],
+        connectedFn: () => ({ connected: false }),
+        patch: () => ({}),
+      },
+      {
+        key: "xero-info",
+        label: "Xero (info only)",
+        fieldLabel: "",
+        steps: [
+          "Xero requires a full sign-in flow that isn't set up.",
+          "Wave works today; Xero will need a proper sign-in flow to land.",
+        ],
+        connectedFn: () => ({ connected: false }),
+        patch: () => ({}),
       },
     ],
   },
@@ -372,66 +420,72 @@ const GROUPS: ProviderGroup[] = [
         key: "twitter",
         label: "Twitter / X",
         fieldLabel: "Twitter bearer token",
-        fieldHelp:
-          "At developer.twitter.com, create an app and copy the bearer token from the Keys and Tokens tab.",
+        helpUrl: "https://developer.twitter.com/en/portal/dashboard",
+        steps: [
+          "Tap the link to open Twitter's developer portal (sign in with your @ account).",
+          "Create a project + app (call it “Zed”) if you don't have one.",
+          "Open the app → Keys and tokens.",
+          "Under Authentication Tokens, generate a Bearer Token.",
+          "Copy the bearer token.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.socialPublishing?.provider === "twitter" && !!i?.socialPublishing?.hasAccessToken,
         }),
         patch: (value) => ({ socialPublishing: { provider: "twitter", accessToken: value } }),
       },
       {
-        key: "tiktok",
-        label: "TikTok",
+        key: "tiktok-info",
+        label: "TikTok (info only)",
         fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.socialPublishing?.provider === "tiktok" && !!i?.socialPublishing?.hasAccessToken,
-        }),
+        steps: [
+          "TikTok posting only works through their app-approval flow — no paste-a-key path.",
+          "Not set up.",
+        ],
+        connectedFn: () => ({ connected: false }),
         patch: () => ({}),
       },
       {
-        key: "instagram",
-        label: "Instagram",
+        key: "instagram-info",
+        label: "Instagram (info only)",
         fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.socialPublishing?.provider === "instagram" && !!i?.socialPublishing?.hasAccessToken,
-        }),
+        steps: [
+          "Instagram posting requires going through Meta's Facebook app registration.",
+          "Not set up.",
+        ],
+        connectedFn: () => ({ connected: false }),
         patch: () => ({}),
       },
       {
-        key: "facebook",
-        label: "Facebook",
+        key: "facebook-info",
+        label: "Facebook (info only)",
         fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.socialPublishing?.provider === "facebook" && !!i?.socialPublishing?.hasAccessToken,
-        }),
+        steps: [
+          "Facebook posting requires Meta's app registration flow.",
+          "Not set up.",
+        ],
+        connectedFn: () => ({ connected: false }),
         patch: () => ({}),
       },
       {
-        key: "linkedin",
-        label: "LinkedIn",
+        key: "linkedin-info",
+        label: "LinkedIn (info only)",
         fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.socialPublishing?.provider === "linkedin" && !!i?.socialPublishing?.hasAccessToken,
-        }),
+        steps: [
+          "LinkedIn's posting API needs a full app registration.",
+          "Not set up.",
+        ],
+        connectedFn: () => ({ connected: false }),
         patch: () => ({}),
       },
       {
-        key: "youtube",
-        label: "YouTube",
+        key: "youtube-info",
+        label: "YouTube (info only)",
         fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.socialPublishing?.provider === "youtube" && !!i?.socialPublishing?.hasAccessToken,
-        }),
+        steps: [
+          "YouTube uploads require Google's OAuth sign-in flow (not set up).",
+        ],
+        connectedFn: () => ({ connected: false }),
         patch: () => ({}),
       },
     ],
@@ -445,32 +499,45 @@ const GROUPS: ProviderGroup[] = [
         key: "hubspot",
         label: "HubSpot",
         fieldLabel: "HubSpot private app token",
-        fieldHelp: "At app.hubspot.com → Settings → Integrations → Private apps, create one.",
+        helpUrl: "https://app.hubspot.com/private-apps/",
+        steps: [
+          "Tap the link to open HubSpot's private apps page.",
+          "Create a private app named “Zed”.",
+          "Under Scopes, tick the CRM scopes for contacts, companies, and deals.",
+          "Under Auth, tap Generate token.",
+          "Copy the token.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.crm?.provider === "hubspot" && !!i?.crm?.hasApiKey,
         }),
         patch: (value) => ({ crm: { provider: "hubspot", apiKey: value } }),
       },
       {
-        key: "salesforce",
-        label: "Salesforce",
-        fieldLabel: "",
-        fieldHelp: "",
-        oauthReady: false,
-        connectedFn: (i) => ({
-          connected: i?.crm?.provider === "salesforce" && !!i?.crm?.hasApiKey,
-        }),
-        patch: () => ({}),
-      },
-      {
         key: "pipedrive",
         label: "Pipedrive",
         fieldLabel: "Pipedrive API token",
-        fieldHelp: "In Pipedrive → Personal preferences → API, copy your token.",
+        helpUrl: "https://app.pipedrive.com/settings/api",
+        steps: [
+          "Tap the link to open Pipedrive → Personal preferences → API.",
+          "Copy the API token shown there.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.crm?.provider === "pipedrive" && !!i?.crm?.hasApiKey,
         }),
         patch: (value) => ({ crm: { provider: "pipedrive", apiKey: value } }),
+      },
+      {
+        key: "salesforce-info",
+        label: "Salesforce (info only)",
+        fieldLabel: "",
+        steps: [
+          "Salesforce requires their connected-app registration; there's no plain paste-a-key.",
+          "Not set up.",
+        ],
+        connectedFn: () => ({ connected: false }),
+        patch: () => ({}),
       },
     ],
   },
@@ -483,7 +550,13 @@ const GROUPS: ProviderGroup[] = [
         key: "twilio",
         label: "Twilio",
         fieldLabel: "Twilio auth token",
-        fieldHelp: "In Twilio Console → Account Info, copy your Auth Token.",
+        helpUrl: "https://console.twilio.com",
+        steps: [
+          "Tap the link to open Twilio Console.",
+          "On the dashboard, find your Auth Token (right column, next to Account SID).",
+          "Tap show to reveal it. Copy the token.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.telephony?.provider === "twilio" && !!i?.telephony?.hasApiKey,
         }),
@@ -500,7 +573,12 @@ const GROUPS: ProviderGroup[] = [
         key: "polygon",
         label: "Polygon.io",
         fieldLabel: "Polygon API key",
-        fieldHelp: "At polygon.io/dashboard/api-keys, copy your key.",
+        helpUrl: "https://polygon.io/dashboard/api-keys",
+        steps: [
+          "Tap the link to open Polygon's API Keys page.",
+          "Copy your API key.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.marketData?.provider === "polygon" && !!i?.marketData?.hasApiKey,
         }),
@@ -510,7 +588,13 @@ const GROUPS: ProviderGroup[] = [
         key: "alphavantage",
         label: "Alpha Vantage",
         fieldLabel: "Alpha Vantage API key",
-        fieldHelp: "At alphavantage.co/support/#api-key, request a free key.",
+        helpUrl: "https://www.alphavantage.co/support/#api-key",
+        steps: [
+          "Tap the link to open Alpha Vantage's key request page.",
+          "Fill out the short form and submit.",
+          "Copy the free API key they email or show you.",
+          "Paste it below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: i?.marketData?.provider === "alphavantage" && !!i?.marketData?.hasApiKey,
         }),
@@ -526,9 +610,12 @@ const GROUPS: ProviderGroup[] = [
       {
         key: "tradingview",
         label: "TradingView webhook secret",
-        fieldLabel: "Webhook secret",
-        fieldHelp:
-          "Pick any string. Add it as ?secret=... to your TradingView alert webhook URL. Zed uses it to verify inbound alerts.",
+        fieldLabel: "Webhook secret (any string you make up)",
+        steps: [
+          "Pick any random string you'd like — Zed will use it to verify alerts.",
+          "In TradingView, when you set up an alert with a webhook URL, append ?secret=THAT_STRING to your webhook URL.",
+          "Paste the string below and tap Save.",
+        ],
         connectedFn: (i) => ({
           connected: !!i?.tradingView?.hasAlertWebhookSecret,
         }),
@@ -537,10 +624,6 @@ const GROUPS: ProviderGroup[] = [
     ],
   },
 ];
-
-function friendlyGroupTitle(t: string): string {
-  return t;
-}
 
 export default function IntegrationsSection() {
   const [integrations, setIntegrations] = useState<any>(null);
@@ -602,14 +685,16 @@ export default function IntegrationsSection() {
   const disconnect = useCallback(
     async (row: Provider) => {
       if (!window.confirm(`Disconnect ${row.label}? Zed will stop using this account.`)) return;
-      // Best-effort: send an empty patch for the provider category.
-      // Server preserves values not present in the patch, so we send
-      // an explicit blank credential to clear it.
       const clear = row.patch("");
       await submit(clear);
     },
     [submit],
   );
+
+  const openDialog = useCallback((provider: Provider, group: ProviderGroup) => {
+    setDialog({ provider, group });
+    setDialogValue("");
+  }, []);
 
   const header = useMemo(
     () => (
@@ -619,7 +704,7 @@ export default function IntegrationsSection() {
             Connections
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Sign in to the services you want Zed to reach — each provider is listed separately. Tap Connect and Zed will ask for the one thing it needs.
+            Sign in to the services you want Zed to reach. Tap Connect on any provider and Zed walks you through the exact steps to grab the one thing it needs.
           </p>
         </div>
         <SaveIndicator status={status} errorMessage={errorMessage} />
@@ -645,17 +730,22 @@ export default function IntegrationsSection() {
       {GROUPS.map((group, gi) => (
         <SettingGroup
           key={group.title}
-          title={friendlyGroupTitle(group.title)}
+          title={group.title}
           count={group.providers.length}
           collapsible
           defaultCollapsed={gi > 0}
         >
           {group.providers.map((provider) => {
             const state = provider.connectedFn(integrations);
+            const isInfoOnly = provider.key.endsWith("-info") || !provider.fieldLabel;
             return (
               <SettingRow
                 key={provider.key}
-                label={state.connected && state.account ? `${provider.label} — ${state.account}` : provider.label}
+                label={
+                  state.connected && state.account
+                    ? `${provider.label} — ${state.account}`
+                    : provider.label
+                }
                 description={group.description}
               >
                 {state.connected ? (
@@ -666,20 +756,19 @@ export default function IntegrationsSection() {
                   >
                     Disconnect
                   </button>
-                ) : provider.oauthReady === false && !provider.fieldLabel ? (
-                  <span
-                    className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5 text-[12.5px] text-white/40"
-                    title="This one needs Zed to be registered with the provider first."
+                ) : isInfoOnly ? (
+                  <button
+                    type="button"
+                    onClick={() => openDialog(provider, group)}
+                    className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5 text-[12.5px] text-white/50 hover:text-white/70 transition-colors"
+                    title="This one can't be signed in from Zed today. Tap for the why."
                   >
-                    Sign-in not set up yet
-                  </span>
+                    Why not?
+                  </button>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      setDialog({ provider, group });
-                      setDialogValue("");
-                    }}
+                    onClick={() => openDialog(provider, group)}
                     className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
                   >
                     Connect
@@ -696,9 +785,7 @@ export default function IntegrationsSection() {
             >
               <button
                 type="button"
-                onClick={() =>
-                  setCustomDialog({ group, label: "", value: "" })
-                }
+                onClick={() => setCustomDialog({ group, label: "", value: "" })}
                 className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/70 hover:text-white/90 transition-colors active:opacity-80"
               >
                 + Add
@@ -709,16 +796,17 @@ export default function IntegrationsSection() {
       ))}
 
       {dialog && (
-        <SignInDialog
-          title={`Sign in to ${dialog.provider.label}`}
-          fieldLabel={dialog.provider.fieldLabel}
-          fieldHelp={dialog.provider.fieldHelp}
+        <ConnectDialog
+          provider={dialog.provider}
           value={dialogValue}
           onChange={setDialogValue}
           onCancel={() => setDialog(null)}
           onSave={async () => {
             const trimmed = dialogValue.trim();
-            if (!trimmed) return;
+            if (!trimmed || !dialog.provider.fieldLabel) {
+              setDialog(null);
+              return;
+            }
             const ok = await submit(dialog.provider.patch(trimmed));
             if (ok) setDialog(null);
           }}
@@ -726,14 +814,12 @@ export default function IntegrationsSection() {
       )}
 
       {customDialog && (
-        <SignInDialog
-          title={`Add custom ${customDialog.group.title.toLowerCase()} entry`}
-          fieldLabel="Value"
-          fieldHelp={`Give it a name and paste the credential. Stored under integrations.custom on the server.`}
-          extraLabelValue={customDialog.label}
-          onExtraLabelChange={(v) => setCustomDialog({ ...customDialog, label: v })}
+        <CustomDialog
+          groupTitle={customDialog.group.title}
+          label={customDialog.label}
           value={customDialog.value}
-          onChange={(v) => setCustomDialog({ ...customDialog, value: v })}
+          onLabelChange={(v) => setCustomDialog({ ...customDialog, label: v })}
+          onValueChange={(v) => setCustomDialog({ ...customDialog, value: v })}
           onCancel={() => setCustomDialog(null)}
           onSave={async () => {
             if (!customDialog.label.trim() || !customDialog.value.trim()) return;
@@ -762,30 +848,118 @@ export default function IntegrationsSection() {
 }
 
 /**
- * Small in-page dialog used for both "sign in to X" and "add custom".
- * One text field (or two for custom — a name + a value). No modal
- * library dependency; renders a fixed overlay.
+ * Step-by-step Connect dialog. Renders the ordered steps as a
+ * numbered list with a direct link to the provider page, then the
+ * single field the user pastes into. Info-only providers (no
+ * fieldLabel) render the steps but skip the input.
  */
-function SignInDialog({
-  title,
-  fieldLabel,
-  fieldHelp,
+function ConnectDialog({
+  provider,
   value,
   onChange,
   onCancel,
   onSave,
-  extraLabelValue,
-  onExtraLabelChange,
 }: {
-  title: string;
-  fieldLabel: string;
-  fieldHelp: string;
+  provider: Provider;
   value: string;
   onChange: (next: string) => void;
   onCancel: () => void;
   onSave: () => void | Promise<void>;
-  extraLabelValue?: string;
-  onExtraLabelChange?: (next: string) => void;
+}) {
+  const isInfoOnly = !provider.fieldLabel;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-950 p-5 shadow-2xl max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-[16.5px] font-semibold text-white mb-3">
+          {isInfoOnly ? provider.label : `Connect ${provider.label}`}
+        </h3>
+
+        <ol className="space-y-2 mb-5">
+          {provider.steps.map((step, i) => (
+            <li key={i} className="flex gap-3 text-[13px] text-white/80 leading-snug">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-white/[0.08] text-white/60 flex items-center justify-center text-[11px] font-medium">
+                {i + 1}
+              </span>
+              <span className="min-w-0">{step}</span>
+            </li>
+          ))}
+        </ol>
+
+        {provider.helpUrl && (
+          <a
+            href={provider.helpUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center rounded-lg bg-white/[0.06] hover:bg-white/[0.1] border border-white/10 px-3 py-1.5 text-[13px] text-cyan-300 hover:text-cyan-200 mb-5 transition-colors"
+          >
+            Open the provider page →
+          </a>
+        )}
+
+        {!isInfoOnly && (
+          <div className="mb-5">
+            <label className="block text-[12.5px] font-medium text-white/70 mb-1">
+              {provider.fieldLabel}
+            </label>
+            <input
+              type="password"
+              autoFocus
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Paste here"
+              className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 placeholder:text-white/30"
+            />
+          </div>
+        )}
+
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/70 hover:text-white transition-colors"
+          >
+            {isInfoOnly ? "Close" : "Cancel"}
+          </button>
+          {!isInfoOnly && (
+            <button
+              type="button"
+              onClick={() => void onSave()}
+              disabled={!value.trim()}
+              className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:opacity-80"
+            >
+              Save
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomDialog({
+  groupTitle,
+  label,
+  value,
+  onLabelChange,
+  onValueChange,
+  onCancel,
+  onSave,
+}: {
+  groupTitle: string;
+  label: string;
+  value: string;
+  onLabelChange: (next: string) => void;
+  onValueChange: (next: string) => void;
+  onCancel: () => void;
+  onSave: () => void | Promise<void>;
 }) {
   return (
     <div
@@ -798,42 +972,41 @@ function SignInDialog({
         className="w-full max-w-md rounded-2xl border border-white/10 bg-neutral-950 p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-[16.5px] font-semibold text-white mb-1">{title}</h3>
-        {fieldHelp && (
-          <p className="mt-1 text-[12.5px] text-white/50 leading-snug">{fieldHelp}</p>
-        )}
+        <h3 className="text-[16.5px] font-semibold text-white mb-1">
+          Add a custom {groupTitle.toLowerCase()} entry
+        </h3>
+        <p className="mt-1 text-[12.5px] text-white/50 leading-snug mb-4">
+          Give it a name and paste the credential from the provider. Zed will store it and use it for {groupTitle.toLowerCase()}.
+        </p>
 
-        {onExtraLabelChange && (
-          <div className="mt-4">
-            <label className="block text-[12.5px] font-medium text-white/70 mb-1">
-              Name
-            </label>
-            <input
-              type="text"
-              autoFocus
-              value={extraLabelValue}
-              onChange={(e) => onExtraLabelChange(e.target.value)}
-              placeholder="e.g. Vercel prod, Stripe test"
-              className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 placeholder:text-white/30"
-            />
-          </div>
-        )}
-
-        <div className="mt-4">
+        <div className="mb-3">
           <label className="block text-[12.5px] font-medium text-white/70 mb-1">
-            {fieldLabel}
+            Name
+          </label>
+          <input
+            type="text"
+            autoFocus
+            value={label}
+            onChange={(e) => onLabelChange(e.target.value)}
+            placeholder="What are you connecting?"
+            className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 placeholder:text-white/30"
+          />
+        </div>
+
+        <div className="mb-5">
+          <label className="block text-[12.5px] font-medium text-white/70 mb-1">
+            The credential to paste
           </label>
           <input
             type="password"
-            autoFocus={!onExtraLabelChange}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => onValueChange(e.target.value)}
             placeholder="Paste here"
             className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 placeholder:text-white/30"
           />
         </div>
 
-        <div className="mt-5 flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
@@ -844,7 +1017,8 @@ function SignInDialog({
           <button
             type="button"
             onClick={() => void onSave()}
-            className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
+            disabled={!label.trim() || !value.trim()}
+            className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:opacity-80"
           >
             Save
           </button>
