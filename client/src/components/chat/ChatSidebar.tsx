@@ -64,40 +64,40 @@ type SidebarPanel = "projects" | "workspaces" | "history" | "settings";
 
 const WORKSPACE_LINKS: WorkspaceLink[] = [
   {
-    label: "Inbox",
-    description: "ZED email mailbox",
+    label: "Email",
+    description: "Read your inbox, and let Zed draft or summarize replies.",
     path: "/inbox",
     icon: Inbox,
   },
   {
     label: "Research",
-    description: "Markets, competitors, documents, trends",
+    description: "Ask Zed to look into a topic — it saves what it finds.",
     path: "/workspaces/research",
     icon: Search,
   },
   {
     label: "Business",
-    description: "Strategy, revenue, operations, reports",
+    description: "Plans, revenue notes, and reports about your business.",
     path: "/workspaces/business",
     icon: Briefcase,
   },
   {
-    label: "Trading",
-    description: "Paper trading, theses, journals, validation",
-    path: "/trading",
-    icon: TrendingUp,
-  },
-  {
     label: "Content",
-    description: "Ideas, scripts, SEO, YouTube, social",
+    description: "Ideas, drafts, and scripts for what you publish.",
     path: "/workspaces/content",
     icon: PenTool,
   },
   {
     label: "Learning",
-    description: "Paths, practice, assessments, progress",
+    description: "Things you're studying — Zed can quiz you or track progress.",
     path: "/workspaces/learning",
     icon: GraduationCap,
+  },
+  {
+    label: "Trading",
+    description: "Practice trades on paper (no real money). Advanced — skip if unsure.",
+    path: "/trading",
+    icon: TrendingUp,
   },
 ];
 
