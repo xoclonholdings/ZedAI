@@ -2,6 +2,7 @@ import { MemoryService } from "./memoryService";
 import { addToCollection, queryCollection } from "./ChromaService";
 import { retrieveFoundationMemoryWithTrace } from "./FoundationMemoryService";
 import { retrievePersonalizationForQuery } from "./UserPersonalizationCorpus";
+import { retrieveObjectMemoryForQuery } from "./object-memory/retrieval";
 
 import {
   dedupeRetrievedMemory,
@@ -61,6 +62,7 @@ export class KnowledgeService {
       semantic,
       foundationResult,
       personalizationResult,
+      objectMemoryResult,
     ] = await Promise.all([
       MemoryService.getAllCoreMemory(),
       loadRulesetMemory(),
@@ -72,10 +74,12 @@ export class KnowledgeService {
         enabled: params.includeAdminFoundation === true,
       }),
       retrievePersonalizationForQuery(params.userId, params.query, 3),
+      retrieveObjectMemoryForQuery(params.query, 5),
     ]);
     const foundation = foundationResult.content;
     const foundationTrace = foundationResult.trace;
     const personalization = personalizationResult.block;
+    const objectMemoryBlock = objectMemoryResult.block;
 
     // Keep only the priority keys, ordered as declared in CORE_PRIORITY_KEYS.
     const relevantCoreMemory = allCoreMemory
@@ -181,6 +185,7 @@ export class KnowledgeService {
       coreBlock ? `## Core Knowledge (${lane})\n${coreBlock}` : "",
       rulesetBlock ? `## Active Ruleset\n${rulesetBlock}` : "",
       foundation ? `## Foundation Knowledge\n${foundation}` : "",
+      objectMemoryBlock,
       personalization,
       projectBlock ? `## Project Knowledge\n${projectBlock}` : "",
       scratchpadBlock ? `## Working Scratchpad\n${scratchpadBlock}` : "",
