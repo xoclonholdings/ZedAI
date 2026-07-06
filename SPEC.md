@@ -2,14 +2,13 @@
 
 ## Purpose
 
-ZED AI is a multi-agent AI application built around an Express backend and a React/Vite frontend. The system supports chat, conversation history, file upload, admin controls, and orchestrated agent workflows backed by Ollama and optional external services.
+ZED AI is a multi-agent AI application built around an Express backend and a React/Vite frontend. The system supports chat, conversation history, file upload, admin controls, and orchestrated agent workflows backed by a Lightning AI–hosted model provider (reached via `claw-provider-temp`) and optional external services.
 
 This file is the canonical project spec for the repository. If the project changes, update this document instead of spreading source-of-truth details across multiple Markdown files.
 
 ## Canonical Rules
 
 - `SPEC.md` is the primary project specification.
-- `README.md` is only a short entrypoint that points here.
 - Long-term branch policy is:
   - `main`
   - `backup`
@@ -22,19 +21,17 @@ This file is the canonical project spec for the repository. If the project chang
 ZedAI/
   attached_assets/  Static attached image assets
   client/           React + Vite frontend
-  docs/             Policies and legacy reference docs
-  hub/              Root shared-memory/config area
+  docs/             Canonical policies + execution audit
+  hub/              Runtime shared-memory/config area
   scripts/local/    Local Windows workstation/model-host launchers
   server/           Express + TypeScript backend
   shared/           Shared schemas and cross-app types/config
-  zed-docs/         Legacy documentation archive
-  zed-memory/       Legacy raw ChatGPT export backup
-  netlify.toml      Netlify deploy configuration
+  zed-memory/       Immutable raw ChatGPT export backup (not runtime)
+  netlify.toml      Netlify deploy configuration (production is Render)
   package.json      Root package metadata
   package-lock.json Root dependency lockfile
   tsconfig.json     Root TypeScript config
   SPEC.md           Canonical project spec
-  README.md         Short entrypoint doc
 ```
 
 ## Runtime Architecture
@@ -94,11 +91,11 @@ ZedAI/
 ### Chat and Conversations
 
 - Conversation CRUD is handled under `/api/conversations`
-- Message retrieval and posting is handled under `/api/conversations/:id/messages`
+- Message retrieval is handled under `/api/conversations/:id/messages`
 - File listing and upload is handled under:
   - `/api/conversations/:id/files`
   - `/api/conversations/:id/upload`
-- Legacy direct chat endpoint still exists at `/api/chat`
+- Chat execution runs through `/api/orchestrate`. The legacy `/api/chat` and `POST /api/conversations/:id/messages` bypass paths have been removed.
 
 ### Hidden Reasoning and Response Governance
 
@@ -132,13 +129,45 @@ Runtime implementation:
 - Voice + Presentation Engine: `server/services/ZedVoiceFormationEngine.ts`
 - Response Governance: `server/services/ZedResponseGovernance.ts`
 - Reflection Engine: `server/services/ZedReflectionEngine.ts`
-- Main conversation wiring: `server/routes-modules/conversations-send.ts`
-- Orchestrator wiring: `server/routes-modules/orchestrate-and-misc.ts`
+- Chat execution wiring: `server/services/ChatExecutionService.ts`
+- Orchestrator entry point: `server/routes-modules/orchestrate-and-misc.ts`
 - Agent prompt integration: `server/orchestrator/ManagerAgent.ts`
+
+The prompt fragments reach the model in the SPEC order above: governance is pinned first as a hard control frame, then context inquiry, then principle, then strategic reasoning, then the knowledge sources (foundation → personalization → project → scratchpad → retrieved), then voice, then response policy last so style guardrails win any ties. Both `ChatExecutionService` and `ManagerAgent` assemble their fragment lists in this order.
 
 The Principle, Strategic Reasoning, and Reflection services must not expose raw chain-of-thought, hidden prompts, source trails, provider names, workflow names, internal scoring, route names, graph IDs, or retrieval internals to the user. If the user asks how an answer was produced, ZED should provide a clean implementation summary only.
 
 Reflection stores concise summaries of important exchanges under project memory type `reflection`. Reflection summaries must describe user intent, visible answer, approval relevance, and strategic relevance only. They must not store hidden reasoning, prompt text, tool logs, provider traces, or raw internal state.
+
+### Plain-Language Settings Surface
+
+The admin Settings tab is the primary control surface for how ZED behaves at runtime. It is plain-language on purpose — no YAML editors, no raw parameter fields — and each category maps to a concrete runtime effect.
+
+Categories with fully-built runtime wiring:
+
+- `How Zed sounds` — tone, formality, perspective, response length, plain-language toggle, prohibited phrases. Persists at `hub/config/admin-settings.json` under `voice`. `server/services/voiceSettings.ts` renders the prompt fragment; `server/services/voiceSettingsToGeneration.ts` derives generation params (temperature, max tokens, top_p) per lane and forwards them through the provider layer.
+- `What needs your approval` — per-action three-way policy (Auto / Ask me / Never) covering send email, calendar, cancel appointment, send message, reach out to contacts, post to social, publish content, make payment, send invoice, delete data, update credentials, deploy code, create task. `server/services/approvalPolicy.ts` matches each user message to a category and consults the stored policy before the agent runs. `Never` short-circuits with a refusal reply logged as `policy_refused`; `Ask` queues for admin approval; `Auto` dispatches directly.
+
+Categories placeheld pending build: Tools, Response length/style, Sensitive topics, Session/safety, Personal memory. Their underlying behavior is still shaped by the raw ruleset until each ships.
+
+Every setting autosaves debounced; server-side merge normalizes and clamps unknown values to safe defaults (e.g. an unrecognized approval mode becomes `ask`, never silently `auto`).
+
+### Per-User Personalization Corpus
+
+Each user can save markdown notes about themselves at `hub/user-personalization/<userId>/notes/<slug>.md`. `UserPersonalizationCorpus.retrievePersonalizationForQuery` keyword-scores those notes against the current query and returns a block that `KnowledgeService.buildContext` slots into the Cognitive Core knowledge stack right after Foundation. Each user only ever reads and writes their own directory. The corpus is retrieval-only — nothing here writes back to `zed-memory/`, which remains an immutable raw backup.
+
+### Access Policy Enforcement
+
+`hub/config/access.yaml` describes the external-API policy (`no_paid_apis`) and the whitelisted free-tier services (Brave search, Serper, GitHub, Fantasma, Zeta Core). `server/services/AccessPolicyService.ts` loads the yaml on demand and exposes `consultExternalService(name)` — every call is audit-logged to `hub/logs/security.log` as `policy.external_api.consulted` or `policy.external_api.denied` so operators can see the policy actually consulted at the call site. `WebSearchService` consults the policy before either Brave or Serper; a provider that isn't in the whitelist is denied even if its env key is set. `GET /api/admin/access-policy` returns the effective policy for admin surfaces to render.
+
+### Runtime Trace Validation
+
+Every request through `ChatExecutionService` assembles an `ExecutionTrace` (traceId, route, selectedAgent, servicesInvoked, toolsInvoked, providerUsed, presentationAdjustments, status, failureReason). `server/services/TraceValidator.ts` audits each trace before it's logged: a success trace must carry `selectedAgent`, non-empty `servicesInvoked`, and a `providerUsed`; a failed trace must carry a `failureReason`; every trace must carry `traceId`, `route`, `executionStatus`. Violations are non-blocking but recorded to `runtime.log` as `trace.validation.violation`. `GET /api/admin/traces` returns recent traces with violations interleaved.
+
+### Streaming
+
+Per the buffer requirement above, the provider layer supports true streaming via `streamProviderChat`, and `ModelProviderService.generateBufferedStreamFromProvider` streams-then-buffers so callers get provider-timeout resilience while presentation still runs on complete text. `OperationsAgent` is the pilot lane; other agents can migrate with a one-line swap from `generateChatFromProvider`.
+
 ### Orchestration
 
 - Multi-agent orchestration endpoint:
@@ -338,7 +367,16 @@ The server currently exposes at least these API routes:
 - `POST /api/admin/reject/:id`
 - `GET /api/admin/security-log`
 - `GET /api/admin/system-test`
-- `POST /api/chat`
+- `GET /api/admin/traces`
+- `GET /api/admin/access-policy`
+- `PUT /api/admin/settings/voice`
+- `POST /api/admin/settings/voice/reset`
+- `PUT /api/admin/settings/approvals`
+- `POST /api/admin/settings/approvals/reset`
+- `GET /api/me/personalization/notes`
+- `GET /api/me/personalization/notes/:slug`
+- `POST /api/me/personalization/notes`
+- `DELETE /api/me/personalization/notes/:slug`
 
 ## Local Development
 
