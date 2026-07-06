@@ -12,6 +12,7 @@ import { OmnichannelMemoryService } from "../services/operational/OmnichannelMem
 import { ToolOrchestrationEngine } from "../services/operational/ToolOrchestrationEngine";
 import { loadAdminSettings } from "../services/AdminSettingsStore";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
+import { SelfRepairService } from "../services/SelfRepairService";
 
 /**
  * Admin surfaces for the workflow + operational subsystems.
@@ -260,6 +261,21 @@ export function registerAdminSubsystemRoutes(app: Express): void {
       res.json({ entries });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to search memory" });
+    }
+  });
+
+  // ── Self-repair loop ──────────────────────────────────────────
+  // Runs a DigitalExecutionRequest through SelfRepairService. On
+  // failure the loop picks a strategy from the failureReason, retries
+  // up to REPAIR_MAX_ATTEMPTS, and returns the reasoning trail. The
+  // request body IS a DigitalExecutionRequest (must include approved:
+  // true), same as the direct execution route.
+  app.post("/api/admin/subsystems/self-repair/execute", isAdmin, async (req: any, res) => {
+    try {
+      const outcome = await SelfRepairService.executeWithRepair(req.body || {});
+      res.json(outcome);
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || "Self-repair execution failed" });
     }
   });
 
