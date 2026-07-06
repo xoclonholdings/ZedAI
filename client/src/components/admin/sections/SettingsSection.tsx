@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { ComingSoon } from "./settings/ComingSoon";
 import { HowZedSounds } from "./settings/HowZedSounds";
+import { WhatNeedsApproval } from "./settings/WhatNeedsApproval";
 import { SETTINGS_CATEGORIES, type SettingsCategoryId } from "./settings/categories";
 import { SettingsSidebar } from "./settings/SettingsSidebar";
 
@@ -22,7 +23,13 @@ export default function SettingsSection() {
       <SettingsSidebar active={active} onSelect={setActive} />
 
       <main className="min-w-0">
-        {active === "voice" ? <HowZedSounds /> : <ComingSoon category={category} />}
+        {active === "voice" ? (
+          <HowZedSounds />
+        ) : active === "approval" ? (
+          <WhatNeedsApproval />
+        ) : (
+          <ComingSoon category={category} />
+        )}
       </main>
     </div>
   );

@@ -3,6 +3,7 @@ import path from "path";
 import { generateChatFromProvider } from "../../services/ModelProviderService";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
+import { decideApprovalPolicy } from "../../services/approvalPolicy";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR, REPO_ROOT } from "../../utils/repoPaths";
 
 const SKILL_PATH = path.resolve(REPO_ROOT, "server/agents/operations/SKILL.md");
@@ -29,7 +30,12 @@ export interface AgentResponse {
 }
 
 export interface AgentAction {
-  type: "task_created" | "draft_created" | "memory_written" | "approval_required";
+  type:
+    | "task_created"
+    | "draft_created"
+    | "memory_written"
+    | "approval_required"
+    | "policy_refused";
   description: string;
   data?: any;
 }
@@ -98,17 +104,54 @@ ${capabilityBlock}${knowledgeBlock}
 User: ${request.userId}
 ConversationID: ${request.conversationId || "none"}`.trim();
 
+    // Consult the user's ApprovalSettings BEFORE the model call so a
+    // "never" mode can short-circuit without wasting a generation.
+    const policy = await decideApprovalPolicy(request.message);
+
+    if (policy.mode === "never") {
+      const refusalReply = policy.refusalReply || "Zed isn't allowed to do that per your Settings.";
+      await this.writeToMemory(request, refusalReply, [
+        {
+          type: "policy_refused",
+          description: `Refused: ${policy.category || "unknown"} is set to Never in Settings.`,
+          data: { message: request.message, category: policy.category },
+        },
+      ]);
+      await this.log(request, refusalReply, false);
+      return {
+        reply: refusalReply,
+        agent: "OperationsAgent",
+        actions: [
+          {
+            type: "policy_refused",
+            description: refusalReply,
+            data: { category: policy.category },
+          },
+        ],
+        requiresApproval: false,
+        task,
+      };
+    }
+
     const reply = await generateChatFromProvider([{ role: "user", content: request.message }], systemPrompt, {
       lane: "operations",
     });
-    const requiresApproval = this.checkApprovalRequired(request.message, reply);
+    // policy.mode is "auto" or "ask" here. "auto" means dispatch
+    // without gating; "ask" queues for admin approval.
+    const requiresApproval = policy.mode === "ask";
 
     if (requiresApproval) {
       const pending = await this.queueForApproval(request, reply, task);
       actions.push({
         type: "approval_required",
         description: "This action requires ADMIN approval before execution",
-        data: { message: request.message, draft: reply, task, approvalId: pending },
+        data: {
+          message: request.message,
+          draft: reply,
+          task,
+          approvalId: pending,
+          category: policy.category,
+        },
       });
     }
 

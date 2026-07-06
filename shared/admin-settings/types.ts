@@ -385,6 +385,35 @@ export interface VoiceSettings {
   prohibitedPhrases: string[];
 }
 
+/**
+ * Per-action approval policy for the "What needs your approval"
+ * settings surface. Consumed by OperationsAgent (and future agents)
+ * before they dispatch an action:
+ *   - "auto"  ZED performs the action without asking
+ *   - "ask"   ZED drafts, then queues for admin approval before doing it
+ *   - "never" ZED refuses the action with a message pointing at settings
+ *
+ * Runtime enforcement lives in server/services/approvalPolicy.ts,
+ * which OperationsAgent consults inside checkApprovalRequired.
+ */
+export type ApprovalMode = "auto" | "ask" | "never";
+
+export interface ApprovalSettings {
+  sendEmail: ApprovalMode;
+  scheduleCalendar: ApprovalMode;
+  cancelAppointment: ApprovalMode;
+  sendMessage: ApprovalMode;
+  reachOutToContacts: ApprovalMode;
+  postToSocial: ApprovalMode;
+  publishContent: ApprovalMode;
+  makePayment: ApprovalMode;
+  sendInvoice: ApprovalMode;
+  deleteData: ApprovalMode;
+  updateCredentials: ApprovalMode;
+  deployCode: ApprovalMode;
+  createTask: ApprovalMode;
+}
+
 export interface AdminSettings {
   auth: AuthSettings;
   app: AppSettings;
@@ -393,4 +422,5 @@ export interface AdminSettings {
   integrations: IntegrationsSettings;
   users: ManagedUser[];
   voice: VoiceSettings;
+  approvals: ApprovalSettings;
 }

@@ -5,8 +5,10 @@ import {
   createManagedUser,
   getPublicAdminSettings,
   listManagedUsers,
+  resetApprovalSettings,
   resetAppSettings,
   resetVoiceSettings,
+  updateApprovalSettings,
   updateAppSettings,
   updateIntegrationSettings,
   updateManagedUser,
@@ -70,6 +72,23 @@ export function registerAdminSettingsRoutes(app: Express): void {
       res.json(await resetVoiceSettings());
     } catch (error: any) {
       res.status(400).json({ error: error.message || "Failed to reset voice settings" });
+    }
+  });
+
+  // ── Approvals ("What needs your approval") ─────────────────────────
+  app.put("/api/admin/settings/approvals", isAdmin, async (req, res) => {
+    try {
+      res.json(await updateApprovalSettings(req.body || {}));
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to update approvals" });
+    }
+  });
+
+  app.post("/api/admin/settings/approvals/reset", isAdmin, async (_req, res) => {
+    try {
+      res.json(await resetApprovalSettings());
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || "Failed to reset approvals" });
     }
   });
 

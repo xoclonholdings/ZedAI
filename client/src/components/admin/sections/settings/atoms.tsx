@@ -11,13 +11,12 @@ import type { ReactNode } from "react";
 
 // ─── Row + group ─────────────────────────────────────────────────
 
-export function SettingGroup({
-  title,
-  children,
-}: {
+interface SettingGroupProps {
   title: string;
   children: ReactNode;
-}) {
+}
+
+export function SettingGroup({ title, children }: SettingGroupProps) {
   return (
     <section className="pt-7 mt-7 border-t border-white/[0.06] first:pt-0 first:mt-0 first:border-t-0">
       <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40 mb-4">
@@ -28,18 +27,15 @@ export function SettingGroup({
   );
 }
 
-export function SettingRow({
-  label,
-  description,
-  children,
-  stack = false,
-}: {
+interface SettingRowProps {
   label: string;
   description?: string;
   children: ReactNode;
   /** For controls that need the full width (e.g. textareas). */
   stack?: boolean;
-}) {
+}
+
+export function SettingRow({ label, description, children, stack = false }: SettingRowProps) {
   if (stack) {
     return (
       <div className="py-3.5 border-t border-white/[0.06] first:border-t-0">
