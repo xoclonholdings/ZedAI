@@ -203,7 +203,7 @@ export function HowZedSounds() {
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
             How Zed sounds
           </h2>
-          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
             Set the voice Zed uses when it talks to you. These shape tone, formality, and what Zed avoids saying on every response.
           </p>
         </div>

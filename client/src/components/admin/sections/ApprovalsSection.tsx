@@ -97,7 +97,7 @@ export default function ApprovalsSection({
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
             Approvals
           </h2>
-          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
             When Zed wants to do something that needs your OK — send an email, make a payment, publish anywhere — it shows up here first. Approve or reject to release it.
           </p>
         </div>

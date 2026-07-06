@@ -226,7 +226,7 @@ export function WhatNeedsApproval() {
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
             What needs your approval
           </h2>
-          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
             For each thing Zed might do on your behalf, choose whether Zed goes
             ahead automatically, drafts and asks you first, or never does it at
             all.{" "}
