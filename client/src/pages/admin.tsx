@@ -8,9 +8,8 @@ import { useAuth } from "@/components/auth/UseAuth";
 import AdminNav from "@/components/admin/AdminNav";
 import SettingsSection from "@/components/admin/sections/SettingsSection";
 import KnowledgeSection from "@/components/admin/sections/KnowledgeSection";
-import ToolsSection from "@/components/admin/sections/FlowsSection";
+import AdvancedSection from "@/components/admin/sections/AdvancedSection";
 import IntegrationsSection from "@/components/admin/sections/IntegrationsSection";
-import RulesetSection from "@/components/admin/sections/RulesetSection";
 import ApprovalsSection from "@/components/admin/sections/ApprovalsSection";
 import LogsSection from "@/components/admin/sections/LogsSection";
 import SecuritySection from "@/components/admin/sections/SecuritySection";
@@ -104,10 +103,9 @@ export default function Admin() {
 
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         {section === "settings" && <SettingsSection />}
-        {section === "tools" && <ToolsSection />}
+        {section === "advanced" && <AdvancedSection />}
         {section === "knowledge" && <KnowledgeSection />}
         {section === "integrations" && <IntegrationsSection />}
-        {section === "ruleset" && <RulesetSection />}
         {section === "approvals" && (
           <ApprovalsSection
             approvals={approvals}
