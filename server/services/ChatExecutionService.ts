@@ -26,6 +26,7 @@ import {
 import { isWebLookupIntent } from "../orchestrator/manager-agent/agent-selection";
 import { getActiveProviderName, getResolvedTargetName } from "../core/providers/provider-executor";
 import { logRuntimeEvent } from "./RuntimeLogger";
+import { auditTrace } from "./TraceValidator";
 
 type ExecutionStatus = "success" | "partial" | "failed";
 
@@ -549,6 +550,7 @@ export class ChatExecutionService {
         });
       });
 
+      auditTrace(trace as any);
       await (hooks.log || logRuntimeEvent)({
         level: trace.executionStatus === "failed" ? "error" : "info",
         source: "server",
