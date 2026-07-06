@@ -17,6 +17,7 @@ import {
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 
 import { flushHubConfig, loadHubConfig } from "./manager-agent/config";
+import { flushAccessPolicy } from "../services/AccessPolicyService";
 import { isWebLookupIntent, selectAgentWithTrace } from "./manager-agent/agent-selection";
 import { formatBrief } from "./manager-agent/format";
 import { logRouting } from "./manager-agent/routing-log";
@@ -283,5 +284,6 @@ export class ManagerAgent {
   /** Drop the cached YAML ruleset so the next request reloads from disk. */
   static flushConfig(): void {
     flushHubConfig();
+    flushAccessPolicy();
   }
 }

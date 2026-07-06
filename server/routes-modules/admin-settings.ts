@@ -17,6 +17,7 @@ import {
 } from "../services/AdminSettingsStore";
 import { checkGitHubIntegrationStatus, getGitHubRepoReadout } from "../services/GitHubIntegrationService";
 import { getFirewallIntegrationStatus } from "../services/FirewallIntegrationService";
+import { getEffectivePolicy } from "../services/AccessPolicyService";
 
 /**
  * Admin settings: app prefs, personalization defaults, integration
@@ -113,6 +114,15 @@ export function registerAdminSettingsRoutes(app: Express): void {
 
   app.get("/api/admin/integrations/firewall/status", isAdmin, async (_req, res) => {
     res.json(await getFirewallIntegrationStatus());
+  });
+
+  // ── Access policy (read-only view of hub/config/access.yaml) ──────
+  // Surfaces the effective policy: which external services are
+  // whitelisted, which are actually configured with env keys, and
+  // the current trust model. The yaml itself is edited via the
+  // Ruleset tab; the runtime consults it via consultExternalService.
+  app.get("/api/admin/access-policy", isAdmin, async (_req, res) => {
+    res.json(await getEffectivePolicy());
   });
 
   // ── Managed users ─────────────────────────────────────────────────

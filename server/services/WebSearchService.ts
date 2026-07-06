@@ -1,3 +1,5 @@
+import { consultExternalService } from "./AccessPolicyService";
+
 export interface SearchResult {
   title: string;
   url: string;
@@ -96,10 +98,19 @@ async function searchSerper(query: string, count = 5): Promise<SearchResult[]> {
 }
 
 export async function webSearch(query: string, count = 5): Promise<SearchResponse> {
-  const braveKey = getBraveApiKey();
-  const serperKey = getSerperApiKey();
+  // Enforce access.yaml: only providers whitelisted under
+  // external_apis.approved_free_tier.search may be reached. Every
+  // consultation — allowed OR denied — writes to hub/logs/security.log
+  // so the policy is auditable.
+  const brave = await consultExternalService("brave_search", `webSearch: ${query.slice(0, 60)}`);
+  const serper = await consultExternalService("serper", `webSearch: ${query.slice(0, 60)}`);
 
-  if (braveKey) {
+  const braveApproved =
+    brave.allowed && brave.status === "configured" && getBraveApiKey().length > 0;
+  const serperApproved =
+    serper.allowed && serper.status === "configured" && getSerperApiKey().length > 0;
+
+  if (braveApproved) {
     try {
       const results = await searchBrave(query, count);
       console.log(`[WebSearch] Brave returned ${results.length} results for: ${query}`);
@@ -109,7 +120,7 @@ export async function webSearch(query: string, count = 5): Promise<SearchRespons
     }
   }
 
-  if (serperKey) {
+  if (serperApproved) {
     try {
       const results = await searchSerper(query, count);
       console.log(`[WebSearch] Serper returned ${results.length} results for: ${query}`);
@@ -119,7 +130,7 @@ export async function webSearch(query: string, count = 5): Promise<SearchRespons
     }
   }
 
-  console.log("[WebSearch] No search API keys visible to runtime — returning no search results");
+  console.log("[WebSearch] No approved+configured search providers — returning no search results");
 
   return {
     results: [],
