@@ -160,6 +160,12 @@ Each user can save markdown notes about themselves at `hub/user-personalization/
 
 `hub/config/access.yaml` describes the external-API policy (`no_paid_apis`) and the whitelisted free-tier services (Brave search, Serper, GitHub, Fantasma, Zeta Core). `server/services/AccessPolicyService.ts` loads the yaml on demand and exposes `consultExternalService(name)` — every call is audit-logged to `hub/logs/security.log` as `policy.external_api.consulted` or `policy.external_api.denied` so operators can see the policy actually consulted at the call site. `WebSearchService` consults the policy before either Brave or Serper; a provider that isn't in the whitelist is denied even if its env key is set. `GET /api/admin/access-policy` returns the effective policy for admin surfaces to render.
 
+### Runtime Error Self-Repair
+
+When a runtime action fails, Zed inspects the failure, chooses a bounded repair strategy, and retries — instead of writing the error to a log and moving on. `server/services/SelfRepairService.ts` wraps `DigitalExecutionService.execute` and consults a deterministic strategy map keyed off the typed `failureReason` (e.g. `smtpDispatchFailed` → retry with exponential backoff; `providerDisabled` / `providerNotConfigured` → escalate to user, no retry). Bounded at 3 attempts per call; a reasoning trail (attempt, strategy, reason, waited, outcome) is returned alongside the final result and logged to `runtime.log` as `self_repair.outcome`. `POST /api/admin/subsystems/self-repair/execute` runs a DigitalExecutionRequest through this loop and returns the trail.
+
+Non-goals for this pass: LLM-driven reasoning over arbitrary failure modes. That layers on later; the deterministic map handles today's known failure types cleanly and doesn't invent retries against providers that are truly down.
+
 ### Runtime Trace Validation
 
 Every request through `ChatExecutionService` assembles an `ExecutionTrace` (traceId, route, selectedAgent, servicesInvoked, toolsInvoked, providerUsed, presentationAdjustments, status, failureReason). `server/services/TraceValidator.ts` audits each trace before it's logged: a success trace must carry `selectedAgent`, non-empty `servicesInvoked`, and a `providerUsed`; a failed trace must carry a `failureReason`; every trace must carry `traceId`, `route`, `executionStatus`. Violations are non-blocking but recorded to `runtime.log` as `trace.validation.violation`. `GET /api/admin/traces` returns recent traces with violations interleaved.
