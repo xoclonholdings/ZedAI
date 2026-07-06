@@ -9,6 +9,12 @@ import {
   getUserPersonalization,
   saveUserPersonalization,
 } from "../services/UserPersonalizationStore";
+import {
+  deletePersonalizationNote,
+  listPersonalizationNotes,
+  readPersonalizationNote,
+  savePersonalizationNote,
+} from "../services/UserPersonalizationCorpus";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 
 /**
@@ -58,6 +64,67 @@ export function registerMeRoutes(app: Express): void {
       res.status(400).json({ error: error.message || "Failed to update personalization" });
     }
   });
+
+  // ── Personal memory corpus ───────────────────────────────────────
+  // Per-user notes about themselves that get keyword-ranked into
+  // the Cognitive Core knowledge slot at query time. Storage:
+  // hub/user-personalization/<userId>/notes/<slug>.md
+  app.get("/api/me/personalization/notes", isAuthenticated, async (req: any, res) => {
+    try {
+      res.json({ notes: await listPersonalizationNotes(req.user.claims.sub) });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to list personal notes" });
+    }
+  });
+
+  app.get(
+    "/api/me/personalization/notes/:slug",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const note = await readPersonalizationNote(req.user.claims.sub, req.params.slug);
+        if (!note) return res.status(404).json({ error: "Note not found" });
+        res.json(note);
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || "Failed to read note" });
+      }
+    },
+  );
+
+  app.post("/api/me/personalization/notes", isAuthenticated, async (req: any, res) => {
+    try {
+      const { title, content, slug } = req.body || {};
+      if (typeof title !== "string" || !title.trim()) {
+        return res.status(400).json({ error: "title is required" });
+      }
+      if (typeof content !== "string" || !content.trim()) {
+        return res.status(400).json({ error: "content is required" });
+      }
+      const note = await savePersonalizationNote({
+        userId: req.user.claims.sub,
+        slug: typeof slug === "string" && slug ? slug : undefined,
+        title: title.trim(),
+        content,
+      });
+      res.json(note);
+    } catch (err: any) {
+      res.status(400).json({ error: err?.message || "Failed to save note" });
+    }
+  });
+
+  app.delete(
+    "/api/me/personalization/notes/:slug",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const ok = await deletePersonalizationNote(req.user.claims.sub, req.params.slug);
+        if (!ok) return res.status(404).json({ error: "Note not found" });
+        res.json({ success: true });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || "Failed to delete note" });
+      }
+    },
+  );
 
   app.post(
     "/api/me/avatar",

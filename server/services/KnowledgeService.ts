@@ -1,6 +1,7 @@
 import { MemoryService } from "./memoryService";
 import { addToCollection, queryCollection } from "./ChromaService";
 import { retrieveFoundationMemoryWithTrace } from "./FoundationMemoryService";
+import { retrievePersonalizationForQuery } from "./UserPersonalizationCorpus";
 
 import {
   dedupeRetrievedMemory,
@@ -59,6 +60,7 @@ export class KnowledgeService {
       episodic,
       semantic,
       foundationResult,
+      personalizationResult,
     ] = await Promise.all([
       MemoryService.getAllCoreMemory(),
       loadRulesetMemory(),
@@ -69,9 +71,11 @@ export class KnowledgeService {
       retrieveFoundationMemoryWithTrace(params.query, {
         enabled: params.includeAdminFoundation === true,
       }),
+      retrievePersonalizationForQuery(params.userId, params.query, 3),
     ]);
     const foundation = foundationResult.content;
     const foundationTrace = foundationResult.trace;
+    const personalization = personalizationResult.block;
 
     // Keep only the priority keys, ordered as declared in CORE_PRIORITY_KEYS.
     const relevantCoreMemory = allCoreMemory
@@ -177,6 +181,7 @@ export class KnowledgeService {
       coreBlock ? `## Core Knowledge (${lane})\n${coreBlock}` : "",
       rulesetBlock ? `## Active Ruleset\n${rulesetBlock}` : "",
       foundation ? `## Foundation Knowledge\n${foundation}` : "",
+      personalization,
       projectBlock ? `## Project Knowledge\n${projectBlock}` : "",
       scratchpadBlock ? `## Working Scratchpad\n${scratchpadBlock}` : "",
       retrievedBlock ? `## Retrieved Semantic / Episodic Memory\n${retrievedBlock}` : "",
@@ -186,6 +191,8 @@ export class KnowledgeService {
       prompt: sections.join("\n\n"),
       foundation,
       foundationTrace,
+      personalization,
+      personalizationTrace: personalizationResult.trace,
       core: coreBlock,
       ruleset: rulesetBlock,
       project: projectBlock,
@@ -197,6 +204,7 @@ export class KnowledgeService {
         project: mergedProjectMemory.length,
         scratchpad: relevantScratchpad.length,
         retrieved: retrievedEntries.length,
+        personalization: personalizationResult.trace.length,
       },
     };
   }
