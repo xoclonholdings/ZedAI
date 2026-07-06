@@ -103,27 +103,27 @@ export const VIEW_META: Record<
 > = {
   overview: {
     label: "Overview",
-    description: "Inspect knowledge health and retrieval quality.",
+    description: "A quick check of what Zed remembers and how well it can find things.",
     icon: BrainCircuit,
   },
   identity: {
-    label: "Identity",
-    description: "Define who the current owner/user is and how ZED should answer identity questions.",
+    label: "About you",
+    description: "Who Zed is talking to, and how it should answer if someone asks who you are.",
     icon: Fingerprint,
   },
   project: {
-    label: "Project Memory",
-    description: "Manage durable business and product knowledge.",
+    label: "Long-term notes",
+    description: "Business, product, and project facts Zed should always keep in mind.",
     icon: Database,
   },
   scratchpad: {
-    label: "Scratchpad",
-    description: "Capture and prune temporary working context.",
+    label: "Working notes",
+    description: "Short-term stuff from this session. Cleared regularly.",
     icon: FileStack,
   },
   core: {
-    label: "Core Memory",
-    description: "Edit canonical memory entries used by ZED.",
+    label: "Zed's foundation",
+    description: "The core facts about how Zed behaves. Only touch if you know what you're changing.",
     icon: Layers,
   },
 };

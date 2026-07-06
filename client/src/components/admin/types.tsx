@@ -25,11 +25,10 @@ export type AdminSection =
   | "settings"
   | "knowledge"
   | "integrations"
-  | "ruleset"
+  | "advanced"
   | "approvals"
   | "logs"
-  | "security"
-  | "tools";
+  | "security";
 
 export type IntegrationKey =
   | "aiHost"

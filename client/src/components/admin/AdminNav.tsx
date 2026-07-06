@@ -5,13 +5,12 @@ import type { AdminSection, AdminNavTab } from "./types";
 
 const TABS: AdminNavTab[] = [
   { id: "settings", label: "Settings" },
-  { id: "integrations", label: "Integrations" },
-  { id: "knowledge", label: "Knowledge" },
+  { id: "integrations", label: "Connections" },
+  { id: "knowledge", label: "What Zed knows" },
   { id: "approvals", label: "Approvals" },
-  { id: "logs", label: "Logs" },
+  { id: "logs", label: "Activity" },
   { id: "security", label: "Security" },
-  { id: "tools", label: "Tools" },
-  { id: "ruleset", label: "Ruleset" },
+  { id: "advanced", label: "Advanced" },
 ];
 
 export default function AdminNav({
