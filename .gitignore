@@ -11,6 +11,8 @@ hub/shared-memory/execution/
 hub/shared-memory/knowledge-graph/
 hub/shared-memory/working/trading-intelligence.md
 hub/sessions/
+hub/user-personalization/
+hub/user-preferences/
 server/hub/logs/
 shared/package-lock.json
 

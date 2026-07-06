@@ -5,7 +5,13 @@ import type {
   ApprovalSettings,
 } from "../../../../../../shared/adminSettings";
 
-import { SaveIndicator, Segmented, SettingGroup, SettingRow } from "./atoms";
+import {
+  LoadErrorBanner,
+  SaveIndicator,
+  Segmented,
+  SettingGroup,
+  SettingRow,
+} from "./atoms";
 
 /**
  * Second plain-language Settings section — replaces the raw
@@ -118,27 +124,40 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 export function WhatNeedsApproval() {
   const [approvals, setApprovals] = useState<ApprovalSettings>(DEFAULTS);
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [loadError, setLoadError] = useState<boolean>(false);
   const savedTimer = useRef<number | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/settings", { credentials: "include" });
+      if (!res.ok) {
+        setLoadError(true);
+        return;
+      }
+      const data = await res.json();
+      if (data?.approvals) {
+        setApprovals(data.approvals as ApprovalSettings);
+        setLoadError(false);
+      }
+    } catch {
+      setLoadError(true);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const res = await fetch("/api/admin/settings", { credentials: "include" });
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled && data?.approvals) setApprovals(data.approvals as ApprovalSettings);
-      } catch {
-        // silent — DEFAULTS keep the UI operable until first save.
-      }
+      if (!cancelled) await load();
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [load]);
 
   const flush = useCallback(async (patch: Partial<ApprovalSettings>) => {
     setStatus("saving");
+    setErrorMessage(undefined);
     try {
       const res = await fetch("/api/admin/settings/approvals", {
         method: "PUT",
@@ -146,19 +165,25 @@ export function WhatNeedsApproval() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(patch),
       });
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Save failed (${res.status})`);
+      }
       const normalized = (await res.json()) as ApprovalSettings;
       setApprovals(normalized);
       setStatus("saved");
       if (savedTimer.current) window.clearTimeout(savedTimer.current);
       savedTimer.current = window.setTimeout(() => setStatus("idle"), 1500);
-    } catch {
+    } catch (err: any) {
+      setErrorMessage(err?.message);
       setStatus("error");
     }
   }, []);
 
   const set = useCallback(
     (key: CategoryKey, value: ApprovalMode) => {
+      // Optimistic — the user sees the click take effect immediately.
+      // If the server disagrees, the normalized response replaces it.
       setApprovals((prev) => ({ ...prev, [key]: value }));
       void flush({ [key]: value });
     },
@@ -169,46 +194,67 @@ export function WhatNeedsApproval() {
     if (!window.confirm("Reset ‘What needs your approval’ to defaults?")) return;
     try {
       setStatus("saving");
+      setErrorMessage(undefined);
       const res = await fetch("/api/admin/settings/approvals/reset", {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Reset failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Reset failed (${res.status})`);
+      }
       const next = (await res.json()) as ApprovalSettings;
       setApprovals(next);
       setStatus("saved");
       if (savedTimer.current) window.clearTimeout(savedTimer.current);
       savedTimer.current = window.setTimeout(() => setStatus("idle"), 1500);
-    } catch {
+    } catch (err: any) {
+      setErrorMessage(err?.message);
       setStatus("error");
     }
   }, []);
 
+  const totalItems = useMemo(
+    () => GROUPS.reduce((n, g) => n + g.items.length, 0),
+    [],
+  );
+
   const header = useMemo(
     () => (
       <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
             What needs your approval
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-[62ch] leading-snug">
             For each thing Zed might do on your behalf, choose whether Zed goes
             ahead automatically, drafts and asks you first, or never does it at
-            all.
+            all.{" "}
+            <span className="text-white/35">
+              ({totalItems} settings, tap a group to collapse)
+            </span>
           </p>
         </div>
-        <SaveIndicator status={status} />
+        <SaveIndicator status={status} errorMessage={errorMessage} />
       </header>
     ),
-    [status],
+    [status, errorMessage, totalItems],
   );
 
   return (
     <div>
       {header}
+      {loadError && <LoadErrorBanner onRetry={() => void load()} />}
 
-      {GROUPS.map((group) => (
-        <SettingGroup key={group.title} title={group.title}>
+      {GROUPS.map((group, groupIndex) => (
+        <SettingGroup
+          key={group.title}
+          title={group.title}
+          count={group.items.length}
+          collapsible
+          // Keep the first group open by default; collapse the rest for scanability.
+          defaultCollapsed={groupIndex > 0}
+        >
           {group.items.map((item) => (
             <SettingRow key={item.key} label={item.label} description={item.description}>
               <Segmented<ApprovalMode>

@@ -26,6 +26,7 @@ import {
 import { isWebLookupIntent } from "../orchestrator/manager-agent/agent-selection";
 import { getActiveProviderName, getResolvedTargetName } from "../core/providers/provider-executor";
 import { logRuntimeEvent } from "./RuntimeLogger";
+import { auditTrace } from "./TraceValidator";
 
 type ExecutionStatus = "success" | "partial" | "failed";
 
@@ -433,16 +434,21 @@ export class ChatExecutionService {
       const voicePrompt = hooks.voicePrompt
         ? await hooks.voicePrompt()
         : await buildZedVoicePrompt({ mode: voiceMode });
+      // Cognitive Core order per SPEC.md § Cognitive Core:
+      //   1. Context Inquiry   2. Principle   3. Strategic
+      //   4. Knowledge         5. Voice        6. Reflection (post-response)
+      // Governance sits first as a hard control frame; response
+      // policy sits last so its style guardrails win any ties.
       const cognitiveKnowledgePrompt = [
         governancePrompt,
+        contextInquiryPrompt,
         principlePrompt,
         strategicReasoning.prompt,
-        voicePrompt,
-        getZedResponsePolicy(voiceMode),
-        contextInquiryPrompt,
         adminContext.text,
         fileContext.prompt,
         knowledge.prompt,
+        voicePrompt,
+        getZedResponsePolicy(voiceMode),
       ]
         .filter(Boolean)
         .join("\n\n");
@@ -544,6 +550,7 @@ export class ChatExecutionService {
         });
       });
 
+      auditTrace(trace as any);
       await (hooks.log || logRuntimeEvent)({
         level: trace.executionStatus === "failed" ? "error" : "info",
         source: "server",

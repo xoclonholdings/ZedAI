@@ -52,4 +52,29 @@ export function registerAdminLogsRoutes(app: Express): void {
   app.get("/api/admin/security-log", isAdmin, async (_req, res) => {
     res.json({ events: await getRecentSecurityEvents(100) });
   });
+
+  // ── Execution traces ────────────────────────────────────────────
+  // Filters runtime.log for chat.execution.trace events. Each entry
+  // includes traceId, route, selectedAgent, executionStatus,
+  // failureReason, servicesInvoked, providerUsed, and any recorded
+  // presentationAdjustments. Validation violations surface as
+  // trace.validation.violation entries alongside.
+  app.get("/api/admin/traces", isAdmin, async (req, res) => {
+    try {
+      const limit = Math.min(parseInt((req.query.limit as string) || "50", 10) || 50, 500);
+      const events = await getRecentRuntimeEvents(limit * 4);
+      const traces = events
+        .filter(
+          (e) =>
+            e.event === "chat.execution.trace" ||
+            e.event === "trace.validation.violation" ||
+            e.event === "chat.execution.failed",
+        )
+        .slice(-limit)
+        .reverse();
+      res.json({ traces });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to load traces" });
+    }
+  });
 }

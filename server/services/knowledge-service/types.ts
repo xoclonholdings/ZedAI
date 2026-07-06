@@ -1,4 +1,5 @@
 import type { FoundationTraceItem } from "../FoundationMemoryService";
+import type { PersonalizationRetrievalTraceItem } from "../UserPersonalizationCorpus";
 
 export type KnowledgeLane =
   | "chat"
@@ -21,6 +22,8 @@ export type KnowledgeContext = {
   prompt: string;
   foundation: string;
   foundationTrace: FoundationTraceItem[];
+  personalization: string;
+  personalizationTrace: PersonalizationRetrievalTraceItem[];
   core: string;
   ruleset: string;
   project: string;
@@ -32,6 +35,7 @@ export type KnowledgeContext = {
     project: number;
     scratchpad: number;
     retrieved: number;
+    personalization: number;
   };
 };
 

@@ -10,6 +10,7 @@ import type {
 import {
   LabeledSelect,
   LabeledSlider,
+  LoadErrorBanner,
   PlainTextarea,
   SaveIndicator,
   Segmented,
@@ -69,33 +70,36 @@ export function HowZedSounds() {
   const [voice, setVoice] = useState<VoiceSettings>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [loadError, setLoadError] = useState<boolean>(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/settings", { credentials: "include" });
+      if (!res.ok) throw new Error(`Failed to load (${res.status})`);
+      const data = await res.json();
+      if (data?.voice) {
+        setVoice(data.voice as VoiceSettings);
+        setLoadError(false);
+      }
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
 
   // Load current server-side settings once.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/admin/settings", { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to load");
-        const data = await res.json();
-        if (!cancelled && data?.voice) setVoice(data.voice as VoiceSettings);
-      } catch {
-        // fall back to DEFAULTS — the surface still works, the save
-        // path will populate the store on the next change.
-      } finally {
-        if (!cancelled) setLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
 
   const savedTimer = useRef<number | null>(null);
   const inflight = useRef<Promise<void> | null>(null);
 
   const flush = useCallback(async (patch: Partial<VoiceSettings>) => {
     setStatus("saving");
+    setErrorMessage(undefined);
     const run = (async () => {
       try {
         const res = await fetch("/api/admin/settings/voice", {
@@ -104,13 +108,17 @@ export function HowZedSounds() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(patch),
         });
-        if (!res.ok) throw new Error("Save failed");
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || `Save failed (${res.status})`);
+        }
         const normalized = (await res.json()) as VoiceSettings;
         setVoice(normalized);
         setStatus("saved");
         if (savedTimer.current) window.clearTimeout(savedTimer.current);
         savedTimer.current = window.setTimeout(() => setStatus("idle"), 1500);
-      } catch {
+      } catch (err: any) {
+        setErrorMessage(err?.message);
         setStatus("error");
       }
     })();
@@ -167,18 +175,23 @@ export function HowZedSounds() {
     if (!window.confirm("Reset ‘How Zed sounds’ to defaults?")) return;
     try {
       setStatus("saving");
+      setErrorMessage(undefined);
       const res = await fetch("/api/admin/settings/voice/reset", {
         method: "POST",
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Reset failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.error || `Reset failed (${res.status})`);
+      }
       const next = (await res.json()) as VoiceSettings;
       setVoice(next);
       setPhrasesText(next.prohibitedPhrases.join("\n"));
       setStatus("saved");
       if (savedTimer.current) window.clearTimeout(savedTimer.current);
       savedTimer.current = window.setTimeout(() => setStatus("idle"), 1500);
-    } catch {
+    } catch (err: any) {
+      setErrorMessage(err?.message);
       setStatus("error");
     }
   }, []);
@@ -194,15 +207,16 @@ export function HowZedSounds() {
             Set the voice Zed uses when it talks to you. These shape tone, formality, and what Zed avoids saying on every response.
           </p>
         </div>
-        <SaveIndicator status={status} />
+        <SaveIndicator status={status} errorMessage={errorMessage} />
       </header>
     ),
-    [status],
+    [status, errorMessage],
   );
 
   return (
     <div>
       {header}
+      {loadError && loaded && <LoadErrorBanner onRetry={() => void load()} />}
 
       <SettingGroup title="Personality">
         <SettingRow

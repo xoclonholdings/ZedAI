@@ -19,7 +19,7 @@ export default function SettingsSection() {
   const category = SETTINGS_CATEGORIES.find((c) => c.id === active) || SETTINGS_CATEGORIES[0];
 
   return (
-    <div className="grid gap-8 md:grid-cols-[220px_1fr]">
+    <div className="grid gap-4 md:gap-8 md:grid-cols-[220px_1fr]">
       <SettingsSidebar active={active} onSelect={setActive} />
 
       <main className="min-w-0">
