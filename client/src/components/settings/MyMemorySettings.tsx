@@ -1,37 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
-import { Brain, Save, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  LoadErrorBanner,
+  PlainTextarea,
+  SaveIndicator,
+  SettingGroup,
+  SettingRow,
+} from "@/components/admin/sections/settings/atoms";
 
-type PersonalBaseMemory = {
-  id?: string;
-  name: string;
-  description: string;
-  content: string;
-  isActive: boolean;
-};
+/**
+ * Plain-language "About you" — the personal memory Zed carries
+ * across every chat.
+ *
+ * Six free-text sections. Autosaves debounced. No manual Save
+ * button, no debug preview, no engineer-facing toggles (the memory
+ * is always used for retrieval — hiding that toggle from the user
+ * makes the behavior consistent and the surface honest).
+ */
 
-type MemoryProfile = {
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+interface MemoryProfile {
   identity: string;
   ventures: string;
   goals: string;
   responseStyle: string;
   workingContext: string;
   constraints: string;
-};
-
-const EMPTY_MEMORY: PersonalBaseMemory = {
-  name: "Personal Base Memory",
-  description:
-    "Who you are, what you care about, how you want ZED to help, and the context ZED should consistently remember about you.",
-  content: "",
-  isActive: true,
-};
+}
 
 const EMPTY_PROFILE: MemoryProfile = {
   identity: "",
@@ -45,48 +41,48 @@ const EMPTY_PROFILE: MemoryProfile = {
 const PROFILE_FIELDS: Array<{
   key: keyof MemoryProfile;
   label: string;
-  hint: string;
+  description: string;
   placeholder: string;
 }> = [
   {
     key: "identity",
-    label: "Identity",
-    hint: "Who you are, what ZED should call you, and any important personal framing.",
-    placeholder: "I’m ..., I prefer to be called ..., I’m building ...",
+    label: "Who you are",
+    description: "How Zed should think about you. Name, role, framing you care about.",
+    placeholder: "I'm Sam. I run ZebCom. Call me Sam.",
   },
   {
     key: "ventures",
-    label: "Ventures & Projects",
-    hint: "Businesses, brands, products, or initiatives ZED should remember.",
-    placeholder: "ZWAP is ..., I’m also working on ...",
+    label: "What you're building",
+    description: "Businesses, brands, products, or side projects Zed should remember.",
+    placeholder: "ZebCom (parent). ZED AI (product). Zwap (side project).",
   },
   {
     key: "goals",
-    label: "Current Goals",
-    hint: "What outcomes you’re actively trying to achieve right now.",
-    placeholder: "Right now I’m focused on launch, growth, research, funding ...",
+    label: "What you're focused on right now",
+    description: "The outcomes you're actively chasing this week or month.",
+    placeholder: "Ship ZED plain-language surface. Get 10 paper trades logged.",
   },
   {
     key: "responseStyle",
-    label: "How ZED Should Help",
-    hint: "Preferred tone, depth, pace, and style of support.",
-    placeholder: "Be direct, strategic, concise, proactive, and decision-oriented ...",
+    label: "How you like Zed to help",
+    description: "Preferred tone, depth, pace, and style.",
+    placeholder: "Direct, plain-language, no jargon. Decision-oriented.",
   },
   {
     key: "workingContext",
-    label: "Recurring Context",
-    hint: "Facts you don’t want to repeat over and over.",
-    placeholder: "I usually work on ..., I care about ..., my stack is ...",
+    label: "Stuff you don't want to repeat",
+    description: "Facts about your context, tools, or setup that come up often.",
+    placeholder: "iPhone user. Prefer iCloud email. Mobile-first for everything.",
   },
   {
     key: "constraints",
-    label: "Constraints & Boundaries",
-    hint: "Limits, sensitivities, or boundaries ZED should account for.",
-    placeholder: "Budget is tight, prefer open source, avoid generic advice ...",
+    label: "Limits and boundaries",
+    description: "Budget, sensitivities, or things Zed should avoid.",
+    placeholder: "Solo founder budget. Never post to social without approval.",
   },
 ];
 
-function serializeProfile(profile: MemoryProfile) {
+function serializeProfile(profile: MemoryProfile): string {
   return [
     `## Identity\n${profile.identity.trim() || "Not provided yet."}`,
     `## Ventures & Projects\n${profile.ventures.trim() || "Not provided yet."}`,
@@ -97,7 +93,7 @@ function serializeProfile(profile: MemoryProfile) {
   ].join("\n\n");
 }
 
-function extractSection(content: string, heading: string) {
+function extractSection(content: string, heading: string): string {
   const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const regex = new RegExp(`## ${escaped}\\n([\\s\\S]*?)(?=\\n## |$)`, "i");
   const match = content.match(regex);
@@ -108,7 +104,6 @@ function parseProfile(content: string): MemoryProfile {
   if (!content.includes("## ")) {
     return { ...EMPTY_PROFILE, workingContext: content.trim() };
   }
-
   return {
     identity: extractSection(content, "Identity"),
     ventures: extractSection(content, "Ventures & Projects"),
@@ -120,181 +115,124 @@ function parseProfile(content: string): MemoryProfile {
 }
 
 export default function MyMemorySettings() {
-  const [memory, setMemory] = useState<PersonalBaseMemory>(EMPTY_MEMORY);
   const [profile, setProfile] = useState<MemoryProfile>(EMPTY_PROFILE);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [memoryId, setMemoryId] = useState<string | undefined>();
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [loadError, setLoadError] = useState<boolean>(false);
+  const savedTimer = useRef<number | null>(null);
+  const flushTimer = useRef<number | null>(null);
 
-  const previewContent = useMemo(() => serializeProfile(profile), [profile]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const response = await fetch("/api/knowledge/personal-base", {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (!cancelled && payload.item) {
-          const nextMemory = {
-            id: payload.item.id,
-            name: payload.item.name || EMPTY_MEMORY.name,
-            description: payload.item.description || EMPTY_MEMORY.description,
-            content: payload.item.content || "",
-            isActive: payload.item.isActive ?? true,
-          };
-          setMemory(nextMemory);
-          setProfile(parseProfile(nextMemory.content));
-        }
-      } catch {
-        // Keep empty defaults
-      } finally {
-        if (!cancelled) setLoading(false);
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/knowledge/personal-base", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Load failed (${res.status})`);
+      const payload = await res.json();
+      if (payload?.item) {
+        setMemoryId(payload.item.id);
+        setProfile(parseProfile(payload.item.content || ""));
       }
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
     }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  function updateProfile<K extends keyof MemoryProfile>(key: K, value: MemoryProfile[K]) {
-    setProfile((prev) => ({ ...prev, [key]: value }));
-    setSaved(false);
-  }
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  async function saveMemory() {
-    setSaving(true);
-    try {
-      const nextPayload = { ...memory, content: previewContent };
-      const response = await fetch("/api/knowledge/personal-base", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(nextPayload),
+  const save = useCallback(
+    async (next: MemoryProfile) => {
+      setStatus("saving");
+      setErrorMessage(undefined);
+      try {
+        const res = await fetch("/api/knowledge/personal-base", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            id: memoryId,
+            name: "Personal base memory",
+            description: "Facts Zed should remember about you across chats.",
+            content: serializeProfile(next),
+            isActive: true,
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || `Save failed (${res.status})`);
+        }
+        const payload = await res.json();
+        if (payload?.item?.id) setMemoryId(payload.item.id);
+        setStatus("saved");
+        if (savedTimer.current) window.clearTimeout(savedTimer.current);
+        savedTimer.current = window.setTimeout(() => setStatus("idle"), 1500);
+      } catch (err: any) {
+        setErrorMessage(err?.message);
+        setStatus("error");
+      }
+    },
+    [memoryId],
+  );
+
+  const update = useCallback(
+    <K extends keyof MemoryProfile>(key: K, value: MemoryProfile[K]) => {
+      setProfile((prev) => {
+        const next = { ...prev, [key]: value };
+        if (flushTimer.current) window.clearTimeout(flushTimer.current);
+        flushTimer.current = window.setTimeout(() => void save(next), 600);
+        return next;
       });
+    },
+    [save],
+  );
 
-      if (!response.ok) throw new Error("save failed");
-      const payload = await response.json();
-      setMemory({
-        id: payload.item?.id,
-        name: payload.item?.name || nextPayload.name,
-        description: payload.item?.description || nextPayload.description,
-        content: payload.item?.content || nextPayload.content,
-        isActive: payload.item?.isActive ?? nextPayload.isActive,
-      });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const isBlank = !Object.values(profile).some((value) => value.trim());
+  const header = useMemo(
+    () => (
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+            About you
+          </h2>
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
+            Tell Zed who you are and what you're working on. This is private
+            to you and shows up in every chat so Zed doesn't ask again.
+            Changes save automatically.
+          </p>
+        </div>
+        <SaveIndicator status={status} errorMessage={errorMessage} />
+      </header>
+    ),
+    [status, errorMessage],
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
-        <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
-          About you
-        </h2>
-        <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-          Tell Zed who you are, what you're working on, and how you like to work.
-          Everything here is private to you and carried across every chat so Zed doesn't ask again.
-        </p>
-      </div>
+    <div className="min-w-0">
+      {header}
+      {loadError && <LoadErrorBanner onRetry={() => void load()} />}
 
-      <Card className="zed-glass border-white/10">
-        <CardContent className="space-y-5 pt-4">
-
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="border-cyan-400/20 text-cyan-300">
-              Personal
-            </Badge>
-            <Badge variant="outline" className="border-white/10 text-muted-foreground">
-              Structured
-            </Badge>
-            <Badge variant="outline" className="border-white/10 text-muted-foreground">
-              Retrieved in chat
-            </Badge>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2">
-              <div className="text-sm font-medium">Memory Name</div>
-              <Input
-                value={memory.name}
-                onChange={(e) => setMemory((prev) => ({ ...prev, name: e.target.value }))}
-                className="zed-glass border-white/10 text-sm"
-              />
-            </label>
-
-            <label className="space-y-2">
-              <div className="text-sm font-medium">Description</div>
-              <Input
-                value={memory.description}
-                onChange={(e) => setMemory((prev) => ({ ...prev, description: e.target.value }))}
-                className="zed-glass border-white/10 text-sm"
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-4 xl:grid-cols-2">
-            {PROFILE_FIELDS.map((field) => (
-              <label key={field.key} className="space-y-2">
-                <div>
-                  <div className="text-sm font-medium">{field.label}</div>
-                  <div className="text-xs text-muted-foreground">{field.hint}</div>
-                </div>
-                <Textarea
-                  rows={field.key === "workingContext" ? 6 : 5}
-                  value={profile[field.key]}
-                  onChange={(e) => updateProfile(field.key, e.target.value)}
-                  className="zed-glass border-white/10 text-sm"
-                  placeholder={field.placeholder}
-                />
-              </label>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
-            <div>
-              <div className="text-sm font-medium">Use in Retrieval</div>
-              <div className="text-xs text-muted-foreground">Keep this enabled if you want ZED to prioritize your personal base memory during chat and agent work.</div>
-            </div>
-            <Switch checked={memory.isActive} onCheckedChange={(checked) => setMemory((prev) => ({ ...prev, isActive: checked }))} />
-          </div>
-
-          <Card className="border-white/10 bg-black/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Saved Memory Preview</CardTitle>
-              <CardDescription>This is the structured memory ZED will retrieve behind the scenes.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <pre className="whitespace-pre-wrap rounded-xl border border-white/10 bg-black/30 p-4 text-xs leading-6 text-foreground/80">
-                {previewContent}
-              </pre>
-            </CardContent>
-          </Card>
-
-          <Button onClick={saveMemory} disabled={saving || loading} className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700">
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : saved ? "Saved!" : "Save My Memory"}
-          </Button>
-
-          {!loading && isBlank ? (
-            <div className="flex items-center gap-2 text-xs text-amber-300">
-              <Sparkles className="h-4 w-4" />
-              Your structured personal memory is still blank. ZED will feel much smarter once this is filled in.
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+      <SettingGroup title="Your notes to Zed">
+        {PROFILE_FIELDS.map((field) => (
+          <SettingRow
+            key={field.key}
+            label={field.label}
+            description={field.description}
+            stack
+          >
+            <PlainTextarea
+              value={profile[field.key]}
+              onChange={(v) => update(field.key, v)}
+              placeholder={field.placeholder}
+              ariaLabel={field.label}
+              rows={4}
+            />
+          </SettingRow>
+        ))}
+      </SettingGroup>
     </div>
   );
 }

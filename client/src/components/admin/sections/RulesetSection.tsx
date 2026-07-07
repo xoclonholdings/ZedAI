@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { Lock, RefreshCw, Save } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, RefreshCw } from "lucide-react";
+import { useLocation } from "wouter";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  SettingGroup,
+  SettingRow,
+} from "./settings/atoms";
 
 import { AccessForm } from "./ruleset/AccessForm";
 import { ParametersForm } from "./ruleset/ParametersForm";
@@ -16,30 +19,75 @@ import {
   type RulesetMap,
   type SaveStatus,
 } from "./ruleset/meta";
+import { useEffect } from "react";
+
+/**
+ * Plain-language Advanced → Raw Rules.
+ *
+ * The old surface exposed four YAML files (personality, security,
+ * parameters, access) with 5-6 sub-sections each. Most users had no
+ * idea what "Decision Rules" or "Trust Model" meant, and 95% of
+ * those settings already have a friendly version somewhere in the
+ * Settings tab. This surface says so honestly:
+ *
+ *   For each of the four rules files, one row explains what it
+ *   controls and where the plain-language version lives. The raw
+ *   form editor sits behind a "Show raw editor" toggle — it still
+ *   works, but it's off by default because a normal user should
+ *   never need it.
+ */
+
+interface RuleGroup {
+  key: RulesetKey;
+  label: string;
+  purpose: string;
+  friendlyLocation: string;
+}
+
+const RULE_GROUPS: RuleGroup[] = [
+  {
+    key: "personality.yaml",
+    label: "Zed's personality",
+    purpose:
+      "Identity, tone, formality, when to ask clarifying questions, response style.",
+    friendlyLocation: "Settings → How Zed sounds (Admin panel)",
+  },
+  {
+    key: "security.yaml",
+    label: "Approval rules & sensitive topics",
+    purpose:
+      "What actions need your OK, how long approvals stay pending, topics Zed handles carefully.",
+    friendlyLocation: "Settings → What needs your approval (Admin panel)",
+  },
+  {
+    key: "parameters.yaml",
+    label: "Model tuning",
+    purpose:
+      "Temperature, token budgets, model choice, per-agent overrides. Most of this is auto-derived from your Voice settings.",
+    friendlyLocation: "Settings → How Zed sounds — the sliders derive these",
+  },
+  {
+    key: "access.yaml",
+    label: "External services & paths",
+    purpose:
+      "Which outside services Zed is allowed to reach, filesystem layout, single-user vs multi-user mode.",
+    friendlyLocation: "Connections tab (Admin panel)",
+  },
+];
 
 export default function RulesetSection() {
+  const [, navigate] = useLocation();
   const [rulesets, setRulesets] = useState<RulesetMap>(cloneDefaults());
-  const [activeFile, setActiveFile] = useState<RulesetKey>("personality.yaml");
-  const [activeSection, setActiveSection] = useState("identity");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [rawFor, setRawFor] = useState<RulesetKey | null>(null);
+  const [activeSection, setActiveSection] = useState<string>("");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [parseIssues, setParseIssues] = useState<string[]>([]);
-
-  const currentMeta = FILE_META[activeFile];
-  const currentSectionMeta =
-    currentMeta.sections.find((s) => s.key === activeSection) || currentMeta.sections[0];
-  const currentRules = rulesets[activeFile];
-  const CurrentFileIcon = currentMeta.icon;
 
   useEffect(() => {
     void loadRulesets();
   }, []);
-
-  useEffect(() => {
-    setActiveSection(FILE_META[activeFile].sections[0].key);
-    setSaveStatus("idle");
-  }, [activeFile]);
 
   async function loadRulesets() {
     setLoading(true);
@@ -50,7 +98,6 @@ export default function RulesetSection() {
       const raw = await res.json();
       const merged = cloneDefaults();
       const issues: string[] = [];
-
       (Object.keys(FILE_META) as RulesetKey[]).forEach((file) => {
         try {
           merged[file] = mergeDeep(merged[file], raw[file] || {});
@@ -58,7 +105,6 @@ export default function RulesetSection() {
           issues.push(`${FILE_META[file].label}: ${error.message || "invalid YAML"}`);
         }
       });
-
       setRulesets(merged);
       setParseIssues(issues);
     } catch (error: any) {
@@ -68,26 +114,26 @@ export default function RulesetSection() {
     setRefreshing(false);
   }
 
-  function updateCurrentFile(updater: (draft: any) => void) {
+  function updateFile(file: RulesetKey, updater: (draft: any) => void) {
     setRulesets((prev) => {
       const next = cloneDefaults();
       Object.assign(next, prev);
-      const current = JSON.parse(JSON.stringify(prev[activeFile]));
+      const current = JSON.parse(JSON.stringify(prev[file]));
       updater(current);
-      next[activeFile] = current;
+      next[file] = current;
       return next;
     });
     setSaveStatus("idle");
   }
 
-  async function saveActiveFile() {
+  async function saveFile(file: RulesetKey) {
     setSaveStatus("saving");
     try {
       const res = await fetch("/api/admin/ruleset/structured", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ filename: activeFile, content: rulesets[activeFile] }),
+        body: JSON.stringify({ filename: file, content: rulesets[file] }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -100,149 +146,143 @@ export default function RulesetSection() {
     }
   }
 
-  function renderForm() {
-    if (activeFile === "personality.yaml") {
-      return <PersonalityForm file={currentRules} activeSection={activeSection} update={updateCurrentFile} />;
+  function renderForm(file: RulesetKey, section: string) {
+    const props = {
+      file: rulesets[file],
+      activeSection: section,
+      update: (updater: (draft: any) => void) => updateFile(file, updater),
+    };
+    if (file === "personality.yaml") return <PersonalityForm {...props} />;
+    if (file === "security.yaml") return <SecurityForm {...props} />;
+    if (file === "parameters.yaml") return <ParametersForm {...props} />;
+    return <AccessForm {...props} />;
+  }
+
+  function openRaw(file: RulesetKey) {
+    if (rawFor === file) {
+      setRawFor(null);
+      return;
     }
-    if (activeFile === "security.yaml") {
-      return <SecurityForm file={currentRules} activeSection={activeSection} update={updateCurrentFile} />;
-    }
-    if (activeFile === "parameters.yaml") {
-      return <ParametersForm file={currentRules} activeSection={activeSection} update={updateCurrentFile} />;
-    }
-    return <AccessForm file={currentRules} activeSection={activeSection} update={updateCurrentFile} />;
+    setRawFor(file);
+    setActiveSection(FILE_META[file].sections[0].key);
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">Rules (advanced)</h2>
+    <div className="min-w-0">
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+            Rules (engineer view)
+          </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            The lower-level rules that shape how Zed behaves. Most people never open this tab — the Settings tab already covers the friendly versions. Only touch this if you know exactly what you're changing.
+            The lower-level rules that shape Zed's behavior. Most people never
+            need to open this — the friendly version of each rule lives in
+            Settings or Connections. Only touch these if you know exactly
+            what you're changing.
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="border-white/10"
-          onClick={loadRulesets}
+        <button
+          type="button"
+          onClick={() => void loadRulesets()}
           disabled={refreshing}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-colors"
         >
-          <RefreshCw size={14} className={`mr-2 ${refreshing ? "animate-spin" : ""}`} />
+          <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
           Reload
-        </Button>
-      </div>
+        </button>
+      </header>
 
-      {parseIssues.length > 0 ? (
-        <Card className="border-amber-400/20 bg-amber-400/5">
-          <CardContent className="pt-4 text-sm text-amber-100">
-            <div className="mb-2 font-medium">Some rules files could not be parsed cleanly.</div>
-            <ul className="space-y-1 text-xs text-amber-200/80">
-              {parseIssues.map((issue) => (
-                <li key={issue}>- {issue}</li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="rounded-2xl border border-white/10 bg-black/25 p-3 space-y-3">
-        <div className="grid gap-3 md:grid-cols-2">
-          <label className="block space-y-1.5">
-            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              Rules Domain
-            </span>
-            <select
-              value={activeFile}
-              onChange={(event) => setActiveFile(event.target.value as RulesetKey)}
-              className="h-11 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm font-medium text-foreground outline-none focus:border-cyan-400/50"
-            >
-              {(Object.keys(FILE_META) as RulesetKey[]).map((key) => (
-                <option key={key} value={key}>
-                  {FILE_META[key].label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block space-y-1.5">
-            <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              Section
-            </span>
-            <select
-              value={activeSection}
-              onChange={(event) => setActiveSection(event.target.value)}
-              className="h-11 w-full rounded-xl border border-white/10 bg-black/40 px-3 text-sm font-medium text-foreground outline-none focus:border-cyan-400/50"
-            >
-              {currentMeta.sections.map((section) => (
-                <option key={section.key} value={section.key}>
-                  {section.label}
-                </option>
-              ))}
-            </select>
-          </label>
+      {parseIssues.length > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-400/30 bg-amber-400/5 p-3 text-[12.5px] text-amber-200">
+          <div className="font-medium mb-1">Some rules files couldn't be parsed cleanly.</div>
+          <ul className="space-y-0.5 text-[11.5px] text-amber-200/80">
+            {parseIssues.map((issue) => (
+              <li key={issue}>· {issue}</li>
+            ))}
+          </ul>
         </div>
+      )}
 
-        <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/25 p-3">
-          <div className="rounded-xl border border-white/10 bg-black/40 p-2">
-            <CurrentFileIcon size={15} className="text-cyan-300" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">{currentMeta.label}</div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              {currentMeta.description}
-            </p>
-            <p className="mt-2 text-xs leading-5 text-muted-foreground">
-              <span className="text-foreground/80">{currentSectionMeta.label}:</span>{" "}
-              {currentSectionMeta.description}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <Card className="zed-glass border-white/10">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Lock size={16} className="text-purple-300" />
-            {currentSectionMeta.label}
-          </CardTitle>
-          <CardDescription>
-            This saves back into{" "}
-            <code className="rounded bg-black/30 px-1.5 py-0.5 text-[11px]">{activeFile}</code>.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {loading ? (
-            <div className="py-10 text-sm text-muted-foreground">
-              Loading structured ruleset controls...
-            </div>
-          ) : (
-            <>
-              {renderForm()}
-              <div className="flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
-                <Button
-                  onClick={saveActiveFile}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+      <SettingGroup title="Rules by domain">
+        {RULE_GROUPS.map((group) => (
+          <div key={group.key} className="border-t border-white/[0.06] first:border-t-0">
+            <SettingRow
+              label={group.label}
+              description={`${group.purpose}\n\nThe plain-language version: ${group.friendlyLocation}`}
+              stack
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate(group.friendlyLocation.includes("Connections") ? "/admin" : "/admin")}
+                  className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
                 >
-                  <Save size={14} className="mr-2" />
-                  {saveStatus === "saving"
-                    ? "Saving..."
-                    : saveStatus === "saved"
-                      ? "Saved!"
-                      : saveStatus === "error"
-                        ? "Save Failed"
-                        : `Save ${currentMeta.label}`}
-                </Button>
-                {saveStatus === "error" ? (
-                  <span className="text-xs text-red-400">
-                    Could not save this rules file. Check field values and try again.
-                  </span>
-                ) : null}
+                  Go to the friendly version
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openRaw(group.key)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/70 hover:text-white transition-colors"
+                >
+                  <ChevronDown
+                    size={13}
+                    className={`transition-transform ${rawFor === group.key ? "rotate-180" : ""}`}
+                  />
+                  {rawFor === group.key ? "Hide raw editor" : "Show raw editor"}
+                </button>
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </SettingRow>
+
+            {rawFor === group.key && !loading && (
+              <div className="pl-2 pr-2 pb-4 border-t border-white/[0.04] bg-white/[0.01]">
+                <div className="pt-3 mb-3">
+                  <label className="block text-[11px] uppercase tracking-[0.08em] text-white/50 mb-1.5">
+                    Section
+                  </label>
+                  <select
+                    value={activeSection}
+                    onChange={(e) => setActiveSection(e.target.value)}
+                    className="w-full max-w-xs h-10 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-[13px] text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+                  >
+                    {FILE_META[group.key].sections.map((s) => (
+                      <option key={s.key} value={s.key} className="bg-neutral-900">
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-[11.5px] text-white/40">
+                    {FILE_META[group.key].sections.find((s) => s.key === activeSection)?.description}
+                  </p>
+                </div>
+
+                {renderForm(group.key, activeSection)}
+
+                <div className="mt-4 pt-3 border-t border-white/[0.06] flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void saveFile(group.key)}
+                    disabled={saveStatus === "saving"}
+                    className="rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
+                  >
+                    {saveStatus === "saving"
+                      ? "Saving…"
+                      : saveStatus === "saved"
+                        ? "Saved"
+                        : saveStatus === "error"
+                          ? "Retry save"
+                          : "Save changes"}
+                  </button>
+                  {saveStatus === "error" && (
+                    <span className="text-[11.5px] text-red-300">
+                      Save failed. Check field values.
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </SettingGroup>
     </div>
   );
 }

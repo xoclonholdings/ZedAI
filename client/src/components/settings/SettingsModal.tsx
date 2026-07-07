@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, FolderKanban, Settings } from "lucide-react";
+import { ChevronLeft, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -16,17 +15,11 @@ import {
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { useAuth } from "@/components/auth/UseAuth";
 import AccountSecuritySettings from "./AccountSecuritySettings";
-import AdminSecuritySettings from "./AdminSecuritySettings";
 import ArchivedChatsSettings from "./ArchivedChatsSettings";
-import DataControlsSettings from "./DataControlsSettings";
 import MyMemorySettings from "./MyMemorySettings";
-import NotificationsSettings from "./NotificationsSettings";
 import PersonalizationSettings from "./PersonalizationSettings";
 import RulesSettings from "./RulesSettings";
-import SettingsAppControls from "./SettingsAppControls";
 import SettingsMainMenu from "./SettingsMainMenu";
-import SettingsSuggestions from "./SettingsSuggestions";
-import SettingsVoiceControls from "./SettingsVoiceControls";
 
 const zLogoPath = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNhODU1Zjc7c3RvcC1vcGFjaXR5OjEiLz48c3RvcCBvZmZzZXQ9IjUwJSIgc3R5bGU9InN0b3AtY29sb3I6IzMwOGNmZjtzdG9wLW9wYWNpdHk6MSIvPjxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2ViNDg5OTtzdG9wLW9wYWNpdHk6MSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcng9IjgiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNOCAxMmgyMGwtMTIgOGgyMHYzSDE0bDEyLThIOHYtM3oiIGZpbGw9IndoaXRlIiBmaWxsLW9wYWNpdHk9IjAuOSIvPjwvc3ZnPg==";
 
@@ -94,7 +87,12 @@ export default function SettingsModal() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className={`zed-glass max-h-[90vh] max-w-2xl overflow-hidden border-white/10 flex flex-col ${compact ? "p-4" : ""}`}>
+      <DialogContent
+        className={`zed-glass border-white/10 flex flex-col overflow-hidden
+          w-[calc(100vw-1rem)] sm:w-full max-w-2xl
+          h-[calc(100vh-2rem)] sm:h-auto sm:max-h-[90vh]
+          ${compact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}
+      >
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className={`flex items-center gap-2 text-foreground ${titleClass}`}>
             <img src={zLogoPath} alt="Z" className="h-4 w-4" />
@@ -111,7 +109,7 @@ export default function SettingsModal() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className={`flex-1 overflow-y-auto pr-1 ${compact ? "space-y-3" : "space-y-4"}`}>
+        <div className={`flex-1 overflow-y-auto overflow-x-hidden min-w-0 pr-1 ${compact ? "space-y-3" : "space-y-4"}`}>
           {activeSection === "main" && (
             <div className={compact ? "space-y-4" : "space-y-6"}>
               <SettingsMainMenu isAdmin={isAdmin} onNavigate={handleMainMenuNavigate} />
@@ -121,68 +119,17 @@ export default function SettingsModal() {
           {activeSection === "preferences" && (
             <div>
               <BackButton />
-              <div className={compact ? "space-y-4" : "space-y-6"}>
-                <PersonalizationSettings />
-                <NotificationsSettings
-                  appSettings={appSettings}
-                  setAppSettings={setAppSettings}
-                />
-                <SettingsAppControls
-                  appSettings={appSettings}
-                  setAppSettings={setAppSettings}
-                />
-                <SettingsVoiceControls
-                  appSettings={appSettings}
-                  setAppSettings={setAppSettings}
-                />
-                <SettingsSuggestions
-                  appSettings={appSettings}
-                  setAppSettings={setAppSettings}
-                />
-              </div>
+              <PersonalizationSettings
+                appSettings={appSettings}
+                setAppSettings={setAppSettings}
+              />
             </div>
           )}
 
           {activeSection === "workspace" && (
             <div>
               <BackButton />
-              <div className={compact ? "space-y-4" : "space-y-6"}>
-                {isAdmin ? (
-                  <RulesSettings />
-                ) : (
-                  <Card className="zed-glass border-white/10">
-                    <CardHeader>
-                      <CardTitle>Rules & Parameters</CardTitle>
-                      <CardDescription>
-                        Workspace rules are managed by an admin so ZED behavior stays consistent.
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                )}
-                <Card className="zed-glass border-white/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FolderKanban className="h-5 w-5" />
-                      Projects & Workspaces
-                    </CardTitle>
-                    <CardDescription>
-                      Projects organize what you are working on. Workspaces organize the kind of work you are doing.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Use the sidebar Projects section for filing chats and the Workspaces section for Research, Business, Trading, Content, and Learning.
-                    </p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/workspaces/research")}>Open Research</Button>
-                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/workspaces/business")}>Open Business</Button>
-                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/trading")}>Open Trading</Button>
-                      <Button variant="outline" className="border-white/10" onClick={() => navigate("/history")}>Open History</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                <DataControlsSettings />
-              </div>
+              <RulesSettings />
             </div>
           )}
 
@@ -196,10 +143,7 @@ export default function SettingsModal() {
           {activeSection === "security" && (
             <div>
               <BackButton />
-              <div className={compact ? "space-y-4" : "space-y-6"}>
-                <AccountSecuritySettings />
-                {isAdmin && <AdminSecuritySettings />}
-              </div>
+              <AccountSecuritySettings />
             </div>
           )}
 
