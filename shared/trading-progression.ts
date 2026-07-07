@@ -159,11 +159,25 @@ export interface TradingProgression {
   lastUpdated: string;
 }
 
+/**
+ * Sandbox (stage 4) is the stage that works today — it maps to the
+ * fully-wired paper-trading flow. The three stages before it
+ * (Learn / Strategy / Validation) also unlock by default because
+ * their supporting services (TradingKnowledgeBase, TradeThesisEngine,
+ * TradingGovernanceEngine) are partially implemented and the user
+ * should be able to work through them at their own pace. Locking
+ * Sandbox behind fully-defined-but-not-built earlier stages would
+ * make the one functional part of Trading unreachable.
+ *
+ * The final three stages (Evaluation / Qualification / Live) stay
+ * locked because their integrations (Lucid / Tradovate / broker
+ * connectivity) genuinely aren't wired yet.
+ */
 export const DEFAULT_PROGRESSION: TradingProgression = {
-  currentStage: "learn",
-  unlockedStages: ["learn"],
+  currentStage: "sandbox",
+  unlockedStages: ["learn", "strategy", "validation", "sandbox"],
   stageProgress: {
-    learn: { startedAt: undefined, completionPercent: 0 },
+    sandbox: { startedAt: undefined, completionPercent: 0 },
   },
   lastUpdated: new Date(0).toISOString(),
 };
