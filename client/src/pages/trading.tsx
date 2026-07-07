@@ -17,6 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import TradingProgressionBanner from "@/components/trading/TradingProgressionBanner";
+import SandboxWorkspace from "@/components/trading/SandboxWorkspace";
+import type { TradingStageId } from "@shared/trading-progression";
 import type {
   PaperTrade,
   TradeThesis,
@@ -153,7 +155,26 @@ function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
 
 export default function TradingPage() {
   const [, navigate] = useLocation();
+  const [currentStage, setCurrentStage] = useState<TradingStageId | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [tab, setTab] = useState<TradingTab>("overview");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/trading/progression", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setCurrentStage(data?.progression?.currentStage || null);
+      } catch {
+        /* silent */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [status, setStatus] = useState<TradingStatus>(emptyStatus);
   const [curriculum, setCurriculum] = useState<Curriculum>({ sources: [], knowledgeAreas: [], buildSequence: [] });
   const [knowledge, setKnowledge] = useState<TradingKnowledgeEntry[]>([]);
@@ -398,24 +419,43 @@ export default function TradingPage() {
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
         {notice && <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 text-sm text-cyan-200">{notice}</div>}
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {tabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition ${
-                tab === item.id
-                  ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-100"
-                  : "border-white/10 bg-white/[0.03] text-muted-foreground hover:text-white"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        {currentStage === "sandbox" && !showAdvanced && (
+          <SandboxWorkspace />
+        )}
+
+        <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-white/[0.06]">
+          <div className="text-[11.5px] uppercase tracking-[0.08em] text-white/40">
+            Advanced tools
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="text-[12px] text-white/50 hover:text-white/80 transition-colors"
+          >
+            {showAdvanced ? "Hide advanced" : "Show advanced"}
+          </button>
         </div>
 
-        {loading ? (
+        {(showAdvanced || currentStage !== "sandbox") && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {tabs.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition ${
+                  tab === item.id
+                    ? "border-cyan-400/50 bg-cyan-400/10 text-cyan-100"
+                    : "border-white/10 bg-white/[0.03] text-muted-foreground hover:text-white"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {(showAdvanced || currentStage !== "sandbox") && (loading ? (
           <div className="py-16 text-center text-sm text-muted-foreground">Loading trading intelligence...</div>
         ) : (
           <>
@@ -750,7 +790,7 @@ export default function TradingPage() {
               </div>
             )}
           </>
-        )}
+        ))}
       </main>
     </div>
   );
