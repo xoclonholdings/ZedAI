@@ -64,39 +64,33 @@ type SidebarPanel = "projects" | "workspaces" | "history" | "settings";
 
 const WORKSPACE_LINKS: WorkspaceLink[] = [
   {
-    label: "Email",
-    description: "Read your inbox, and let Zed draft or summarize replies.",
-    path: "/inbox",
-    icon: Inbox,
-  },
-  {
     label: "Research",
-    description: "Ask Zed to look into a topic — it saves what it finds.",
+    description: "Discover, investigate, and organize knowledge about anything.",
     path: "/workspaces/research",
     icon: Search,
   },
   {
-    label: "Business",
-    description: "Plans, revenue notes, and reports about your business.",
-    path: "/workspaces/business",
+    label: "Operations",
+    description: "Plan and run the business — strategy, projects, products, customers, revenue.",
+    path: "/workspaces/operations",
     icon: Briefcase,
   },
   {
-    label: "Trading",
-    description: "Where Zed learns to trade for wealth. Practice on paper first — real capital later.",
-    path: "/trading",
+    label: "Finance",
+    description: "Budget, banking, credit, trading, investments, and taxes — all in one place.",
+    path: "/workspaces/finance",
     icon: TrendingUp,
   },
   {
-    label: "Content",
-    description: "Ideas, drafts, and scripts for what you publish.",
-    path: "/workspaces/content",
+    label: "Marketing",
+    description: "Grow your audience — campaigns, content, social, email, SEO.",
+    path: "/workspaces/marketing",
     icon: PenTool,
   },
   {
-    label: "Learning",
-    description: "Things you're studying — Zed can quiz you or track progress.",
-    path: "/workspaces/learning",
+    label: "Education",
+    description: "Learn new skills. Zed builds paths, practices, assessments, tracks progress.",
+    path: "/workspaces/education",
     icon: GraduationCap,
   },
 ];
