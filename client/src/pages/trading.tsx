@@ -16,6 +16,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import TradingProgressionBanner from "@/components/trading/TradingProgressionBanner";
 import type {
   PaperTrade,
   TradeThesis,
@@ -392,20 +393,7 @@ export default function TradingPage() {
       </div>
 
       <main className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">ZCOS capability</div>
-              <h1 className="mt-2 text-2xl font-semibold">Trading Intelligence Phase 1</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Education, analysis, simulation, journaling, and validation. No broker connections, no live orders, no real-money execution.
-              </p>
-            </div>
-            <Badge className="w-fit border-emerald-400/30 bg-emerald-500/10 text-emerald-200">
-              {status.mode}
-            </Badge>
-          </div>
-        </div>
+        <TradingProgressionBanner />
 
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
         {notice && <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 text-sm text-cyan-200">{notice}</div>}
