@@ -8,6 +8,7 @@ import ChatComposer from "./ChatComposer";
 import ChatHeader from "./ChatHeader";
 import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
+import FilesAttachedStrip from "./FilesAttachedStrip";
 import { sendAgentMessage } from "./chat-area/sendAgentMessage";
 import { useConversationMutations } from "./chat-area/useConversationMutations";
 
@@ -27,6 +28,7 @@ interface ChatAreaProps {
 export default function ChatArea({
   conversation,
   messages,
+  files,
   conversationId,
   selectedProjectId,
   isMobile = false,
@@ -229,6 +231,8 @@ export default function ChatArea({
             onClose={() => setShowFileUpload(false)}
           />
         )}
+
+        <FilesAttachedStrip files={files || []} />
 
         <div className="border-t border-white/10 zed-glass px-3 pt-3 pb-safe md:px-4 md:pt-4 flex-shrink-0 z-10">
           <div className="max-w-4xl mx-auto">
