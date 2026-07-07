@@ -1,178 +1,214 @@
-import { useEffect, useState } from "react";
-import { Save, User } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { PersonalizationSettings as PersonalizationData } from "@shared/adminSettings";
 import { defaultPersonalizationSettings } from "@shared/adminSettings";
 import { useAuth } from "@/components/auth/UseAuth";
 
+import {
+  LabeledSelect,
+  LoadErrorBanner,
+  SaveIndicator,
+  SettingGroup,
+  SettingRow,
+  Toggle,
+} from "@/components/admin/sections/settings/atoms";
+
+/**
+ * Plain-language Preferences surface.
+ *
+ * Replaces the card-heavy form with the same SettingRow style used
+ * across /admin. Autosaves on every change; no manual Save button.
+ */
+
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+const LANGUAGE_OPTIONS = [
+  { value: "English", label: "English" },
+  { value: "Spanish", label: "Spanish" },
+  { value: "French", label: "French" },
+  { value: "German", label: "German" },
+  { value: "Japanese", label: "Japanese" },
+  { value: "Mandarin", label: "Mandarin" },
+];
+
+const THEME_OPTIONS = [
+  { value: "dark", label: "Dark" },
+  { value: "midnight", label: "Midnight blue" },
+  { value: "nebula", label: "Nebula purple" },
+];
+
+const FONT_OPTIONS = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+];
+
 export default function PersonalizationSettings() {
   const { refresh } = useAuth();
   const [data, setData] = useState<PersonalizationData>(defaultPersonalizationSettings);
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [loadError, setLoadError] = useState<boolean>(false);
+  const savedTimer = useRef<number | null>(null);
+  const nameDebounce = useRef<number | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const response = await fetch("/api/settings/personalization", {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!response.ok) return;
-        const payload = await response.json();
-        if (!cancelled) {
-          setData({
-            ...defaultPersonalizationSettings,
-            ...(payload || {}),
-          });
-        }
-      } catch {
-        // keep defaults
-      }
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/settings/personalization", {
+        credentials: "include",
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Load failed (${res.status})`);
+      const payload = await res.json();
+      setData({ ...defaultPersonalizationSettings, ...(payload || {}) });
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
     }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
-  function update<K extends keyof PersonalizationData>(key: K, value: PersonalizationData[K]) {
-    setData((prev) => ({ ...prev, [key]: value }));
-    setSaved(false);
-  }
+  useEffect(() => {
+    void load();
+  }, [load]);
 
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const response = await fetch("/api/settings/personalization", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        const next = await response.json();
-        setData({
-          ...defaultPersonalizationSettings,
-          ...next,
+  const save = useCallback(
+    async (next: PersonalizationData) => {
+      setStatus("saving");
+      setErrorMessage(undefined);
+      try {
+        const res = await fetch("/api/settings/personalization", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(next),
         });
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || `Save failed (${res.status})`);
+        }
+        const merged = await res.json();
+        setData({ ...defaultPersonalizationSettings, ...merged });
         void refresh();
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        setStatus("saved");
+        if (savedTimer.current) window.clearTimeout(savedTimer.current);
+        savedTimer.current = window.setTimeout(() => setStatus("idle"), 1500);
+      } catch (err: any) {
+        setErrorMessage(err?.message);
+        setStatus("error");
       }
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+    [refresh],
+  );
+
+  const update = useCallback(
+    <K extends keyof PersonalizationData>(key: K, value: PersonalizationData[K]) => {
+      setData((prev) => {
+        const next = { ...prev, [key]: value };
+        void save(next);
+        return next;
+      });
+    },
+    [save],
+  );
+
+  const updateNameDebounced = useCallback(
+    (value: string) => {
+      setData((prev) => ({ ...prev, displayName: value }));
+      if (nameDebounce.current) window.clearTimeout(nameDebounce.current);
+      nameDebounce.current = window.setTimeout(() => {
+        setData((prev) => {
+          void save(prev);
+          return prev;
+        });
+      }, 500);
+    },
+    [save],
+  );
+
+  const header = useMemo(
+    () => (
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+            Preferences
+          </h2>
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
+            Your name, the language Zed answers in, and how the app looks and reads on your screen.
+          </p>
+        </div>
+        <SaveIndicator status={status} errorMessage={errorMessage} />
+      </header>
+    ),
+    [status, errorMessage],
+  );
 
   return (
-    <div className="space-y-4">
-      <Card className="zed-glass border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5 text-purple-400" />
-            Personalization
-          </CardTitle>
-          <CardDescription>
-            Customize how ZED looks and identifies you across the current workspace.
-          </CardDescription>
-        </CardHeader>
+    <div>
+      {header}
+      {loadError && <LoadErrorBanner onRetry={() => void load()} />}
 
-        <CardContent className="space-y-5">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Display Name</Label>
-            <Input
-              value={data.displayName}
-              onChange={(e) => update("displayName", e.target.value)}
-              placeholder="Your name"
-              className="zed-glass border-white/10 text-sm"
-            />
-          </div>
+      <SettingGroup title="You">
+        <SettingRow label="Your name" description="How Zed addresses you.">
+          <input
+            type="text"
+            value={data.displayName || ""}
+            onChange={(e) => updateNameDebounced(e.target.value)}
+            placeholder="Your name"
+            className="w-full max-w-[200px] text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 placeholder:text-white/30"
+          />
+        </SettingRow>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Language</Label>
-            <Select value={data.preferredLanguage} onValueChange={(val) => update("preferredLanguage", val)}>
-              <SelectTrigger className="zed-glass border-white/10 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="zed-glass border-white/10">
-                <SelectItem value="English">English</SelectItem>
-                <SelectItem value="Spanish">Spanish</SelectItem>
-                <SelectItem value="French">French</SelectItem>
-                <SelectItem value="German">German</SelectItem>
-                <SelectItem value="Japanese">Japanese</SelectItem>
-                <SelectItem value="Mandarin">Mandarin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <SettingRow label="Language" description="What language Zed replies in.">
+          <LabeledSelect
+            value={data.preferredLanguage}
+            onChange={(v) => update("preferredLanguage", v)}
+            options={LANGUAGE_OPTIONS}
+            minWidth={160}
+          />
+        </SettingRow>
+      </SettingGroup>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Color Theme</Label>
-            <Select value={data.colorScheme} onValueChange={(val) => update("colorScheme", val)}>
-              <SelectTrigger className="zed-glass border-white/10 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="zed-glass border-white/10">
-                <SelectItem value="dark">Dark</SelectItem>
-                <SelectItem value="midnight">Midnight Blue</SelectItem>
-                <SelectItem value="nebula">Nebula Purple</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <SettingGroup title="Look and feel">
+        <SettingRow label="Color theme" description="Pick a background palette for the app.">
+          <LabeledSelect
+            value={data.colorScheme}
+            onChange={(v) => update("colorScheme", v)}
+            options={THEME_OPTIONS}
+            minWidth={180}
+          />
+        </SettingRow>
 
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Font Size</Label>
-            <Select value={data.fontSize} onValueChange={(val) => update("fontSize", val)}>
-              <SelectTrigger className="zed-glass border-white/10 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="zed-glass border-white/10">
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <SettingRow label="Font size" description="Adjust for comfort or vision.">
+          <LabeledSelect
+            value={data.fontSize}
+            onChange={(v) => update("fontSize", v)}
+            options={FONT_OPTIONS}
+            minWidth={140}
+          />
+        </SettingRow>
 
-          <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Compact Messages</p>
-                <p className="text-xs text-muted-foreground">Tighter spacing between messages</p>
-              </div>
-              <Switch checked={data.compactMessages} onCheckedChange={(v) => update("compactMessages", v)} />
-            </div>
+        <SettingRow
+          label="Tighter spacing"
+          description="Squeezes more messages onto one screen."
+        >
+          <Toggle
+            checked={data.compactMessages}
+            onChange={(v) => update("compactMessages", v)}
+            ariaLabel="Tighter spacing"
+          />
+        </SettingRow>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Show Timestamps</p>
-                <p className="text-xs text-muted-foreground">Display time on each message</p>
-              </div>
-              <Switch checked={data.showTimestamps} onCheckedChange={(v) => update("showTimestamps", v)} />
-            </div>
-          </div>
-
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-          >
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? "Saving..." : saved ? "Saved!" : "Save Preferences"}
-          </Button>
-        </CardContent>
-      </Card>
+        <SettingRow
+          label="Show timestamps"
+          description="Print the time next to each message."
+        >
+          <Toggle
+            checked={data.showTimestamps}
+            onChange={(v) => update("showTimestamps", v)}
+            ariaLabel="Show timestamps"
+          />
+        </SettingRow>
+      </SettingGroup>
     </div>
   );
 }

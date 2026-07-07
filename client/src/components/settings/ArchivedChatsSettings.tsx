@@ -1,168 +1,188 @@
-import { useEffect, useState } from "react";
-import { Archive, RotateCcw, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { RefreshCw, RotateCcw, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Conversation } from "@shared/schema";
 
-function formatDate(value?: string | Date | null) {
-  if (!value) return "Unknown";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+import {
+  SaveIndicator,
+  SettingGroup,
+  SettingRow,
+} from "@/components/admin/sections/settings/atoms";
+
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+function friendlyTime(value?: string | Date | null): string {
+  if (!value) return "unknown";
+  try {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    const now = new Date();
+    const diffDays = Math.round((now.getTime() - d.getTime()) / 86400000);
+    if (diffDays < 1) return "today";
+    if (diffDays === 1) return "yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  } catch {
+    return String(value);
+  }
 }
 
 export default function ArchivedChatsSettings() {
   const queryClient = useQueryClient();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | undefined>();
+  const [loading, setLoading] = useState<boolean>(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
-  async function loadArchived() {
+  const loadArchived = useCallback(async () => {
     setLoading(true);
-    setMessage(null);
+    setErrorMessage(undefined);
     try {
-      const response = await fetch("/api/conversations/archived", {
+      const res = await fetch("/api/conversations/archived", {
         credentials: "include",
         cache: "no-store",
       });
-      if (!response.ok) throw new Error("Failed to load archived chats");
-      const data = await response.json();
+      if (!res.ok) throw new Error(`Load failed (${res.status})`);
+      const data = await res.json();
       setConversations(data.conversations || []);
-    } catch (error: any) {
-      setMessage(error?.message || "Failed to load archived chats");
+    } catch (err: any) {
+      setErrorMessage(err?.message);
+      setStatus("error");
     } finally {
       setLoading(false);
     }
-  }
-
-  async function restoreConversation(id: string) {
-    setBusyId(id);
-    setMessage(null);
-    try {
-      const response = await fetch(`/api/conversations/${id}/restore`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Failed to restore chat");
-      await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      await loadArchived();
-      setMessage("Chat restored.");
-    } catch (error: any) {
-      setMessage(error?.message || "Failed to restore chat");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function deleteConversation(id: string) {
-    const confirmed = window.confirm("Permanently delete this archived chat? This cannot be undone.");
-    if (!confirmed) return;
-
-    setBusyId(id);
-    setMessage(null);
-    try {
-      const response = await fetch(`/api/conversations/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Failed to delete chat");
-      await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      await loadArchived();
-      setMessage("Archived chat deleted.");
-    } catch (error: any) {
-      setMessage(error?.message || "Failed to delete chat");
-    } finally {
-      setBusyId(null);
-    }
-  }
+  }, []);
 
   useEffect(() => {
     void loadArchived();
-  }, []);
+  }, [loadArchived]);
+
+  const restore = useCallback(
+    async (id: string) => {
+      setBusyId(id);
+      setStatus("saving");
+      try {
+        const res = await fetch(`/api/conversations/${id}/restore`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(`Restore failed (${res.status})`);
+        await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+        await loadArchived();
+        setStatus("saved");
+        window.setTimeout(() => setStatus("idle"), 1500);
+      } catch (err: any) {
+        setErrorMessage(err?.message);
+        setStatus("error");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [queryClient, loadArchived],
+  );
+
+  const remove = useCallback(
+    async (id: string, title?: string | null) => {
+      const name = title || "this chat";
+      if (!window.confirm(`Delete "${name}" for good? This cannot be undone.`)) return;
+      setBusyId(id);
+      setStatus("saving");
+      try {
+        const res = await fetch(`/api/conversations/${id}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+        await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+        await loadArchived();
+        setStatus("saved");
+        window.setTimeout(() => setStatus("idle"), 1500);
+      } catch (err: any) {
+        setErrorMessage(err?.message);
+        setStatus("error");
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [queryClient, loadArchived],
+  );
+
+  const header = useMemo(
+    () => (
+      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+            Archived chats
+          </h2>
+          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
+            Chats you've hidden from the sidebar. Bring one back to the sidebar, or delete it for good.
+          </p>
+        </div>
+        <SaveIndicator status={status} errorMessage={errorMessage} />
+      </header>
+    ),
+    [status, errorMessage],
+  );
 
   return (
-    <Card className="zed-glass border-white/10">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Archive className="h-5 w-5 text-orange-400" />
-          Archived Chats
-        </CardTitle>
-        <CardDescription>
-          Restore archived conversations back to the sidebar or permanently delete old ones.
-        </CardDescription>
-      </CardHeader>
+    <div>
+      {header}
 
-      <CardContent className="space-y-4">
-        {message && (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground">
-            {message}
-          </div>
-        )}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="text-[12.5px] text-white/40">
+          {loading ? "Loading…" : `${conversations.length} archived`}
+        </div>
+        <button
+          type="button"
+          onClick={() => void loadArchived()}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-colors"
+        >
+          <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+          Refresh
+        </button>
+      </div>
 
-        <Button variant="outline" size="sm" onClick={loadArchived} disabled={loading} className="border-white/10">
-          {loading ? "Refreshing..." : "Refresh Archived Chats"}
-        </Button>
-
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading archived chats...</p>
-        ) : conversations.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-muted-foreground">
-            No archived conversations yet.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {conversations.map((conversation) => (
-              <div key={conversation.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-white">
-                      {conversation.title || "Untitled chat"}
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="outline" className="border-orange-400/20 text-orange-300">
-                        Archived
-                      </Badge>
-                      <span>Updated {formatDate(conversation.updatedAt)}</span>
-                    </div>
-                    {conversation.preview && (
-                      <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                        {conversation.preview}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex shrink-0 gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => restoreConversation(conversation.id)}
-                      disabled={busyId === conversation.id}
-                      className="h-8 w-8 border-white/10"
-                      title="Restore chat"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => deleteConversation(conversation.id)}
-                      disabled={busyId === conversation.id}
-                      className="h-8 w-8"
-                      title="Delete permanently"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+      {conversations.length === 0 && !loading ? (
+        <div className="rounded-lg border border-dashed border-white/10 p-8 text-center text-[13.5px] text-white/45">
+          Nothing archived. Chats you hide will show up here.
+        </div>
+      ) : (
+        <SettingGroup title="Archived">
+          {conversations.map((c) => (
+            <SettingRow
+              key={c.id}
+              label={c.title || "Untitled chat"}
+              description={`Archived ${friendlyTime(c.updatedAt)}${c.preview ? ` · ${c.preview.slice(0, 80)}` : ""}`}
+            >
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void restore(c.id)}
+                  disabled={busyId === c.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[12.5px] text-white/70 hover:text-white/90 hover:border-cyan-400/40 transition-colors active:opacity-80 disabled:opacity-50"
+                  title="Bring back to sidebar"
+                >
+                  <RotateCcw size={12} />
+                  Restore
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void remove(c.id, c.title)}
+                  disabled={busyId === c.id}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[12.5px] text-white/70 hover:text-red-300 hover:border-red-400/40 transition-colors active:opacity-80 disabled:opacity-50"
+                  title="Delete for good"
+                >
+                  <Trash2 size={12} />
+                  Delete
+                </button>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </SettingRow>
+          ))}
+        </SettingGroup>
+      )}
+    </div>
   );
 }
