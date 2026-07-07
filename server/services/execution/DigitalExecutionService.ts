@@ -132,7 +132,6 @@ export class DigitalExecutionService {
   }
 
   private static async sendEmail(payload: DigitalEmailPayload): Promise<DigitalExecutionResult> {
-    const liveProvider = process.env.EMAIL_PROVIDER_ENABLED === "true";
     if (!payload?.to || !payload?.subject || !payload?.body) {
       return {
         status: "failed",
@@ -141,16 +140,32 @@ export class DigitalExecutionService {
       };
     }
 
+    // The user configuring an email account through Settings IS the
+    // enable signal. Previously we required EMAIL_PROVIDER_ENABLED=true
+    // on top, which meant configured accounts never actually sent.
     const account = await this.resolveEmailAccount(payload);
-    if (!liveProvider || !account) {
+    if (!account) {
       return {
         status: "failed",
-        result: `Email provider disabled; no email was sent to ${payload.to}.`,
+        result: `No email account configured. Sign in to Gmail (or another email provider) in Connections first.`,
         next_steps: [
-          "Set EMAIL_PROVIDER_ENABLED=true and configure SMTP host, port, username, password, and from address before dispatch.",
+          "Open Admin → Connections → Email and connect at least one account.",
         ],
         mocked: false,
-        failureReason: !liveProvider ? "providerDisabled" : "providerNotConfigured",
+        failureReason: "providerNotConfigured",
+      };
+    }
+
+    // Validate the account has everything SMTP needs.
+    if (!account.smtpHost || !account.username || !account.password || !account.fromAddress) {
+      return {
+        status: "failed",
+        result: "Email account is missing required fields (host, address, or app password).",
+        next_steps: [
+          "Reconnect the email account and provide both the email address and the app password.",
+        ],
+        mocked: false,
+        failureReason: "providerNotConfigured",
       };
     }
 
