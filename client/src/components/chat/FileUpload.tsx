@@ -56,9 +56,12 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
     },
     onSuccess: (data, files) => {
       const uploadedCount = Array.isArray(data?.files) ? data.files.length : files.length;
+      const oneFile = uploadedCount === 1;
       toast({
-        title: "Upload successful",
-        description: `${uploadedCount} file(s) processed successfully`
+        title: oneFile ? "File attached" : `${uploadedCount} files attached`,
+        description: oneFile
+          ? "Attached to this chat. Ask Zed about it in your next message."
+          : `Attached to this chat. Ask Zed about them in your next message.`,
       });
       
       // Refresh files list

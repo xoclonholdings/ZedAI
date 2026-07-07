@@ -82,6 +82,12 @@ const WORKSPACE_LINKS: WorkspaceLink[] = [
     icon: Briefcase,
   },
   {
+    label: "Trading",
+    description: "Where Zed learns to trade for wealth. Practice on paper first — real capital later.",
+    path: "/trading",
+    icon: TrendingUp,
+  },
+  {
     label: "Content",
     description: "Ideas, drafts, and scripts for what you publish.",
     path: "/workspaces/content",
@@ -92,12 +98,6 @@ const WORKSPACE_LINKS: WorkspaceLink[] = [
     description: "Things you're studying — Zed can quiz you or track progress.",
     path: "/workspaces/learning",
     icon: GraduationCap,
-  },
-  {
-    label: "Trading",
-    description: "Practice trades on paper (no real money). Advanced — skip if unsure.",
-    path: "/trading",
-    icon: TrendingUp,
   },
 ];
 
