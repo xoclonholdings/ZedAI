@@ -23,8 +23,11 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 interface Provider {
   key: string;
   label: string;
-  /** Plain-English label for the single field the user pastes. */
+  /** Plain-English label for the primary field the user pastes. */
   fieldLabel: string;
+  /** Optional secondary field (e.g. "Your Gmail address" for SMTP auth). */
+  secondaryFieldLabel?: string;
+  secondaryFieldPlaceholder?: string;
   /** Ordered steps the user follows to obtain the credential. */
   steps: string[];
   /** Direct link to the provider page where the credential is made. */
@@ -32,7 +35,14 @@ interface Provider {
   /** Reads current integrations state to decide connected vs. not. */
   connectedFn: (integrations: any) => { connected: boolean; account?: string };
   /** Builds the JSON patch for /api/admin/settings/integrations. */
-  patch: (value: string) => any;
+  patch: (primary: string, secondary?: string) => any;
+  /**
+   * Endpoint URL to POST to after connecting so the user can verify
+   * the credential actually works. If set, a "Send test" button
+   * appears on the connected row. Response should be
+   * { status: "success"|"failed", detail?: string, failureReason?: string }
+   */
+  testEndpoint?: string;
 }
 
 interface ProviderGroup {
@@ -51,32 +61,35 @@ const GROUPS: ProviderGroup[] = [
       {
         key: "gmail",
         label: "Gmail",
-        fieldLabel: "Gmail app password",
+        fieldLabel: "Gmail app password (16 characters)",
+        secondaryFieldLabel: "Your Gmail address",
+        secondaryFieldPlaceholder: "you@gmail.com",
         helpUrl: "https://myaccount.google.com/apppasswords",
+        testEndpoint: "/api/admin/integrations/email/test",
         steps: [
           "Tap the link below to open Google's App passwords page.",
           "If you're asked to turn on 2-Step Verification first, do that.",
           "Type “Zed” as the app name and tap Create.",
           "Google shows a 16-character password. Copy it.",
-          "Paste it into the field below and tap Save.",
+          "Paste your Gmail address AND the app password below, then Save.",
         ],
         connectedFn: (i) => {
           const acc = (i?.email?.accounts || []).find((a: any) => a.provider === "gmail");
           return { connected: Boolean(acc?.hasPassword), account: acc?.fromAddress };
         },
-        patch: (value) => ({
+        patch: (password, email = "") => ({
           email: {
             accounts: [
               {
                 id: "email-gmail",
-                label: "Gmail",
+                label: `Gmail (${email || "no address"})`,
                 provider: "gmail",
                 fromName: "ZED",
-                fromAddress: "",
+                fromAddress: email,
                 smtpHost: "smtp.gmail.com",
                 smtpPort: 587,
-                username: "",
-                password: value,
+                username: email,
+                password,
               },
             ],
           },
@@ -86,31 +99,34 @@ const GROUPS: ProviderGroup[] = [
         key: "outlook",
         label: "Outlook / Microsoft 365",
         fieldLabel: "Outlook app password",
+        secondaryFieldLabel: "Your Outlook / Microsoft 365 address",
+        secondaryFieldPlaceholder: "you@outlook.com or you@company.com",
         helpUrl: "https://account.microsoft.com/security",
+        testEndpoint: "/api/admin/integrations/email/test",
         steps: [
           "Tap the link to open Microsoft account security.",
           "Under Advanced security options, find App passwords.",
           "Create a new app password and name it “Zed”.",
           "Copy the generated password.",
-          "Paste it below and tap Save.",
+          "Paste your email address AND the app password below, then Save.",
         ],
         connectedFn: (i) => {
           const acc = (i?.email?.accounts || []).find((a: any) => a.provider === "outlook");
           return { connected: Boolean(acc?.hasPassword), account: acc?.fromAddress };
         },
-        patch: (value) => ({
+        patch: (password, email = "") => ({
           email: {
             accounts: [
               {
                 id: "email-outlook",
-                label: "Outlook",
+                label: `Outlook (${email || "no address"})`,
                 provider: "outlook",
                 fromName: "ZED",
-                fromAddress: "",
+                fromAddress: email,
                 smtpHost: "smtp.office365.com",
                 smtpPort: 587,
-                username: "",
-                password: value,
+                username: email,
+                password,
               },
             ],
           },
@@ -120,31 +136,34 @@ const GROUPS: ProviderGroup[] = [
         key: "icloud",
         label: "iCloud Mail",
         fieldLabel: "iCloud app-specific password",
+        secondaryFieldLabel: "Your iCloud email address",
+        secondaryFieldPlaceholder: "you@icloud.com",
         helpUrl: "https://appleid.apple.com/account/manage",
+        testEndpoint: "/api/admin/integrations/email/test",
         steps: [
           "Tap the link to open your Apple ID account page and sign in.",
           "Under Sign-In and Security, tap App-Specific Passwords.",
           "Tap the + to generate a new one and name it “Zed”.",
           "Apple shows the password. Copy it.",
-          "Paste it below and tap Save.",
+          "Paste your iCloud address AND the password below, then Save.",
         ],
         connectedFn: (i) => {
           const acc = (i?.email?.accounts || []).find((a: any) => a.provider === "icloud");
           return { connected: Boolean(acc?.hasPassword), account: acc?.fromAddress };
         },
-        patch: (value) => ({
+        patch: (password, email = "") => ({
           email: {
             accounts: [
               {
                 id: "email-icloud",
-                label: "iCloud",
+                label: `iCloud (${email || "no address"})`,
                 provider: "icloud",
                 fromName: "ZED",
-                fromAddress: "",
+                fromAddress: email,
                 smtpHost: "smtp.mail.me.com",
                 smtpPort: 587,
-                username: "",
-                password: value,
+                username: email,
+                password,
               },
             ],
           },
@@ -632,6 +651,9 @@ export default function IntegrationsSection() {
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [dialog, setDialog] = useState<{ provider: Provider; group: ProviderGroup } | null>(null);
   const [dialogValue, setDialogValue] = useState<string>("");
+  const [dialogSecondary, setDialogSecondary] = useState<string>("");
+  const [testingKey, setTestingKey] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Record<string, { status: string; detail?: string }>>({});
   const [customDialog, setCustomDialog] = useState<{
     group: ProviderGroup;
     label: string;
@@ -694,7 +716,39 @@ export default function IntegrationsSection() {
   const openDialog = useCallback((provider: Provider, group: ProviderGroup) => {
     setDialog({ provider, group });
     setDialogValue("");
+    setDialogSecondary("");
   }, []);
+
+  const runTest = useCallback(
+    async (provider: Provider) => {
+      if (!provider.testEndpoint) return;
+      setTestingKey(provider.key);
+      try {
+        const res = await fetch(provider.testEndpoint, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        const body = await res.json().catch(() => ({}));
+        setTestResults((prev) => ({
+          ...prev,
+          [provider.key]: {
+            status: res.ok ? body.status || "success" : "failed",
+            detail: body.detail || body.error || `HTTP ${res.status}`,
+          },
+        }));
+      } catch (err: any) {
+        setTestResults((prev) => ({
+          ...prev,
+          [provider.key]: { status: "failed", detail: err?.message || "Test failed" },
+        }));
+      } finally {
+        setTestingKey(null);
+      }
+    },
+    [],
+  );
 
   const header = useMemo(
     () => (
@@ -749,13 +803,40 @@ export default function IntegrationsSection() {
                 description={group.description}
               >
                 {state.connected ? (
-                  <button
-                    type="button"
-                    onClick={() => void disconnect(provider)}
-                    className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/80 hover:text-red-300 hover:border-red-400/40 transition-colors active:opacity-80"
-                  >
-                    Disconnect
-                  </button>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <div className="flex items-center gap-2">
+                      {provider.testEndpoint && (
+                        <button
+                          type="button"
+                          onClick={() => void runTest(provider)}
+                          disabled={testingKey === provider.key}
+                          className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white/90 hover:border-cyan-400/40 transition-colors active:opacity-80 disabled:opacity-50"
+                        >
+                          {testingKey === provider.key ? "Sending…" : "Send test"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => void disconnect(provider)}
+                        className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/80 hover:text-red-300 hover:border-red-400/40 transition-colors active:opacity-80"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                    {testResults[provider.key] && (
+                      <div
+                        className={`text-[11.5px] max-w-[240px] text-right ${
+                          testResults[provider.key].status === "success"
+                            ? "text-emerald-300"
+                            : "text-red-300"
+                        }`}
+                      >
+                        {testResults[provider.key].status === "success"
+                          ? "✓ Test sent"
+                          : `✗ ${testResults[provider.key].detail || "Test failed"}`}
+                      </div>
+                    )}
+                  </div>
                 ) : isInfoOnly ? (
                   <button
                     type="button"
@@ -800,14 +881,22 @@ export default function IntegrationsSection() {
           provider={dialog.provider}
           value={dialogValue}
           onChange={setDialogValue}
+          secondaryValue={dialogSecondary}
+          onSecondaryChange={setDialogSecondary}
           onCancel={() => setDialog(null)}
           onSave={async () => {
             const trimmed = dialogValue.trim();
+            const secondaryTrimmed = dialogSecondary.trim();
             if (!trimmed || !dialog.provider.fieldLabel) {
               setDialog(null);
               return;
             }
-            const ok = await submit(dialog.provider.patch(trimmed));
+            if (dialog.provider.secondaryFieldLabel && !secondaryTrimmed) {
+              return; // require the second field when it's declared
+            }
+            const ok = await submit(
+              dialog.provider.patch(trimmed, secondaryTrimmed || undefined),
+            );
             if (ok) setDialog(null);
           }}
         />
@@ -857,16 +946,25 @@ function ConnectDialog({
   provider,
   value,
   onChange,
+  secondaryValue,
+  onSecondaryChange,
   onCancel,
   onSave,
 }: {
   provider: Provider;
   value: string;
   onChange: (next: string) => void;
+  secondaryValue: string;
+  onSecondaryChange: (next: string) => void;
   onCancel: () => void;
   onSave: () => void | Promise<void>;
 }) {
   const isInfoOnly = !provider.fieldLabel;
+  const requiresSecondary = Boolean(provider.secondaryFieldLabel);
+  const canSave =
+    !isInfoOnly &&
+    value.trim().length > 0 &&
+    (!requiresSecondary || secondaryValue.trim().length > 0);
   return (
     <div
       role="dialog"
@@ -904,6 +1002,22 @@ function ConnectDialog({
           </a>
         )}
 
+        {!isInfoOnly && requiresSecondary && (
+          <div className="mb-4">
+            <label className="block text-[12.5px] font-medium text-white/70 mb-1">
+              {provider.secondaryFieldLabel}
+            </label>
+            <input
+              type="email"
+              autoFocus
+              value={secondaryValue}
+              onChange={(e) => onSecondaryChange(e.target.value)}
+              placeholder={provider.secondaryFieldPlaceholder || ""}
+              className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 placeholder:text-white/30"
+            />
+          </div>
+        )}
+
         {!isInfoOnly && (
           <div className="mb-5">
             <label className="block text-[12.5px] font-medium text-white/70 mb-1">
@@ -911,7 +1025,7 @@ function ConnectDialog({
             </label>
             <input
               type="password"
-              autoFocus
+              autoFocus={!requiresSecondary}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder="Paste here"
@@ -932,7 +1046,7 @@ function ConnectDialog({
             <button
               type="button"
               onClick={() => void onSave()}
-              disabled={!value.trim()}
+              disabled={!canSave}
               className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:opacity-80"
             >
               Save

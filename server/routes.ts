@@ -15,6 +15,7 @@ import { registerRulesetRoutes } from "./routes-modules/ruleset";
 import { registerAdminSettingsRoutes } from "./routes-modules/admin-settings";
 import { registerAdminLogsRoutes } from "./routes-modules/admin-logs";
 import { registerAdminSubsystemRoutes } from "./routes-modules/admin-subsystems";
+import { registerIntegrationTestRoutes } from "./routes-modules/integration-test";
 import { registerApprovalRoutes } from "./routes-modules/approvals";
 import { registerMeRoutes } from "./routes-modules/me";
 import { registerKnowledgeRoutes } from "./routes-modules/knowledge";
@@ -73,6 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEnvValidateRoute(app);
   registerAdminLogsRoutes(app);
   registerAdminSubsystemRoutes(app);
+  registerIntegrationTestRoutes(app);
   registerApprovalRoutes(app);
   registerExecutionRoutes(app);
   registerIntakeRoutes(app);
