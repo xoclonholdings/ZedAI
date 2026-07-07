@@ -199,21 +199,18 @@ export default function MyMemorySettings() {
 
   return (
     <div className="space-y-4">
-      <Card className="zed-glass border-white/10">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-cyan-400" />
-            My Memory
-          </CardTitle>
-          <CardDescription>
-            Build your personal base memory so ZED understands your identity, ventures, goals, and working style without relying on admin-only knowledge.
-          </CardDescription>
-        </CardHeader>
+      <div className="mb-6">
+        <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
+          About you
+        </h2>
+        <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
+          Tell Zed who you are, what you're working on, and how you like to work.
+          Everything here is private to you and carried across every chat so Zed doesn't ask again.
+        </p>
+      </div>
 
-        <CardContent className="space-y-5">
-          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-sm leading-6 text-foreground/85">
-            This memory belongs to the current user. It becomes the personal context ZED should carry across chat, planning, and agent work.
-          </div>
+      <Card className="zed-glass border-white/10">
+        <CardContent className="space-y-5 pt-4">
 
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="border-cyan-400/20 text-cyan-300">
