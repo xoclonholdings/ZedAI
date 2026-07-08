@@ -232,7 +232,7 @@ export default function BudgetPage() {
 
   async function saveRule() {
     try {
-      await apiSend("/api/budget/rule", "PATCH", ruleForm);
+      await apiSend("/api/budget/rule", "PATCH", { ...ruleForm });
       setNotice("Allocation rule saved.");
       await refresh();
     } catch (err: any) {
