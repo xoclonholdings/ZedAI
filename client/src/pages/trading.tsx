@@ -18,7 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import TradingProgressionBanner from "@/components/trading/TradingProgressionBanner";
 import SandboxWorkspace from "@/components/trading/SandboxWorkspace";
+import LearnStage from "@/components/trading/LearnStage";
+import StrategyStage from "@/components/trading/StrategyStage";
+import ValidationStage from "@/components/trading/ValidationStage";
 import type { TradingStageId } from "@shared/trading-progression";
+
+const FUNCTIONAL_STAGES: TradingStageId[] = ["learn", "strategy", "validation", "sandbox"];
 import type {
   PaperTrade,
   TradeThesis,
@@ -419,9 +424,16 @@ export default function TradingPage() {
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
         {notice && <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 text-sm text-cyan-200">{notice}</div>}
 
-        {currentStage === "sandbox" && !showAdvanced && (
-          <SandboxWorkspace />
-        )}
+        {currentStage &&
+          FUNCTIONAL_STAGES.includes(currentStage) &&
+          !showAdvanced && (
+            <>
+              {currentStage === "learn" && <LearnStage />}
+              {currentStage === "strategy" && <StrategyStage />}
+              {currentStage === "validation" && <ValidationStage />}
+              {currentStage === "sandbox" && <SandboxWorkspace />}
+            </>
+          )}
 
         <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-white/[0.06]">
           <div className="text-[11.5px] uppercase tracking-[0.08em] text-white/40">
@@ -436,7 +448,9 @@ export default function TradingPage() {
           </button>
         </div>
 
-        {(showAdvanced || currentStage !== "sandbox") && (
+        {(showAdvanced ||
+          !currentStage ||
+          !FUNCTIONAL_STAGES.includes(currentStage)) && (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {tabs.map((item) => (
               <button
@@ -455,7 +469,10 @@ export default function TradingPage() {
           </div>
         )}
 
-        {(showAdvanced || currentStage !== "sandbox") && (loading ? (
+        {(showAdvanced ||
+          !currentStage ||
+          !FUNCTIONAL_STAGES.includes(currentStage)) &&
+          (loading ? (
           <div className="py-16 text-center text-sm text-muted-foreground">Loading trading intelligence...</div>
         ) : (
           <>
