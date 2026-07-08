@@ -7,6 +7,7 @@ import {
   LineChart,
   PenTool,
   Search,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -69,6 +70,13 @@ const WORKSPACES: Record<
     icon: LineChart,
     categories: ["finance"],
     empty: "Open Trading Intelligence for theses, journals, paper trades, and performance.",
+  },
+  finance: {
+    label: "Finance",
+    purpose: "Budget, banking, credit, trading, and investments in one place. Budget Management organizes every deposit; Trading stays separate.",
+    icon: Wallet,
+    categories: ["finance"],
+    empty: "Open Budget Management to allocate deposits, or Trading Intelligence for market work.",
   },
 };
 
@@ -141,6 +149,38 @@ export default function WorkspacePage() {
           <Button onClick={() => navigate("/trading")} className="w-full rounded-xl zed-gradient">
             Open Trading Intelligence
           </Button>
+        )}
+
+        {workspace === "finance" && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => navigate("/budget")}
+              className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Wallet size={15} className="text-cyan-300" />
+                Budget Management
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                Allocate every deposit across savings, taxes, personal payroll, and the business treasury — the Dual
+                Reserve Strategy.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/trading")}
+              className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <LineChart size={15} className="text-fuchsia-300" />
+                Trading Intelligence
+              </div>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                Theses, journals, paper trades, and performance. Kept separate — treasury never auto-funds trading.
+              </p>
+            </button>
+          </div>
         )}
 
         <section className="space-y-3">

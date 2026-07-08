@@ -19,6 +19,7 @@ import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
 import TradingPage from "@/pages/trading";
+import BudgetPage from "@/pages/budget";
 import WorkspacePage from "@/pages/workspace";
 import HistoryPage from "@/pages/history";
 import InboxPage from "@/pages/inbox";
@@ -92,6 +93,14 @@ function Router() {
 
       <Route path="/trading/">
         {isAuthenticated ? <TradingPage /> : <Login />}
+      </Route>
+
+      <Route path="/budget">
+        {isAuthenticated ? <BudgetPage /> : <Login />}
+      </Route>
+
+      <Route path="/budget/">
+        {isAuthenticated ? <BudgetPage /> : <Login />}
       </Route>
 
       <Route path="/workspaces/:workspace/tools/:id">

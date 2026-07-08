@@ -5,6 +5,7 @@ import { logRuntimeEvent } from "./services/RuntimeLogger";
 import { registerFlowRoutes } from "./routes-modules/flows";
 import { registerTradingRoutes } from "./routes-modules/trading";
 import { registerTradingProgressionRoutes } from "./routes-modules/trading-progression";
+import { registerBudgetRoutes } from "./routes-modules/budget";
 import { registerEnvValidateRoute } from "./routes-modules/env-validate";
 import { registerExecutionRoutes } from "./services/execution/registerExecutionRoutes";
 import { registerIntakeRoutes } from "./services/intake/registerIntakeRoutes";
@@ -74,6 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerFlowRoutes(app);
   registerTradingRoutes(app);
   registerTradingProgressionRoutes(app);
+  registerBudgetRoutes(app);
   registerEnvValidateRoute(app);
   registerAdminLogsRoutes(app);
   registerAdminSubsystemRoutes(app);

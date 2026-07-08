@@ -6,6 +6,13 @@ import { querySimilarResearch, storeResearchBrief } from "../../services/ChromaS
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { buildTradingKnowledgeContext } from "../../zcos/trading/TradingKnowledgeBase";
 import { TradingStore } from "../../zcos/trading/TradingStore";
+import { BudgetStore } from "../../services/budget/BudgetStore";
+import {
+  allocateDeposit,
+  buildDepositRecommendation,
+  evaluateTreasuryReadiness,
+  type IncomeSource,
+} from "../../../shared/budget-types";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR, REPO_ROOT } from "../../utils/repoPaths";
 
 const SKILL_PATH = path.resolve(REPO_ROOT, "server/agents/finance/SKILL.md");
@@ -138,6 +145,41 @@ function parsePaperTrade(task: string) {
   return { symbol, direction, entry, stop, target, thesis, missingFields };
 }
 
+function parseDepositAmount(task: string): number | undefined {
+  const match = task.match(/\$\s?(\d[\d,]*(?:\.\d+)?)|\b(\d[\d,]*(?:\.\d+)?)\s*(?:dollars|bucks|deposit|paycheck|payout)\b/i);
+  const raw = match?.[1] || match?.[2];
+  if (!raw) return undefined;
+  const value = Number(raw.replace(/,/g, ""));
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
+function detectIncomeSource(task: string): IncomeSource {
+  const lower = task.toLowerCase();
+  if (/doordash|door dash|dd/.test(lower)) return "doordash";
+  if (/instacart|insta cart/.test(lower)) return "instacart";
+  if (/employer|paycheck|salary|w-?2|direct deposit/.test(lower)) return "employer";
+  return "manual";
+}
+
+/**
+ * Detect a Budget Management (Dual Reserve) allocation request. Kept
+ * specific so it does not hijack trading capital-allocation questions:
+ * requires an amount plus deposit/budget/payroll/gig language.
+ */
+function parseBudgetIntent(task: string): { amount: number; source: IncomeSource } | null {
+  const lower = task.toLowerCase();
+  const budgetLanguage =
+    /(budget|deposit|paycheck|direct deposit|payout|doordash|instacart|dual reserve|personal payroll|founder pay|tax reserve|treasury allocation|allocate .*deposit|split .*(deposit|paycheck|income))/.test(
+      lower,
+    );
+  if (!budgetLanguage) return null;
+  const tradingLanguage = /(paper trade|thesis|entry|stop|target|long|short|position|chart|setup)/.test(lower);
+  if (tradingLanguage) return null;
+  const amount = parseDepositAmount(task);
+  if (amount === undefined) return null;
+  return { amount, source: detectIncomeSource(task) };
+}
+
 function capabilityLabel(capability: string) {
   switch (capability) {
     case "crypto-web3":
@@ -173,6 +215,32 @@ export class FinanceAgent {
 
   static async process(request: FinanceAgentRequest): Promise<FinanceAgentResponse> {
     const skill = await this.loadSkill();
+
+    const budgetIntent = parseBudgetIntent(request.task);
+    if (budgetIntent) {
+      const state = await BudgetStore.loadState(request.userId);
+      const breakdown = allocateDeposit(budgetIntent.amount, state.rule);
+      const readiness = evaluateTreasuryReadiness(
+        state.balances.treasuryBalance,
+        state.targets.operatingReserveTarget,
+      );
+      const recommendation = buildDepositRecommendation({
+        amount: budgetIntent.amount,
+        breakdown,
+        readiness,
+        settings: state.settings,
+      });
+      await BudgetStore.appendMemory(
+        `Chat deposit allocation (${budgetIntent.source}): ${breakdown.total} -> savings ${breakdown.savings}, taxes ${breakdown.taxes}, payroll ${breakdown.payroll}, treasury ${breakdown.treasury}.`,
+      );
+      return {
+        agent: "FinanceAgent",
+        capabilities: ["budget management", "capital and risk management"],
+        requiresApproval: false,
+        message: `${recommendation}\n\nNothing was moved — this is your allocation plan. Open Budget Management to record the deposit and update your reserves.`,
+      };
+    }
+
     const paperTrade = parsePaperTrade(request.task);
     if (paperTrade) {
       const capabilities = ["trading intelligence"];
