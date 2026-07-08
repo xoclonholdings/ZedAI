@@ -18,6 +18,7 @@ import { registerAdminSubsystemRoutes } from "./routes-modules/admin-subsystems"
 import { registerIntegrationTestRoutes } from "./routes-modules/integration-test";
 import { registerApprovalRoutes } from "./routes-modules/approvals";
 import { registerMeRoutes } from "./routes-modules/me";
+import { registerMemoryUploadRoutes } from "./routes-modules/memory-upload";
 import { registerKnowledgeRoutes } from "./routes-modules/knowledge";
 import { registerKnowledgeIngestionRoutes } from "./routes-modules/knowledge-ingestion";
 import { registerEmailInboxRoutes } from "./routes-modules/email-inbox";
@@ -56,6 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   registerMeRoutes(app);
+  registerMemoryUploadRoutes(app);
   registerConversationCrudRoutes(app);
   registerKnowledgeRoutes(app);
   registerKnowledgeIngestionRoutes(app);
