@@ -21,6 +21,16 @@ This file is the canonical summary of imported legacy ChatGPT knowledge that now
 - Source manifest: `hub/shared-memory/semantic/foundation/source-manifest.json`
 - Timeline view: `hub/shared-memory/episodic/imported/conversation-timeline.json`
 - Imported docs: `hub/shared-memory/consensus/foundation/imported-docs/`
+- Zync coding operator registry: `hub/shared-memory/consensus/foundation/zync-coding-operator/`
+
+## Zync Coding Operator
+
+Zync is the branded coding-operator capability surface that Zed can run now
+and later extract into a standalone app. Its registry lives in
+`hub/shared-memory/consensus/foundation/zync-coding-operator/capabilities.json`
+and is loaded by `server/services/ZyncCodingOperatorService.ts`. The current
+wired capabilities are repository context scan, relevant code search, change
+impact review, verification runner, and GitHub branch hygiene.
 
 ## Imported Strategic Docs
 

@@ -58,6 +58,12 @@ const EVENT_LABEL: Record<string, string> = {
   "subsystem.drafting.voice": "Voice-matched draft prepared",
   "subsystem.omnichannel.append": "Something added to memory",
   "subsystem.orchestrator.run": "Tool orchestrator ran",
+  "zync.repo_scan": "Zync scanned the repository",
+  "zync.code_search": "Zync searched the code",
+  "zync.impact_review": "Zync reviewed change impact",
+  "zync.verification_run": "Zync ran verification",
+  "zync.github_branch_check": "Zync checked GitHub branches",
+  "zync.github_backup_refresh": "Zync refreshed backup",
 };
 
 function friendlyEvent(evt: string): string {

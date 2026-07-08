@@ -24,6 +24,7 @@ import { registerKnowledgeIngestionRoutes } from "./routes-modules/knowledge-ing
 import { registerEmailInboxRoutes } from "./routes-modules/email-inbox";
 import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-and-misc";
 import { registerConversationCrudRoutes } from "./routes-modules/conversations-crud";
+import { registerZyncCodingOperatorRoutes } from "./routes-modules/zync-coding-operator";
 
 let isDatabaseHealthy = false;
 
@@ -76,6 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEnvValidateRoute(app);
   registerAdminLogsRoutes(app);
   registerAdminSubsystemRoutes(app);
+  registerZyncCodingOperatorRoutes(app);
   registerIntegrationTestRoutes(app);
   registerApprovalRoutes(app);
   registerExecutionRoutes(app);

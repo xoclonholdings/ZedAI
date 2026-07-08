@@ -12,7 +12,7 @@ import { EmptyBox, GroupHeading, NoticeBanner, StageShell } from "./stage-atoms"
  *
  * The server-side layer produces a decision (Approved,
  * Conditionally Approved, Paper Trade Only, Requires Revision,
- * Rejected) with rationale. The user can re-run the review after
+ * Rejected) with a recorded reason. The user can re-run the review after
  * revising the strategy.
  */
 
@@ -179,9 +179,9 @@ export default function ValidationStage() {
                 {meta.hint}
               </div>
             )}
-            {dec?.rationale && (
+            {dec?.reason && (
               <div className="mt-2 rounded-md border border-white/[0.06] bg-white/[0.02] p-2 text-[11.5px] text-white/70 leading-snug">
-                {dec.rationale.slice(0, 320)}
+                {dec.reason.slice(0, 320)}
               </div>
             )}
           </div>
@@ -203,7 +203,7 @@ export default function ValidationStage() {
     <StageShell
       eyebrow="Validation"
       title="Governance review"
-      description="Zed reviews every strategy against market context, statistical edge, risk math, and systemic weakness. You'll see a verdict and rationale you can act on."
+      description="Zed reviews every strategy against market context, statistical edge, risk math, and systemic weakness. You'll see a verdict and reason you can act on."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >

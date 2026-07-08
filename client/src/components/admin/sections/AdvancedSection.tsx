@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 
 import ToolsSection from "./FlowsSection";
 import RulesetSection from "./RulesetSection";
+import ZyncCodingOperatorSection from "./ZyncCodingOperatorSection";
 
 /**
  * Consolidated "Advanced" tab.
@@ -16,6 +17,7 @@ import RulesetSection from "./RulesetSection";
  * behind collapsed sections.
  */
 export default function AdvancedSection() {
+  const [openZync, setOpenZync] = useState<boolean>(false);
   const [openTools, setOpenTools] = useState<boolean>(false);
   const [openRules, setOpenRules] = useState<boolean>(false);
 
@@ -31,6 +33,15 @@ export default function AdvancedSection() {
           a section if you know exactly what you're changing.
         </p>
       </header>
+
+      <Section
+        title="Zync coding operator"
+        subtitle="Repo-aware coding functions Zed can run now, stored in a Zync-branded core-memory module for later extraction into the Zync app."
+        open={openZync}
+        onToggle={() => setOpenZync((v) => !v)}
+      >
+        <ZyncCodingOperatorSection />
+      </Section>
 
       <Section
         title="Tools Zed can run"

@@ -51,6 +51,19 @@ function friendlyCategory(cat?: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function knowledgePreview(entry: TradingKnowledgeEntry): string {
+  return [
+    ...entry.concepts,
+    ...entry.definitions,
+    ...entry.rules,
+    ...entry.patterns,
+    ...entry.entryCriteria,
+    ...entry.riskRules,
+    ...entry.bestPractices,
+    ...entry.examples,
+  ].find((item) => item.trim().length > 0) || "";
+}
+
 export default function LearnStage() {
   const [entries, setEntries] = useState<TradingKnowledgeEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -274,7 +287,9 @@ export default function LearnStage() {
           <div key={category} className="mb-5">
             <GroupHeading label={friendlyCategory(category)} count={categoryCounts[category]} />
             <div className="space-y-1.5">
-              {list.map((entry) => (
+              {list.map((entry) => {
+                const preview = knowledgePreview(entry);
+                return (
                 <div
                   key={entry.id}
                   className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2"
@@ -282,7 +297,7 @@ export default function LearnStage() {
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="min-w-0 flex-1">
                       <div className="text-[13px] font-medium text-white">
-                        {entry.title || entry.summary?.slice(0, 60) || "Untitled note"}
+                        {entry.title || preview.slice(0, 60) || "Untitled note"}
                       </div>
                       <div className="mt-0.5 text-[11.5px] text-white/45">
                         {entry.source} · {friendlyCategory(entry.category)}
@@ -301,14 +316,15 @@ export default function LearnStage() {
                       </div>
                     )}
                   </div>
-                  {entry.summary && (
+                  {preview && (
                     <div className="mt-1.5 text-[12px] text-white/60 leading-snug max-w-[80ch]">
-                      {entry.summary.slice(0, 220)}
-                      {entry.summary.length > 220 ? "…" : ""}
+                      {preview.slice(0, 220)}
+                      {preview.length > 220 ? "…" : ""}
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))
