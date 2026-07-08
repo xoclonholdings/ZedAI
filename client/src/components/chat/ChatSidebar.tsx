@@ -337,6 +337,21 @@ export default function ChatSidebar({
 
       <div className={`flex-1 px-4 overflow-y-auto ${compact ? "text-sm" : ""}`}>
         <div className={`${compact ? "space-y-3 py-3" : "space-y-3 py-4"}`}>
+          <button
+            type="button"
+            onClick={() => goTo("/home")}
+            className={`w-full rounded-xl border border-white/10 bg-white/[0.04] text-left transition-colors hover:bg-white/[0.08] hover:border-cyan-400/30 ${
+              compact ? "px-3 py-1.5" : "px-3 py-2"
+            }`}
+          >
+            <div className={`font-medium text-white ${compact ? "text-xs" : "text-sm"}`}>
+              Home
+            </div>
+            <div className={`text-white/50 ${compact ? "text-[10px]" : "text-[11px]"} mt-0.5`}>
+              Your day at a glance
+            </div>
+          </button>
+
           <SidebarDropdown
             title="Projects"
             isOpen={openPanel === "projects"}
