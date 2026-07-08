@@ -13,6 +13,7 @@ import NotFound from "@/pages/not-found";
 import Chat from "@/pages/chat";
 import Login from "@/pages/login";
 import Admin from "@/pages/admin";
+import HomePage from "@/pages/home";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
@@ -75,6 +76,10 @@ function Router() {
 
       <Route path="/chat/:id?">
         {isAuthenticated ? <Chat /> : <Login />}
+      </Route>
+
+      <Route path="/home">
+        {isAuthenticated ? <HomePage /> : <Login />}
       </Route>
 
       <Route path="/admin">
