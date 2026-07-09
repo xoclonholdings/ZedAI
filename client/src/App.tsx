@@ -19,6 +19,7 @@ import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
 import ProjectsPage from "@/pages/projects";
+import { DecisionsListPage, DecisionDetailPage } from "@/pages/decisions";
 import TradingPage from "@/pages/trading";
 import BudgetPage from "@/pages/budget";
 import WorkspacePage from "@/pages/workspace";
@@ -155,6 +156,14 @@ function Router() {
 
       <Route path="/learning">
         {isAuthenticated ? <LearningPage /> : <Login />}
+      </Route>
+
+      <Route path="/decisions">
+        {isAuthenticated ? <DecisionsListPage /> : <Login />}
+      </Route>
+
+      <Route path="/decisions/:id">
+        {isAuthenticated ? <DecisionDetailPage /> : <Login />}
       </Route>
 
       <Route component={NotFound} />
