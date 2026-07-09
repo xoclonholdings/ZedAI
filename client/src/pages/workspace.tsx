@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import {
+  BookOpen,
   Briefcase,
   ChevronLeft,
+  FolderKanban,
   GraduationCap,
+  History,
+  Inbox,
+  Layers,
   LineChart,
+  MessageSquare,
   PenTool,
   Search,
   Wallet,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,57 +33,139 @@ interface PublishedWorkItem {
   agents: string[];
 }
 
-const WORKSPACES: Record<
-  string,
-  {
-    label: string;
-    purpose: string;
-    icon: LucideIcon;
-    categories: string[];
-    empty: string;
-  }
-> = {
+interface Subspace {
+  label: string;
+  description: string;
+  href: string;
+  icon: LucideIcon;
+  accent?: "cyan" | "fuchsia" | "emerald" | "amber";
+}
+
+interface WorkspaceConfig {
+  label: string;
+  purpose: string;
+  icon: LucideIcon;
+  categories: string[];
+  empty: string;
+  subspaces?: Subspace[];
+}
+
+const FINANCE: WorkspaceConfig = {
+  label: "Finance",
+  purpose:
+    "Budget, banking, credit, trading, and investments in one place. Budget Management organizes every deposit; Trading stays separate.",
+  icon: Wallet,
+  categories: ["finance"],
+  empty: "Open Budget Management to allocate deposits, or Trading Intelligence for market work.",
+  subspaces: [
+    {
+      label: "Budget Management",
+      description:
+        "Allocate every deposit across savings, taxes, personal payroll, and the business treasury — the Dual Reserve Strategy.",
+      href: "/budget",
+      icon: Wallet,
+      accent: "cyan",
+    },
+    {
+      label: "Trading Intelligence",
+      description:
+        "Theses, journals, paper trades, and performance. Kept separate — treasury never auto-funds trading.",
+      href: "/trading",
+      icon: LineChart,
+      accent: "fuchsia",
+    },
+  ],
+};
+
+const WORKSPACES: Record<string, WorkspaceConfig> = {
   research: {
     label: "Research",
-    purpose: "Research people, companies, markets, competitors, technologies, products, trends, papers, and documents.",
+    purpose:
+      "Research people, companies, markets, competitors, technologies, products, trends, papers, and documents.",
     icon: Search,
     categories: ["research"],
     empty: "No research tools are published yet.",
   },
-  business: {
-    label: "Business",
-    purpose: "Build and operate businesses with strategy, product, marketing, finance, operations, and reporting tools.",
+  operations: {
+    label: "Operations",
+    purpose:
+      "Plan and run the business — projects, flows, run history, and the tools that keep day-to-day work moving.",
     icon: Briefcase,
-    categories: ["business", "revenue", "strategy", "planning", "operations", "marketing", "sales", "project"],
-    empty: "No business tools are published yet.",
+    categories: ["business", "operations", "strategy", "planning", "project", "revenue", "sales"],
+    empty: "No operations tools are published yet.",
+    subspaces: [
+      {
+        label: "Projects",
+        description:
+          "File conversations, sources, and instructions per initiative. Each project keeps its own memory so Zed answers in-context.",
+        href: "/projects",
+        icon: FolderKanban,
+        accent: "cyan",
+      },
+      {
+        label: "Flow Library",
+        description:
+          "Published tools and multi-step flows — the reusable playbooks Zed can run on demand.",
+        href: "/flows",
+        icon: Wrench,
+        accent: "fuchsia",
+      },
+      {
+        label: "Run History",
+        description:
+          "Every flow Zed has executed, with inputs, outputs, and traces. Audit what happened and rerun what worked.",
+        href: "/runs",
+        icon: History,
+        accent: "emerald",
+      },
+    ],
   },
-  content: {
-    label: "Content",
-    purpose: "Plan, create, optimize, and publish content across scripts, SEO, YouTube, social, analytics, and reports.",
+  finance: FINANCE,
+  // `trading` stays as an alias so old links keep working.
+  trading: FINANCE,
+  marketing: {
+    label: "Marketing",
+    purpose:
+      "Grow your audience — inbox triage, campaigns, and content flows. Zed pulls emails and messages into one place so you decide, not sort.",
     icon: PenTool,
-    categories: ["content", "social", "marketing", "pr"],
-    empty: "No content tools are published yet.",
+    categories: ["marketing", "content", "social", "pr"],
+    empty: "No marketing flows are published yet.",
+    subspaces: [
+      {
+        label: "Inbox",
+        description:
+          "Zed reads incoming email, classifies urgency, and surfaces what actually needs your reply.",
+        href: "/inbox",
+        icon: Inbox,
+        accent: "cyan",
+      },
+      {
+        label: "Content Flows",
+        description:
+          "Published content playbooks — briefs, drafts, SEO passes, distribution. Runs live in Run History.",
+        href: "/flows",
+        icon: Layers,
+        accent: "fuchsia",
+      },
+    ],
   },
-  learning: {
-    label: "Learning",
-    purpose: "Build skills through paths, practice, assessments, knowledge checks, and progress reviews.",
+  education: {
+    label: "Education",
+    purpose:
+      "Learn new skills. Zed builds paths, practices, assessments, and remembers what you've taught it.",
     icon: GraduationCap,
     categories: ["learning", "personal_development"],
-    empty: "No learning tools are published yet.",
-  },
-  trading: {
-    label: "Trading",
-    purpose: "Research, validate, journal, and improve trading decisions. Phase 1 is paper trading only.",
-    icon: LineChart,
-    categories: ["finance"],
-    empty: "Open Trading Intelligence for theses, journals, paper trades, and performance.",
-  },
-  finance: {
-    label: "Finance",
-    purpose: "Budget, banking, credit, trading, and investments in one place. Budget Management organizes every deposit; Trading stays separate.",
-    icon: Wallet,
-    categories: ["finance"],
-    empty: "Open Budget Management to allocate deposits, or Trading Intelligence for market work.",
+    empty: "No learning flows are published yet.",
+    subspaces: [
+      {
+        label: "Knowledge Library",
+        description:
+          "Everything Zed remembers about you and your work. Add notes or upload files; Zed structures it into objects it can recall.",
+        href: "/learning",
+        icon: BookOpen,
+        accent: "cyan",
+      },
+    ],
   },
 };
 
@@ -118,11 +207,11 @@ export default function WorkspacePage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/home")}
           className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Chat
+          Home
         </Button>
         <div className="flex items-center gap-2">
           <Icon size={16} className="text-cyan-300" />
@@ -145,42 +234,49 @@ export default function WorkspacePage() {
 
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
 
-        {workspace === "trading" && (
-          <Button onClick={() => navigate("/trading")} className="w-full rounded-xl zed-gradient">
-            Open Trading Intelligence
-          </Button>
-        )}
+        <Button
+          onClick={() => navigate(`/chat?ctx=${workspace}`)}
+          className="w-full rounded-xl zed-gradient"
+        >
+          <MessageSquare size={14} className="mr-2" />
+          Ask Zed in {config.label}
+        </Button>
 
-        {workspace === "finance" && (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => navigate("/budget")}
-              className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <Wallet size={15} className="text-cyan-300" />
-                Budget Management
-              </div>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Allocate every deposit across savings, taxes, personal payroll, and the business treasury — the Dual
-                Reserve Strategy.
-              </p>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate("/trading")}
-              className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                <LineChart size={15} className="text-fuchsia-300" />
-                Trading Intelligence
-              </div>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                Theses, journals, paper trades, and performance. Kept separate — treasury never auto-funds trading.
-              </p>
-            </button>
-          </div>
+        {config.subspaces && config.subspaces.length > 0 && (
+          <section className="space-y-2">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Subspaces
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {config.subspaces.map((sub) => {
+                const SubIcon = sub.icon;
+                const accentText =
+                  sub.accent === "fuchsia"
+                    ? "text-fuchsia-300"
+                    : sub.accent === "emerald"
+                      ? "text-emerald-300"
+                      : sub.accent === "amber"
+                        ? "text-amber-300"
+                        : "text-cyan-300";
+                return (
+                  <button
+                    key={sub.href}
+                    type="button"
+                    onClick={() => navigate(sub.href)}
+                    className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+                  >
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <SubIcon size={15} className={accentText} />
+                      {sub.label}
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                      {sub.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         <section className="space-y-3">

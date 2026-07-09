@@ -12,7 +12,7 @@ import FilesAttachedStrip from "./FilesAttachedStrip";
 import { sendAgentMessage } from "./chat-area/sendAgentMessage";
 import { useConversationMutations } from "./chat-area/useConversationMutations";
 
-import type { Conversation, Message, File as DBFile } from "@shared/schema";
+import type { AgentTarget, Conversation, Message, File as DBFile } from "@shared/schema";
 
 interface ChatAreaProps {
   conversation?: Conversation;
@@ -23,6 +23,7 @@ interface ChatAreaProps {
   onAssignProject?: (conversationId: string, projectId: string | null) => Promise<void> | void;
   isMobile?: boolean;
   onOpenSidebar?: () => void;
+  workspaceContext?: AgentTarget;
 }
 
 export default function ChatArea({
@@ -33,6 +34,7 @@ export default function ChatArea({
   selectedProjectId,
   isMobile = false,
   onOpenSidebar,
+  workspaceContext,
 }: ChatAreaProps) {
   const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
@@ -121,6 +123,7 @@ export default function ChatArea({
       message,
       convId: convId!,
       projectId: selectedProjectId || undefined,
+      agentTarget: workspaceContext,
       abortRef,
       setIsStreaming,
       setLocalMessages,

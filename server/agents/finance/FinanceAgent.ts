@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromProvider } from "../../services/ModelProviderService";
+import type { ImageBlock } from "../../core/providers/provider-interface";
 import { formatResultsForPrompt, webSearch } from "../../services/WebSearchService";
 import { querySimilarResearch, storeResearchBrief } from "../../services/ChromaService";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
@@ -24,6 +25,7 @@ export interface FinanceAgentRequest {
   task: string;
   conversationId?: string;
   memoryContext?: string;
+  attachments?: ImageBlock[];
 }
 
 export interface FinanceAgentResponse {
@@ -358,6 +360,7 @@ Return a direct operator-style response. Avoid vague motivation language.`.trim(
 
     const reply = await generateChatFromProvider([{ role: "user", content: request.task }], systemPrompt, {
       lane: "finance",
+      attachments: request.attachments,
     });
     await storeResearchBrief({
       topic: `FinanceAgent: ${request.task}`,

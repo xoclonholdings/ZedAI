@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromProvider } from "../../services/ModelProviderService";
+import type { ImageBlock } from "../../core/providers/provider-interface";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { HUB_LOG_DIR, HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
@@ -10,6 +11,7 @@ export interface BusinessManagerRequest {
   task: string;
   conversationId?: string;
   memoryContext?: string;
+  attachments?: ImageBlock[];
 }
 
 export interface BusinessManagerResponse {
@@ -124,6 +126,7 @@ ${request.memoryContext ? `\nShared knowledge context:\n${request.memoryContext}
 
     const reply = await generateChatFromProvider([{ role: "user", content: request.task }], systemPrompt, {
       lane: "business",
+      attachments: request.attachments,
     });
     await this.writeToMemory(request, reply, scope, approval);
     await this.log(request, reply, scope, approval);

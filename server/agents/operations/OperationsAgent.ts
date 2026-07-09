@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateBufferedStreamFromProvider } from "../../services/ModelProviderService";
+import type { ImageBlock } from "../../core/providers/provider-interface";
 import { loadAdminSettings } from "../../services/AdminSettingsStore";
 import { AgentApprovalAdapter } from "../../services/approval/AgentApprovalAdapter";
 import { decideApprovalPolicy } from "../../services/approvalPolicy";
@@ -18,6 +19,7 @@ export interface AgentRequest {
   conversationId?: string;
   context?: Record<string, any>;
   memoryContext?: string;
+  attachments?: ImageBlock[];
 }
 
 export interface AgentResponse {
@@ -140,7 +142,7 @@ ConversationID: ${request.conversationId || "none"}`.trim();
     const reply = await generateBufferedStreamFromProvider(
       [{ role: "user", content: request.message }],
       systemPrompt,
-      { lane: "operations" },
+      { lane: "operations", attachments: request.attachments },
     );
     // policy.mode is "auto" or "ask" here. "auto" means dispatch
     // without gating; "ask" queues for admin approval.

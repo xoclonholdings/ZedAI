@@ -48,6 +48,134 @@ interface UploadResult {
 
 export function registerMemoryUploadRoutes(app: Express): void {
   app.post(
+    "/api/me/memory/merge-objects",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user?.claims?.sub || "user";
+        const keepId = typeof req.body?.keepId === "string" ? req.body.keepId : "";
+        const dropIds: string[] = Array.isArray(req.body?.dropIds)
+          ? req.body.dropIds.filter((s: unknown): s is string => typeof s === "string")
+          : [];
+        if (!keepId || dropIds.length === 0) {
+          return res.status(400).json({
+            error: "Provide keepId and a non-empty dropIds array.",
+          });
+        }
+        const graph = await readAppliedGraph();
+        if (!graph) {
+          return res.status(400).json({ error: "No applied graph to merge into." });
+        }
+        const keeper = graph.objects.find((o) => o.id === keepId);
+        if (!keeper) {
+          return res.status(404).json({ error: "keepId not found in graph." });
+        }
+        const dropSet = new Set(dropIds.filter((id) => id !== keepId));
+        const dropped = graph.objects.filter((o) => dropSet.has(o.id));
+        if (dropped.length === 0) {
+          return res.status(400).json({ error: "No dropIds matched objects in graph." });
+        }
+
+        const mergedAliases = new Set(keeper.aliases || []);
+        const mergedSourceRefs = [...(keeper.sourceRefs || [])];
+        for (const d of dropped) {
+          if (d.canonicalName && d.canonicalName !== keeper.canonicalName) {
+            mergedAliases.add(d.canonicalName);
+          }
+          for (const alias of d.aliases || []) mergedAliases.add(alias);
+          for (const ref of d.sourceRefs || []) mergedSourceRefs.push(ref);
+        }
+
+        const nextObjects = graph.objects
+          .filter((o) => !dropSet.has(o.id))
+          .map((o) =>
+            o.id === keeper.id
+              ? {
+                  ...o,
+                  aliases: Array.from(mergedAliases),
+                  sourceRefs: mergedSourceRefs,
+                  updatedAt: new Date().toISOString(),
+                }
+              : o,
+          );
+
+        const nextRelationships = graph.relationships
+          .map((rel) => ({
+            ...rel,
+            fromObjectId: dropSet.has(rel.fromObjectId) ? keeper.id : rel.fromObjectId,
+            toObjectId: dropSet.has(rel.toObjectId) ? keeper.id : rel.toObjectId,
+          }))
+          .filter(
+            (rel, i, arr) =>
+              rel.fromObjectId !== rel.toObjectId &&
+              arr.findIndex(
+                (other) =>
+                  other.fromObjectId === rel.fromObjectId &&
+                  other.toObjectId === rel.toObjectId &&
+                  other.relationshipType === rel.relationshipType,
+              ) === i,
+          );
+
+        const nextGraph: ObjectGraph = {
+          ...graph,
+          generatedAt: new Date().toISOString(),
+          objects: nextObjects,
+          relationships: nextRelationships,
+          stats: graphStats(nextObjects, nextRelationships),
+        };
+        const applied = await writeAppliedGraph(nextGraph);
+
+        void logRuntimeEvent({
+          level: "info",
+          source: "server",
+          event: "memory.merge",
+          detail: `Merged ${dropped.length} duplicate object(s) into ${keeper.canonicalName}`,
+          context: {
+            userId,
+            keepId,
+            dropIds: Array.from(dropSet),
+            backup: applied.backupPath ? path.basename(applied.backupPath) : null,
+          },
+        });
+
+        res.json({
+          merged: dropped.length,
+          keeper: {
+            id: keeper.id,
+            canonicalName: keeper.canonicalName,
+            aliases: Array.from(mergedAliases),
+          },
+          totals: {
+            graphObjects: nextGraph.objects.length,
+            graphRelationships: nextGraph.relationships.length,
+          },
+        });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || "Merge failed" });
+      }
+    },
+  );
+
+  app.get("/api/me/memory/graph", isAuthenticated, async (_req: any, res) => {
+    try {
+      const graph = await readAppliedGraph();
+      if (!graph) {
+        return res.json({
+          version: "1",
+          generatedAt: null,
+          sources: [],
+          objects: [],
+          relationships: [],
+          stats: { objectCount: 0, relationshipCount: 0 },
+        });
+      }
+      res.json(graph);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to read memory graph" });
+    }
+  });
+
+  app.post(
     "/api/me/memory/upload",
     isAuthenticated,
     upload.array("files"),

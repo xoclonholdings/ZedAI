@@ -85,60 +85,34 @@ function checkUrl(
   };
 }
 
-function pushProviderChecks(
-  env: NodeJS.ProcessEnv,
-  provider: string,
-  checks: EnvCheck[],
-): void {
-  if (provider === "openai") {
-    if (!present(env, "OPENAI_API_KEY")) {
-      checks.push({
-        name: "OPENAI_API_KEY",
-        severity: "error",
-        message: "Required when MODEL_PROVIDER=openai but not set.",
-      });
-    } else {
-      checks.push({
-        name: "OPENAI_API_KEY",
-        severity: "ok",
-        message: `Set (length ${trimmed(env, "OPENAI_API_KEY").length}).`,
-      });
-    }
-    const urlCheck = checkUrl(env, "OPENAI_BASE_URL", "/v1");
-    if (urlCheck) checks.push(urlCheck);
-    else
-      checks.push({
-        name: "OPENAI_BASE_URL",
-        severity: "warn",
-        message: "Not set; falling back to https://api.openai.com/v1.",
-        hint: "Set explicitly when using a non-OpenAI gateway like Lightning AI.",
-      });
-    if (!present(env, "OPENAI_MODEL") && !present(env, "MODEL_NAME")) {
-      checks.push({
-        name: "OPENAI_MODEL",
-        severity: "warn",
-        message: "Not set. Default model will be used (gpt-4o-mini).",
-        hint: "Set OPENAI_MODEL to your gateway's model identifier.",
-      });
-    } else {
-      checks.push({
-        name: "OPENAI_MODEL",
-        severity: "ok",
-        message: `Default model: ${trimmed(env, "OPENAI_MODEL") || trimmed(env, "MODEL_NAME")}.`,
-      });
-    }
+function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
+  const baseUrl = trimmed(env, "LIGHTNING_BASE_URL") || trimmed(env, "REMOTE_INFERENCE_URL");
+  if (!baseUrl) {
+    checks.push({
+      name: "LIGHTNING_BASE_URL",
+      severity: "error",
+      message: "Not set. Lightning AI endpoint URL is required.",
+      hint: "Point it at your Lightning AI runner (e.g. https://<your-endpoint>.lightning.ai).",
+    });
+  } else {
+    const check = checkUrl(env, "LIGHTNING_BASE_URL") || checkUrl(env, "REMOTE_INFERENCE_URL");
+    if (check) checks.push({ ...check, name: "LIGHTNING_BASE_URL" });
   }
-  if (provider === "claude") {
-    if (!present(env, "CLAUDE_API_KEY") && !present(env, "ANTHROPIC_API_KEY")) {
-      checks.push({
-        name: "CLAUDE_API_KEY",
-        severity: "error",
-        message:
-          "Required when MODEL_PROVIDER=claude but neither CLAUDE_API_KEY nor ANTHROPIC_API_KEY is set.",
-      });
-    }
-    const urlCheck = checkUrl(env, "CLAUDE_BASE_URL");
-    if (urlCheck) checks.push(urlCheck);
+
+  if (!present(env, "LIGHTNING_MODEL") && !present(env, "MODEL_NAME")) {
+    checks.push({
+      name: "LIGHTNING_MODEL",
+      severity: "warn",
+      message:
+        "Not set. Per-lane MODEL_<LANE> overrides must be set or the runner needs its own default.",
+      hint: "Set LIGHTNING_MODEL to the model identifier your Lightning runner serves by default.",
+    });
+  } else {
+    checks.push({
+      name: "LIGHTNING_MODEL",
+      severity: "ok",
+      message: `Default model: ${trimmed(env, "LIGHTNING_MODEL") || trimmed(env, "MODEL_NAME")}.`,
+    });
   }
 }
 
@@ -260,32 +234,16 @@ export function validateEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): EnvValidationResult {
   const checks: EnvCheck[] = [];
-  const provider = (env.MODEL_PROVIDER || "").trim().toLowerCase();
 
-  // 1. Provider selection
-  if (!provider) {
-    checks.push({
-      name: "MODEL_PROVIDER",
-      severity: "error",
-      message: "Not set. Active provider cannot be determined.",
-      hint: 'Set to one of: "openai", "claude", "claw-temp".',
-    });
-  } else if (!["openai", "claude", "claw-temp"].includes(provider)) {
-    checks.push({
-      name: "MODEL_PROVIDER",
-      severity: "error",
-      message: `Unknown value "${provider}".`,
-      hint: 'Must be one of: "openai", "claude", "claw-temp".',
-    });
-  } else {
-    checks.push({
-      name: "MODEL_PROVIDER",
-      severity: "ok",
-      message: `Active provider is "${provider}".`,
-    });
-  }
+  // Lightning AI is the only provider. No selection to validate — just
+  // check that its endpoint and default model are configured.
+  checks.push({
+    name: "Provider",
+    severity: "ok",
+    message: "Lightning AI (the only provider).",
+  });
 
-  pushProviderChecks(env, provider, checks);
+  pushLightningChecks(env, checks);
 
   // 2. Per-lane overrides (informational only)
   const lanes = ["CHAT", "MANAGER", "OPERATIONS", "RESEARCH", "BUSINESS", "FINANCE"];
