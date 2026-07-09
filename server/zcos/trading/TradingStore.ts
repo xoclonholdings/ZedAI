@@ -3,6 +3,7 @@ import path from "path";
 import { randomUUID } from "crypto";
 
 import { HUB_DIR, HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
+import { readTradingState, tradingDbAvailable, writeTradingState } from "./tradingPersistence";
 import type {
   PaperTrade,
   PaperTradeStatus,
@@ -30,7 +31,16 @@ async function ensureTradingDirs() {
   await fs.mkdir(path.dirname(TRADING_MEMORY_PATH), { recursive: true });
 }
 
-async function readJsonArray<T>(file: string): Promise<T[]> {
+/**
+ * Each collection maps to a stable key in the durable trading_state
+ * table (the JSON filename without its extension), so the DB row and the
+ * offline file stay in sync conceptually.
+ */
+function collectionKey(file: string): string {
+  return path.basename(file, ".json");
+}
+
+async function readFileArray<T>(file: string): Promise<T[]> {
   try {
     const raw = await fs.readFile(file, "utf8");
     const parsed = JSON.parse(raw);
@@ -40,7 +50,21 @@ async function readJsonArray<T>(file: string): Promise<T[]> {
   }
 }
 
+async function readJsonArray<T>(file: string): Promise<T[]> {
+  // Durable store first; fall back to the JSON file (also seeds any
+  // pre-existing file data on first read before the DB has a row).
+  if (tradingDbAvailable()) {
+    const stored = await readTradingState<T[]>("collection", collectionKey(file));
+    if (stored) return Array.isArray(stored) ? stored : [];
+  }
+  return readFileArray<T>(file);
+}
+
 async function writeJsonArray<T>(file: string, data: T[]) {
+  if (tradingDbAvailable()) {
+    const ok = await writeTradingState("collection", collectionKey(file), data);
+    if (ok) return;
+  }
   await ensureTradingDirs();
   await fs.writeFile(file, JSON.stringify(data, null, 2), "utf8");
 }
@@ -494,8 +518,14 @@ export const TradingStore = {
   },
 
   async appendMemory(summary: string) {
-    await ensureTradingDirs();
-    const entry = `\n- ${now()}: ${summary}`;
-    await fs.appendFile(TRADING_MEMORY_PATH, entry, "utf8");
+    // Best-effort activity log — must never break a save that already
+    // persisted (the log file may be on a read-only/ephemeral disk).
+    try {
+      await ensureTradingDirs();
+      const entry = `\n- ${now()}: ${summary}`;
+      await fs.appendFile(TRADING_MEMORY_PATH, entry, "utf8");
+    } catch {
+      /* logging is non-critical */
+    }
   },
 };

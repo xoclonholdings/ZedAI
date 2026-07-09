@@ -145,6 +145,19 @@ export async function runMigrations(): Promise<void> {
       ON scratchpad_memory (conversation_id);
     `);
 
+    // Trading state (durable JSONB blobs for the Trading module:
+    // learned knowledge, stage progression, theses, paper trades,
+    // governance history, TradingView records).
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS trading_state (
+        scope varchar NOT NULL,
+        key varchar NOT NULL,
+        data jsonb NOT NULL,
+        updated_at timestamp DEFAULT now(),
+        PRIMARY KEY (scope, key)
+      );
+    `);
+
     console.log('[MIGRATIONS] Database setup completed successfully');
   } catch (error) {
     console.error('[MIGRATIONS] Failed to run migrations:', error);
