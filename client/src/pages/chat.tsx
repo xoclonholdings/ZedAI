@@ -4,13 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import type { AgentTarget, Conversation, Message, File as DBFile } from "@shared/schema";
-
-const WORKSPACE_AGENT: Record<string, AgentTarget> = {
-  finance: "finance",
-  operations: "operations",
-  research: "research",
-  marketing: "business",
-};
+import {
+  persistWorkspace,
+  resolveWorkspace,
+  WORKSPACE_AGENT,
+  WORKSPACE_LABEL,
+  type WorkspaceSlug,
+} from "@/lib/workspaceContext";
 
 export type FilingProject = {
   id: string;
@@ -33,11 +33,23 @@ export default function Chat() {
   const [isMobile, setIsMobile] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const search = useSearch();
-  const workspaceContext = useMemo<AgentTarget | undefined>(() => {
-    const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
-    const ctx = params.get("ctx");
-    return ctx ? WORKSPACE_AGENT[ctx] : undefined;
-  }, [search]);
+  const workspaceSlug = useMemo<WorkspaceSlug | null>(
+    () => resolveWorkspace(search),
+    [search],
+  );
+
+  // Persist whatever we resolved so the next full reload has it, and
+  // clear when the user explicitly exits (?ctx=none).
+  useEffect(() => {
+    const explicitClear = /(?:^|[?&])ctx=none(?:&|$)/.test(search);
+    if (explicitClear) persistWorkspace(null);
+    else if (workspaceSlug) persistWorkspace(workspaceSlug);
+  }, [search, workspaceSlug]);
+
+  const workspaceContext: AgentTarget | undefined = workspaceSlug
+    ? WORKSPACE_AGENT[workspaceSlug]
+    : undefined;
+  const workspaceLabel = workspaceSlug ? WORKSPACE_LABEL[workspaceSlug] : null;
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -181,6 +193,8 @@ export default function Chat() {
           isMobile={isMobile}
           onOpenSidebar={() => setIsSidebarOpen(true)}
           workspaceContext={workspaceContext}
+          workspaceLabel={workspaceLabel}
+          workspaceSlug={workspaceSlug}
         />
       </div>
     </div>

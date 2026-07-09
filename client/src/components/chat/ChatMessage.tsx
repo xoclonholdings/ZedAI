@@ -1,15 +1,6 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  BarChart,
-  Copy,
-  FileText,
-  Image,
-  Pencil,
-  Sparkles,
-  User,
-} from "lucide-react";
+import { BarChart, Copy, FileText, Image, Pencil } from "lucide-react";
 
-import { zedLogoSrc as zLogoPath } from "@/lib/zedLogo";
 import type { Message } from "@shared/schema";
 import AssistantMarkdown from "./AssistantMarkdown";
 
@@ -29,19 +20,27 @@ type MessageAttachment = {
 };
 
 const FONT_CLASS: Record<NonNullable<ChatMessageProps["fontSize"]>, string> = {
-  small: "text-xs leading-6",
-  medium: "text-sm leading-7",
+  small: "text-[13px] leading-6",
+  medium: "text-[14.5px] leading-[1.65]",
   large: "text-base leading-8",
 };
 
 function getFileIcon(mimeType: string) {
-  if (mimeType.startsWith("image/")) return <Image size={12} />;
+  if (mimeType.startsWith("image/")) return <Image size={11} />;
   if (mimeType.includes("csv") || mimeType.includes("excel")) {
-    return <BarChart size={12} />;
+    return <BarChart size={11} />;
   }
-  return <FileText size={12} />;
+  return <FileText size={11} />;
 }
 
+/**
+ * Chat message — operator layout, not chatbot bubbles.
+ *
+ * User turns: right-aligned text with a subtle rail on the right.
+ * ZED turns: left-aligned text with a small cyan rail on the left.
+ * No avatars, no name badges, no gradient bubbles. The message IS
+ * the message — chrome shows up on hover only.
+ */
 export default function ChatMessage({
   message,
   onCopy,
@@ -61,115 +60,98 @@ export default function ChatMessage({
         minute: "2-digit",
       })
     : "";
-  const rowPad = compact ? "py-1" : "py-2";
-  const avatarSize = compact ? "h-6 w-6" : "h-7 w-7";
+  const rowGap = compact ? "py-1.5" : "py-2.5";
+  const isClarifying = Boolean((message.metadata as any)?.clarifyingQuestion);
 
   if (isUser) {
     return (
-      <div className={`flex w-full justify-end ${rowPad}`}>
-        <div className="flex max-w-[88vw] items-start gap-2 sm:max-w-[76%]">
-          <div className="min-w-0 flex-1">
+      <div className={`group flex w-full justify-end ${rowGap}`}>
+        <div className="min-w-0 max-w-[88vw] sm:max-w-[70%]">
+          <div className="flex items-start gap-2 justify-end">
             <div
-              className={`inline-block max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-tr-sm bg-gradient-to-r from-purple-600/20 to-pink-600/20 px-3 py-2 text-left text-foreground/95 [overflow-wrap:anywhere] ${bodyClass}`}
+              className={`min-w-0 whitespace-pre-wrap break-words text-right text-foreground [overflow-wrap:anywhere] ${bodyClass}`}
             >
               {message.content}
             </div>
+            <div className="mt-1 h-full min-h-[1.25rem] w-[2px] shrink-0 rounded-full bg-white/15" />
+          </div>
 
-            <div className="mt-1 flex items-center justify-end gap-2 text-[10px] text-muted-foreground/70">
-              {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
-              {onCopy ? (
-                <button
-                  type="button"
-                  onClick={() => onCopy(message)}
-                  className="inline-flex items-center hover:text-foreground"
-                >
-                  <Copy size={10} className="mr-0.5" />
-                  Copy
-                </button>
-              ) : null}
-              {onEdit ? (
-                <button
-                  type="button"
-                  onClick={() => onEdit(message)}
-                  className="inline-flex items-center hover:text-foreground"
-                >
-                  <Pencil size={10} className="mr-0.5" />
-                  Edit
-                </button>
-              ) : null}
-            </div>
-
-            {attachments.length > 0 ? (
-              <div className="mt-2 space-y-1 border-r border-cyan-500/20 pr-2">
-                {attachments.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-end gap-2 rounded-md border border-white/10 bg-white/5 px-2 py-1"
-                  >
-                    <Badge
-                      variant="outline"
-                      className="border-cyan-500/30 px-1 text-[10px] text-cyan-300"
-                    >
-                      {(file.size / 1024 / 1024).toFixed(1)} MB
-                    </Badge>
-                    <span className="truncate text-[11px] text-foreground">
-                      {file.name}
-                    </span>
-                    <span className="text-cyan-400">{getFileIcon(file.mimeType)}</span>
-                  </div>
-                ))}
-              </div>
+          <div className="mt-1 flex items-center justify-end gap-2 text-[10.5px] text-white/40 opacity-0 group-hover:opacity-100 transition-opacity">
+            {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
+            {onCopy ? (
+              <button
+                type="button"
+                onClick={() => onCopy(message)}
+                className="inline-flex items-center hover:text-white/70"
+              >
+                <Copy size={10} className="mr-0.5" />
+                Copy
+              </button>
+            ) : null}
+            {onEdit ? (
+              <button
+                type="button"
+                onClick={() => onEdit(message)}
+                className="inline-flex items-center hover:text-white/70"
+              >
+                <Pencil size={10} className="mr-0.5" />
+                Edit
+              </button>
             ) : null}
           </div>
 
-          <div
-            className={`mt-0.5 flex ${avatarSize} flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5`}
-          >
-            <User className="text-white" size={14} />
-          </div>
+          {attachments.length > 0 ? (
+            <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+              {attachments.map((file, index) => (
+                <div
+                  key={index}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[11px]"
+                >
+                  <span className="text-cyan-300/70">{getFileIcon(file.mimeType)}</span>
+                  <span className="truncate text-white/75 max-w-[24ch]">{file.name}</span>
+                  <Badge
+                    variant="outline"
+                    className="border-white/10 bg-transparent px-1 text-[9px] text-white/45"
+                  >
+                    {(file.size / 1024 / 1024).toFixed(1)}M
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`flex w-full justify-start ${rowPad}`}>
-      <div className="flex w-full max-w-[92vw] min-w-0 items-start gap-2 md:max-w-[94%]">
+    <div className={`group flex w-full justify-start ${rowGap}`}>
+      <div className="flex w-full min-w-0 items-start gap-2 max-w-[94%]">
         <div
-          className={`mt-0.5 flex ${avatarSize} flex-shrink-0 items-center justify-center rounded-full border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20`}
-        >
-          <img src={zLogoPath} alt="Z" className="h-3.5 w-3.5" />
-        </div>
-
+          className={`mt-1 h-full min-h-[1.25rem] w-[2px] shrink-0 rounded-full ${
+            isClarifying ? "bg-cyan-400" : "bg-cyan-400/40"
+          }`}
+        />
         <div className="min-w-0 flex-1 overflow-hidden">
-          <div className="mb-1.5 flex items-center gap-1.5 text-[10px]">
-            <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text font-semibold uppercase tracking-[0.18em] text-transparent">
-              ZED
-            </span>
-            <Sparkles size={9} className="text-purple-300" />
-            {(message.metadata as any)?.clarifyingQuestion ? (
-              <span
-                className="ml-0.5 inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/[0.08] px-1.5 py-[1px] text-[9px] font-medium uppercase tracking-[0.06em] text-cyan-200"
-                title="Zed paused to ask a clarifying question — answer it and Zed will continue."
-              >
-                Clarifying
-              </span>
-            ) : null}
-          </div>
+          {isClarifying && (
+            <div className="mb-1 inline-flex items-center rounded-full border border-cyan-400/25 bg-cyan-400/[0.06] px-1.5 py-[1px] text-[9.5px] font-medium uppercase tracking-[0.12em] text-cyan-200/85">
+              Question
+            </div>
+          )}
 
           <article
-            className={`zed-markdown min-w-0 max-w-none break-words text-foreground/95 [overflow-wrap:anywhere] ${bodyClass}`}
+            className={`zed-markdown min-w-0 max-w-none break-words text-foreground [overflow-wrap:anywhere] ${bodyClass}`}
           >
             <AssistantMarkdown content={message.content || ""} />
           </article>
 
-          <div className="mt-1.5 flex items-center gap-2 text-[10px] text-muted-foreground/70">
+          <div className="mt-1 flex items-center gap-2 text-[10.5px] text-white/40 opacity-0 group-hover:opacity-100 transition-opacity">
             {showTimestamp && timestamp ? <span>{timestamp}</span> : null}
             {onCopy ? (
               <button
                 type="button"
                 onClick={() => onCopy(message)}
-                className="inline-flex items-center hover:text-foreground"
+                className="inline-flex items-center hover:text-white/70"
               >
                 <Copy size={10} className="mr-0.5" />
                 Copy
