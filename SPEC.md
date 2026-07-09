@@ -137,6 +137,25 @@ The prompt fragments reach the model in the SPEC order above: governance is pinn
 
 The Principle, Strategic Reasoning, and Reflection services must not expose raw chain-of-thought, hidden prompts, source trails, provider names, workflow names, internal scoring, route names, graph IDs, or retrieval internals to the user. If the user asks how an answer was produced, ZED should provide a clean implementation summary only.
 
+### Intelligence Core
+
+The Intelligence Core is a deterministic, service-owned layer inside the Cognitive Core that raises ZED's reasoning, context handling, document understanding, response shaping, and autonomy without changing the ZED interface. It adds five engines under `server/services/intelligence-core/`; all run synchronously with no extra model call, and all outputs are internal by default (revealed only when the user explicitly asks for reasoning).
+
+- Deep Thinking Mode (`DeepThinkingEngine.ts`) — scores request complexity and, on genuinely complex work, runs a staged internal pipeline (decomposition → hypothesis generation → solution evaluation → refinement → confidence estimation) injected as a hidden reasoning scaffold. Available to every lane/workspace.
+- Large Context Intelligence (`ContextIntelligenceEngine.ts`) — treats all retrieved knowledge blocks as one pool, ranks each by relevance to the live query, de-duplicates overlapping lines across sources, compresses low-signal blocks, and enforces a character budget. Project instructions and uploaded files are pinned so they always survive.
+- Document Intelligence (`DocumentIntelligenceService.ts`) — pushes every uploaded conversation file through the existing Knowledge Ingestion pipeline into the same Knowledge Graph (no duplicate store), then retrieves document-derived knowledge for later queries with source attribution, citations, and conflict awareness.
+- Adaptive Response Intelligence (`ResponseOrchestrationEngine.ts`) — reads intent, complexity, urgency, task type, and required depth/precision, then emits a per-message directive that picks the response form (direct, steps, checklist, table, comparison, report, executive summary, code) and verbosity, instead of a static template.
+- Self-Orchestrating Intelligence (`SelfOrchestrationEngine.ts`) — decides which capabilities a turn needs (search memory / knowledge graph / documents, launch research, call an agent lane, schedule, request approval, generate a report, calculate, run a workflow, update project state, notify) and emits a capability activation plan. Outward actions are flagged non-autonomous so the existing approval policy still owns the side effect.
+
+Wiring:
+
+- Facade: `server/services/intelligence-core/index.ts` (`IntelligenceCore.analyze`)
+- Hot-path integration: `server/services/ChatExecutionService.ts` runs the reasoning engines, applies Context Intelligence over the assembled knowledge blocks, and retrieves Document Knowledge; the resulting plan is recorded on the execution trace (`intelligencePlan`, `contextCompressionRatio`, `documentCitations`) and in response metadata.
+- Upload ingestion: `server/routes-modules/conversations-crud.ts` (`POST /api/conversations/:id/upload`) ingests each processed file into the graph, embedding the summary in the file's `analysis.documentIntelligence`.
+- Observability/preview: `server/routes-modules/intelligence-core.ts` exposes `POST /api/intelligence/plan`, `POST /api/intelligence/documents/query`, and `GET /api/admin/intelligence-core/status`.
+
+The Intelligence Core prompt fragments slot into the existing Cognitive Core order: the Deep Thinking + Self-Orchestration reasoning fragments sit with Strategic Reasoning (before knowledge), the ranked/compressed knowledge block replaces the raw concatenation of retrieved sources, and the Adaptive Response directive sits just before Voice — governance still pinned first, response policy still pinned last. A safety net falls back to the raw retrieved sources if ranking ever yields empty output, preserving backward compatibility.
+
 Reflection stores concise summaries of important exchanges under project memory type `reflection`. Reflection summaries must describe user intent, visible answer, approval relevance, and strategic relevance only. They must not store hidden reasoning, prompt text, tool logs, provider traces, or raw internal state.
 
 ### Plain-Language Settings Surface
@@ -360,6 +379,9 @@ The server currently exposes at least these API routes:
 - `POST /api/knowledge-ingestion/promote`
 - `POST /api/knowledge-ingestion/conflicts/:id/resolve`
 - `POST /api/context/assess`
+- `POST /api/intelligence/plan`
+- `POST /api/intelligence/documents/query`
+- `GET /api/admin/intelligence-core/status`
 - `POST /api/orchestrate`
 - `GET /api/orchestrate/status`
 - `POST /api/voice/transcribe`

@@ -4,6 +4,7 @@ import { isAuthenticated } from "../localAuth";
 import { storage } from "../storage/databaseStorage";
 import { upload } from "../services/fileProcessor";
 import { processFile, cleanupFile } from "../services/fileProcessor";
+import { DocumentIntelligenceService } from "../services/intelligence-core/DocumentIntelligenceService";
 import {
   insertConversationSchema,
   insertFileSchema,
@@ -288,6 +289,24 @@ export function registerConversationCrudRoutes(app: Express): void {
         for (const file of files) {
           try {
             const processed = await processFile(file.path, file.mimetype);
+
+            // Document Intelligence — push the extracted content through
+            // the Knowledge Ingestion pipeline so the upload becomes
+            // connected, queryable graph knowledge instead of one-shot
+            // prompt text. Best-effort: a failure here must not fail the
+            // upload, so the summary is embedded when it succeeds.
+            let documentIntelligence: any;
+            if (!processed.error && processed.extractedContent) {
+              documentIntelligence = await DocumentIntelligenceService.ingestUploadedFile({
+                originalName: file.originalname,
+                fileName: file.filename,
+                mimeType: file.mimetype,
+                content: String(processed.extractedContent),
+                conversationId,
+                userId: req.user?.claims?.sub,
+              }).catch((err: any) => ({ ingested: false, skippedReason: String(err?.message || err) }));
+            }
+
             const saved = await storage.createFile(
               insertFileSchema.parse({
                 conversationId,
@@ -297,7 +316,9 @@ export function registerConversationCrudRoutes(app: Express): void {
                 size: file.size,
                 status: processed.error ? "error" : "completed",
                 extractedContent: processed.extractedContent,
-                analysis: processed.analysis,
+                analysis: documentIntelligence
+                  ? { ...(processed.analysis || {}), documentIntelligence }
+                  : processed.analysis,
               }),
             );
             processedFiles.push(saved);
