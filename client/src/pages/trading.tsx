@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import TradingProgressionBanner from "@/components/trading/TradingProgressionBanner";
+import TrainingConsole from "@/components/trading/TrainingConsole";
 import SandboxWorkspace from "@/components/trading/SandboxWorkspace";
 import LearnStage from "@/components/trading/LearnStage";
 import StrategyStage from "@/components/trading/StrategyStage";
@@ -419,7 +420,14 @@ export default function TradingPage() {
       </div>
 
       <main className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
-        <TradingProgressionBanner />
+        <TradingProgressionBanner
+          onProgressionChange={(p) => setCurrentStage(p.currentStage)}
+          onOpenStageTool={() =>
+            document
+              .getElementById("stage-tool")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
+        />
 
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
         {notice && <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3 text-sm text-cyan-200">{notice}</div>}
@@ -427,12 +435,17 @@ export default function TradingPage() {
         {currentStage &&
           FUNCTIONAL_STAGES.includes(currentStage) &&
           !showAdvanced && (
-            <>
-              {currentStage === "learn" && <LearnStage />}
+            <div id="stage-tool" className="space-y-4 scroll-mt-20">
+              {currentStage === "learn" && (
+                <>
+                  <TrainingConsole />
+                  <LearnStage />
+                </>
+              )}
               {currentStage === "strategy" && <StrategyStage />}
               {currentStage === "validation" && <ValidationStage />}
               {currentStage === "sandbox" && <SandboxWorkspace />}
-            </>
+            </div>
           )}
 
         <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-white/[0.06]">

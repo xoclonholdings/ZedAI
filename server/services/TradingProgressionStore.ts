@@ -4,6 +4,9 @@ import path from "path";
 import { HUB_DIR } from "../utils/repoPaths";
 import {
   DEFAULT_PROGRESSION,
+  TRADING_STAGES,
+  nextStageOf,
+  type StageAssessmentRecord,
   type TradingProgression,
   type TradingStageId,
 } from "../../shared/trading-progression";
@@ -37,7 +40,11 @@ export async function loadProgression(userId: string): Promise<TradingProgressio
   try {
     const raw = await fs.readFile(fileFor(userId), "utf-8");
     const parsed = JSON.parse(raw) as TradingProgression;
-    return { ...DEFAULT_PROGRESSION, ...parsed };
+    return {
+      ...DEFAULT_PROGRESSION,
+      ...parsed,
+      assessments: { ...(DEFAULT_PROGRESSION.assessments || {}), ...(parsed.assessments || {}) },
+    };
   } catch {
     return { ...DEFAULT_PROGRESSION, lastUpdated: new Date().toISOString() };
   }
@@ -111,4 +118,62 @@ export async function setCurrentStage(
   };
   await writeProgression(userId, next);
   return next;
+}
+
+/** Persist the latest "Test Zed" result for a stage (the advance gate). */
+export async function recordAssessment(
+  userId: string,
+  stageId: TradingStageId,
+  record: StageAssessmentRecord,
+): Promise<TradingProgression> {
+  const current = await loadProgression(userId);
+  const next: TradingProgression = {
+    ...current,
+    assessments: { ...(current.assessments || {}), [stageId]: record },
+    lastUpdated: new Date().toISOString(),
+  };
+  await writeProgression(userId, next);
+  return next;
+}
+
+/**
+ * Advance out of a stage — only allowed once Zed has PASSED that
+ * stage's assessment. Unlocks and focuses the next stage.
+ */
+export async function advanceStage(
+  userId: string,
+  stageId: TradingStageId,
+): Promise<{ progression: TradingProgression; unlockedStage: TradingStageId }> {
+  const current = await loadProgression(userId);
+  const record = current.assessments?.[stageId];
+  if (!record?.passed) {
+    throw new Error("Zed has not passed this stage's test yet. Run the test first.");
+  }
+  const next = nextStageOf(stageId);
+  if (!next) {
+    throw new Error("This is the final stage — there is nothing to advance to.");
+  }
+
+  const now = new Date().toISOString();
+  const unlockedStages = current.unlockedStages.includes(next.id)
+    ? current.unlockedStages
+    : [...current.unlockedStages, next.id];
+
+  const progression: TradingProgression = {
+    ...current,
+    unlockedStages,
+    currentStage: next.id,
+    stageProgress: {
+      ...current.stageProgress,
+      [stageId]: { ...current.stageProgress[stageId], completedAt: now, completionPercent: 100 },
+      [next.id]: { ...current.stageProgress[next.id], startedAt: current.stageProgress[next.id]?.startedAt || now },
+    },
+    lastUpdated: now,
+  };
+  await writeProgression(userId, progression);
+  return { progression, unlockedStage: next.id };
+}
+
+export function stageOrder(stageId: TradingStageId): number {
+  return TRADING_STAGES.find((s) => s.id === stageId)?.order ?? 0;
 }
