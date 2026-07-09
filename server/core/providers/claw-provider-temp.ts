@@ -7,6 +7,20 @@ import {
 } from "./provider-helpers";
 import type { ModelProvider, ProviderExecutionOptions, ProviderHealth, ProviderMessage } from "./provider-interface";
 
+function flattenContent(content: ProviderMessage["content"]): string {
+  if (typeof content === "string") return content;
+  return content
+    .map((block) => (block.type === "text" ? block.text : "[image]"))
+    .join("\n");
+}
+
+function flattenMessages(messages: ProviderMessage[]): ProviderMessage[] {
+  return messages.map((message) => ({
+    role: message.role,
+    content: flattenContent(message.content),
+  }));
+}
+
 export class ClawTempProvider implements ModelProvider {
   private getConfig() {
     return getProviderRuntimeConfig().clawTemp;
@@ -26,14 +40,38 @@ export class ClawTempProvider implements ModelProvider {
 
   async executeChat(messages: ProviderMessage[], options?: ProviderExecutionOptions): Promise<string> {
     const config = this.ensureConfigured();
+
+    const attachments = options?.attachments || [];
+    const flatMessages = flattenMessages(messages);
+    if (attachments.length > 0) {
+      console.warn(
+        `[claw-temp] Provider does not support vision — dropping ${attachments.length} image attachment(s). Consider switching MODEL_PROVIDER to openai or claude.`,
+      );
+      let lastUserIdx = -1;
+      for (let i = flatMessages.length - 1; i >= 0; i--) {
+        if (flatMessages[i].role === "user") {
+          lastUserIdx = i;
+          break;
+        }
+      }
+      const note = `\n\n[User attached ${attachments.length} image${attachments.length === 1 ? "" : "s"} — the current model can't view images. Ask the user to describe the content if needed.]`;
+      if (lastUserIdx >= 0) {
+        flatMessages[lastUserIdx] = {
+          ...flatMessages[lastUserIdx],
+          content: `${flatMessages[lastUserIdx].content}${note}`,
+        };
+      }
+    }
     const userMessage =
-      [...messages].reverse().find((message) => message.role === "user")?.content ||
-      buildPromptFromMessages(messages, options?.systemPrompt);
+      ([...flatMessages]
+        .reverse()
+        .find((message) => message.role === "user")?.content as string) ||
+      buildPromptFromMessages(flatMessages, options?.systemPrompt);
 
     const requestBody: Record<string, unknown> = {
       model: options?.model || resolveModelForLane(options?.lane, config.model),
       message: userMessage,
-      messages,
+      messages: flatMessages,
       system_prompt: options?.systemPrompt,
     };
     // Only include generation params when set, so custom upstreams

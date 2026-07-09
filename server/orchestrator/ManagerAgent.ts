@@ -93,6 +93,9 @@ export class ManagerAgent {
       typeof request.context?.strategicPrompt === "string"
         ? request.context.strategicPrompt
         : "";
+    const attachments = Array.isArray(request.context?.attachments)
+      ? request.context.attachments
+      : undefined;
 
     const routeDecision = await selectAgentWithTrace(request.message, config, request.targetAgent);
     const agent = routeDecision.selectedAgent;
@@ -168,6 +171,7 @@ export class ManagerAgent {
               : "shallow",
           conversationId: request.conversationId,
           memoryContext: agentContext,
+          attachments,
         };
         const brief = await IntelligenceAgent.research(researchReq);
         reply = formatBrief(brief, { includeSources });
@@ -190,6 +194,7 @@ export class ManagerAgent {
           task: request.message,
           conversationId: request.conversationId,
           memoryContext: agentContext,
+          attachments,
         });
         return {
           reply: await presentZedResponse(filterOutputForTier3(resp.message), {
@@ -218,6 +223,7 @@ export class ManagerAgent {
           task: request.message,
           conversationId: request.conversationId,
           memoryContext: agentContext,
+          attachments,
         });
         return {
           reply: await presentZedResponse(filterOutputForTier3(resp.message), {
@@ -252,6 +258,7 @@ export class ManagerAgent {
           conversationId: request.conversationId,
           context: request.context,
           memoryContext: agentContext,
+          attachments,
         };
         const opResp: AgentResponse = await OperationsAgent.process(opReq);
         reply = opResp.reply;

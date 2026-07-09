@@ -1,8 +1,28 @@
 export type ProviderRole = "system" | "user" | "assistant";
 
+/**
+ * A single piece of message content. Text messages remain plain
+ * strings; multimodal messages (images alongside text) use blocks so
+ * each provider adapter can serialize to its native format.
+ */
+export interface TextBlock {
+  type: "text";
+  text: string;
+}
+
+export interface ImageBlock {
+  type: "image";
+  /** Raw base64 payload without the `data:` prefix. */
+  data: string;
+  /** IANA media type — e.g. `image/jpeg`, `image/png`. */
+  mediaType: string;
+}
+
+export type ContentBlock = TextBlock | ImageBlock;
+
 export interface ProviderMessage {
   role: ProviderRole;
-  content: string;
+  content: string | ContentBlock[];
 }
 
 /**
@@ -33,6 +53,14 @@ export interface ProviderExecutionOptions {
   temperature?: number;
   maxTokens?: number;
   topP?: number;
+  /**
+   * Optional image attachments. Each adapter appends these to the
+   * final user message in its native content-block format. When the
+   * active provider doesn't support vision, attachments are dropped
+   * with a warning and a bracket note is added to the text so the
+   * model at least knows they existed.
+   */
+  attachments?: ImageBlock[];
 }
 
 export interface ProviderHealth {

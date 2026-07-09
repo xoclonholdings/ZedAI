@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 
 import { storage } from "../storage/databaseStorage";
 import { insertMessageSchema } from "../../shared/schema";
+import type { ImageBlock } from "../core/providers/provider-interface";
 import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
 import { KnowledgeService } from "./KnowledgeService";
 import { ContextInquiryEngine } from "./knowledge-ingestion/ContextInquiryEngine";
@@ -167,22 +168,50 @@ async function buildFileContext(conversationId?: string): Promise<{
   prompt: string;
   filesReferenced: string[];
   failedFiles: string[];
+  imageBlocks: ImageBlock[];
 }> {
-  if (!conversationId) return { prompt: "", filesReferenced: [], failedFiles: [] };
+  if (!conversationId)
+    return { prompt: "", filesReferenced: [], failedFiles: [], imageBlocks: [] };
   const files = await storage.getFilesByConversation(conversationId).catch(() => []);
   const usable = files.filter((file: any) => file.status === "completed" && file.extractedContent);
   const failed = files
     .filter((file: any) => file.status === "error")
     .map((file: any) => file.originalName || file.fileName);
-  if (usable.length === 0) return { prompt: "", filesReferenced: [], failedFiles: failed };
-  const lines = usable.slice(0, 6).map((file: any) => {
+  if (usable.length === 0)
+    return { prompt: "", filesReferenced: [], failedFiles: failed, imageBlocks: [] };
+
+  const isImage = (file: any) =>
+    typeof file.mimeType === "string" && file.mimeType.startsWith("image/");
+
+  const imageFiles = usable.filter(isImage).slice(0, 6);
+  const textFiles = usable.filter((f: any) => !isImage(f)).slice(0, 6);
+
+  const imageBlocks: ImageBlock[] = imageFiles.map((file: any) => ({
+    type: "image",
+    data: String(file.extractedContent || ""),
+    mediaType: file.mimeType,
+  }));
+
+  const lines: string[] = [];
+  if (imageFiles.length > 0) {
+    lines.push(
+      `### Attached images\n${imageFiles
+        .map((f: any) => `- ${f.originalName || f.fileName}`)
+        .join("\n")}\nThe images themselves are attached to this message; look at them directly.`,
+    );
+  }
+  for (const file of textFiles) {
     const content = String(file.extractedContent || "").slice(0, 8_000);
-    return `### ${file.originalName || file.fileName}\nStatus: ${file.status}\nContent:\n${content}`;
-  });
+    lines.push(
+      `### ${file.originalName || file.fileName}\nStatus: ${file.status}\nContent:\n${content}`,
+    );
+  }
+
   return {
     prompt: `## UPLOADED FILE CONTEXT\nUse this content before general knowledge when the user asks about uploaded files.\n\n${lines.join("\n\n")}`,
-    filesReferenced: usable.map((file: any) => file.originalName || file.fileName),
+    filesReferenced: [...imageFiles, ...textFiles].map((file: any) => file.originalName || file.fileName),
     failedFiles: failed,
+    imageBlocks,
   };
 }
 
@@ -467,6 +496,7 @@ export class ChatExecutionService {
           knowledgePrompt: cognitiveKnowledgePrompt,
           isAdmin: Boolean(input.isAdmin),
           strategic: strategicReasoning.active,
+          attachments: fileContext.imageBlocks,
         },
       };
       const response = hooks.route

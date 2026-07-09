@@ -26,17 +26,67 @@ export class ClaudeProvider implements ModelProvider {
 
   async executeChat(messages: ProviderMessage[], options?: ProviderExecutionOptions): Promise<string> {
     const config = this.ensureConfigured();
+
+    const attachments = options?.attachments || [];
+    const withAttachments = [...messages];
+    if (attachments.length > 0) {
+      let lastUserIdx = -1;
+      for (let i = withAttachments.length - 1; i >= 0; i--) {
+        if (withAttachments[i].role === "user") {
+          lastUserIdx = i;
+          break;
+        }
+      }
+      const target =
+        lastUserIdx >= 0
+          ? withAttachments[lastUserIdx]
+          : { role: "user" as const, content: "" };
+      const asBlocks =
+        typeof target.content === "string"
+          ? target.content.trim()
+            ? [{ type: "text" as const, text: target.content }]
+            : []
+          : target.content;
+      const withImages = [
+        ...asBlocks,
+        ...attachments.map((img) => ({
+          type: "image" as const,
+          data: img.data,
+          mediaType: img.mediaType,
+        })),
+      ];
+      if (lastUserIdx >= 0) {
+        withAttachments[lastUserIdx] = { ...target, content: withImages };
+      } else {
+        withAttachments.push({ role: "user", content: withImages });
+      }
+    }
+
     const requestBody: Record<string, unknown> = {
       model: this.resolveModel(options),
       system: options?.systemPrompt,
       // Anthropic requires max_tokens on every messages call. Default
       // to a modest ceiling and let voice-derived settings override.
       max_tokens: typeof options?.maxTokens === "number" ? options.maxTokens : 1024,
-      messages: messages
+      messages: withAttachments
         .filter((message) => message.role !== "system")
         .map((message) => ({
           role: message.role === "assistant" ? "assistant" : "user",
-          content: message.content,
+          content:
+            typeof message.content === "string"
+              ? message.content
+              : message.content.map((block) =>
+                  block.type === "image"
+                    ? {
+                        type: "image",
+                        source: {
+                          type: "base64",
+                          media_type: block.mediaType,
+                          data: block.data,
+                        },
+                      }
+                    : { type: "text", text: block.text },
+                ),
         })),
     };
     if (typeof options?.temperature === "number") requestBody.temperature = options.temperature;

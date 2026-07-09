@@ -44,6 +44,41 @@ export class OpenAIProvider implements ModelProvider {
     const config = this.ensureConfigured();
     const model = this.resolveModel(options);
 
+    const attachments = options?.attachments || [];
+    const withAttachments = [...messages];
+    if (attachments.length > 0) {
+      let lastUserIdx = -1;
+      for (let i = withAttachments.length - 1; i >= 0; i--) {
+        if (withAttachments[i].role === "user") {
+          lastUserIdx = i;
+          break;
+        }
+      }
+      const target =
+        lastUserIdx >= 0
+          ? withAttachments[lastUserIdx]
+          : { role: "user" as const, content: "" };
+      const asBlocks =
+        typeof target.content === "string"
+          ? target.content.trim()
+            ? [{ type: "text" as const, text: target.content }]
+            : []
+          : target.content;
+      const withImages = [
+        ...asBlocks,
+        ...attachments.map((img) => ({
+          type: "image" as const,
+          data: img.data,
+          mediaType: img.mediaType,
+        })),
+      ];
+      if (lastUserIdx >= 0) {
+        withAttachments[lastUserIdx] = { ...target, content: withImages };
+      } else {
+        withAttachments.push({ role: "user", content: withImages });
+      }
+    }
+
     const formattedMessages = (
       options?.systemPrompt
         ? [
@@ -51,9 +86,9 @@ export class OpenAIProvider implements ModelProvider {
               role: "system",
               content: options.systemPrompt,
             },
-            ...messages,
+            ...withAttachments,
           ]
-        : messages
+        : withAttachments
     ).map((message) => ({
       role: message.role,
       content:
@@ -64,7 +99,16 @@ export class OpenAIProvider implements ModelProvider {
                 text: message.content,
               },
             ]
-          : message.content,
+          : message.content.map((block) =>
+              block.type === "image"
+                ? {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:${block.mediaType};base64,${block.data}`,
+                    },
+                  }
+                : { type: "text", text: block.text },
+            ),
     }));
 
     const requestBody: Record<string, unknown> = {
