@@ -9,8 +9,13 @@ import {
 import type {
   AssessmentBreakdownItem,
   AssessmentQuizItem,
+  KnowledgeAreaAssessment,
+  KnowledgeAreaInfo,
   StageAssessmentResult,
 } from "../../../shared/trading-training-types";
+
+/** Zed must score this to pass a single knowledge section. */
+const AREA_PASS_THRESHOLD = 70;
 
 /**
  * Tests ZED before it may advance a stage.
@@ -280,6 +285,159 @@ function lockedResult(stageId: TradingStageId): StageAssessmentResult {
       },
     ],
     quiz: [],
+    assessedAt: now(),
+  };
+}
+
+function areaById(areaId: string): (typeof TRADING_KNOWLEDGE_AREAS)[number] | undefined {
+  return TRADING_KNOWLEDGE_AREAS.find((a) => a.id === areaId);
+}
+
+/**
+ * Count / detect which ingested entries belong to a single section.
+ * An entry belongs to a section when it was tagged with the section id
+ * on upload, or when its structured content covers that section.
+ */
+function entryBelongsToArea(
+  entry: { category: string; tags: string[] } & Parameters<typeof haystackForEntry>[0],
+  area: (typeof TRADING_KNOWLEDGE_AREAS)[number],
+): boolean {
+  const tags = (entry.tags || []).map((t) => t.toLowerCase());
+  if (tags.includes(area.id) || tags.includes(area.title.toLowerCase())) return true;
+  return coverageForArea(area, [{ category: entry.category, text: haystackForEntry(entry) }]);
+}
+
+/** List the Learn-stage sections with per-section coverage + entry counts. */
+export async function listKnowledgeAreas(): Promise<KnowledgeAreaInfo[]> {
+  const entries = await TradingStore.listKnowledge();
+  return TRADING_KNOWLEDGE_AREAS.map((area) => {
+    const matched = entries.filter((e) => entryBelongsToArea(e as any, area));
+    return {
+      id: area.id,
+      title: area.title,
+      requiredTopics: area.requiredTopics,
+      entryCount: matched.length,
+      covered: matched.length > 0,
+    };
+  });
+}
+
+/**
+ * Test Zed on ONE knowledge section. Scores how much of that section's
+ * required topics Zed has ingested (deterministic) and quizzes Zed on
+ * that section specifically, grading the answers (LLM). The two combine
+ * into a single section score. Honest when nothing has been fed yet —
+ * no fabricated pass.
+ */
+export async function assessKnowledgeArea(areaId: string): Promise<KnowledgeAreaAssessment> {
+  const area = areaById(areaId);
+  if (!area) throw new Error(`Unknown knowledge section: ${areaId}`);
+
+  const entries = await TradingStore.listKnowledge();
+  const areaEntries = entries.filter((e) => entryBelongsToArea(e as any, area));
+
+  const haystacks = areaEntries.map((e) => ({ category: e.category, text: haystackForEntry(e as any) }));
+  const topics = area.requiredTopics;
+  const coveredTopics = topics.filter((topic) => {
+    const t = topic.toLowerCase();
+    return haystacks.some((h) => h.text.includes(t) || t.split(/[()]/).some((part) => part.trim().length > 3 && h.text.includes(part.trim())));
+  });
+  const coverageScore = topics.length ? Math.round((coveredTopics.length / topics.length) * 100) : 0;
+
+  const breakdown: AssessmentBreakdownItem[] = [
+    {
+      label: "Section coverage",
+      detail:
+        areaEntries.length === 0
+          ? `Zed has no material on ${area.title} yet — feed this section first.`
+          : `Zed has structured knowledge on ${coveredTopics.length} of ${topics.length} required topics for ${area.title}.`,
+      points: coverageScore,
+      max: 100,
+    },
+  ];
+
+  const quiz: AssessmentQuizItem[] = [];
+  let comprehensionScore = 0;
+  let comprehensionRan = false;
+
+  if (areaEntries.length > 0) {
+    try {
+      const questions = topics
+        .slice(0, QUIZ_SIZE)
+        .map((topic) => `In your own words, explain ${topic} within ${area.title}, and how you'd use it in a trade decision.`);
+      const context = await buildTradingKnowledgeContext(
+        `${area.title} ${topics.join(" ")}`,
+      ).catch(() => "");
+
+      const answerPrompt = `You are ZED being tested on the "${area.title}" section of your trading knowledge. Answer each question ONLY from what you actually learned below. If you don't know, say "I have not learned this yet." Keep each answer to 2-3 sentences.\n\n## Your ingested knowledge\n${context}\n\nReturn a JSON array of strings, one answer per question, in order. Questions:\n${questions
+        .map((q, i) => `${i + 1}. ${q}`)
+        .join("\n")}`;
+      const answersRaw = await generateChatFromProvider(
+        [{ role: "user", content: answerPrompt }],
+        "You answer strictly from the provided knowledge. Output only a JSON array of strings.",
+        { lane: "finance" },
+      );
+      const answers = safeJsonArray(answersRaw, questions.length);
+
+      const gradePrompt = `Grade ZED's answers about ${area.title}. For each, decide "correct", "partial", or "incorrect" and give a one-line note. Base it on trading accuracy, not verbosity. An answer of "I have not learned this yet" is "incorrect".\n\n${questions
+        .map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${answers[i] || "(no answer)"}`)
+        .join("\n\n")}\n\nReturn ONLY a JSON array of objects: [{"verdict":"correct|partial|incorrect","note":"..."}] in order.`;
+      const gradesRaw = await generateChatFromProvider(
+        [{ role: "user", content: gradePrompt }],
+        "You are a strict trading examiner. Output only the JSON array.",
+        { lane: "finance" },
+      );
+      const grades = safeJsonObjectArray(gradesRaw, questions.length);
+
+      let earned = 0;
+      questions.forEach((question, i) => {
+        const verdict = normalizeVerdict(grades[i]?.verdict);
+        earned += verdict === "correct" ? 1 : verdict === "partial" ? 0.5 : 0;
+        quiz.push({
+          question,
+          answer: answers[i] || "(no answer)",
+          verdict,
+          note: String(grades[i]?.note || ""),
+        });
+      });
+      comprehensionScore = questions.length ? Math.round((earned / questions.length) * 100) : 0;
+      comprehensionRan = true;
+      breakdown.push({
+        label: "Comprehension test",
+        detail: `Zed answered ${questions.length} question(s) on ${area.title} and scored ${comprehensionScore}.`,
+        points: comprehensionScore,
+        max: 100,
+      });
+    } catch {
+      breakdown.push({
+        label: "Comprehension test",
+        detail: "The comprehension quiz could not run right now — scored on coverage only.",
+        points: 0,
+        max: 0,
+      });
+    }
+  }
+
+  const score = comprehensionRan
+    ? Math.round(coverageScore * 0.5 + comprehensionScore * 0.5)
+    : coverageScore;
+  const passed = score >= AREA_PASS_THRESHOLD;
+
+  const summary = areaEntries.length === 0
+    ? `Zed hasn't learned ${area.title} yet. Feed this section, then test again.`
+    : passed
+      ? `Zed passed ${area.title} — ${coveredTopics.length}/${topics.length} topics covered${comprehensionRan ? `, quiz ${comprehensionScore}` : ""}.`
+      : `Zed isn't ready on ${area.title}. ${coveredTopics.length}/${topics.length} topics covered${comprehensionRan ? `, quiz ${comprehensionScore}` : ""}. Feed more material on the gaps and re-test.`;
+
+  return {
+    areaId: area.id,
+    areaTitle: area.title,
+    score,
+    threshold: AREA_PASS_THRESHOLD,
+    passed,
+    summary,
+    breakdown,
+    quiz,
     assessedAt: now(),
   };
 }

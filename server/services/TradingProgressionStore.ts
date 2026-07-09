@@ -3,6 +3,11 @@ import path from "path";
 
 import { HUB_DIR } from "../utils/repoPaths";
 import {
+  readTradingState,
+  tradingDbAvailable,
+  writeTradingState,
+} from "../zcos/trading/tradingPersistence";
+import {
   DEFAULT_PROGRESSION,
   TRADING_STAGES,
   nextStageOf,
@@ -36,21 +41,33 @@ async function ensureDir(): Promise<void> {
   await fs.mkdir(PROGRESSION_DIR, { recursive: true });
 }
 
+function mergeProgression(parsed: TradingProgression): TradingProgression {
+  return {
+    ...DEFAULT_PROGRESSION,
+    ...parsed,
+    assessments: { ...(DEFAULT_PROGRESSION.assessments || {}), ...(parsed.assessments || {}) },
+  };
+}
+
 export async function loadProgression(userId: string): Promise<TradingProgression> {
+  // Durable store first, then the JSON file (offline / pre-DB seed).
+  if (tradingDbAvailable()) {
+    const stored = await readTradingState<TradingProgression>("progression", userId);
+    if (stored) return mergeProgression(stored);
+  }
   try {
     const raw = await fs.readFile(fileFor(userId), "utf-8");
-    const parsed = JSON.parse(raw) as TradingProgression;
-    return {
-      ...DEFAULT_PROGRESSION,
-      ...parsed,
-      assessments: { ...(DEFAULT_PROGRESSION.assessments || {}), ...(parsed.assessments || {}) },
-    };
+    return mergeProgression(JSON.parse(raw) as TradingProgression);
   } catch {
     return { ...DEFAULT_PROGRESSION, lastUpdated: new Date().toISOString() };
   }
 }
 
 async function writeProgression(userId: string, progression: TradingProgression): Promise<void> {
+  if (tradingDbAvailable()) {
+    const ok = await writeTradingState("progression", userId, progression);
+    if (ok) return;
+  }
   await ensureDir();
   await fs.writeFile(fileFor(userId), JSON.stringify(progression, null, 2), "utf-8");
 }

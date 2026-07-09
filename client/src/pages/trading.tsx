@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import TradingProgressionBanner from "@/components/trading/TradingProgressionBanner";
 import TrainingConsole from "@/components/trading/TrainingConsole";
+import KnowledgeSections from "@/components/trading/KnowledgeSections";
 import SandboxWorkspace from "@/components/trading/SandboxWorkspace";
 import LearnStage from "@/components/trading/LearnStage";
 import StrategyStage from "@/components/trading/StrategyStage";
@@ -270,6 +271,7 @@ export default function TradingPage() {
           <div id="stage-tool" className="space-y-4 scroll-mt-20">
             {currentStage === "learn" && (
               <>
+                <KnowledgeSections />
                 <TrainingConsole />
                 <LearnStage />
               </>
