@@ -5,6 +5,9 @@ import { insertMessageSchema } from "../../shared/schema";
 import type { ImageBlock } from "../core/providers/provider-interface";
 import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
 import { KnowledgeService } from "./KnowledgeService";
+import { IntelligenceCore } from "./intelligence-core";
+import { ContextIntelligenceEngine } from "./intelligence-core/ContextIntelligenceEngine";
+import { DocumentIntelligenceService } from "./intelligence-core/DocumentIntelligenceService";
 import { ContextInquiryEngine } from "./knowledge-ingestion/ContextInquiryEngine";
 import { ZedPrincipleEngine } from "./ZedPrincipleEngine";
 import { ZedStrategicReasoningEngine } from "./ZedStrategicReasoningEngine";
@@ -72,6 +75,9 @@ export interface ChatExecutionTrace {
   sourceCount: number;
   filesReferenced: string[];
   fileContextUsed: boolean;
+  intelligencePlan?: import("./intelligence-core/types").IntelligenceCorePlan;
+  contextCompressionRatio?: number;
+  documentCitations?: string[];
 }
 
 export interface ChatExecutionTestHooks {
@@ -280,6 +286,7 @@ export class ChatExecutionService {
       const webLookupIntent = isWebLookupIntent(effectiveMessage) || isWebLookupIntent(input.message);
       trace.detectedIntent = webLookupIntent ? "web_research" : "manager";
       let contextInquiryPrompt = "";
+      let contextMaterialUncertainty = false;
 
       // If Context Inquiry finds a genuinely high-priority missing fact
       // AND the previous assistant turn wasn't itself a clarifying
@@ -301,6 +308,8 @@ export class ChatExecutionService {
             : await ContextInquiryEngine.assess({ userInput: input.message });
           const assessment = contextAssessmentResult.assessment;
           const topQuestion = selectTopContextQuestion(assessment.questions);
+
+          contextMaterialUncertainty = Boolean(assessment.materialUncertainty);
 
           if (assessment.responsePolicy === "inquire_first" && topQuestion) {
             contextInquiryPrompt = [
@@ -463,19 +472,72 @@ export class ChatExecutionService {
       const voicePrompt = hooks.voicePrompt
         ? await hooks.voicePrompt()
         : await buildZedVoicePrompt({ mode: voiceMode });
+
+      // Document Intelligence — surface knowledge extracted from uploaded
+      // and previously-ingested documents (connected in the knowledge
+      // graph) with source attribution. Best-effort; never blocks a reply.
+      trace.servicesInvoked.push("DocumentIntelligenceService.retrieveForQuery");
+      const documentKnowledge = await DocumentIntelligenceService.retrieveForQuery(
+        effectiveMessage,
+      ).catch(() => ({ block: "", objectIds: [], citations: [], conflictCount: 0 }));
+      if (documentKnowledge.objectIds.length > 0) {
+        trace.memorySources.push("DocumentKnowledgeGraph");
+        trace.documentCitations = documentKnowledge.citations;
+      }
+
+      // Intelligence Core — Deep Thinking (staged reasoning), Self-
+      // Orchestration (capability plan), and Adaptive Response
+      // (response-form directive). Deterministic, synchronous, no I/O.
+      trace.servicesInvoked.push("IntelligenceCore.analyze");
+      const intelligence = IntelligenceCore.analyze({
+        message: effectiveMessage,
+        lane: cognitiveLane,
+        strategic: strategicReasoning.active,
+        knowledgePresent: Boolean(
+          knowledge.prompt || adminContext.text || fileContext.prompt || documentKnowledge.block,
+        ),
+        materialUncertainty: contextMaterialUncertainty,
+        hasFiles: Boolean(fileContext.prompt),
+        hasGraphContext: documentKnowledge.objectIds.length > 0,
+        hasMemory: Boolean(knowledge.prompt || injectedMemory.formatted),
+      });
+      trace.intelligencePlan = intelligence.plan;
+
+      // Context Intelligence — rank, de-duplicate, compress, and merge the
+      // heavy retrieved blocks into one budgeted knowledge prompt instead
+      // of concatenating overlapping sources. Project instructions and
+      // uploaded files are pinned so they always survive.
+      trace.servicesInvoked.push("ContextIntelligenceEngine.rank");
+      const rankedContext = ContextIntelligenceEngine.rank(effectiveMessage, [
+        { label: "project", text: adminContext.text, pinned: true, basePriority: 0.9 },
+        { label: "files", text: fileContext.prompt, pinned: true, basePriority: 0.9 },
+        { label: "documents", text: documentKnowledge.block, basePriority: 0.75 },
+        { label: "knowledge", text: knowledge.prompt, basePriority: 0.5 },
+      ]);
+      trace.contextCompressionRatio = rankedContext.compressionRatio;
+      // Safety net: never let ranking silently drop all context.
+      const knowledgeBlock =
+        rankedContext.prompt.trim().length > 0
+          ? rankedContext.prompt
+          : [adminContext.text, fileContext.prompt, documentKnowledge.block, knowledge.prompt]
+              .filter(Boolean)
+              .join("\n\n");
+
       // Cognitive Core order per SPEC.md § Cognitive Core:
       //   1. Context Inquiry   2. Principle   3. Strategic
       //   4. Knowledge         5. Voice        6. Reflection (post-response)
-      // Governance sits first as a hard control frame; response
-      // policy sits last so its style guardrails win any ties.
+      // Intelligence Core reasoning stages (deep thinking + self-
+      // orchestration) sit with Strategic Reasoning before knowledge; the
+      // adaptive response directive sits just before Voice. Governance is
+      // pinned first; response policy is pinned last so style wins ties.
       const cognitiveKnowledgePrompt = [
         governancePrompt,
         contextInquiryPrompt,
         principlePrompt,
         strategicReasoning.prompt,
-        adminContext.text,
-        fileContext.prompt,
-        knowledge.prompt,
+        intelligence.reasoningPrompt,
+        knowledgeBlock,
+        intelligence.responsePrompt,
         voicePrompt,
         getZedResponsePolicy(voiceMode),
       ]
@@ -541,6 +603,9 @@ export class ChatExecutionService {
       const metadata = {
         ...managerMetadata,
         strategic: strategicReasoning.active,
+        intelligencePlan: trace.intelligencePlan,
+        contextCompressionRatio: trace.contextCompressionRatio,
+        documentCitations: trace.documentCitations,
         providerUsed: trace.providerUsed,
         providerTarget: trace.providerTarget,
         projectContextUsed: trace.projectContextUsed,
