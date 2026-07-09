@@ -18,11 +18,13 @@ import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
+import ProjectsPage from "@/pages/projects";
 import TradingPage from "@/pages/trading";
 import BudgetPage from "@/pages/budget";
 import WorkspacePage from "@/pages/workspace";
 import HistoryPage from "@/pages/history";
 import InboxPage from "@/pages/inbox";
+import LearningPage from "@/pages/learning";
 
 installApiFetchPatch();
 
@@ -72,7 +74,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        {isAuthenticated ? <Chat /> : <Login />}
+        {isAuthenticated ? <HomePage /> : <Login />}
       </Route>
 
       <Route path="/chat/:id?">
@@ -143,8 +145,16 @@ function Router() {
         {isAuthenticated ? <RunDetailPage /> : <Login />}
       </Route>
 
+      <Route path="/projects">
+        {isAuthenticated ? <ProjectsPage /> : <Login />}
+      </Route>
+
       <Route path="/projects/:id">
         {isAuthenticated ? <ProjectDetailPage /> : <Login />}
+      </Route>
+
+      <Route path="/learning">
+        {isAuthenticated ? <LearningPage /> : <Login />}
       </Route>
 
       <Route component={NotFound} />

@@ -4,17 +4,25 @@ import {
   ArrowRight,
   Bell,
   BookOpen,
+  Briefcase,
   Compass,
+  FolderKanban,
+  GraduationCap,
+  Inbox as InboxIcon,
   Layers,
   LineChart,
   MessageSquare,
+  PenTool,
   Plus,
   Radar,
   RefreshCw,
+  Search,
   ShieldAlert,
   Target,
   TrendingUp,
+  Wallet,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/UseAuth";
@@ -24,6 +32,7 @@ import {
   type TradingStageId,
 } from "@shared/trading-progression";
 import type { PaperTrade, TradingPerformanceReport } from "@shared/trading-types";
+import type { BaseObject, ObjectGraph } from "@shared/object-memory-types";
 
 /**
  * Zed's operational home.
@@ -53,6 +62,40 @@ interface RuntimeEvent {
   event: string;
   detail?: string;
 }
+
+interface ProjectSummary {
+  id: string;
+  name: string;
+  updatedAt?: string;
+  createdAt?: string;
+  conversationIds?: string[];
+}
+
+interface BudgetSummary {
+  totals?: {
+    reserves?: number;
+    ytdIncome?: number;
+    lastDepositAt?: string | null;
+  };
+  treasury?: {
+    balance?: number;
+    milestone?: { label?: string };
+  };
+  pendingAllocation?: number;
+}
+
+const WORKSPACE_LAUNCHERS: Array<{
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  hint: string;
+}> = [
+  { label: "Research", href: "/workspaces/research", icon: Search, hint: "Dig in" },
+  { label: "Operations", href: "/workspaces/operations", icon: Briefcase, hint: "Run it" },
+  { label: "Finance", href: "/workspaces/finance", icon: Wallet, hint: "Money & trades" },
+  { label: "Marketing", href: "/workspaces/marketing", icon: PenTool, hint: "Reach out" },
+  { label: "Education", href: "/workspaces/education", icon: GraduationCap, hint: "Learn" },
+];
 
 const EVENT_LABEL: Record<string, string> = {
   "chat.execution.trace": "Chat request completed",
@@ -112,36 +155,44 @@ export default function HomePage() {
   const [performance, setPerformance] = useState<TradingPerformanceReport | null>(null);
   const [approvalsCount, setApprovalsCount] = useState<number>(0);
   const [activity, setActivity] = useState<RuntimeEvent[]>([]);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [memory, setMemory] = useState<ObjectGraph | null>(null);
+  const [budget, setBudget] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    const getJson = (url: string) =>
+      fetch(url, { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null);
     const results = await Promise.all([
-      fetch("/api/trading/progression", { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-      fetch("/api/trading/paper-trades?status=open", { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-      fetch("/api/trading/performance", { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : null))
-        .catch(() => null),
-      isAdmin
-        ? fetch("/api/admin/approval-queue", { credentials: "include" })
-            .then((r) => (r.ok ? r.json() : null))
-            .catch(() => null)
-        : Promise.resolve(null),
-      isAdmin
-        ? fetch("/api/admin/logs", { credentials: "include" })
-            .then((r) => (r.ok ? r.json() : null))
-            .catch(() => null)
-        : Promise.resolve(null),
+      getJson("/api/trading/progression"),
+      getJson("/api/trading/paper-trades?status=open"),
+      getJson("/api/trading/performance"),
+      getJson("/api/projects"),
+      getJson("/api/me/memory/graph"),
+      getJson("/api/budget"),
+      isAdmin ? getJson("/api/admin/approval-queue") : Promise.resolve(null),
+      isAdmin ? getJson("/api/admin/logs") : Promise.resolve(null),
     ]);
-    const [progRes, tradesRes, perfRes, approvalsRes, logsRes] = results;
+    const [progRes, tradesRes, perfRes, projectsRes, memoryRes, budgetRes, approvalsRes, logsRes] =
+      results;
 
     setProgression(progRes?.progression || null);
     setOpenTrades(tradesRes?.trades || []);
     setPerformance(perfRes?.report || null);
+    const projectList: ProjectSummary[] = Array.isArray(projectsRes?.projects)
+      ? projectsRes.projects
+      : [];
+    projectList.sort((a, b) => {
+      const at = a.updatedAt || a.createdAt || "";
+      const bt = b.updatedAt || b.createdAt || "";
+      return at < bt ? 1 : -1;
+    });
+    setProjects(projectList);
+    setMemory(memoryRes || null);
+    setBudget(budgetRes || null);
     setApprovalsCount(
       Array.isArray(approvalsRes?.entries)
         ? approvalsRes.entries.filter((e: ApprovalEntry) => e.status === "pending").length
@@ -174,6 +225,21 @@ export default function HomePage() {
   const totalPnl = performance?.expectancy
     ? performance.expectancy * (performance.closedTrades || 0)
     : 0;
+
+  const recentMemoryObjects = useMemo<BaseObject[]>(() => {
+    const list = [...(memory?.objects || [])];
+    list.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+    return list.slice(0, 4);
+  }, [memory]);
+  const memoryObjectCount = memory?.objects?.length ?? 0;
+  const memoryTypeCount = useMemo(() => {
+    const set = new Set<string>();
+    for (const o of memory?.objects || []) set.add(o.type);
+    return set.size;
+  }, [memory]);
+  const treasuryBalance = budget?.treasury?.balance ?? 0;
+  const treasuryLabel = budget?.treasury?.milestone?.label;
+  const pendingAllocation = budget?.pendingAllocation ?? 0;
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -285,6 +351,157 @@ export default function HomePage() {
             </button>
           </div>
         </section>
+
+        {/* Workspace launcher */}
+        <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
+              Workspaces
+            </div>
+            <span className="text-[11px] text-white/40">Jump anywhere</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {WORKSPACE_LAUNCHERS.map((w) => {
+              const WIcon = w.icon;
+              return (
+                <button
+                  key={w.href}
+                  type="button"
+                  onClick={() => navigate(w.href)}
+                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                >
+                  <WIcon size={15} className="text-cyan-300/80 mb-1.5" />
+                  <div className="text-[13px] font-medium text-white truncate">{w.label}</div>
+                  <div className="text-[11px] text-white/40 truncate">{w.hint}</div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Knowledge library glance */}
+        <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
+              What Zed knows
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/learning")}
+              className="text-[12px] text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"
+            >
+              Knowledge library <ArrowRight size={11} />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+            <StatPill label="Objects" value={String(memoryObjectCount)} />
+            <StatPill label="Types" value={String(memoryTypeCount)} />
+            <StatPill
+              label="Last learned"
+              value={
+                recentMemoryObjects[0]
+                  ? friendlyTime(recentMemoryObjects[0].updatedAt)
+                  : "—"
+              }
+            />
+          </div>
+          {recentMemoryObjects.length === 0 ? (
+            <div className="text-[12.5px] text-white/40">
+              Nothing yet. Add notes on the Knowledge library and Zed will start remembering.
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {recentMemoryObjects.map((o) => (
+                <div
+                  key={o.id}
+                  className="flex items-start gap-2 px-1 py-1"
+                >
+                  <BookOpen size={12} className="text-cyan-300/70 shrink-0 mt-1" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12.5px] text-white/85 truncate">
+                      {o.canonicalName}
+                    </div>
+                    {o.summary && (
+                      <div className="text-[11px] text-white/40 line-clamp-1">
+                        {o.summary}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10.5px] uppercase tracking-[0.08em] text-white/35 shrink-0">
+                    {o.type.replace(/_/g, " ")}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Projects strip */}
+        {projects.length > 0 && (
+          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
+                Recent projects
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/projects")}
+                className="text-[12px] text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"
+              >
+                All projects <ArrowRight size={11} />
+              </button>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {projects.slice(0, 4).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => navigate(`/projects/${p.id}`)}
+                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                >
+                  <div className="flex items-center gap-2">
+                    <FolderKanban size={13} className="text-cyan-300/80 shrink-0" />
+                    <span className="text-[13px] font-medium text-white truncate">
+                      {p.name || "Untitled"}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[11px] text-white/40">
+                    {p.updatedAt ? friendlyTime(p.updatedAt) : "New"}
+                    {p.conversationIds && p.conversationIds.length > 0
+                      ? ` · ${p.conversationIds.length} chat${p.conversationIds.length === 1 ? "" : "s"}`
+                      : ""}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Budget snapshot */}
+        {budget && (
+          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
+                Budget snapshot
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/budget")}
+                className="text-[12px] text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"
+              >
+                Open budget <ArrowRight size={11} />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <StatPill label="Treasury" value={money(treasuryBalance)} />
+              <StatPill label="Pending" value={money(pendingAllocation)} />
+              <StatPill
+                label="Milestone"
+                value={treasuryLabel || (treasuryBalance > 0 ? "Building" : "Not started")}
+              />
+            </div>
+          </section>
+        )}
 
         {/* Trading snapshot */}
         <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">

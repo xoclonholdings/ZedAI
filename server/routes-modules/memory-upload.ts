@@ -47,6 +47,25 @@ interface UploadResult {
 }
 
 export function registerMemoryUploadRoutes(app: Express): void {
+  app.get("/api/me/memory/graph", isAuthenticated, async (_req: any, res) => {
+    try {
+      const graph = await readAppliedGraph();
+      if (!graph) {
+        return res.json({
+          version: "1",
+          generatedAt: null,
+          sources: [],
+          objects: [],
+          relationships: [],
+          stats: { objectCount: 0, relationshipCount: 0 },
+        });
+      }
+      res.json(graph);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to read memory graph" });
+    }
+  });
+
   app.post(
     "/api/me/memory/upload",
     isAuthenticated,
