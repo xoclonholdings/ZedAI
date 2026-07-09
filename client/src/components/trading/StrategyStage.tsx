@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, Sparkles, X } from "lucide-react";
 
 import type { TradeThesis } from "@shared/trading-types";
 
@@ -76,6 +76,7 @@ export default function StrategyStage() {
   const [theses, setTheses] = useState<TradeThesis[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [generating, setGenerating] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [notice, setNotice] = useState<string | null>(null);
@@ -160,6 +161,61 @@ export default function StrategyStage() {
     }
   }, [form, refresh]);
 
+  const generate = useCallback(async () => {
+    setError(null);
+    setNotice(null);
+    const symbol = form.symbol.trim().toUpperCase();
+    if (!symbol) {
+      setError("Enter a symbol first, then let Zed generate the strategy.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/trading/strategies/generate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol,
+          asset: form.assetClass,
+          market: form.market,
+          directionPreference:
+            form.direction === "long" || form.direction === "short" ? form.direction : "auto",
+          timeframe: form.primaryTimeframe.trim() || undefined,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      // Populate every field — the user can still edit anything before saving.
+      setForm({
+        market: body.market ?? form.market,
+        assetClass: body.asset ?? form.assetClass,
+        symbol: (body.symbol ?? symbol).toUpperCase(),
+        direction: body.direction === "short" ? "short" : "long",
+        primaryTimeframe: body.timeframe ?? form.primaryTimeframe,
+        reason: body.thesis ?? "",
+        marketStructure: body.marketStructure ?? "",
+        liquidityAnalysis: body.liquidityAnalysis ?? "",
+        entryPlan: body.entryPlan ?? "",
+        stopPlan: body.stopPlan ?? "",
+        targetPlan: body.targetPlan ?? "",
+        riskReward:
+          typeof body.riskReward === "number" ? String(body.riskReward) : form.riskReward,
+        invalidationConditions: body.invalidation ?? "",
+        confidenceScore:
+          typeof body.confidence === "number" ? String(body.confidence) : form.confidenceScore,
+      });
+      setNotice(
+        body.basis ||
+          "Zed drafted this strategy. Review and edit every field before saving — nothing is saved automatically.",
+      );
+    } catch (err: any) {
+      setError(err?.message || "Zed could not generate a strategy. Try again.");
+    } finally {
+      setGenerating(false);
+    }
+  }, [form]);
+
   const active = theses.filter((t) => !t.archivedAt);
 
   return (
@@ -187,14 +243,26 @@ export default function StrategyStage() {
         <div className="mb-5 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <div className="text-[13px] font-semibold text-white">New strategy</div>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="text-white/50 hover:text-white/80"
-              aria-label="Cancel"
-            >
-              <X size={16} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void generate()}
+                disabled={generating}
+                title="Let Zed draft this strategy from its learned framework"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[12px] font-medium text-cyan-200 hover:bg-cyan-400/20 disabled:opacity-50 transition-colors"
+              >
+                <Sparkles size={13} />
+                {generating ? "Generating…" : "Generate strategy"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="text-white/50 hover:text-white/80"
+                aria-label="Cancel"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
           <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
             <FormField label="Market">

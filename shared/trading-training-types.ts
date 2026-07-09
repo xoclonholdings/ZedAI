@@ -33,6 +33,34 @@ export interface StageAssessmentResult {
   unlockedStage?: TradingStageId;
 }
 
+/**
+ * A single Learn-stage knowledge section. There is one per required
+ * curriculum area (market structure, liquidity, …). The user feeds
+ * education into a section, then tests Zed on that section specifically.
+ */
+export interface KnowledgeAreaInfo {
+  id: string;
+  title: string;
+  requiredTopics: string[];
+  /** How many ingested knowledge entries are bound to this section. */
+  entryCount: number;
+  /** True once Zed has structured knowledge covering this section. */
+  covered: boolean;
+}
+
+/** Result of testing Zed on one knowledge section. */
+export interface KnowledgeAreaAssessment {
+  areaId: string;
+  areaTitle: string;
+  score: number;
+  threshold: number;
+  passed: boolean;
+  summary: string;
+  breakdown: AssessmentBreakdownItem[];
+  quiz: AssessmentQuizItem[];
+  assessedAt: string;
+}
+
 export interface MaterialIngestResult {
   sourceLabel: string;
   entryId: string;

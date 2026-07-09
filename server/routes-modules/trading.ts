@@ -4,6 +4,7 @@ import { isAuthenticated } from "../localAuth";
 import type { AuthorizationDecision, PaperTradeStatus } from "../../shared/trading-types";
 import { evaluateScannerObservation } from "../zcos/trading/ScannerEngine";
 import { createTradeThesis } from "../zcos/trading/TradeThesisEngine";
+import { generateTradeStrategy } from "../zcos/trading/TradeStrategyGenerator";
 import {
   authorizePaperTrade,
   evaluateTradeThesisGovernance,
@@ -176,6 +177,25 @@ export function registerTradingRoutes(app: Express): void {
   app.get("/api/trading/theses", isAuthenticated, async (req: any, res) => {
     const theses = await TradingStore.listTheses(userIdFrom(req));
     res.json({ theses });
+  });
+
+  app.post("/api/trading/strategies/generate", isAuthenticated, async (req: any, res) => {
+    const missing = requireFields(req.body || {}, ["symbol"]);
+    if (missing) return res.status(400).json({ error: `${missing} is required` });
+
+    try {
+      const strategy = await generateTradeStrategy({
+        userId: userIdFrom(req),
+        symbol: String(req.body.symbol),
+        asset: req.body.asset || "stock",
+        market: req.body.market ? String(req.body.market) : "US",
+        directionPreference: req.body.directionPreference || "auto",
+        timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
+      });
+      res.json(strategy);
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "Strategy generation failed" });
+    }
   });
 
   app.post("/api/trading/theses", isAuthenticated, async (req: any, res) => {

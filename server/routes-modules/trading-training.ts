@@ -4,7 +4,12 @@ import type { Express } from "express";
 import { isAuthenticated } from "../localAuth";
 import { processFile, upload } from "../services/fileProcessor";
 import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
-import { assessStage } from "../zcos/trading/TradingAssessmentEngine";
+import {
+  assessKnowledgeArea,
+  assessStage,
+  listKnowledgeAreas,
+} from "../zcos/trading/TradingAssessmentEngine";
+import { TRADING_KNOWLEDGE_AREAS } from "../zcos/trading/TradingCurriculum";
 import { TradingIntegrationsStore } from "../zcos/trading/TradingIntegrationsStore";
 import { advanceStage, recordAssessment } from "../services/TradingProgressionStore";
 import { TRADING_STAGES, type TradingStageId } from "../../shared/trading-progression";
@@ -54,6 +59,16 @@ export function registerTradingTrainingRoutes(app: Express): void {
         const source = String(req.body?.source || "Uploaded material");
         const sourceType = req.body?.sourceType ? String(req.body.sourceType) : "manual";
         const tags = toArray(req.body?.tags);
+
+        // Bind this material to a specific Learn-stage section when the
+        // upload came from one, so per-section coverage/testing is exact.
+        const areaId = req.body?.area ? String(req.body.area) : "";
+        const area = TRADING_KNOWLEDGE_AREAS.find((a) => a.id === areaId);
+        if (area) {
+          for (const tag of [area.id, area.title]) {
+            if (!tags.includes(tag)) tags.push(tag);
+          }
+        }
 
         const inputs: Array<{ title: string; text: string }> = [];
 
@@ -111,6 +126,30 @@ export function registerTradingTrainingRoutes(app: Express): void {
       }
     },
   );
+
+  /**
+   * The Learn-stage sections (one per required knowledge area) with
+   * per-section coverage and how much material Zed has for each.
+   */
+  app.get("/api/trading/knowledge/areas", isAuthenticated, async (_req: any, res) => {
+    try {
+      const areas = await listKnowledgeAreas();
+      res.json({ areas });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to load sections" });
+    }
+  });
+
+  /** Test Zed on ONE knowledge section (upload → test that section). */
+  app.post("/api/trading/knowledge/areas/:areaId/assess", isAuthenticated, async (req: any, res) => {
+    try {
+      const assessment = await assessKnowledgeArea(String(req.params.areaId));
+      res.json({ assessment });
+    } catch (err: any) {
+      const status = /unknown knowledge section/i.test(err?.message || "") ? 400 : 500;
+      res.status(status).json({ error: err?.message || "Section test failed" });
+    }
+  });
 
   /** Test Zed on a stage. Records the result as the advance gate. */
   app.post("/api/trading/progression/assess/:stageId", isAuthenticated, async (req: any, res) => {
