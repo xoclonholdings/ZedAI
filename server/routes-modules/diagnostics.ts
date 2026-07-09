@@ -33,15 +33,7 @@ export function registerDiagnosticsRoutes(
       const config = getProviderRuntimeConfig();
       const target = getResolvedTargetName({ lane: "chat" });
       const provider = getActiveProviderName({ lane: "chat" });
-      // probeUrl must reflect the active provider's cloud endpoint.
-      const probeUrl =
-        provider === "openai"
-          ? config.openai.baseUrl
-          : provider === "claude"
-            ? config.claude.baseUrl
-            : provider === "claw-temp"
-              ? config.clawTemp.baseUrl
-              : config.openai.baseUrl;
+      const probeUrl = config.lightning.baseUrl;
 
       const targetHost = (() => {
         try {
@@ -114,7 +106,6 @@ export function registerDiagnosticsRoutes(
         target: getResolvedTargetName({ lane: "chat" }),
         configuredModel:
           providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig),
-        remoteMode: providerConfig.clawTemp.mode,
       },
       providerRouting: routingSummary.routing,
       database: opts.isDatabaseHealthy() ? "connected" : "offline",
@@ -148,10 +139,7 @@ export function registerDiagnosticsRoutes(
       config: {
         defaultModel,
         target,
-        clawBaseUrl: providerConfig.clawTemp.baseUrl,
-        clawMode: providerConfig.clawTemp.mode,
-        openaiConfigured: Boolean(providerConfig.openai.apiKey),
-        claudeConfigured: Boolean(providerConfig.claude.apiKey),
+        lightningBaseUrl: providerConfig.lightning.baseUrl,
       },
       laneModels: {
         chat: providerConfig.laneModels.chat || "",

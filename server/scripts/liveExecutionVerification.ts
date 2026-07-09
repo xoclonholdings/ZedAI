@@ -83,10 +83,7 @@ function configSnapshot(settings: Awaited<ReturnType<typeof loadAdminSettings>>)
     userCount: settings.users.length,
     adminUserCount: settings.users.filter((user) => user.isAdmin).length,
     providerEnv: {
-      openai: envPresent("OPENAI_API_KEY"),
-      anthropic: envPresent("ANTHROPIC_API_KEY"),
-      groq: envPresent("GROQ_API_KEY"),
-      openrouter: envPresent("OPENROUTER_API_KEY"),
+      lightning: envPresent("LIGHTNING_BASE_URL") || envPresent("REMOTE_INFERENCE_URL"),
       brave: envPresent("BRAVE_SEARCH_API_KEY"),
       serper: envPresent("SERPER_API_KEY"),
     },

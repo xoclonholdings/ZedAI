@@ -1,7 +1,5 @@
-import { ClaudeProvider } from "./claude-provider";
-import { ClawTempProvider } from "./claw-provider-temp";
-import { OpenAIProvider } from "./openai-provider";
-import { getProviderRuntimeConfig, type ProviderName } from "./provider-config";
+import { LightningProvider } from "./lightning-provider";
+import { getProviderRuntimeConfig } from "./provider-config";
 import { splitIntoTokens } from "./provider-helpers";
 import type {
   ModelProvider,
@@ -16,9 +14,6 @@ import type {
  * that the caller left blank. Kept dynamically imported so provider-
  * executor stays a leaf module without a hard dependency cycle back
  * up into services/.
- *
- * A per-call file read is fine at ZED's request volume; if that ever
- * matters, this is the place to memoize with a small TTL.
  */
 async function mergeVoiceDerivedParams(
   options?: ProviderExecutionOptions,
@@ -44,51 +39,28 @@ async function mergeVoiceDerivedParams(
       topP: topPSet ? options!.topP : derived.topP,
     };
   } catch {
-    // Voice settings unavailable (fresh install / disk error) — fall
-    // through with whatever the caller supplied. Providers will use
-    // their own defaults when the fields are undefined.
     return options;
   }
 }
 
-function buildProvider(name: ProviderName): ModelProvider {
-  switch (name) {
-    case "openai":
-      return new OpenAIProvider();
-    case "claude":
-      return new ClaudeProvider();
-    case "claw-temp":
-      return new ClawTempProvider();
-    default:
-      return new OpenAIProvider();
-  }
-}
+// Lightning is the only provider — instantiate once and reuse.
+const lightningProvider: ModelProvider = new LightningProvider();
 
 function getActiveProvider(): ModelProvider {
-  return buildProvider(getProviderRuntimeConfig().activeProvider);
+  return lightningProvider;
 }
 
 export function getActiveProviderName(_options?: ProviderExecutionOptions): string {
-  return getProviderRuntimeConfig().activeProvider;
+  return "lightning";
 }
 
 /**
- * Returns the URL the active provider will hit. Lanes aren't fully
- * routed yet — they're a forward-looking knob — so the resolved target
- * URL is currently identical for every lane.
+ * URL the Lightning runner will hit. Lanes aren't URL-routed today —
+ * per-lane switching happens at the model layer (MODEL_<LANE>) — so
+ * the resolved target is identical across lanes.
  */
 export function getResolvedTargetName(_options?: ProviderExecutionOptions): string {
-  const config = getProviderRuntimeConfig();
-  switch (config.activeProvider) {
-    case "openai":
-      return config.openai.baseUrl;
-    case "claude":
-      return config.claude.baseUrl;
-    case "claw-temp":
-      return config.clawTemp.baseUrl;
-    default:
-      return config.openai.baseUrl;
-  }
+  return getProviderRuntimeConfig().lightning.baseUrl;
 }
 
 export function getProviderRoutingSummary() {
@@ -123,9 +95,8 @@ export async function executeProviderChat(
 }
 
 /**
- * No silent fallback to another provider. If the active provider fails,
- * the caller sees the real error from upstream — caller decides how
- * to surface it.
+ * No silent fallback. If Lightning fails, the caller sees the real
+ * error — caller decides how to surface it.
  */
 export async function streamProviderChat(
   messages: ProviderMessage[],
@@ -140,15 +111,9 @@ export async function streamProviderChat(
   if (provider.streamChat) {
     let streamFailed: Error | null = null;
     try {
-      await provider.streamChat(
-        messages,
-        merged,
-        onToken,
-        onDone,
-        (err) => {
-          streamFailed = err;
-        },
-      );
+      await provider.streamChat(messages, merged, onToken, onDone, (err) => {
+        streamFailed = err;
+      });
     } catch (err) {
       streamFailed = err instanceof Error ? err : new Error(String(err));
     }

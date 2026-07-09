@@ -3,7 +3,6 @@ import {
   executeProviderChat,
   executeProviderPrompt,
   getActiveProviderName,
-  getProviderRoutingSummary,
   getResolvedTargetName,
   streamProviderChat,
 } from "../core/providers/provider-executor";
@@ -14,25 +13,10 @@ import type {
 } from "../core/providers/provider-interface";
 
 const runtimeConfig = getProviderRuntimeConfig();
-const routingSummary = getProviderRoutingSummary();
 
-const providerDefaultModel =
-  runtimeConfig.activeProvider === "openai"
-    ? runtimeConfig.openai.model
-    : runtimeConfig.activeProvider === "claude"
-      ? runtimeConfig.claude.model
-      : runtimeConfig.clawTemp.model;
-
-const providerTarget =
-  runtimeConfig.activeProvider === "openai"
-    ? runtimeConfig.openai.baseUrl
-    : runtimeConfig.activeProvider === "claude"
-      ? runtimeConfig.claude.baseUrl
-      : runtimeConfig.clawTemp.baseUrl;
-
-console.log(`[boot] active provider: ${runtimeConfig.activeProvider}`);
-console.log(`[boot] target URL:      ${providerTarget || "(none)"}`);
-console.log(`[boot] default model:   ${providerDefaultModel}`);
+console.log(`[boot] provider:       Lightning AI`);
+console.log(`[boot] target URL:     ${runtimeConfig.lightning.baseUrl || "(none)"}`);
+console.log(`[boot] default model:  ${runtimeConfig.lightning.model || "(none)"}`);
 
 const lanes = ["chat", "manager", "operations", "research", "business", "finance"] as const;
 const laneRows = lanes
@@ -42,16 +26,6 @@ const laneRows = lanes
   })
   .join("\n");
 console.log(`[boot] per-lane model overrides:\n${laneRows}`);
-
-console.log(
-  `[boot] routing targets:  chat=${routingSummary.routing.chat}, manager=${routingSummary.target}, operations=${routingSummary.routing.operations}, research=${routingSummary.routing.research}, business=${routingSummary.routing.business}, finance=${routingSummary.routing.finance}`,
-);
-
-if (runtimeConfig.clawTemp.baseUrl) {
-  console.log(
-    `[boot] remote runner configured: ${runtimeConfig.clawTemp.baseUrl} (${runtimeConfig.clawTemp.mode})`,
-  );
-}
 
 export type ModelProviderMessage = ProviderMessage;
 

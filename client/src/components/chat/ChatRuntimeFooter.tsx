@@ -11,14 +11,10 @@ interface RuntimeStatus {
   status: "online" | "offline";
 }
 
-// The "openai" provider key here just means the runtime is speaking
-// OpenAI's API protocol — it does NOT mean OpenAI is the model host.
-// The actual host is Lightning AI (reached via the claw-provider-temp
-// path). Show the honest name to the user.
+// Lightning AI is the only provider ZED talks to. Anything else in
+// this field is stale data — surface it verbatim rather than lie.
 const PROVIDER_LABELS: Record<string, string> = {
-  openai: "Lightning AI",
-  claude: "Claude",
-  "claw-temp": "Lightning AI",
+  lightning: "Lightning AI",
 };
 
 function prettyModel(model: string): string {
