@@ -1,9 +1,16 @@
-import { useEffect, useState } from "react";
-import { useParams } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
-import type { Conversation, Message, File as DBFile } from "@shared/schema";
+import type { AgentTarget, Conversation, Message, File as DBFile } from "@shared/schema";
+
+const WORKSPACE_AGENT: Record<string, AgentTarget> = {
+  finance: "finance",
+  operations: "operations",
+  research: "research",
+  marketing: "business",
+};
 
 export type FilingProject = {
   id: string;
@@ -25,6 +32,12 @@ export default function Chat() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const search = useSearch();
+  const workspaceContext = useMemo<AgentTarget | undefined>(() => {
+    const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+    const ctx = params.get("ctx");
+    return ctx ? WORKSPACE_AGENT[ctx] : undefined;
+  }, [search]);
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -158,7 +171,7 @@ export default function Chat() {
       
       {/* Chat Area */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <ChatArea 
+        <ChatArea
           conversation={currentConversation}
           messages={messages}
           files={files}
@@ -167,6 +180,7 @@ export default function Chat() {
           onAssignProject={handleAssignProject}
           isMobile={isMobile}
           onOpenSidebar={() => setIsSidebarOpen(true)}
+          workspaceContext={workspaceContext}
         />
       </div>
     </div>

@@ -20,6 +20,8 @@ import { RunsListPage, RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
 import ProjectsPage from "@/pages/projects";
 import { DecisionsListPage, DecisionDetailPage } from "@/pages/decisions";
+import TimelinePage from "@/pages/timeline";
+import DiscoveryPage from "@/pages/discovery";
 import TradingPage from "@/pages/trading";
 import BudgetPage from "@/pages/budget";
 import WorkspacePage from "@/pages/workspace";
@@ -164,6 +166,14 @@ function Router() {
 
       <Route path="/decisions/:id">
         {isAuthenticated ? <DecisionDetailPage /> : <Login />}
+      </Route>
+
+      <Route path="/timeline">
+        {isAuthenticated ? <TimelinePage /> : <Login />}
+      </Route>
+
+      <Route path="/discovery">
+        {isAuthenticated ? <DiscoveryPage /> : <Login />}
       </Route>
 
       <Route component={NotFound} />

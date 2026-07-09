@@ -11,6 +11,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RelatedObjects } from "@/components/knowledge/RelatedObjects";
 import type {
   AnyMemoryObject,
   DecisionObject,
@@ -323,6 +324,15 @@ export function DecisionDetailPage() {
                 Updated {friendlyTime(decision.updatedAt)}
               </div>
             </section>
+
+            {graph && (
+              <RelatedObjects
+                objectId={decision.id}
+                graph={graph}
+                className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+                label="Connected"
+              />
+            )}
 
             {decision.properties?.rationale && (
               <DetailBlock label="Why">

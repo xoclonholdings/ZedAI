@@ -233,7 +233,7 @@ export default function HomePage() {
           count: conflictsCount,
           icon: AlertTriangle,
           accent: "amber" as const,
-          href: "/learning?filter=conflicts",
+          href: "/discovery?filter=conflicts",
         },
         {
           key: "questions",
@@ -241,7 +241,7 @@ export default function HomePage() {
           count: openQuestionsCount,
           icon: HelpCircle,
           accent: "cyan" as const,
-          href: "/learning?filter=open-questions",
+          href: "/discovery?filter=open-questions",
         },
         {
           key: "lowConfidence",
@@ -249,7 +249,7 @@ export default function HomePage() {
           count: lowConfidenceCount,
           icon: ShieldAlert,
           accent: "fuchsia" as const,
-          href: "/learning?filter=low-confidence",
+          href: "/discovery?filter=low-confidence",
         },
         {
           key: "duplicates",
@@ -257,7 +257,7 @@ export default function HomePage() {
           count: duplicateSuspects,
           icon: Copy,
           accent: "emerald" as const,
-          href: "/learning?filter=duplicates",
+          href: "/discovery?filter=duplicates",
         },
       ].filter((d) => d.count > 0),
     [conflictsCount, openQuestionsCount, lowConfidenceCount, duplicateSuspects],
@@ -369,13 +369,22 @@ export default function HomePage() {
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
               Knowledge map
             </div>
-            <button
-              type="button"
-              onClick={() => navigate("/learning")}
-              className="text-[12px] text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"
-            >
-              Open library <ArrowRight size={11} />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => navigate("/timeline")}
+                className="text-[12px] text-white/60 hover:text-white/85"
+              >
+                Timeline
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/learning")}
+                className="text-[12px] text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1"
+              >
+                Open library <ArrowRight size={11} />
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {knowledgeTilesResolved.map((tile) => {

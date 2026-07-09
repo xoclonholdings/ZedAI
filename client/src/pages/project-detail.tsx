@@ -5,6 +5,7 @@ import { ChevronLeft, Plus, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { RelatedObjects } from "@/components/knowledge/RelatedObjects";
 
 import { AddSourceCard } from "./project-detail/AddSourceCard";
 import { SourceCard } from "./project-detail/SourceCard";
@@ -192,6 +193,12 @@ export default function ProjectDetailPage() {
                 </div>
               )}
             </section>
+
+            <RelatedObjects
+              canonicalName={project.name}
+              type="project"
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+            />
 
             <section className="pt-2">
               <Badge

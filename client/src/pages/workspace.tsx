@@ -10,6 +10,7 @@ import {
   Inbox,
   Layers,
   LineChart,
+  MessageSquare,
   PenTool,
   Search,
   Wallet,
@@ -232,6 +233,14 @@ export default function WorkspacePage() {
         </section>
 
         {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
+
+        <Button
+          onClick={() => navigate(`/chat?ctx=${workspace}`)}
+          className="w-full rounded-xl zed-gradient"
+        >
+          <MessageSquare size={14} className="mr-2" />
+          Ask Zed in {config.label}
+        </Button>
 
         {config.subspaces && config.subspaces.length > 0 && (
           <section className="space-y-2">
