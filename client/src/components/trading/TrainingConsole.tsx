@@ -159,10 +159,13 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
 
       {/* Connections */}
       <div className="mt-5">
-        <div className="mb-2 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
+        <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
           <Plug size={13} className="text-cyan-300" />
-          Connections
+          Accounts Zed can sign into
         </div>
+        <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
+          Just your username and password — the same way you log in. Zed signs in and works in the account for you. No API keys or setup.
+        </p>
         {providers.length === 0 ? (
           <EmptyBox>Loading providers…</EmptyBox>
         ) : (
@@ -267,11 +270,9 @@ function ProviderCard({
             </span>
           </div>
           <p className="mt-1 text-[11.5px] text-white/50 leading-snug">{info.purpose}</p>
-          {!info.liveBridge && (
-            <p className="mt-1 text-[10.5px] text-white/35">
-              Saves credentials for when live sync is enabled.
-            </p>
-          )}
+          <p className="mt-1 text-[10.5px] text-white/35">
+            Your login stays private — Zed uses it to sign in for you.
+          </p>
           {integration?.lastResult && (
             <p className="mt-1 text-[11px] text-white/55">{integration.lastResult}</p>
           )}
@@ -313,13 +314,12 @@ function ProviderCard({
               <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/50 mb-1">
                 {field.label}
                 {field.optional ? " (optional)" : ""}
-                {field.secret ? " · secret" : ""}
               </div>
               <input
                 type={field.secret ? "password" : "text"}
                 value={values[field.key] || ""}
                 onChange={(e) => setValues((v) => ({ ...v, [field.key]: e.target.value }))}
-                placeholder={field.secret && integration?.hasCredential ? "•••• stored — leave blank to keep" : ""}
+                placeholder={field.secret && integration?.hasCredential ? "•••• saved — leave blank to keep" : ""}
                 className={inputClass}
               />
             </label>

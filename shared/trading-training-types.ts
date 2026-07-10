@@ -96,12 +96,16 @@ export interface IntegrationProviderInfo {
   provider: IntegrationProvider;
   label: string;
   purpose: string;
-  /** Fields the connect form asks for. Secrets are write-only. */
+  /**
+   * What the connect form asks for. Kept deliberately simple: a
+   * username/email and a password, exactly like signing in yourself.
+   * Password fields are write-only (never sent back to the browser).
+   */
   fields: Array<{ key: string; label: string; secret?: boolean; optional?: boolean }>;
   /**
-   * Whether a real live-data bridge exists yet. When false, connecting
-   * saves credentials for when the bridge is enabled and "test" only
-   * validates the config (no fabricated live pull).
+   * Whether Zed can reach this account's website directly (used only to
+   * do a light "is the site reachable" check on "Other account"). It
+   * does not change how you connect — that's always username + password.
    */
   liveBridge: boolean;
 }
@@ -120,54 +124,52 @@ export interface TradingIntegration {
   updatedAt: string;
 }
 
+/**
+ * Connecting an account is the same everywhere: the username/email you
+ * log in with and your password. No API keys, developer accounts, or
+ * technical setup — Zed signs in and works in the account for you.
+ */
+const LOGIN_FIELDS = [
+  { key: "username", label: "Username or email" },
+  { key: "password", label: "Password", secret: true },
+];
+
 export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
   {
     provider: "topstep",
     label: "TopStep",
-    purpose: "Futures evaluation rules, drawdown discipline, and account objectives.",
-    fields: [
-      { key: "accountId", label: "Account / username" },
-      { key: "apiKey", label: "API key", secret: true, optional: true },
-    ],
+    purpose: "Zed signs in to your TopStep account and works in it for you.",
+    fields: LOGIN_FIELDS,
     liveBridge: false,
   },
   {
     provider: "tradingview",
     label: "TradingView",
-    purpose: "Charts, watchlists, alerts, and screeners Zed can reference.",
-    fields: [
-      { key: "username", label: "Username" },
-      { key: "webhookSecret", label: "Alert webhook secret", secret: true, optional: true },
-    ],
+    purpose: "Zed signs in to TradingView to use your charts, watchlists, and alerts.",
+    fields: LOGIN_FIELDS,
     liveBridge: false,
   },
   {
     provider: "lucid",
     label: "Lucid",
-    purpose: "Evaluation environment for professional trading objectives.",
-    fields: [
-      { key: "accountId", label: "Account ID" },
-      { key: "apiKey", label: "API key", secret: true, optional: true },
-    ],
+    purpose: "Zed signs in to your Lucid account and works in it for you.",
+    fields: LOGIN_FIELDS,
     liveBridge: false,
   },
   {
     provider: "tradovate",
-    label: "Tradovate Paper",
-    purpose: "Paper/live futures brokerage for evaluation-style trading.",
-    fields: [
-      { key: "username", label: "Username" },
-      { key: "apiKey", label: "API key", secret: true, optional: true },
-    ],
+    label: "Tradovate",
+    purpose: "Zed signs in to your Tradovate account and works in it for you.",
+    fields: LOGIN_FIELDS,
     liveBridge: false,
   },
   {
     provider: "custom",
-    label: "Custom",
-    purpose: "Any HTTP endpoint or provider you want Zed to reach. The URL gets a live reachability test.",
+    label: "Other account",
+    purpose: "Any other site. Give Zed the web address and your login.",
     fields: [
-      { key: "baseUrl", label: "Base URL" },
-      { key: "apiKey", label: "API key / token", secret: true, optional: true },
+      { key: "baseUrl", label: "Website address" },
+      ...LOGIN_FIELDS,
     ],
     liveBridge: true,
   },
