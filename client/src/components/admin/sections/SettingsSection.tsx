@@ -19,10 +19,10 @@ export default function SettingsSection() {
   const category = SETTINGS_CATEGORIES.find((c) => c.id === active) || SETTINGS_CATEGORIES[0];
 
   return (
-    <div className="grid w-full min-w-0 max-w-full gap-4 overflow-x-hidden md:grid-cols-[220px_1fr] md:gap-8">
+    <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-4 overflow-x-hidden md:grid-cols-[220px_minmax(0,1fr)] md:gap-8">
       <SettingsSidebar active={active} onSelect={setActive} />
 
-      <main className="min-w-0 max-w-full overflow-x-hidden">
+      <main className="w-full min-w-0 max-w-full overflow-x-hidden">
         {active === "voice" ? (
           <HowZedSounds />
         ) : active === "approval" ? (

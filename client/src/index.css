@@ -58,6 +58,15 @@
   /* Ensure immediate black background */
   html {
     background: #000000 !important;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   /* Custom scrollbar */

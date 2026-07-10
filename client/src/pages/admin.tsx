@@ -74,8 +74,8 @@ export default function Admin() {
   const pendingCount = approvals.filter((e) => e.status === "pending").length;
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-black text-white">
-      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between gap-3 sticky top-0 z-20 overflow-hidden">
+    <div className="min-h-screen w-screen max-w-[100vw] overflow-x-hidden bg-black text-white">
+      <div className="sticky top-0 z-20 flex w-full max-w-[100vw] items-center justify-between gap-3 overflow-hidden border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
@@ -101,7 +101,7 @@ export default function Admin() {
 
       <AdminNav active={section} onSelect={setSection} pendingApprovals={pendingCount} />
 
-      <div className="mx-auto w-full max-w-5xl space-y-6 overflow-x-hidden p-4 md:p-6">
+      <div className="mx-auto w-full max-w-[100vw] space-y-6 overflow-x-hidden p-4 md:max-w-5xl md:p-6">
         {section === "settings" && <SettingsSection />}
         {section === "advanced" && <AdvancedSection />}
         {section === "knowledge" && <KnowledgeSection />}
