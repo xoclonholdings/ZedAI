@@ -24,6 +24,8 @@ interface ChatAreaProps {
   isMobile?: boolean;
   onOpenSidebar?: () => void;
   workspaceContext?: AgentTarget;
+  workspaceLabel?: string | null;
+  workspaceSlug?: string | null;
 }
 
 export default function ChatArea({
@@ -35,6 +37,8 @@ export default function ChatArea({
   isMobile = false,
   onOpenSidebar,
   workspaceContext,
+  workspaceLabel,
+  workspaceSlug,
 }: ChatAreaProps) {
   const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
@@ -211,6 +215,8 @@ export default function ChatArea({
           onOpenSidebar={onOpenSidebar}
           canArchive={!!conversationId}
           onArchiveConversation={handleArchiveConversation}
+          workspaceLabel={workspaceLabel}
+          workspaceSlug={workspaceSlug}
         />
 
         <ChatMessagesList

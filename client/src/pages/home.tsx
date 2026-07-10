@@ -28,6 +28,12 @@ import {
 
 import { useAuth } from "@/components/auth/UseAuth";
 import {
+  persistWorkspace,
+  readWorkspaceFromStorage,
+  WORKSPACE_LABEL,
+  type WorkspaceSlug,
+} from "@/lib/workspaceContext";
+import {
   TRADING_STAGES,
   type TradingProgression,
 } from "@shared/trading-progression";
@@ -133,7 +139,17 @@ export default function HomePage() {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [memory, setMemory] = useState<ObjectGraph | null>(null);
   const [budget, setBudget] = useState<BudgetSummary | null>(null);
+  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceSlug | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    setActiveWorkspace(readWorkspaceFromStorage());
+  }, []);
+
+  const exitWorkspace = useCallback(() => {
+    persistWorkspace(null);
+    setActiveWorkspace(null);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -319,6 +335,34 @@ export default function HomePage() {
               className="shrink-0 rounded-lg bg-amber-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-amber-300 transition-colors"
             >
               Review
+            </button>
+          </section>
+        )}
+
+        {/* Active workspace banner */}
+        {activeWorkspace && (
+          <section className="rounded-2xl border border-cyan-400/30 bg-cyan-400/[0.05] px-4 py-3 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-[10.5px] uppercase tracking-[0.14em] text-cyan-200/80">
+                In workspace
+              </div>
+              <div className="text-[14px] font-medium text-white leading-tight">
+                {WORKSPACE_LABEL[activeWorkspace]}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/chat?ctx=${activeWorkspace}`)}
+              className="shrink-0 rounded-lg border border-cyan-400/40 bg-cyan-400/[0.1] text-cyan-100 hover:bg-cyan-400/[0.18] px-3 py-1.5 text-[12px]"
+            >
+              Continue
+            </button>
+            <button
+              type="button"
+              onClick={exitWorkspace}
+              className="shrink-0 rounded-lg border border-white/10 bg-white/[0.02] text-white/60 hover:text-white/85 px-3 py-1.5 text-[12px]"
+            >
+              Exit
             </button>
           </section>
         )}
