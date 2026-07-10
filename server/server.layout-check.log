@@ -45,3 +45,13 @@
 6:52:24 PM [express] GET /api/trading/progression 401 in 2ms :: {"message":"Unauthorized"}
 6:52:37 PM [express] POST /api/trading/progression/assess/learn 404 in 3ms
 6:52:39 PM [express] GET /api/trading/knowledge/areas 200 in 1758ms
+[2m1:50:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/trading/StrategyStage.tsx[22m
+[2m1:50:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/trading/StrategyStage.tsx[22m
+[2m1:50:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/trading/TrainingConsole.tsx[22m
+[2m1:50:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/trading/ValidationStage.tsx[22m
+[2m1:50:34 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/chat/ChatArea.tsx[22m
+[2m1:50:34 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/chat/ChatEmptyState.tsx[22m
+[2m1:50:34 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/chat.tsx[22m
+[2m1:50:34 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/chat/ChatHeader.tsx[22m
+[2m1:50:34 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/chat/ChatMessage.tsx[22m
+[2m1:50:34 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/home.tsx[22m
