@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useSearch } from "wouter";
+import { useLocation } from "wouter";
 import {
   AlertTriangle,
   ChevronLeft,
@@ -12,6 +12,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLocationSearch } from "@/lib/useLocationSearch";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -88,7 +89,7 @@ interface DuplicateGroup {
 
 export default function DiscoveryPage() {
   const [, navigate] = useLocation();
-  const search = useSearch();
+  const search = useLocationSearch();
   const [graph, setGraph] = useState<ObjectGraph | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
