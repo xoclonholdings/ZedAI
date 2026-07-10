@@ -106,30 +106,44 @@ export class LightningProvider implements ModelProvider {
     const attachments = options?.attachments || [];
     const composed = attachImages(messages, attachments);
 
-    const lastUser = [...composed].reverse().find((m) => m.role === "user");
+    // OpenAI-compat endpoints (which Lightning AI's public API is) only
+    // read the system prompt from a role:"system" message at the start
+    // of `messages`. Sending it as a top-level `system_prompt` field
+    // gets silently dropped — which is why Zed's voice, principle
+    // prompt, and full cognitive core never reached the model. Prepend
+    // it as messages[0] so it actually applies.
+    const withSystem: ProviderMessage[] =
+      options?.systemPrompt && !composed.some((m) => m.role === "system")
+        ? [{ role: "system", content: options.systemPrompt }, ...composed]
+        : composed;
+
+    const lastUser = [...withSystem].reverse().find((m) => m.role === "user");
     const userMessageText = lastUser
       ? contentToText(lastUser.content)
-      : buildPromptFromMessages(composed, options?.systemPrompt);
+      : buildPromptFromMessages(withSystem, options?.systemPrompt);
 
     const requestBody: Record<string, unknown> = {
       model: options?.model || resolveModelForLane(options?.lane, config.model),
       // OpenAI-compatible messages with content blocks so LitServe /
-      // vLLM / TGI runners that speak OpenAI schema light up.
-      messages: composed.map((m) => ({
+      // vLLM / TGI / lightning.ai/api/v1 all light up.
+      messages: withSystem.map((m) => ({
         role: m.role,
         content: toOpenAIStyleContent(m.content),
       })),
-      // Flattened fallbacks for custom Lightning runners that don't
-      // parse OpenAI content parts.
-      message: userMessageText,
-      system_prompt: options?.systemPrompt,
-      // Explicit vision payload alongside for runners that prefer a
-      // dedicated field. Empty when there are no attachments.
-      images: attachments.map((img) => ({
+    };
+
+    // Extra fields for custom runners that don't parse OpenAI content
+    // parts. Only include them when a non-OpenAI-standard chatPath is
+    // configured, so strict endpoints (like lightning.ai/api/v1) don't
+    // get unknown fields they might reject.
+    if (config.chatPath !== "/chat/completions") {
+      requestBody.message = userMessageText;
+      requestBody.system_prompt = options?.systemPrompt;
+      requestBody.images = attachments.map((img) => ({
         data: img.data,
         mediaType: img.mediaType,
-      })),
-    };
+      }));
+    }
     if (typeof options?.temperature === "number") requestBody.temperature = options.temperature;
     if (typeof options?.maxTokens === "number") requestBody.max_tokens = options.maxTokens;
     if (typeof options?.topP === "number") requestBody.top_p = options.topP;

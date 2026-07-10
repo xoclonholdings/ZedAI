@@ -89,13 +89,19 @@ export function resolveModelForLane(
 }
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
+  // Lightning AI's public endpoint speaks the OpenAI Chat Completions
+  // protocol. Users who set it up with the OpenAI SDK naming (OPENAI_*)
+  // and users who set it up with the Lightning naming (LIGHTNING_*)
+  // both work — nothing has to be renamed on redeploy.
   const baseUrl = trimTrailingSlash(
     process.env.LIGHTNING_BASE_URL ||
+      process.env.OPENAI_BASE_URL ||
       process.env.REMOTE_INFERENCE_URL ||
       "",
   );
   const model =
     process.env.LIGHTNING_MODEL ||
+    process.env.OPENAI_MODEL ||
     process.env.MODEL_NAME ||
     process.env.ZED_MODEL_NAME ||
     "";
@@ -110,12 +116,15 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
       apiKey: (
         process.env.LIGHTNING_API_KEY ||
         process.env.LIGHTNING_TOKEN ||
+        process.env.OPENAI_API_KEY ||
         process.env.REMOTE_INFERENCE_TOKEN ||
         ""
       ).trim(),
       model,
-      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
-      healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
+      // Default to the OpenAI-compat path since that's what the public
+      // Lightning AI endpoint serves. Custom runners can override.
+      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat/completions",
+      healthPath: process.env.LIGHTNING_HEALTH_PATH || "/models",
       timeoutMs: Number(
         process.env.LIGHTNING_TIMEOUT_MS ||
           process.env.REMOTE_INFERENCE_TIMEOUT_MS ||
