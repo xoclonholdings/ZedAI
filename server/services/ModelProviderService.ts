@@ -17,6 +17,9 @@ const runtimeConfig = getProviderRuntimeConfig();
 console.log(`[boot] provider:       Lightning AI`);
 console.log(`[boot] target URL:     ${runtimeConfig.lightning.baseUrl || "(none)"}`);
 console.log(`[boot] default model:  ${runtimeConfig.lightning.model || "(none)"}`);
+console.log(
+  `[boot] auth:           ${runtimeConfig.lightning.apiKey ? "Bearer token set" : "MISSING — every request will 401 until LIGHTNING_API_KEY is set"}`,
+);
 
 const lanes = ["chat", "manager", "operations", "research", "business", "finance"] as const;
 const laneRows = lanes

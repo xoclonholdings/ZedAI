@@ -134,11 +134,14 @@ export class LightningProvider implements ModelProvider {
     if (typeof options?.maxTokens === "number") requestBody.max_tokens = options.maxTokens;
     if (typeof options?.topP === "number") requestBody.top_p = options.topP;
 
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (config.apiKey) headers.Authorization = `Bearer ${config.apiKey}`;
+
     const response = await fetchWithTimeout(
       `${config.baseUrl}${config.chatPath}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(requestBody),
       },
       config.timeoutMs,
@@ -183,9 +186,11 @@ export class LightningProvider implements ModelProvider {
       };
     }
     try {
+      const healthHeaders: Record<string, string> = {};
+      if (config.apiKey) healthHeaders.Authorization = `Bearer ${config.apiKey}`;
       const res = await fetchWithTimeout(
         `${config.baseUrl}${config.healthPath}`,
-        {},
+        { headers: healthHeaders },
         config.timeoutMs,
       );
       if (!res.ok) {

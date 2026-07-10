@@ -29,6 +29,7 @@ export interface ProviderRuntimeConfig {
   laneModels: Partial<Record<ProviderLane, string>>;
   lightning: {
     baseUrl: string;
+    apiKey: string;
     model: string;
     chatPath: string;
     healthPath: string;
@@ -106,6 +107,12 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
     laneModels: buildLaneModels(),
     lightning: {
       baseUrl,
+      apiKey: (
+        process.env.LIGHTNING_API_KEY ||
+        process.env.LIGHTNING_TOKEN ||
+        process.env.REMOTE_INFERENCE_TOKEN ||
+        ""
+      ).trim(),
       model,
       chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
       healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",

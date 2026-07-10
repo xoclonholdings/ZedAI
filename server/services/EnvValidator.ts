@@ -99,6 +99,26 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     if (check) checks.push({ ...check, name: "LIGHTNING_BASE_URL" });
   }
 
+  if (
+    !present(env, "LIGHTNING_API_KEY") &&
+    !present(env, "LIGHTNING_TOKEN") &&
+    !present(env, "REMOTE_INFERENCE_TOKEN")
+  ) {
+    checks.push({
+      name: "LIGHTNING_API_KEY",
+      severity: "error",
+      message:
+        "Not set. Lightning endpoints reject requests with 'Missing or invalid Authorization header' without a token.",
+      hint: "Set LIGHTNING_API_KEY to the bearer token issued by your Lightning AI endpoint.",
+    });
+  } else {
+    checks.push({
+      name: "LIGHTNING_API_KEY",
+      severity: "ok",
+      message: "Set. Sent as 'Authorization: Bearer <key>' on every request.",
+    });
+  }
+
   if (!present(env, "LIGHTNING_MODEL") && !present(env, "MODEL_NAME")) {
     checks.push({
       name: "LIGHTNING_MODEL",
