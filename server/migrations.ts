@@ -42,7 +42,7 @@ export async function runMigrations(): Promise<void> {
         user_id varchar NOT NULL REFERENCES users(id),
         title text NOT NULL,
         preview text,
-        model text NOT NULL DEFAULT 'gpt-4o-mini',
+        model text NOT NULL DEFAULT 'lightning',
         mode text NOT NULL DEFAULT 'chat',
         is_active boolean DEFAULT false,
         created_at timestamp DEFAULT now(),

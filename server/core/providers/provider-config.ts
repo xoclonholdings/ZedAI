@@ -90,7 +90,7 @@ export function resolveModelForLane(
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const baseUrl = trimTrailingSlash(
     process.env.LIGHTNING_BASE_URL ||
-      process.env.REMOTE_INFERENCE_URL ||
+      process.env.LIGHTNING_AI_URL ||
       "",
   );
   const model =
@@ -109,11 +109,7 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
       model,
       chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
       healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
-      timeoutMs: Number(
-        process.env.LIGHTNING_TIMEOUT_MS ||
-          process.env.REMOTE_INFERENCE_TIMEOUT_MS ||
-          45000,
-      ),
+      timeoutMs: Number(process.env.LIGHTNING_TIMEOUT_MS || 45000),
     },
   };
 }

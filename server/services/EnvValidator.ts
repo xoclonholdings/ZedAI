@@ -74,7 +74,7 @@ function checkUrl(
     return {
       name,
       severity: "warn",
-      message: `Doesn't end in "${expectedSuffix}". Most OpenAI-compatible providers expect a base URL ending there.`,
+      message: `Doesn't end in "${expectedSuffix}". Gateways that speak the chat-completions schema usually expect a base URL ending there.`,
       hint: `Try ${raw.replace(/\/+$/, "")}${expectedSuffix} unless your provider documents a different path.`,
     };
   }
@@ -86,7 +86,7 @@ function checkUrl(
 }
 
 function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
-  const baseUrl = trimmed(env, "LIGHTNING_BASE_URL") || trimmed(env, "REMOTE_INFERENCE_URL");
+  const baseUrl = trimmed(env, "LIGHTNING_BASE_URL") || trimmed(env, "LIGHTNING_AI_URL");
   if (!baseUrl) {
     checks.push({
       name: "LIGHTNING_BASE_URL",
@@ -95,7 +95,7 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
       hint: "Point it at your Lightning AI runner (e.g. https://<your-endpoint>.lightning.ai).",
     });
   } else {
-    const check = checkUrl(env, "LIGHTNING_BASE_URL") || checkUrl(env, "REMOTE_INFERENCE_URL");
+    const check = checkUrl(env, "LIGHTNING_BASE_URL") || checkUrl(env, "LIGHTNING_AI_URL");
     if (check) checks.push({ ...check, name: "LIGHTNING_BASE_URL" });
   }
 

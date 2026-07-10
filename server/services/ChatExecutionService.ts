@@ -85,7 +85,7 @@ export interface ChatExecutionTestHooks {
   contextAssessment?: () => Promise<any>;
   knowledgeContext?: () => Promise<any>;
   adminContext?: () => Promise<any>;
-  fileContext?: () => Promise<{ prompt: string; filesReferenced: string[]; failedFiles: string[] }>;
+  fileContext?: () => Promise<{ prompt: string; filesReferenced: string[]; failedFiles: string[]; imageBlocks?: ImageBlock[] }>;
   voicePrompt?: () => Promise<string>;
   route?: (request: any) => Promise<any>;
   present?: (draft: string, options: any) => Promise<{ content: string; adjustments: string[] }>;
