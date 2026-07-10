@@ -85,6 +85,32 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
     icon: Search,
     categories: ["research"],
     empty: "No research tools are published yet.",
+    subspaces: [
+      {
+        label: "Discovery",
+        description:
+          "Explore people, companies, markets, and topics. Zed gathers sources so you start from signal, not a blank page.",
+        href: "/discovery",
+        icon: Search,
+        accent: "cyan",
+      },
+      {
+        label: "Projects",
+        description:
+          "Keep each research initiative in its own space with its own sources and memory, so Zed answers in-context.",
+        href: "/projects",
+        icon: FolderKanban,
+        accent: "fuchsia",
+      },
+      {
+        label: "Run History",
+        description:
+          "Every research flow Zed has run, with inputs, outputs, and traces. Revisit what worked and rerun it.",
+        href: "/runs",
+        icon: History,
+        accent: "emerald",
+      },
+    ],
   },
   operations: {
     label: "Operations",
