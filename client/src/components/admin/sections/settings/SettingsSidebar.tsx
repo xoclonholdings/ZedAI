@@ -47,32 +47,34 @@ export function SettingsSidebar({
       </div>
 
       {/* Mobile: horizontal pill scroll */}
-      <div
-        className="md:hidden flex gap-1.5 overflow-x-auto overflow-y-hidden -mx-4 px-4 pb-1"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {SETTINGS_CATEGORIES.map((cat) => {
-          const isActive = cat.id === active;
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => onSelect(cat.id)}
-              className={`whitespace-nowrap rounded-lg border px-3.5 py-2 text-[13px] transition-colors ${
-                isActive
-                  ? "bg-cyan-400/[0.12] border-cyan-400/40 text-white"
-                  : "bg-white/[0.02] border-white/10 text-white/60 hover:text-white/90"
-              }`}
-            >
-              {cat.label}
-              {!cat.ready && (
-                <span className="ml-1.5 text-[9px] uppercase tracking-[0.08em] text-white/30">
-                  soon
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <div className="md:hidden w-full max-w-full overflow-hidden">
+        <div
+          className="flex max-w-full gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-1"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {SETTINGS_CATEGORIES.map((cat) => {
+            const isActive = cat.id === active;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => onSelect(cat.id)}
+                className={`shrink-0 whitespace-nowrap rounded-lg border px-3.5 py-2 text-[13px] transition-colors ${
+                  isActive
+                    ? "bg-cyan-400/[0.12] border-cyan-400/40 text-white"
+                    : "bg-white/[0.02] border-white/10 text-white/60 hover:text-white/90"
+                }`}
+              >
+                {cat.label}
+                {!cat.ready && (
+                  <span className="ml-1.5 text-[9px] uppercase tracking-[0.08em] text-white/30">
+                    soon
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

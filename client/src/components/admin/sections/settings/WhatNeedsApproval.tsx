@@ -221,12 +221,12 @@ export function WhatNeedsApproval() {
 
   const header = useMemo(
     () => (
-      <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
+      <header className="mb-6 flex max-w-full flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
             What needs your approval
           </h2>
-          <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
+          <p className="mt-1.5 max-w-full break-words text-[13.5px] leading-snug text-white/50 sm:max-w-[62ch]">
             For each thing Zed might do on your behalf, choose whether Zed goes
             ahead automatically, drafts and asks you first, or never does it at
             all.{" "}

@@ -1,0 +1,47 @@
+
+> zed-server@1.0.0 start
+> tsx index.ts
+
+[boot] active provider: openai
+[boot] target URL:      https://api.openai.com/v1
+[boot] default model:   gpt-4o-mini
+[boot] per-lane model overrides:
+  chat        -> (default)
+  manager     -> (default)
+  operations  -> (default)
+  research    -> (default)
+  business    -> (default)
+  finance     -> (default)
+[boot] routing targets:  chat=https://api.openai.com/v1, manager=https://api.openai.com/v1, operations=https://api.openai.com/v1, research=https://api.openai.com/v1, business=https://api.openai.com/v1, finance=https://api.openai.com/v1
+[DATABASE] DATABASE_URL not set - running in offline mode
+3:11:34 PM [express] Runtime data root ready at C:\Users\DGN\Desktop\Xoclon_Holdings\Zed\ZedAI
+3:11:34 PM [express] Initializing fallback storage system...
+[FALLBACK_STORAGE] Starting with empty index
+[FALLBACK_STORAGE] Initialized successfully
+3:11:34 PM [express] Fallback storage initialized successfully
+3:11:34 PM [express] Checking database connection...
+[DATABASE] No DATABASE_URL configured - running in offline mode
+3:11:34 PM [express] Offline database mode active; using fallback storage only
+3:11:34 PM [express] [INFO] Application will run without database features
+[MEMORY] Core memory loaded from core.memory.json
+3:11:34 PM [express] Core memory loaded from core.memory.json successfully
+3:11:34 PM [express] Knowledge curation scheduler active
+..\client\node_modules\vite\dist\node\chunks\dep-827b23df.js (39647:59) [33m[UNRESOLVED_IMPORT] Warning:[0m Could not resolve 'lightningcss' in ../client/node_modules/vite/dist/node/chunks/dep-827b23df.js
+       [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../client/node_modules/vite/dist/node/chunks/dep-827b23df.js:39647:60 [38;5;246m][0m
+       [38;5;246m│[0m
+ [38;5;246m39647 │[0m [38;5;249mc[0m[38;5;249mo[0m[38;5;249mn[0m[38;5;249ms[0m[38;5;249mt[0m[38;5;249m [0m[38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249mL[0m[38;5;249mi[0m[38;5;249mg[0m[38;5;249mh[0m[38;5;249mt[0m[38;5;249mn[0m[38;5;249mi[0m[38;5;249mn[0m[38;5;249mg[0m[38;5;249mC[0m[38;5;249mS[0m[38;5;249mS[0m[38;5;249m [0m[38;5;249m=[0m[38;5;249m [0m[38;5;249mc[0m[38;5;249mr[0m[38;5;249me[0m[38;5;249ma[0m[38;5;249mt[0m[38;5;249me[0m[38;5;249mC[0m[38;5;249ma[0m[38;5;249mc[0m[38;5;249mh[0m[38;5;249me[0m[38;5;249md[0m[38;5;249mI[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m([0m[38;5;249m([0m[38;5;249m)[0m[38;5;249m [0m[38;5;249m=[0m[38;5;249m>[0m[38;5;249m [0m[38;5;249mi[0m[38;5;249mm[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m([0m'lightningcss'[38;5;249m)[0m[38;5;249m)[0m[38;5;249m;[0m
+ [38;5;240m      │[0m                                                            ───────┬──────  
+ [38;5;240m      │[0m                                                                   ╰──────── Module not found, treating it as an external dependency
+[38;5;246m───────╯[0m
+
+[2m3:11:45 PM[22m [33m[1m[vite][22m[39m [33mwarning: `esbuild` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `oxc` instead.[39m
+[2m3:11:45 PM[22m [33m[1m[vite][22m[39m [33mwarning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.[39m
+[33mYou or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.[39m
+3:11:45 PM [express] serving on port 5000
+3:11:45 PM [express] ZED AI Assistant ready with hardened database connection and fallback storage
+3:11:45 PM [express] [INFO] Running in offline mode with fallback storage - full functionality maintained
+6:52:10 PM [express] POST /api/trading/progression/assess/learn 404 in 66ms
+6:52:10 PM [express] GET /api/system/runtime 401 in 7ms :: {"message":"Unauthorized"}
+6:52:24 PM [express] GET /api/trading/progression 401 in 2ms :: {"message":"Unauthorized"}
+6:52:37 PM [express] POST /api/trading/progression/assess/learn 404 in 3ms
+6:52:39 PM [express] GET /api/trading/knowledge/areas 200 in 1758ms

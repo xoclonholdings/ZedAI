@@ -37,6 +37,24 @@ function now(): string {
   return new Date().toISOString();
 }
 
+function describeQuizFailure(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error || "");
+  const lower = message.toLowerCase();
+  if (lower.includes("lightning_base_url") || lower.includes("remote_inference_url")) {
+    return "AI host is not configured";
+  }
+  if (lower.includes("timeout") || lower.includes("aborted")) {
+    return "AI host timed out";
+  }
+  if (lower.includes("fetch failed") || lower.includes("econnrefused") || lower.includes("enotfound")) {
+    return "AI host is unreachable";
+  }
+  if (/\b(401|403)\b/.test(message) || lower.includes("unauthorized") || lower.includes("forbidden")) {
+    return "AI host rejected the request";
+  }
+  return "AI host returned an error";
+}
+
 function haystackForEntry(entry: {
   title: string;
   category: string;
@@ -141,10 +159,11 @@ async function assessLearn(userId: string): Promise<StageAssessmentResult> {
         points: comprehensionScore,
         max: 100,
       });
-    } catch {
+    } catch (error) {
+      console.warn("[TradingAssessment] Learn comprehension quiz failed:", error);
       breakdown.push({
         label: "Comprehension test",
-        detail: "The comprehension quiz could not run right now — scored on coverage only.",
+        detail: `The comprehension quiz could not run right now (${describeQuizFailure(error)}) — scored on coverage only.`,
         points: 0,
         max: 0,
       });
@@ -408,10 +427,11 @@ export async function assessKnowledgeArea(areaId: string): Promise<KnowledgeArea
         points: comprehensionScore,
         max: 100,
       });
-    } catch {
+    } catch (error) {
+      console.warn(`[TradingAssessment] ${area.id} comprehension quiz failed:`, error);
       breakdown.push({
         label: "Comprehension test",
-        detail: "The comprehension quiz could not run right now — scored on coverage only.",
+        detail: `The comprehension quiz could not run right now (${describeQuizFailure(error)}) — scored on coverage only.`,
         points: 0,
         max: 0,
       });

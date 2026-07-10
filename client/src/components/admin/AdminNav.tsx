@@ -37,25 +37,25 @@ export default function AdminNav({
   const activeTab = TABS.find((t) => t.id === active) || TABS[0];
 
   return (
-    <div className="border-b border-white/10 bg-black/60">
+    <div className="w-full max-w-full overflow-x-hidden border-b border-white/10 bg-black/60">
       {/* Mobile dropdown picker (≤ md) */}
-      <div ref={wrapperRef} className="relative md:hidden px-4 py-2.5">
+      <div ref={wrapperRef} className="relative max-w-full px-4 py-2.5 md:hidden">
         <button
           type="button"
           onClick={() => setPickerOpen((v) => !v)}
-          className="w-full flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium"
+          className="flex w-full max-w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium"
           aria-haspopup="menu"
           aria-expanded={pickerOpen}
         >
-          <span className="flex items-center gap-2">
-            {activeTab.label}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate">{activeTab.label}</span>
             {active === "approvals" && pendingApprovals > 0 && (
-              <span className="bg-pink-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+              <span className="bg-pink-600 text-white text-[10px] font-bold rounded-full w-4 h-4 shrink-0 flex items-center justify-center">
                 {pendingApprovals}
               </span>
             )}
           </span>
-          <ChevronDown size={14} className="opacity-70" />
+          <ChevronDown size={14} className="shrink-0 opacity-70" />
         </button>
         {pickerOpen && (
           <div
@@ -93,7 +93,7 @@ export default function AdminNav({
       </div>
 
       {/* Desktop tab strip (md+) */}
-      <div className="hidden md:flex px-4 gap-1 overflow-x-auto">
+      <div className="hidden max-w-full gap-1 overflow-x-auto px-4 md:flex">
         {TABS.map(({ id, label }) => {
           const badge = id === "approvals" ? pendingApprovals : 0;
           const isActive = active === id;

@@ -102,7 +102,7 @@ export function SettingRow({ label, description, children, stack = false }: Sett
             </p>
           )}
         </div>
-        <div className="mt-3">{children}</div>
+        <div className="mt-3 min-w-0 max-w-full">{children}</div>
       </div>
     );
   }
@@ -117,7 +117,7 @@ export function SettingRow({ label, description, children, stack = false }: Sett
           </p>
         )}
       </div>
-      <div className="sm:justify-self-end">{children}</div>
+      <div className="min-w-0 max-w-full sm:justify-self-end">{children}</div>
     </div>
   );
 }
@@ -168,7 +168,7 @@ export function Segmented<T extends string>({
     <div
       role="group"
       aria-label={ariaLabel}
-      className="inline-flex bg-white/[0.04] border border-white/10 rounded-lg p-[3px] gap-[2px]"
+      className="flex w-full max-w-full bg-white/[0.04] border border-white/10 rounded-lg p-[3px] gap-[2px] sm:inline-flex sm:w-auto"
     >
       {options.map((opt) => {
         const on = value === opt.value;
@@ -178,7 +178,7 @@ export function Segmented<T extends string>({
             type="button"
             onClick={() => onChange(opt.value)}
             aria-pressed={on}
-            className={`px-3 py-[5px] text-[13px] rounded-md transition-colors active:opacity-80 ${
+            className={`min-w-0 flex-1 whitespace-nowrap px-2 py-[5px] text-center text-[13px] rounded-md transition-colors active:opacity-80 sm:flex-none sm:px-3 ${
               on
                 ? "bg-black text-white shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
                 : "text-white/60 hover:text-white/90"
@@ -207,8 +207,8 @@ export function LabeledSelect<T extends string>({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      style={{ minWidth }}
-      className="appearance-none bg-white/[0.04] border border-white/10 rounded-lg text-[13.5px] text-white px-3 py-2 pr-8 cursor-pointer hover:bg-white/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+      style={{ minWidth: `min(${minWidth}px, 100%)` }}
+      className="w-full max-w-full appearance-none bg-white/[0.04] border border-white/10 rounded-lg text-[13.5px] text-white px-3 py-2 pr-8 cursor-pointer hover:bg-white/[0.07] focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 sm:w-auto"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value} className="bg-neutral-900">
@@ -238,8 +238,8 @@ export function LabeledSlider({
 }) {
   const pct = ((value - min) / (max - min)) * 100;
   return (
-    <div className="flex flex-col items-start">
-      <div className="flex items-center gap-3">
+    <div className="flex w-full max-w-[240px] flex-col items-start">
+      <div className="flex w-full items-center gap-3">
         <input
           type="range"
           min={min}
@@ -247,14 +247,14 @@ export function LabeledSlider({
           value={value}
           aria-label={ariaLabel}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="w-40 h-[22px] appearance-none bg-transparent cursor-pointer settings-range"
+          className="h-[22px] min-w-0 flex-1 appearance-none bg-transparent cursor-pointer settings-range"
           style={{ ["--pct" as string]: `${pct}%` }}
         />
         <span className="tabular-nums text-[12.5px] text-white/60 min-w-[32px] text-right">
           {value}
         </span>
       </div>
-      <div className="flex justify-between w-40 mt-1 text-[11px] tracking-[0.04em] text-white/40 uppercase">
+      <div className="flex w-[calc(100%-44px)] justify-between mt-1 text-[11px] tracking-[0.04em] text-white/40 uppercase">
         <span>{leftLabel}</span>
         <span>{rightLabel}</span>
       </div>
@@ -361,13 +361,13 @@ export function SaveIndicator({
   const cur = map[status];
   return (
     <div
-      className={`flex items-center gap-2 text-[12px] ${cur.text}`}
+      className={`min-w-0 max-w-full flex items-center gap-2 text-[12px] ${cur.text}`}
       role={status === "error" ? "alert" : undefined}
     >
       <span
         className={`w-1.5 h-1.5 rounded-full ${cur.dot} shadow-[0_0_0_3px_rgba(34,211,238,0.14)]`}
       />
-      {cur.label}
+      <span className="truncate">{cur.label}</span>
     </div>
   );
 }

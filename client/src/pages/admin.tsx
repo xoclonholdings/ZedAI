@@ -74,34 +74,34 @@ export default function Admin() {
   const pendingCount = approvals.filter((e) => e.status === "pending").length;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-black text-white">
+      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between gap-3 sticky top-0 z-20 overflow-hidden">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/chat")}
-            className="text-muted-foreground hover:text-foreground zed-button rounded-xl"
+            className="shrink-0 text-muted-foreground hover:text-foreground zed-button rounded-xl"
           >
             <ChevronLeft size={16} className="mr-1" />
             Back
           </Button>
-          <div className="flex items-center gap-2">
-            <img src={zedLogo} alt="ZED" className="w-6 h-6 object-contain" />
-            <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+          <div className="flex min-w-0 items-center gap-2">
+            <img src={zedLogo} alt="ZED" className="h-6 w-6 shrink-0 object-contain" />
+            <span className="truncate text-sm font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent sm:text-base">
               ZED Admin
             </span>
           </div>
         </div>
-        <Badge className="zed-glass border-purple-500/30 text-purple-300 text-xs">
-          <Shield size={10} className="mr-1" />
-          {user?.username || "Admin"}
+        <Badge className="zed-glass max-w-[36vw] shrink-0 overflow-hidden border-purple-500/30 text-purple-300 text-xs">
+          <Shield size={10} className="mr-1 shrink-0" />
+          <span className="truncate">{user?.username || "Admin"}</span>
         </Badge>
       </div>
 
       <AdminNav active={section} onSelect={setSection} pendingApprovals={pendingCount} />
 
-      <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6 overflow-x-hidden p-4 md:p-6">
         {section === "settings" && <SettingsSection />}
         {section === "advanced" && <AdvancedSection />}
         {section === "knowledge" && <KnowledgeSection />}
