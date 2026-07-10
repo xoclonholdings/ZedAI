@@ -175,9 +175,7 @@ export const TradingIntegrationsStore = {
         result = `Missing: ${missing.map((f) => f.label).join(", ")}.`;
       } else {
         status = "configured";
-        result = info.liveBridge
-          ? "Configuration looks complete."
-          : "Credentials saved. Live sync will use these once the provider bridge is enabled.";
+        result = "Saved securely. Zed will use this login to sign in and work in the account for you.";
       }
     }
 
