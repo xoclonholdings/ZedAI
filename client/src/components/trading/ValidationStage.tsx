@@ -16,6 +16,13 @@ import { EmptyBox, GroupHeading, NoticeBanner, StageShell } from "./stage-atoms"
  * revising the strategy.
  */
 
+const CHECK_CLS: Record<string, string> = {
+  PASS: "bg-emerald-400/15 text-emerald-300",
+  FAIL: "bg-red-400/15 text-red-300",
+  NOT_APPLICABLE: "bg-white/10 text-white/40",
+  UNKNOWN: "bg-yellow-400/15 text-yellow-200",
+};
+
 const VERDICT_META: Record<string, { label: string; cls: string; hint: string }> = {
   APPROVED: {
     label: "Approved",
@@ -70,14 +77,27 @@ export default function ValidationStage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/trading/theses", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
+      const [thesesRes, decisionsRes] = await Promise.all([
+        fetch("/api/trading/theses", { credentials: "include" }),
+        fetch("/api/trading/governance/decisions", { credentials: "include" }),
+      ]);
+      if (thesesRes.ok) {
+        const data = await thesesRes.json();
         setTheses(
           [...(data.theses || [])].sort((a: TradeThesis, b: TradeThesis) =>
             a.createdAt < b.createdAt ? 1 : -1,
           ),
         );
+      }
+      if (decisionsRes.ok) {
+        // Map the latest decision per thesis so reviewed strategies show
+        // their full checklist/reasons on load, not just after re-review.
+        const data = await decisionsRes.json();
+        const byThesis: Record<string, TradingGovernanceDecision> = {};
+        for (const d of (data.decisions || []) as TradingGovernanceDecision[]) {
+          if (d.thesisId && !byThesis[d.thesisId]) byThesis[d.thesisId] = d;
+        }
+        setDecisions(byThesis);
       }
     } catch (err: any) {
       setError(err?.message || "Failed to load strategies");
@@ -181,7 +201,73 @@ export default function ValidationStage() {
             )}
             {dec?.reason && (
               <div className="mt-2 rounded-md border border-white/[0.06] bg-white/[0.02] p-2 text-[11.5px] text-white/70 leading-snug">
-                {dec.reason.slice(0, 320)}
+                {dec.reason}
+              </div>
+            )}
+            {dec?.checklist && dec.checklist.length > 0 && (
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                {dec.checklist.map((item) => (
+                  <div
+                    key={item.key}
+                    className="rounded-md border border-white/[0.06] bg-white/[0.02] p-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-medium text-white/80">{item.label}</span>
+                      <span
+                        className={`text-[9.5px] uppercase tracking-[0.06em] rounded-full px-1.5 py-0.5 ${CHECK_CLS[item.result] || "bg-white/10 text-white/50"}`}
+                      >
+                        {item.result}
+                      </span>
+                    </div>
+                    {item.evidence && (
+                      <div className="mt-1 text-[11px] text-white/50 leading-snug">
+                        {item.evidence}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {dec?.requiredActions && dec.requiredActions.length > 0 && (
+              <div className="mt-2">
+                <div className="text-[10.5px] uppercase tracking-[0.08em] text-orange-300/70 mb-0.5">
+                  Required actions
+                </div>
+                <ul className="space-y-0.5">
+                  {dec.requiredActions.map((a, i) => (
+                    <li key={i} className="text-[11.5px] text-white/70 leading-snug">
+                      · {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {dec?.supportingEvidence && dec.supportingEvidence.length > 0 && (
+              <div className="mt-2">
+                <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-0.5">
+                  Evidence
+                </div>
+                <ul className="space-y-0.5">
+                  {dec.supportingEvidence.slice(0, 5).map((e, i) => (
+                    <li key={i} className="text-[11.5px] text-white/55 leading-snug">
+                      · {e}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {dec?.nextReviewConditions && dec.nextReviewConditions.length > 0 && (
+              <div className="mt-2">
+                <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-0.5">
+                  Re-review when
+                </div>
+                <ul className="space-y-0.5">
+                  {dec.nextReviewConditions.map((c, i) => (
+                    <li key={i} className="text-[11.5px] text-white/55 leading-snug">
+                      · {c}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
