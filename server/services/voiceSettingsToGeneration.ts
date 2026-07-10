@@ -48,6 +48,8 @@ const LANE_MAX_TOKEN_MULTIPLIER: Record<ProviderLane, number> = {
   research: 1.5, // research briefs
   business: 1.35, // strategic outputs
   finance: 1.35, // strategy / analysis
+  strategy: 1.5, // cross-domain strategy / high-context planning
+  admin: 1.2, // diagnostics and configuration answers
 };
 
 export function deriveGenerationParams(

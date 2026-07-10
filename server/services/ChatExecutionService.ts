@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 
 import { storage } from "../storage/databaseStorage";
 import { insertMessageSchema } from "../../shared/schema";
-import type { ImageBlock } from "../core/providers/provider-interface";
+import type { ImageBlock, ReasoningEffort } from "../core/providers/provider-interface";
 import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
 import { KnowledgeService } from "./KnowledgeService";
 import { IntelligenceCore } from "./intelligence-core";
@@ -66,6 +66,7 @@ export interface ChatExecutionTrace {
   retrievalMode?: string;
   providerUsed?: string;
   providerTarget?: string;
+  reasoningEffort?: ReasoningEffort;
   presentationAdjustments: string[];
   executionStatus: ExecutionStatus;
   failureReason?: string;
@@ -85,7 +86,12 @@ export interface ChatExecutionTestHooks {
   contextAssessment?: () => Promise<any>;
   knowledgeContext?: () => Promise<any>;
   adminContext?: () => Promise<any>;
-  fileContext?: () => Promise<{ prompt: string; filesReferenced: string[]; failedFiles: string[] }>;
+  fileContext?: () => Promise<{
+    prompt: string;
+    filesReferenced: string[];
+    failedFiles: string[];
+    imageBlocks?: ImageBlock[];
+  }>;
   voicePrompt?: () => Promise<string>;
   route?: (request: any) => Promise<any>;
   present?: (draft: string, options: any) => Promise<{ content: string; adjustments: string[] }>;
@@ -116,6 +122,22 @@ function normalizeFailureReason(error: any, trace: ChatExecutionTrace): string {
     return `modelProviderUnavailable:${trace.providerUsed || "unknown"}:${trace.providerTarget || "unknown"}`;
   }
   return message;
+}
+
+function reasoningEffortForComplexity(
+  complexity: import("./intelligence-core/types").ComplexityBand,
+): ReasoningEffort {
+  switch (complexity) {
+    case "deep":
+      return "deep";
+    case "complex":
+      return "high";
+    case "moderate":
+      return "medium";
+    case "trivial":
+    default:
+      return "low";
+  }
 }
 
 function questionOnly(question: string): string {
@@ -502,6 +524,8 @@ export class ChatExecutionService {
         hasMemory: Boolean(knowledge.prompt || injectedMemory.formatted),
       });
       trace.intelligencePlan = intelligence.plan;
+      const reasoningEffort = reasoningEffortForComplexity(intelligence.deepThinking.complexity);
+      trace.reasoningEffort = reasoningEffort;
 
       // Context Intelligence — rank, de-duplicate, compress, and merge the
       // heavy retrieved blocks into one budgeted knowledge prompt instead
@@ -556,9 +580,10 @@ export class ChatExecutionService {
           workspaceId: input.workspaceId,
           projectId: input.projectId,
           knowledgePrompt: cognitiveKnowledgePrompt,
+          reasoningEffort,
           isAdmin: Boolean(input.isAdmin),
           strategic: strategicReasoning.active,
-          attachments: fileContext.imageBlocks,
+          attachments: fileContext.imageBlocks || [],
         },
       };
       const response = hooks.route
@@ -604,6 +629,7 @@ export class ChatExecutionService {
         ...managerMetadata,
         strategic: strategicReasoning.active,
         intelligencePlan: trace.intelligencePlan,
+        reasoningEffort: trace.reasoningEffort,
         contextCompressionRatio: trace.contextCompressionRatio,
         documentCitations: trace.documentCitations,
         providerUsed: trace.providerUsed,

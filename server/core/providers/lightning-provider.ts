@@ -88,7 +88,7 @@ export class LightningProvider implements ModelProvider {
     const config = this.getConfig();
     if (!config.baseUrl) {
       throw new Error(
-        "LIGHTNING_BASE_URL is not configured — point it at your Lightning AI endpoint.",
+        "LIGHTNING_BASE_URL / OPENAI_BASE_URL is not configured — point it at your Lightning AI endpoint.",
       );
     }
     return config;
@@ -112,7 +112,7 @@ export class LightningProvider implements ModelProvider {
       : buildPromptFromMessages(composed, options?.systemPrompt);
 
     const requestBody: Record<string, unknown> = {
-      model: options?.model || resolveModelForLane(options?.lane, config.model),
+      model: options?.model || resolveModelForLane(options?.lane, config.model, options?.reasoningEffort),
       // OpenAI-compatible messages with content blocks so LitServe /
       // vLLM / TGI runners that speak OpenAI schema light up.
       messages: composed.map((m) => ({
@@ -179,7 +179,7 @@ export class LightningProvider implements ModelProvider {
         status: "offline",
         models: [],
         provider: "lightning",
-        detail: "LIGHTNING_BASE_URL not set",
+        detail: "LIGHTNING_BASE_URL / OPENAI_BASE_URL not set",
       };
     }
     try {

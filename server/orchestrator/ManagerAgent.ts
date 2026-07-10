@@ -15,6 +15,7 @@ import {
   presentZedResponse,
 } from "../services/ZedVoiceFormationEngine";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
+import type { ReasoningEffort } from "../core/providers/provider-interface";
 
 import { flushHubConfig, loadHubConfig } from "./manager-agent/config";
 import { flushAccessPolicy } from "../services/AccessPolicyService";
@@ -96,6 +97,7 @@ export class ManagerAgent {
     const attachments = Array.isArray(request.context?.attachments)
       ? request.context.attachments
       : undefined;
+    const reasoningEffort = request.context?.reasoningEffort as ReasoningEffort | undefined;
 
     const routeDecision = await selectAgentWithTrace(request.message, config, request.targetAgent);
     const agent = routeDecision.selectedAgent;
@@ -172,6 +174,7 @@ export class ManagerAgent {
           conversationId: request.conversationId,
           memoryContext: agentContext,
           attachments,
+          reasoningEffort,
         };
         const brief = await IntelligenceAgent.research(researchReq);
         reply = formatBrief(brief, { includeSources });
@@ -195,6 +198,7 @@ export class ManagerAgent {
           conversationId: request.conversationId,
           memoryContext: agentContext,
           attachments,
+          reasoningEffort,
         });
         return {
           reply: await presentZedResponse(filterOutputForTier3(resp.message), {
@@ -224,6 +228,7 @@ export class ManagerAgent {
           conversationId: request.conversationId,
           memoryContext: agentContext,
           attachments,
+          reasoningEffort,
         });
         return {
           reply: await presentZedResponse(filterOutputForTier3(resp.message), {
@@ -259,6 +264,7 @@ export class ManagerAgent {
           context: request.context,
           memoryContext: agentContext,
           attachments,
+          reasoningEffort,
         };
         const opResp: AgentResponse = await OperationsAgent.process(opReq);
         reply = opResp.reply;

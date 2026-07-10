@@ -476,7 +476,7 @@ export class ZyncCodingOperatorService {
     type GhRef = { ref: string; object?: { sha?: string; type?: string } };
     const repo = process.env.GITHUB_REPOSITORY || "xoclonholdings/ZedAI";
     const refs = await parseGhJson<GhRef[]>(["api", `repos/${repo}/git/matching-refs/heads`]);
-    if (!refs.ok) {
+    if (refs.ok === false) {
       return {
         executed: false,
         providerStatus: "disabled",
@@ -517,8 +517,11 @@ export class ZyncCodingOperatorService {
     type GhRef = { object?: { sha?: string } };
     const repo = process.env.GITHUB_REPOSITORY || "xoclonholdings/ZedAI";
     const main = await parseGhJson<GhRef>(["api", `repos/${repo}/git/ref/heads/main`]);
-    if (!main.ok || !main.value.object?.sha) {
-      throw new Error(main.ok ? "Unable to read main SHA" : main.error.stderr || "Unable to read main SHA");
+    if (main.ok === false) {
+      throw new Error(main.error.stderr || "Unable to read main SHA");
+    }
+    if (!main.value.object?.sha) {
+      throw new Error("Unable to read main SHA");
     }
 
     const patch = await parseGhJson<GhRef>([
@@ -531,8 +534,11 @@ export class ZyncCodingOperatorService {
       "-F",
       "force=true",
     ]);
-    if (!patch.ok || !patch.value.object?.sha) {
-      throw new Error(patch.ok ? "Unable to update backup" : patch.error.stderr || "Unable to update backup");
+    if (patch.ok === false) {
+      throw new Error(patch.error.stderr || "Unable to update backup");
+    }
+    if (!patch.value.object?.sha) {
+      throw new Error("Unable to update backup");
     }
 
     return {

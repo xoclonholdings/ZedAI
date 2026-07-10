@@ -76,7 +76,12 @@ export function getProviderRoutingSummary() {
       business: target,
       finance: target,
       research: target,
+      strategy: target,
+      admin: target,
     },
+    laneModels: config.laneModels,
+    reasoningModels: config.reasoningModels,
+    laneReasoningModels: config.laneReasoningModels,
   };
 }
 

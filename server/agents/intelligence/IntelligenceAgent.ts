@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { generateChatFromProvider } from "../../services/ModelProviderService";
-import type { ImageBlock } from "../../core/providers/provider-interface";
+import type { ImageBlock, ReasoningEffort } from "../../core/providers/provider-interface";
 import { webSearch, formatResultsForPrompt, type SearchResponse } from "../../services/WebSearchService";
 import {
   fetchWebTargetsFromText,
@@ -23,6 +23,7 @@ export interface ResearchRequest {
   conversationId?: string;
   memoryContext?: string;
   attachments?: ImageBlock[];
+  reasoningEffort?: ReasoningEffort;
 }
 
 export interface ResearchBrief {
@@ -165,7 +166,7 @@ NEXT_STEP: [specific thing to do next]`.trim();
     const rawReply = await generateChatFromProvider(
       [{ role: "user", content: request.query }],
       systemPrompt,
-      { lane: "research", attachments: request.attachments },
+      { lane: "research", attachments: request.attachments, reasoningEffort: request.reasoningEffort },
     );
 
     const brief = this.parseBrief(request.query, rawReply, primarySearch, directWeb);
