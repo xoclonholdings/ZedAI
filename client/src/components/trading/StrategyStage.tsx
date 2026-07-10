@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Sparkles, X } from "lucide-react";
+import { Archive, ChevronDown, ChevronUp, Pencil, Plus, Sparkles, X } from "lucide-react";
 
 import type { TradeThesis } from "@shared/trading-types";
 
@@ -78,6 +78,9 @@ export default function StrategyStage() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [generating, setGenerating] = useState<boolean>(false);
   const [showForm, setShowForm] = useState<boolean>(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -123,43 +126,54 @@ export default function StrategyStage() {
       return;
     }
     setSubmitting(true);
+    const payload = {
+      market: form.market,
+      assetClass: form.assetClass,
+      symbol: form.symbol.trim().toUpperCase(),
+      direction: form.direction,
+      primaryTimeframe: form.primaryTimeframe.trim() || undefined,
+      reason: form.reason.trim(),
+      marketStructure: form.marketStructure.trim(),
+      liquidityAnalysis: form.liquidityAnalysis.trim(),
+      entryPlan: form.entryPlan.trim(),
+      stopPlan: form.stopPlan.trim(),
+      targetPlan: form.targetPlan.trim(),
+      riskReward: form.riskReward.trim() ? Number(form.riskReward) : undefined,
+      invalidationConditions: form.invalidationConditions
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      confidenceScore: Number(form.confidenceScore) || 50,
+    };
     try {
-      const res = await fetch("/api/trading/theses", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          market: form.market,
-          assetClass: form.assetClass,
-          symbol: form.symbol.trim().toUpperCase(),
-          direction: form.direction,
-          primaryTimeframe: form.primaryTimeframe.trim() || undefined,
-          reason: form.reason.trim(),
-          marketStructure: form.marketStructure.trim(),
-          liquidityAnalysis: form.liquidityAnalysis.trim(),
-          entryPlan: form.entryPlan.trim(),
-          stopPlan: form.stopPlan.trim(),
-          targetPlan: form.targetPlan.trim(),
-          riskReward: form.riskReward.trim() ? Number(form.riskReward) : undefined,
-          invalidationConditions: form.invalidationConditions
-            .split("\n")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          confidenceScore: Number(form.confidenceScore) || 50,
-        }),
-      });
+      // Editing an existing strategy is a versioned revision (PATCH);
+      // a new one is a create (POST) that auto-runs governance.
+      const res = await fetch(
+        editingId ? `/api/trading/theses/${editingId}` : "/api/trading/theses",
+        {
+          method: editingId ? "PATCH" : "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       setForm(EMPTY_FORM);
       setShowForm(false);
-      setNotice("Strategy saved. Zed auto-ran a governance review — verdict is on the row.");
+      setNotice(
+        editingId
+          ? "Strategy updated. Re-run its governance review in the Validation stage."
+          : "Strategy saved. Zed auto-ran a governance review — verdict is on the row.",
+      );
+      setEditingId(null);
       await refresh();
     } catch (err: any) {
       setError(err?.message || "Could not save strategy.");
     } finally {
       setSubmitting(false);
     }
-  }, [form, refresh]);
+  }, [form, editingId, refresh]);
 
   const generate = useCallback(async () => {
     setError(null);
@@ -216,6 +230,67 @@ export default function StrategyStage() {
     }
   }, [form]);
 
+  const startNew = useCallback(() => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+    setNotice(null);
+    setShowForm(true);
+  }, []);
+
+  const startEdit = useCallback((t: TradeThesis) => {
+    setEditingId(t.id);
+    setForm({
+      market: t.market || "US",
+      assetClass: (t.assetClass as (typeof ASSET_CLASSES)[number]) || "stock",
+      symbol: t.symbol || "",
+      direction: t.direction === "short" ? "short" : "long",
+      primaryTimeframe: t.primaryTimeframe || "",
+      reason: t.reason || "",
+      marketStructure: t.marketStructure || "",
+      liquidityAnalysis: t.liquidityAnalysis || "",
+      entryPlan: t.entryPlan || "",
+      stopPlan: t.stopPlan || "",
+      targetPlan: t.targetPlan || "",
+      riskReward: t.riskReward != null ? String(t.riskReward) : "",
+      invalidationConditions: (t.invalidationConditions || []).join("\n"),
+      confidenceScore: String(t.confidenceScore ?? 60),
+    });
+    setError(null);
+    setNotice(null);
+    setShowForm(true);
+  }, []);
+
+  const cancelForm = useCallback(() => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  }, []);
+
+  const archive = useCallback(
+    async (id: string) => {
+      setError(null);
+      setNotice(null);
+      setArchivingId(id);
+      try {
+        const res = await fetch(`/api/trading/theses/${id}/archive`, {
+          method: "POST",
+          credentials: "include",
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+        setNotice("Strategy archived.");
+        if (editingId === id) cancelForm();
+        await refresh();
+      } catch (err: any) {
+        setError(err?.message || "Could not archive strategy.");
+      } finally {
+        setArchivingId(null);
+      }
+    },
+    [editingId, cancelForm, refresh],
+  );
+
   const active = theses.filter((t) => !t.archivedAt);
 
   return (
@@ -228,7 +303,7 @@ export default function StrategyStage() {
       action={
         <button
           type="button"
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => (showForm ? cancelForm() : startNew())}
           className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
         >
           <Plus size={13} />
@@ -242,7 +317,9 @@ export default function StrategyStage() {
       {showForm && (
         <div className="mb-5 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="text-[13px] font-semibold text-white">New strategy</div>
+            <div className="text-[13px] font-semibold text-white">
+              {editingId ? "Edit strategy" : "New strategy"}
+            </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -256,7 +333,7 @@ export default function StrategyStage() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={cancelForm}
                 className="text-white/50 hover:text-white/80"
                 aria-label="Cancel"
               >
@@ -415,7 +492,7 @@ export default function StrategyStage() {
           <div className="mt-4 flex items-center justify-end gap-2">
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={cancelForm}
               className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/70 hover:text-white transition-colors"
             >
               Cancel
@@ -426,7 +503,7 @@ export default function StrategyStage() {
               disabled={submitting}
               className="rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
             >
-              {submitting ? "Saving…" : "Save strategy"}
+              {submitting ? "Saving…" : editingId ? "Save changes" : "Save strategy"}
             </button>
           </div>
         </div>
@@ -438,13 +515,18 @@ export default function StrategyStage() {
         <div className="space-y-2">
           {active.map((t) => {
             const verdict = friendlyVerdict(t.governanceDecision);
+            const expanded = expandedId === t.id;
             return (
               <div
                 key={t.id}
                 className="rounded-lg border border-white/10 bg-white/[0.03] p-3"
               >
                 <div className="flex items-start justify-between gap-2 flex-wrap">
-                  <div className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(expanded ? null : t.id)}
+                    className="min-w-0 text-left flex-1"
+                  >
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[14px] font-semibold text-white">
                         {t.symbol}
@@ -471,18 +553,86 @@ export default function StrategyStage() {
                           · {t.riskReward.toFixed(1)}R
                         </span>
                       )}
+                      <span className="text-[11px] text-white/40">
+                        · conf {t.confidenceScore}
+                      </span>
                     </div>
-                    <div className="mt-1.5 text-[12px] text-white/60 max-w-[80ch] leading-snug">
-                      {t.reason.slice(0, 200)}
-                      {t.reason.length > 200 ? "…" : ""}
-                    </div>
+                    {!expanded && (
+                      <div className="mt-1.5 text-[12px] text-white/60 max-w-[80ch] leading-snug">
+                        {t.reason.slice(0, 200)}
+                        {t.reason.length > 200 ? "…" : ""}
+                      </div>
+                    )}
+                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(expanded ? null : t.id)}
+                      className="rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-white/50 hover:text-white/90 transition-colors"
+                      aria-label={expanded ? "Collapse" : "Expand"}
+                    >
+                      {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(t)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-[11.5px] text-white/70 hover:text-white transition-colors"
+                    >
+                      <Pencil size={12} /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void archive(t.id)}
+                      disabled={archivingId === t.id}
+                      className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-2 py-1.5 text-[11.5px] text-white/50 hover:text-red-300 disabled:opacity-50 transition-colors"
+                    >
+                      <Archive size={12} /> {archivingId === t.id ? "…" : "Archive"}
+                    </button>
                   </div>
                 </div>
+
+                {expanded && (
+                  <div className="mt-3 grid gap-2.5 sm:grid-cols-2 border-t border-white/[0.06] pt-3">
+                    <DetailField label="Why this trade? (thesis)" value={t.reason} full />
+                    <DetailField label="Market structure" value={t.marketStructure} />
+                    <DetailField label="Liquidity analysis" value={t.liquidityAnalysis} />
+                    <DetailField label="Entry plan" value={t.entryPlan} />
+                    <DetailField label="Stop plan" value={t.stopPlan} />
+                    <DetailField label="Target plan" value={t.targetPlan} />
+                    <DetailField
+                      label="Invalidation"
+                      value={(t.invalidationConditions || []).join("\n")}
+                      full
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
     </StageShell>
+  );
+}
+
+function DetailField({
+  label,
+  value,
+  full,
+}: {
+  label: string;
+  value?: string;
+  full?: boolean;
+}) {
+  if (!value || !value.trim()) return null;
+  return (
+    <div className={full ? "sm:col-span-2" : undefined}>
+      <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-0.5">
+        {label}
+      </div>
+      <div className="text-[12px] text-white/70 leading-snug whitespace-pre-line">
+        {value}
+      </div>
+    </div>
   );
 }
