@@ -94,6 +94,17 @@ export class LightningProvider implements ModelProvider {
     return config;
   }
 
+  /**
+   * Lightning endpoints are token-protected. Attach the bearer token
+   * from LIGHTNING_API_KEY (or LIGHTNING_AI_API_KEY / LIGHTNING_TOKEN)
+   * so requests don't come back 401 "Missing or invalid Authorization
+   * header". Falls back to no auth header only when no key is set.
+   */
+  private authHeaders(): Record<string, string> {
+    const { apiKey } = this.getConfig();
+    return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+  }
+
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
     return this.executeChat([{ role: "user", content: prompt }], options);
   }
@@ -138,7 +149,7 @@ export class LightningProvider implements ModelProvider {
       `${config.baseUrl}${config.chatPath}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...this.authHeaders() },
         body: JSON.stringify(requestBody),
       },
       config.timeoutMs,
@@ -185,7 +196,7 @@ export class LightningProvider implements ModelProvider {
     try {
       const res = await fetchWithTimeout(
         `${config.baseUrl}${config.healthPath}`,
-        {},
+        { headers: this.authHeaders() },
         config.timeoutMs,
       );
       if (!res.ok) {
