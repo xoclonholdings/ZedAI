@@ -82,6 +82,14 @@ export {
   fileRelations,
 } from "./SystemSchema";
 
+export {
+  learningState,
+} from "./LearningSchema";
+
+export type {
+  LearningStateRow,
+} from "./LearningSchema";
+
 export type {
   FileStorage,
   InsertFileStorage,

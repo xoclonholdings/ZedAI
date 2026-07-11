@@ -26,6 +26,8 @@ interface ChatAreaProps {
   workspaceContext?: AgentTarget;
   workspaceLabel?: string | null;
   workspaceSlug?: string | null;
+  learningPathId?: string | null;
+  lessonId?: string | null;
 }
 
 export default function ChatArea({
@@ -39,6 +41,8 @@ export default function ChatArea({
   workspaceContext,
   workspaceLabel,
   workspaceSlug,
+  learningPathId,
+  lessonId,
 }: ChatAreaProps) {
   const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
@@ -128,6 +132,11 @@ export default function ChatArea({
       convId: convId!,
       projectId: selectedProjectId || undefined,
       agentTarget: workspaceContext,
+      workspaceId: workspaceSlug || undefined,
+      context: {
+        ...(learningPathId ? { learningPathId } : {}),
+        ...(lessonId ? { lessonId } : {}),
+      },
       abortRef,
       setIsStreaming,
       setLocalMessages,

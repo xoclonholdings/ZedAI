@@ -79,6 +79,10 @@ function toOpenAIStyleContent(content: ProviderMessage["content"]): unknown {
   );
 }
 
+function authHeaders(apiKey: string): Record<string, string> {
+  return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+}
+
 export class LightningProvider implements ModelProvider {
   private getConfig() {
     return getProviderRuntimeConfig().lightning;
@@ -138,7 +142,10 @@ export class LightningProvider implements ModelProvider {
       `${config.baseUrl}${config.chatPath}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders(config.apiKey),
+        },
         body: JSON.stringify(requestBody),
       },
       config.timeoutMs,
@@ -185,7 +192,7 @@ export class LightningProvider implements ModelProvider {
     try {
       const res = await fetchWithTimeout(
         `${config.baseUrl}${config.healthPath}`,
-        {},
+        { headers: authHeaders(config.apiKey) },
         config.timeoutMs,
       );
       if (!res.ok) {
@@ -197,9 +204,14 @@ export class LightningProvider implements ModelProvider {
         };
       }
       const data = await res.json().catch(() => ({}));
+      const modelList = Array.isArray(data?.data)
+        ? data.data
+            .map((item: any) => item?.id)
+            .filter((value: unknown): value is string => typeof value === "string")
+        : [];
       return {
         status: "online",
-        models: data?.model ? [data.model] : [config.model],
+        models: modelList.length > 0 ? modelList : data?.model ? [data.model] : [config.model],
         provider: "lightning",
       };
     } catch (err) {

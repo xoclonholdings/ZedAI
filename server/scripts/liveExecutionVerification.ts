@@ -83,7 +83,10 @@ function configSnapshot(settings: Awaited<ReturnType<typeof loadAdminSettings>>)
     userCount: settings.users.length,
     adminUserCount: settings.users.filter((user) => user.isAdmin).length,
     providerEnv: {
-      lightning: envPresent("LIGHTNING_BASE_URL") || envPresent("REMOTE_INFERENCE_URL"),
+      lightning:
+        envPresent("LIGHTNING_BASE_URL") ||
+        envPresent("OPENAI_BASE_URL") ||
+        envPresent("REMOTE_INFERENCE_URL"),
       brave: envPresent("BRAVE_SEARCH_API_KEY"),
       serper: envPresent("SERPER_API_KEY"),
     },

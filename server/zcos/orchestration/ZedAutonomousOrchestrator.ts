@@ -11,14 +11,19 @@ import { recommendFlowForMessage } from "./FlowRecommender";
  *
  * ZED sends user intent here. ZCOS decides routing, memory/context use,
  * agent dispatch, optional flow acceleration, and approval metadata.
- * Legacy manual targetAgent values are intentionally ignored here so the
- * primary chat experience remains outcome-driven.
+ * Legacy manual targetAgent values are ignored unless they come with a
+ * workspace id. That keeps normal chat outcome-driven while preserving
+ * workspace lane intent.
  */
 export class ZedAutonomousOrchestrator {
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
+    const workspaceTarget =
+      typeof request.context?.workspaceId === "string" && request.context.workspaceId.trim()
+        ? request.targetAgent
+        : undefined;
     const autonomousRequest: OrchestratorRequest = {
       ...request,
-      targetAgent: undefined,
+      targetAgent: workspaceTarget,
     };
 
     const [response, flowRecommendation] = await Promise.all([

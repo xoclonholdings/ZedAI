@@ -22,6 +22,7 @@ export interface ProviderRuntimeConfig {
   lightning: {
     baseUrl: string;
     model: string;
+    apiKey: string;
     chatPath: string;
     healthPath: string;
     timeoutMs: number;
@@ -109,7 +110,7 @@ function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record
  *   1. Lane + reasoning override (MODEL_FINANCE_DEEP, MODEL_RESEARCH_HIGH, ...)
  *   2. Reasoning override (MODEL_REASONING_DEEP, MODEL_REASONING_HIGH, ...)
  *   3. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
- *   4. Global MODEL_NAME / ZED_MODEL_NAME
+ *   4. Global OPENAI_MODEL / MODEL_NAME / ZED_MODEL_NAME
  *   5. The Lightning-configured fallback.
  */
 export function resolveModelForLane(
@@ -151,6 +152,11 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
     process.env.MODEL_NAME ||
     process.env.ZED_MODEL_NAME ||
     "";
+  const apiKey =
+    process.env.LIGHTNING_API_KEY?.trim() ||
+    process.env.OPENAI_API_KEY?.trim() ||
+    process.env.REMOTE_INFERENCE_API_KEY?.trim() ||
+    "";
   const activeModel = model;
 
   return {
@@ -162,8 +168,9 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
     lightning: {
       baseUrl,
       model,
+      apiKey,
       chatPath: process.env.LIGHTNING_CHAT_PATH || (openAiCompatibleBaseUrl ? "/chat/completions" : "/chat"),
-      healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
+      healthPath: process.env.LIGHTNING_HEALTH_PATH || (openAiCompatibleBaseUrl ? "/models" : "/health"),
       timeoutMs: Number(
         process.env.LIGHTNING_TIMEOUT_MS ||
           process.env.REMOTE_INFERENCE_TIMEOUT_MS ||

@@ -29,6 +29,17 @@ function present(env: NodeJS.ProcessEnv, k: string): boolean {
   return trimmed(env, k).length > 0;
 }
 
+function firstPresent(
+  env: NodeJS.ProcessEnv,
+  keys: string[],
+): { key: string; value: string } | null {
+  for (const key of keys) {
+    const value = trimmed(env, key);
+    if (value) return { key, value };
+  }
+  return null;
+}
+
 function checkUrl(
   env: NodeJS.ProcessEnv,
   name: string,
@@ -86,32 +97,62 @@ function checkUrl(
 }
 
 function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
-  const baseUrl = trimmed(env, "LIGHTNING_BASE_URL") || trimmed(env, "REMOTE_INFERENCE_URL");
+  const baseUrl = firstPresent(env, [
+    "LIGHTNING_BASE_URL",
+    "OPENAI_BASE_URL",
+    "REMOTE_INFERENCE_URL",
+  ]);
   if (!baseUrl) {
     checks.push({
-      name: "LIGHTNING_BASE_URL",
+      name: "AI_BASE_URL",
       severity: "error",
       message: "Not set. Lightning AI endpoint URL is required.",
-      hint: "Point it at your Lightning AI runner (e.g. https://<your-endpoint>.lightning.ai).",
+      hint: "Set OPENAI_BASE_URL=https://lightning.ai/api/v1 for Lightning's OpenAI-compatible API, or LIGHTNING_BASE_URL for a custom runner.",
     });
   } else {
-    const check = checkUrl(env, "LIGHTNING_BASE_URL") || checkUrl(env, "REMOTE_INFERENCE_URL");
-    if (check) checks.push({ ...check, name: "LIGHTNING_BASE_URL" });
+    const check = checkUrl(env, baseUrl.key);
+    if (check) checks.push({ ...check, name: "AI_BASE_URL", message: `${baseUrl.key}: ${check.message}` });
   }
 
-  if (!present(env, "LIGHTNING_MODEL") && !present(env, "MODEL_NAME")) {
+  const defaultModel = firstPresent(env, [
+    "LIGHTNING_MODEL",
+    "OPENAI_MODEL",
+    "MODEL_NAME",
+    "ZED_MODEL_NAME",
+  ]);
+  if (!defaultModel) {
     checks.push({
-      name: "LIGHTNING_MODEL",
+      name: "AI_MODEL",
       severity: "warn",
       message:
         "Not set. Per-lane MODEL_<LANE> overrides must be set or the runner needs its own default.",
-      hint: "Set LIGHTNING_MODEL to the model identifier your Lightning runner serves by default.",
+      hint: "Set OPENAI_MODEL or LIGHTNING_MODEL to the default Lightning model slug.",
     });
   } else {
     checks.push({
-      name: "LIGHTNING_MODEL",
+      name: "AI_MODEL",
       severity: "ok",
-      message: `Default model: ${trimmed(env, "LIGHTNING_MODEL") || trimmed(env, "MODEL_NAME")}.`,
+      message: `Default model from ${defaultModel.key}: ${defaultModel.value}.`,
+    });
+  }
+
+  const apiKey = firstPresent(env, [
+    "LIGHTNING_API_KEY",
+    "OPENAI_API_KEY",
+    "REMOTE_INFERENCE_API_KEY",
+  ]);
+  if (!apiKey) {
+    checks.push({
+      name: "AI_API_KEY",
+      severity: "warn",
+      message: "Not set. Lightning's public API examples require a bearer token.",
+      hint: "Set LIGHTNING_API_KEY or OPENAI_API_KEY unless this endpoint is intentionally public.",
+    });
+  } else {
+    checks.push({
+      name: "AI_API_KEY",
+      severity: "ok",
+      message: `${apiKey.key} is set (length ${apiKey.value.length}).`,
     });
   }
 }

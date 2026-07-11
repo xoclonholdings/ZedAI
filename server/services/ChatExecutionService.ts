@@ -14,6 +14,7 @@ import { ZedStrategicReasoningEngine } from "./ZedStrategicReasoningEngine";
 import { ZedReflectionEngine } from "./ZedReflectionEngine";
 import { injectMemory } from "./MemoryInjector";
 import { buildZedAdminContext } from "./ZedContextBuilder";
+import { buildLearningTutorContext } from "./learning/LearningContextBuilder";
 import { getZedResponsePolicy } from "./ZedResponsePolicy";
 import {
   buildZedGovernancePrompt,
@@ -76,6 +77,10 @@ export interface ChatExecutionTrace {
   sourceCount: number;
   filesReferenced: string[];
   fileContextUsed: boolean;
+  learningContextUsed: boolean;
+  learningPathId?: string;
+  learningLessonId?: string;
+  learningSourceCount?: number;
   intelligencePlan?: import("./intelligence-core/types").IntelligenceCorePlan;
   contextCompressionRatio?: number;
   documentCitations?: string[];
@@ -280,6 +285,7 @@ export class ChatExecutionService {
       sourceCount: 0,
       filesReferenced: [],
       fileContextUsed: false,
+      learningContextUsed: false,
       providerUsed: getActiveProviderName({ lane: "chat" }),
       providerTarget: getResolvedTargetName({ lane: "chat" }),
     };
@@ -472,10 +478,33 @@ export class ChatExecutionService {
         trace.failureReason = `file_processing_failed:${fileContext.failedFiles.join(",")}`;
       }
 
+      let learningContext = { prompt: "", sourceCount: 0, masteryCount: 0 } as Awaited<ReturnType<typeof buildLearningTutorContext>>;
+      const learningPathId =
+        typeof input.context?.learningPathId === "string"
+          ? input.context.learningPathId
+          : undefined;
+      const learningLessonId =
+        typeof input.context?.lessonId === "string"
+          ? input.context.lessonId
+          : undefined;
+      if (learningPathId) {
+        trace.servicesInvoked.push("LearningContextBuilder.buildLearningTutorContext");
+        learningContext = await buildLearningTutorContext({
+          userId: input.userId,
+          pathId: learningPathId,
+          lessonId: learningLessonId,
+        }).catch(() => ({ prompt: "", sourceCount: 0, masteryCount: 0 }));
+        trace.learningContextUsed = Boolean(learningContext.prompt);
+        trace.learningPathId = learningContext.pathId || learningPathId;
+        trace.learningLessonId = learningContext.lessonId || learningLessonId;
+        trace.learningSourceCount = learningContext.sourceCount || 0;
+        if (learningContext.prompt) trace.memorySources.push("learning_studio");
+      }
+
       const strategicReasoning = ZedStrategicReasoningEngine.prepare({
         userMessage: effectiveMessage,
         lane: "manager",
-        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt),
+        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
         currentContext: input.context || {},
       });
       const cognitiveLane = strategicReasoning.active ? "strategy" : "manager";
@@ -483,13 +512,13 @@ export class ChatExecutionService {
       const governancePrompt = buildZedGovernancePrompt({
         userMessage: effectiveMessage,
         lane: cognitiveLane,
-        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt),
+        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
       });
       const principlePrompt = ZedPrincipleEngine.buildPrompt({
         userMessage: effectiveMessage,
         lane: cognitiveLane,
         isAdmin: Boolean(input.isAdmin),
-        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt),
+        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
       });
       const voicePrompt = hooks.voicePrompt
         ? await hooks.voicePrompt()
@@ -516,12 +545,12 @@ export class ChatExecutionService {
         lane: cognitiveLane,
         strategic: strategicReasoning.active,
         knowledgePresent: Boolean(
-          knowledge.prompt || adminContext.text || fileContext.prompt || documentKnowledge.block,
+          knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt || documentKnowledge.block,
         ),
         materialUncertainty: contextMaterialUncertainty,
         hasFiles: Boolean(fileContext.prompt),
         hasGraphContext: documentKnowledge.objectIds.length > 0,
-        hasMemory: Boolean(knowledge.prompt || injectedMemory.formatted),
+        hasMemory: Boolean(knowledge.prompt || injectedMemory.formatted || learningContext.prompt),
       });
       trace.intelligencePlan = intelligence.plan;
       const reasoningEffort = reasoningEffortForComplexity(intelligence.deepThinking.complexity);
@@ -535,6 +564,7 @@ export class ChatExecutionService {
       const rankedContext = ContextIntelligenceEngine.rank(effectiveMessage, [
         { label: "project", text: adminContext.text, pinned: true, basePriority: 0.9 },
         { label: "files", text: fileContext.prompt, pinned: true, basePriority: 0.9 },
+        { label: "learning", text: learningContext.prompt, pinned: true, basePriority: 0.95 },
         { label: "documents", text: documentKnowledge.block, basePriority: 0.75 },
         { label: "knowledge", text: knowledge.prompt, basePriority: 0.5 },
       ]);
@@ -544,6 +574,7 @@ export class ChatExecutionService {
         rankedContext.prompt.trim().length > 0
           ? rankedContext.prompt
           : [adminContext.text, fileContext.prompt, documentKnowledge.block, knowledge.prompt]
+              .concat(learningContext.prompt ? [learningContext.prompt] : [])
               .filter(Boolean)
               .join("\n\n");
 
@@ -639,6 +670,10 @@ export class ChatExecutionService {
         sourceCount: trace.sourceCount,
         filesReferenced: trace.filesReferenced,
         fileContextUsed: trace.fileContextUsed,
+        learningContextUsed: trace.learningContextUsed,
+        learningPathId: trace.learningPathId,
+        learningLessonId: trace.learningLessonId,
+        learningSourceCount: trace.learningSourceCount,
         presentationAdjustments: trace.presentationAdjustments,
         executionStatus: trace.executionStatus,
         failureReason: trace.failureReason,

@@ -158,6 +158,25 @@ export async function runMigrations(): Promise<void> {
       );
     `);
 
+    // Learning Studio state. Each learning object is stored separately
+    // so paths, sources, units, lessons, assessments, attempts, and
+    // mastery records remain addressable instead of becoming one blob.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS learning_state (
+        user_id varchar NOT NULL REFERENCES users(id),
+        object_type text NOT NULL,
+        object_id varchar NOT NULL,
+        data jsonb NOT NULL,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now(),
+        PRIMARY KEY (user_id, object_type, object_id)
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_learning_state_user_type
+      ON learning_state (user_id, object_type, updated_at DESC);
+    `);
+
     console.log('[MIGRATIONS] Database setup completed successfully');
   } catch (error) {
     console.error('[MIGRATIONS] Failed to run migrations:', error);

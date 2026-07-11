@@ -162,6 +162,14 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
     empty: "No learning flows are published yet.",
     subspaces: [
       {
+        label: "Create Learning Path",
+        description:
+          "Turn a topic, file, project, or workspace into an approved blueprint, starter lesson, quiz, and course-aware Zed chat.",
+        href: "/learning/studio",
+        icon: GraduationCap,
+        accent: "fuchsia",
+      },
+      {
         label: "Knowledge Library",
         description:
           "Everything Zed remembers about you and your work. Add notes or upload files; Zed structures it into objects it can recall.",

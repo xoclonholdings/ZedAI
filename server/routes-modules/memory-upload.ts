@@ -243,7 +243,7 @@ export function registerMemoryUploadRoutes(app: Express): void {
           });
           if (workspace) {
             for (const o of objects) {
-              o.properties = { ...(o.properties || {}), workspace };
+              (o.properties as Record<string, unknown>).workspace = workspace;
             }
           }
           objectsAll = objectsAll.concat(objects);

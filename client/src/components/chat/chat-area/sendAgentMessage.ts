@@ -9,6 +9,7 @@ interface SendAgentMessageArgs {
   agentTarget?: AgentTarget;
   projectId?: string;
   workspaceId?: string;
+  context?: Record<string, unknown>;
   abortRef?: MutableRefObject<AbortController | null>;
   setIsStreaming: Dispatch<SetStateAction<boolean>>;
   setLocalMessages: Dispatch<SetStateAction<Message[]>>;
@@ -27,6 +28,7 @@ export async function sendAgentMessage({
   agentTarget,
   projectId,
   workspaceId,
+  context,
   abortRef,
   setIsStreaming,
   setLocalMessages,
@@ -52,6 +54,7 @@ export async function sendAgentMessage({
     if (agentTarget) payload.targetAgent = agentTarget;
     if (projectId) payload.projectId = projectId;
     if (workspaceId) payload.workspaceId = workspaceId;
+    if (context && Object.keys(context).length > 0) payload.context = context;
 
     const res = await fetch("/api/orchestrate", {
       method: "POST",

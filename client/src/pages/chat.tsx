@@ -38,6 +38,13 @@ export default function Chat() {
     () => resolveWorkspace(search),
     [search],
   );
+  const learningContext = useMemo(() => {
+    const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+    return {
+      learningPathId: params.get("learningPathId") || params.get("learningPath"),
+      lessonId: params.get("lessonId") || params.get("lesson"),
+    };
+  }, [search]);
 
   // Persist whatever we resolved so the next full reload has it, and
   // clear when the user explicitly exits (?ctx=none).
@@ -196,6 +203,8 @@ export default function Chat() {
           workspaceContext={workspaceContext}
           workspaceLabel={workspaceLabel}
           workspaceSlug={workspaceSlug}
+          learningPathId={learningContext.learningPathId}
+          lessonId={learningContext.lessonId}
         />
       </div>
     </div>

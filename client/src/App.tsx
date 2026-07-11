@@ -28,6 +28,7 @@ import WorkspacePage from "@/pages/workspace";
 import HistoryPage from "@/pages/history";
 import InboxPage from "@/pages/inbox";
 import LearningPage from "@/pages/learning";
+import LearningStudioPage from "@/pages/learning-studio";
 
 installApiFetchPatch();
 
@@ -154,6 +155,14 @@ function Router() {
 
       <Route path="/projects/:id">
         {isAuthenticated ? <ProjectDetailPage /> : <Login />}
+      </Route>
+
+      <Route path="/learning/studio">
+        {isAuthenticated ? <LearningStudioPage /> : <Login />}
+      </Route>
+
+      <Route path="/learning/paths/:id">
+        {isAuthenticated ? <LearningStudioPage /> : <Login />}
       </Route>
 
       <Route path="/learning">
