@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import WorkspaceLibrary from "@/components/WorkspaceLibrary";
 import type { ResearchBrief } from "@shared/research-types";
 
 /**
@@ -246,6 +247,8 @@ export default function ResearchDesk() {
             </div>
           </div>
         </section>
+
+        <WorkspaceLibrary workspace="research" label="Research library" />
 
         {error && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">

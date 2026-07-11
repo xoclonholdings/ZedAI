@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ResearchDesk from "./ResearchDesk";
+import WorkspaceLibrary from "@/components/WorkspaceLibrary";
 
 interface PublishedWorkItem {
   id: string;
@@ -251,6 +252,8 @@ export default function WorkspacePage() {
           <MessageSquare size={14} className="mr-2" />
           Ask Zed in {config.label}
         </Button>
+
+        <WorkspaceLibrary workspace={workspace} label={`${config.label} library`} />
 
         {config.subspaces && config.subspaces.length > 0 && (
           <section className="space-y-2">
