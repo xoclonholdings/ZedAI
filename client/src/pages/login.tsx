@@ -4,19 +4,12 @@ import { useAuth } from "@/components/auth/UseAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { zedLogoSrc } from "@/lib/zedLogo";
 
-import { AdminEmailForm } from "./login/AdminEmailForm";
 import { SecurePhraseForm } from "./login/SecurePhraseForm";
 import { UserLoginForm } from "./login/UserLoginForm";
 
 export default function Login() {
-  const [useAdminLogin, setUseAdminLogin] = useState(true);
   const [showPhraseFallback, setShowPhraseFallback] = useState(false);
   const { refresh } = useAuth() as { refresh: () => Promise<void> };
-
-  function switchTab(toAdmin: boolean) {
-    setUseAdminLogin(toAdmin);
-    setShowPhraseFallback(false);
-  }
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black p-4">
@@ -42,45 +35,31 @@ export default function Login() {
 
         <Card className="zed-glass border-white/10">
           <CardContent className="space-y-4 pt-6">
-            <div className="flex overflow-hidden rounded-xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => switchTab(true)}
-                className={`flex-1 px-4 py-2 text-sm ${useAdminLogin ? "bg-white/10 text-white" : "text-muted-foreground"}`}
-              >
-                Admin Email
-              </button>
-              <button
-                type="button"
-                onClick={() => switchTab(false)}
-                className={`flex-1 px-4 py-2 text-sm ${!useAdminLogin ? "bg-white/10 text-white" : "text-muted-foreground"}`}
-              >
-                User Login
-              </button>
+            <div className="space-y-1 text-center">
+              <h1 className="text-lg font-semibold text-white">Sign in to ZED</h1>
+              <p className="text-sm text-muted-foreground">
+                Use your username and password.
+              </p>
             </div>
 
-            {useAdminLogin && <AdminEmailForm onSuccess={refresh} />}
+            <UserLoginForm onSuccess={refresh} />
 
-            {useAdminLogin && (
-              <div className="border-t border-white/10 pt-3">
-                {!showPhraseFallback ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowPhraseFallback(true)}
-                    className="text-xs text-muted-foreground underline-offset-2 hover:underline"
-                  >
-                    Can't access email? Use admin secure phrase
-                  </button>
-                ) : (
-                  <SecurePhraseForm
-                    onSuccess={refresh}
-                    onCancel={() => setShowPhraseFallback(false)}
-                  />
-                )}
-              </div>
-            )}
-
-            {!useAdminLogin && <UserLoginForm onSuccess={refresh} />}
+            <div className="border-t border-white/10 pt-3">
+              {!showPhraseFallback ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPhraseFallback(true)}
+                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Use admin secure phrase
+                </button>
+              ) : (
+                <SecurePhraseForm
+                  onSuccess={refresh}
+                  onCancel={() => setShowPhraseFallback(false)}
+                />
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

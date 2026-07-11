@@ -52,7 +52,7 @@ export function SecurePhraseForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Secure Phrase</label>
+        <label className="text-sm font-medium text-foreground">Admin Secure Phrase</label>
         <div className="relative">
           <Input
             type={showPhrase ? "text" : "password"}
@@ -73,7 +73,7 @@ export function SecurePhraseForm({
           </button>
         </div>
         <p className="text-xs text-muted-foreground/80">
-          Fallback for when email isn't reachable. Same admin session as the email flow.
+          Use the configured admin phrase for administrative access.
         </p>
       </div>
 
