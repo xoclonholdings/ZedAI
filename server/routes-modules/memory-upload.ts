@@ -184,6 +184,13 @@ export function registerMemoryUploadRoutes(app: Express): void {
         const userId = req.user?.claims?.sub || "user";
         const now = new Date().toISOString();
 
+        // Optional workspace tag. Uploaded knowledge still merges into
+        // Zed's single core memory graph, but each object is stamped with
+        // the workspace it came from so a workspace can show its own
+        // library (a slice of core memory) without forking storage.
+        const workspace =
+          typeof req.body?.workspace === "string" ? req.body.workspace.trim() : "";
+
         const inputs: Array<{ sourceFile: string; text: string; title?: string }> = [];
 
         // Path A: multipart files. Each file is processed for text
@@ -234,6 +241,11 @@ export function registerMemoryUploadRoutes(app: Express): void {
             conversationTitle: input.title,
             text: input.text,
           });
+          if (workspace) {
+            for (const o of objects) {
+              o.properties = { ...(o.properties || {}), workspace };
+            }
+          }
           objectsAll = objectsAll.concat(objects);
           relationshipsAll = relationshipsAll.concat(relationships);
           perSource.push({
