@@ -34,6 +34,7 @@ export interface ProviderRuntimeConfig {
     chatPath: string;
     healthPath: string;
     timeoutMs: number;
+    healthTimeoutMs: number;
   };
 }
 
@@ -116,6 +117,9 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
       chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
       healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
       timeoutMs: Number(process.env.LIGHTNING_TIMEOUT_MS || 45000),
+      // Health probes must fail fast — the runtime footer pings them
+      // and a hung endpoint should not stall the UI for 45s.
+      healthTimeoutMs: Number(process.env.LIGHTNING_HEALTH_TIMEOUT_MS || 8000),
     },
   };
 }

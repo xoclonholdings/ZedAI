@@ -197,7 +197,7 @@ export class LightningProvider implements ModelProvider {
       const res = await fetchWithTimeout(
         `${config.baseUrl}${config.healthPath}`,
         { headers: this.authHeaders() },
-        config.timeoutMs,
+        config.healthTimeoutMs,
       );
       if (!res.ok) {
         return {
