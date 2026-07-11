@@ -72,6 +72,7 @@ export default function SandboxWorkspace() {
   const [logForm, setLogForm] = useState(EMPTY_LOG_FORM);
   const [closeTarget, setCloseTarget] = useState<CloseTarget | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [suggesting, setSuggesting] = useState<boolean>(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -158,6 +159,56 @@ export default function SandboxWorkspace() {
     }
   }, [logForm, refresh]);
 
+  // Zed proposes the setup for the symbol you name — direction, thesis,
+  // and where to enter/stop/target — so you approve a trade rather than
+  // invent one. You still confirm the numeric levels (no live price feed).
+  const suggest = useCallback(async () => {
+    setError(null);
+    setNotice(null);
+    if (!logForm.symbol.trim()) {
+      setError("Enter a symbol first — Zed will propose the setup for it.");
+      return;
+    }
+    setSuggesting(true);
+    try {
+      const res = await fetch("/api/trading/strategies/generate", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: logForm.symbol.trim().toUpperCase(),
+          asset: logForm.assetClass,
+          market: logForm.market,
+          timeframe: logForm.timeframe.trim() || undefined,
+          directionPreference: "auto",
+        }),
+      });
+      const s = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(s?.error || `HTTP ${res.status}`);
+      const reason = [
+        s.thesis,
+        s.entryPlan ? `Entry: ${s.entryPlan}` : "",
+        s.stopPlan ? `Stop: ${s.stopPlan}` : "",
+        s.targetPlan ? `Target: ${s.targetPlan}` : "",
+        s.invalidation ? `Invalidation: ${String(s.invalidation).replace(/\n/g, "; ")}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      setLogForm((f) => ({
+        ...f,
+        direction: s.direction === "short" ? "short" : "long",
+        timeframe: s.timeframe || f.timeframe,
+        setupName: "Zed proposal",
+        entryReason: reason || f.entryReason,
+      }));
+      setNotice("Zed proposed the setup. Confirm the entry / stop / target levels, then approve.");
+    } catch (err: any) {
+      setError(err?.message || "Zed could not propose a setup. Try again.");
+    } finally {
+      setSuggesting(false);
+    }
+  }, [logForm.symbol, logForm.assetClass, logForm.market, logForm.timeframe]);
+
   const submitClose = useCallback(async () => {
     if (!closeTarget) return;
     setError(null);
@@ -205,8 +256,9 @@ export default function SandboxWorkspace() {
             Paper trading
           </h2>
           <p className="mt-1 text-[12.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Log every trade with a thesis. Close every trade with a lesson.
-            Nothing here is real money — you're building the habits.
+            Name a symbol and Zed proposes the setup — direction, thesis, and where to
+            enter, stop, and target. You confirm the levels and approve. Nothing here is
+            real money — Zed is proving the strategy.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -225,7 +277,7 @@ export default function SandboxWorkspace() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
           >
             <Plus size={13} />
-            {panel === "log" ? "Cancel" : "Log a trade"}
+            {panel === "log" ? "Cancel" : "New trade"}
           </button>
         </div>
       </header>
@@ -256,6 +308,8 @@ export default function SandboxWorkspace() {
           onChange={setLogForm}
           onSubmit={submitLog}
           submitting={submitting}
+          onSuggest={suggest}
+          suggesting={suggesting}
           onCancel={() => setPanel("list")}
         />
       )}
@@ -265,7 +319,7 @@ export default function SandboxWorkspace() {
       </div>
       {openTrades.length === 0 ? (
         <div className="mb-5 rounded-lg border border-dashed border-white/10 p-5 text-center text-[12.5px] text-white/40">
-          No open trades. Tap Log a trade to start one.
+          No open trades yet. Tap New trade and let Zed propose one.
         </div>
       ) : (
         <div className="mb-5 space-y-2">
@@ -416,12 +470,16 @@ function LogTradeForm({
   onChange,
   onSubmit,
   submitting,
+  onSuggest,
+  suggesting,
   onCancel,
 }: {
   form: typeof EMPTY_LOG_FORM;
   onChange: (next: typeof EMPTY_LOG_FORM) => void;
   onSubmit: () => void | Promise<void>;
   submitting: boolean;
+  onSuggest: () => void | Promise<void>;
+  suggesting: boolean;
   onCancel: () => void;
 }) {
   const set =
@@ -432,7 +490,7 @@ function LogTradeForm({
   return (
     <div className="mb-5 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="text-[13px] font-semibold text-white">Log a new paper trade</div>
+        <div className="text-[13px] font-semibold text-white">New paper trade — Zed proposes, you approve</div>
         <button
           type="button"
           onClick={onCancel}
@@ -440,6 +498,21 @@ function LogTradeForm({
           aria-label="Cancel"
         >
           <X size={16} />
+        </button>
+      </div>
+
+      {/* Zed proposes the setup for the symbol you name. */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] px-3 py-2">
+        <div className="text-[12px] text-cyan-100/90">
+          Enter a symbol, then let Zed propose the direction, thesis, and levels.
+        </div>
+        <button
+          type="button"
+          onClick={() => void onSuggest()}
+          disabled={suggesting}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
+        >
+          {suggesting ? "Zed is thinking…" : "Zed, propose this trade"}
         </button>
       </div>
 
@@ -560,7 +633,7 @@ function LogTradeForm({
           disabled={submitting}
           className="rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 transition-colors active:opacity-80"
         >
-          {submitting ? "Logging…" : "Log trade"}
+          {submitting ? "Logging…" : "Approve & log"}
         </button>
       </div>
     </div>
