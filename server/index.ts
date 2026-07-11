@@ -181,6 +181,37 @@ app.use((req, res, next) => {
     log("[WARNING] Failed to start knowledge curation scheduler:", String(error));
   }
 
+  // Boot-time Lightning connectivity smoke check. Non-blocking: it must
+  // never delay or crash boot. It exists so a misconfigured provider
+  // (missing LIGHTNING_BASE_URL / LIGHTNING_API_KEY, wrong endpoint,
+  // 401) shows up as one obvious line in the deploy log instead of a
+  // 401 on the user's phone. Fire-and-forget so slow endpoints don't
+  // stall startup.
+  void (async () => {
+    try {
+      const { getProviderRuntimeConfig } = await import("./core/providers/provider-config");
+      const { checkModelProviderHealth } = await import("./services/ModelProviderService");
+      const cfg = getProviderRuntimeConfig();
+      if (!cfg.lightning.baseUrl) {
+        log("[LIGHTNING] OFFLINE — LIGHTNING_BASE_URL is not set; model calls will fail.");
+        return;
+      }
+      if (!cfg.lightning.apiKey) {
+        log(
+          "[LIGHTNING] MISCONFIGURED — LIGHTNING_API_KEY is not set; requests will 401 'Missing or invalid Authorization header'.",
+        );
+      }
+      const health = await checkModelProviderHealth();
+      if (health.status === "online") {
+        log(`[LIGHTNING] online — ${health.target} (models: ${health.models.join(", ") || "n/a"})`);
+      } else {
+        log(`[LIGHTNING] OFFLINE — ${health.target || "no endpoint"} did not respond healthy.`);
+      }
+    } catch (error) {
+      log("[LIGHTNING] smoke check failed:", String((error as Error)?.message || error));
+    }
+  })();
+
   app.use("/api/auth/user", (_req, res) => {
     res.status(200).json({ message: "Auth temporarily disabled" });
   });
