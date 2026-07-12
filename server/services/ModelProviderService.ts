@@ -77,7 +77,6 @@ export async function streamChatFromProvider(
     messages,
     {
       ...options,
-      model: options?.model || runtimeConfig.activeModel,
       systemPrompt: options?.systemPrompt || systemPrompt,
     },
     onToken,
