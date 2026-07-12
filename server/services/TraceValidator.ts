@@ -8,10 +8,8 @@ import { logRuntimeEvent } from "./RuntimeLogger";
  * to runtime.log — but nothing verifies the trace is coherent
  * before it lands.
  *
- * ZED_EXECUTION_AUDIT.md notes trace items as PARTIAL: "TypeScript
- * noEmit PASS. End-to-end runtime trace inspection remains
- * UNVERIFIED." This validator turns that from "hope it's right"
- * into a runtime guarantee: every trace goes through validateTrace
+ * This validator turns end-to-end trace coherence from "hope it's
+ * right" into a runtime guarantee: every trace goes through validateTrace
  * before it's saved, and a violation is written to runtime.log
  * with source=server, level=warn so operators can see traces that
  * came through with missing fields.

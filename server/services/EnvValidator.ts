@@ -74,7 +74,7 @@ function checkUrl(
     return {
       name,
       severity: "warn",
-      message: `Doesn't end in "${expectedSuffix}". Most OpenAI-compatible providers expect a base URL ending there.`,
+      message: `Doesn't end in "${expectedSuffix}". Gateways that speak the chat-completions schema usually expect a base URL ending there.`,
       hint: `Try ${raw.replace(/\/+$/, "")}${expectedSuffix} unless your provider documents a different path.`,
     };
   }
@@ -86,7 +86,7 @@ function checkUrl(
 }
 
 function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
-  const baseUrl = trimmed(env, "LIGHTNING_BASE_URL") || trimmed(env, "REMOTE_INFERENCE_URL");
+  const baseUrl = trimmed(env, "LIGHTNING_BASE_URL") || trimmed(env, "LIGHTNING_AI_URL");
   if (!baseUrl) {
     checks.push({
       name: "LIGHTNING_BASE_URL",
@@ -95,8 +95,28 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
       hint: "Point it at your Lightning AI runner (e.g. https://<your-endpoint>.lightning.ai).",
     });
   } else {
-    const check = checkUrl(env, "LIGHTNING_BASE_URL") || checkUrl(env, "REMOTE_INFERENCE_URL");
+    const check = checkUrl(env, "LIGHTNING_BASE_URL") || checkUrl(env, "LIGHTNING_AI_URL");
     if (check) checks.push({ ...check, name: "LIGHTNING_BASE_URL" });
+  }
+
+  const apiKeySet =
+    present(env, "LIGHTNING_API_KEY") ||
+    present(env, "LIGHTNING_AI_API_KEY") ||
+    present(env, "LIGHTNING_TOKEN");
+  if (!apiKeySet) {
+    checks.push({
+      name: "LIGHTNING_API_KEY",
+      severity: "error",
+      message:
+        "Not set. Lightning endpoints are token-protected; without it every model call fails with 401 'Missing or invalid Authorization header'.",
+      hint: "Set LIGHTNING_API_KEY to your Lightning AI endpoint token.",
+    });
+  } else {
+    checks.push({
+      name: "LIGHTNING_API_KEY",
+      severity: "ok",
+      message: "Set — sent as the Authorization: Bearer token on every Lightning request.",
+    });
   }
 
   if (!present(env, "LIGHTNING_MODEL") && !present(env, "MODEL_NAME")) {

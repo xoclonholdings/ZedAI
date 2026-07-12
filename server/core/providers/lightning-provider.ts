@@ -88,10 +88,21 @@ export class LightningProvider implements ModelProvider {
     const config = this.getConfig();
     if (!config.baseUrl) {
       throw new Error(
-        "LIGHTNING_BASE_URL / OPENAI_BASE_URL is not configured — point it at your Lightning AI endpoint.",
+        "LIGHTNING_BASE_URL is not configured — point it at your Lightning AI endpoint.",
       );
     }
     return config;
+  }
+
+  /**
+   * Lightning endpoints are token-protected. Attach the bearer token
+   * from LIGHTNING_API_KEY (or LIGHTNING_AI_API_KEY / LIGHTNING_TOKEN)
+   * so requests don't come back 401 "Missing or invalid Authorization
+   * header". Falls back to no auth header only when no key is set.
+   */
+  private authHeaders(): Record<string, string> {
+    const { apiKey } = this.getConfig();
+    return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
   }
 
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
@@ -138,7 +149,7 @@ export class LightningProvider implements ModelProvider {
       `${config.baseUrl}${config.chatPath}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...this.authHeaders() },
         body: JSON.stringify(requestBody),
       },
       config.timeoutMs,
@@ -179,14 +190,14 @@ export class LightningProvider implements ModelProvider {
         status: "offline",
         models: [],
         provider: "lightning",
-        detail: "LIGHTNING_BASE_URL / OPENAI_BASE_URL not set",
+        detail: "LIGHTNING_BASE_URL not set",
       };
     }
     try {
       const res = await fetchWithTimeout(
         `${config.baseUrl}${config.healthPath}`,
-        {},
-        config.timeoutMs,
+        { headers: this.authHeaders() },
+        config.healthTimeoutMs,
       );
       if (!res.ok) {
         return {

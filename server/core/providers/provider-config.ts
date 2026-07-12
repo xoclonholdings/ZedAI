@@ -21,10 +21,12 @@ export interface ProviderRuntimeConfig {
   laneReasoningModels: Partial<Record<ProviderLane, Partial<Record<ReasoningEffort, string>>>>;
   lightning: {
     baseUrl: string;
+    apiKey: string;
     model: string;
     chatPath: string;
     healthPath: string;
     timeoutMs: number;
+    healthTimeoutMs: number;
   };
 }
 
@@ -130,7 +132,6 @@ export function resolveModelForLane(
     if (laneValue) return laneValue;
   }
   return (
-    process.env.OPENAI_MODEL?.trim() ||
     process.env.MODEL_NAME?.trim() ||
     process.env.ZED_MODEL_NAME?.trim() ||
     fallback
@@ -138,16 +139,13 @@ export function resolveModelForLane(
 }
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
-  const openAiCompatibleBaseUrl = process.env.OPENAI_BASE_URL?.trim() || "";
   const baseUrl = trimTrailingSlash(
     process.env.LIGHTNING_BASE_URL ||
-      openAiCompatibleBaseUrl ||
-      process.env.REMOTE_INFERENCE_URL ||
+      process.env.LIGHTNING_AI_URL ||
       "",
   );
   const model =
     process.env.LIGHTNING_MODEL ||
-    process.env.OPENAI_MODEL ||
     process.env.MODEL_NAME ||
     process.env.ZED_MODEL_NAME ||
     "";
@@ -161,14 +159,18 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
     laneReasoningModels: buildLaneReasoningModels(),
     lightning: {
       baseUrl,
+      apiKey:
+        process.env.LIGHTNING_API_KEY ||
+        process.env.LIGHTNING_AI_API_KEY ||
+        process.env.LIGHTNING_TOKEN ||
+        "",
       model,
-      chatPath: process.env.LIGHTNING_CHAT_PATH || (openAiCompatibleBaseUrl ? "/chat/completions" : "/chat"),
+      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
       healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
-      timeoutMs: Number(
-        process.env.LIGHTNING_TIMEOUT_MS ||
-          process.env.REMOTE_INFERENCE_TIMEOUT_MS ||
-          45000,
-      ),
+      timeoutMs: Number(process.env.LIGHTNING_TIMEOUT_MS || 45000),
+      // Health probes must fail fast — the runtime footer pings them
+      // and a hung endpoint should not stall the UI for 45s.
+      healthTimeoutMs: Number(process.env.LIGHTNING_HEALTH_TIMEOUT_MS || 8000),
     },
   };
 }

@@ -9,7 +9,7 @@ export const conversations = pgTable("conversations", {
   userId: varchar("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   preview: text("preview"),
-  model: text("model").notNull().default("gpt-4o-mini"),
+  model: text("model").notNull().default("lightning"),
   mode: text("mode").notNull().default("chat"),
   isActive: boolean("is_active").default(false),
   createdAt: timestamp("created_at").defaultNow(),

@@ -40,7 +40,7 @@ function now(): string {
 function describeQuizFailure(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error || "");
   const lower = message.toLowerCase();
-  if (lower.includes("lightning_base_url") || lower.includes("openai_base_url") || lower.includes("remote_inference_url")) {
+  if (lower.includes("lightning_base_url") || lower.includes("lightning_ai_url")) {
     return "AI host is not configured";
   }
   if (lower.includes("timeout") || lower.includes("aborted")) {
