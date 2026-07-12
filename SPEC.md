@@ -2,7 +2,7 @@
 
 ## Purpose
 
-ZED AI is a multi-agent AI application built around an Express backend and a React/Vite frontend. The system supports chat, conversation history, file upload, admin controls, and orchestrated agent workflows backed by a Lightning AI–hosted model provider (reached via `claw-provider-temp`) and optional external services.
+ZED AI is a multi-agent AI application built around an Express backend and a React/Vite frontend. The system supports chat, conversation history, file upload, admin controls, and orchestrated agent workflows backed by Lightning AI as the sole model provider (accessed directly) and optional external services.
 
 This file is the canonical project spec for the repository. If the project changes, update this document instead of spreading source-of-truth details across multiple Markdown files.
 
@@ -21,9 +21,9 @@ This file is the canonical project spec for the repository. If the project chang
 ZedAI/
   attached_assets/  Static attached image assets
   client/           React + Vite frontend
-  docs/             Canonical policies + execution audit
+  docs/             Canonical policies
   hub/              Runtime shared-memory/config area
-  scripts/local/    Local Windows workstation/model-host launchers
+  scripts/local/    Local Windows workstation launchers
   server/           Express + TypeScript backend
   shared/           Shared schemas and cross-app types/config
   zed-memory/       Immutable raw ChatGPT export backup (not runtime)
@@ -72,9 +72,6 @@ ZedAI/
   - `scripts/local/install-zed-autostart.ps1`
   - `scripts/local/install-zed-autostart.cmd`
   - `scripts/local/install-zed-workstation.cmd`
-  - `scripts/local/install-zed-model-host.ps1`
-  - `scripts/local/install-zed-model-host.cmd`
-  - `scripts/local/zed-ollama-host.ps1`
 - Default local port:
   - `5000`
 
@@ -255,16 +252,15 @@ Per the buffer requirement above, the provider layer supports true streaming via
 
 - Session-based local auth is implemented in `server/localAuth.ts`
 - Session data uses server-side persistence via file-backed session storage
-- Admin/user settings are persisted in `hub/config/admin-settings.json` locally and are not part of source control
+- Admin/user settings (managed users, credentials, voice, approvals, integrations) use a two-tier store: the local `hub/config/admin-settings.json` is a fast runtime cache, and the durable source of truth is the Postgres `app_settings` table. Every mutation via `updateAdminSettings` writes both; at boot (after the DB is confirmed healthy) `hydrateAdminSettingsFromDb` restores the file from the table. This is what keeps users and credential changes from being erased when an ephemeral host (e.g. Render) wipes the container filesystem on redeploy. The JSON cache is not part of source control.
 - The app currently supports one admin account plus admin-managed local users
+- `GET /api/health` (alias `GET /healthz`) is an unauthenticated liveness ping that never touches the database or model provider; point an uptime monitor at it to keep the instance warm and avoid idle-spindown cold starts. Boot binds the HTTP server before the database/migration/memory warmup, so login (which needs only file-backed session + admin settings) responds immediately on a cold start while the DB warms up in the background.
 
 ## Data and Service Dependencies
 
 ### Local/Primary Dependencies
 
-- Provider-agnostic model execution routed through backend adapters
-- Ollama for local-first model inference
-- Optional OpenAI, Claude, and temporary remote runner adapters through shared execution contracts
+- Lightning AI is the sole model provider, accessed directly over HTTP through `server/core/providers/lightning-provider.ts`. There are no OpenAI, Claude, Ollama, or intermediary-gateway adapters — the endpoint is configured with `LIGHTNING_BASE_URL` (model via `LIGHTNING_MODEL` / `MODEL_NAME`, optional per-lane overrides via `MODEL_<lane>`).
 - Filesystem-backed fallback storage
 - Hub/shared-memory content used by agents
 
@@ -360,6 +356,7 @@ The detailed operating policy is `docs/policies/KNOWLEDGE_CURATION_ENGINE.md`.
 
 The server currently exposes at least these API routes:
 
+- `GET /api/health` (alias `GET /healthz`)
 - `GET /api/me`
 - `GET /api/conversations`
 - `POST /api/conversations`
@@ -447,10 +444,7 @@ Local workstation boot is designed to be single-process in production:
 - then starts the backend in non-development mode
 - the backend serves the built frontend directly
 
-Optional separate model-host boot on a dedicated machine uses:
-
-- `scripts/local/install-zed-model-host.ps1`
-- `scripts/local/zed-ollama-host.ps1`
+Model inference is served remotely by Lightning AI; there is no local model-host boot. Set `LIGHTNING_BASE_URL` (and optionally `LIGHTNING_MODEL`) in the environment before starting the backend.
 
 ## Deploy Specification
 

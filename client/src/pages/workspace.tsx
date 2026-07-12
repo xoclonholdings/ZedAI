@@ -21,7 +21,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ResearchDesk from "./ResearchDesk";
+import WorkspaceDesk from "./WorkspaceDesk";
 import WorkspaceLibrary from "@/components/WorkspaceLibrary";
+import { WORKSPACE_DESK_SPECS } from "@shared/workspace-desk-types";
 
 interface PublishedWorkItem {
   id: string;
@@ -213,11 +215,13 @@ export default function WorkspacePage() {
     return items.filter((item) => config.categories.includes(item.category));
   }, [config.categories, items]);
 
-  // Research is a real working surface (a desk you do the work in), not a
-  // menu of cards. Other workspaces will follow this pattern. Placed after
-  // all hooks so hook order stays stable across workspaces.
+  // Workspaces are real working surfaces (a desk you do the work in), not
+  // menus of cards. Placed after all hooks so hook order stays stable.
   if (workspace === "research") {
     return <ResearchDesk />;
+  }
+  if (WORKSPACE_DESK_SPECS[workspace]) {
+    return <WorkspaceDesk workspace={workspace} />;
   }
 
   return (

@@ -224,6 +224,24 @@ export async function readAppliedGraph(scope?: ObjectMemoryScope): Promise<Objec
   }
 }
 
+export async function resolveObjectMemoryUserId(
+  userId: string | undefined,
+  options?: { isAdmin?: boolean },
+): Promise<string | undefined> {
+  const current = userId?.trim() || undefined;
+  if (!options?.isAdmin) return current;
+
+  const candidates = Array.from(new Set([current, "user_admin"].filter(Boolean) as string[]));
+  for (const candidate of candidates) {
+    const graph = await readAppliedGraph({ userId: candidate }).catch(() => null);
+    if ((graph?.objects?.length || 0) > 0 || (graph?.sources?.length || 0) > 0) {
+      return candidate;
+    }
+  }
+
+  return current || "user_admin";
+}
+
 function renderMarkdown(graph: ObjectGraph): string {
   const lines: string[] = [
     `# Object-memory reparse (dry run)`,

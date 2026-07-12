@@ -3,6 +3,7 @@ import { addToCollection, queryCollection } from "./ChromaService";
 import { retrieveFoundationMemoryWithTrace } from "./FoundationMemoryService";
 import { retrievePersonalizationForQuery } from "./UserPersonalizationCorpus";
 import { retrieveObjectMemoryForQuery } from "./object-memory/retrieval";
+import { resolveObjectMemoryUserId } from "./object-memory/store";
 
 import {
   dedupeRetrievedMemory,
@@ -53,6 +54,10 @@ export class KnowledgeService {
       /* persistence cleanup is best-effort and non-destructive */
     });
 
+    const objectMemoryUserId = await resolveObjectMemoryUserId(params.userId, {
+      isAdmin: params.includeAdminFoundation === true,
+    }).catch(() => params.userId);
+
     const [
       allCoreMemory,
       rulesetMemory,
@@ -75,7 +80,7 @@ export class KnowledgeService {
         userId: params.userId,
       }),
       retrievePersonalizationForQuery(params.userId, params.query, 3),
-      retrieveObjectMemoryForQuery(params.query, 5, params.userId),
+      retrieveObjectMemoryForQuery(params.query, 5, objectMemoryUserId),
     ]);
     const foundation = foundationResult.content;
     const foundationTrace = foundationResult.trace;

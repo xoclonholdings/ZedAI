@@ -85,7 +85,7 @@ function checkUrl(
     return {
       name,
       severity: "warn",
-      message: `Doesn't end in "${expectedSuffix}". Most OpenAI-compatible providers expect a base URL ending there.`,
+      message: `Doesn't end in "${expectedSuffix}". Gateways that speak the chat-completions schema usually expect a base URL ending there.`,
       hint: `Try ${raw.replace(/\/+$/, "")}${expectedSuffix} unless your provider documents a different path.`,
     };
   }
@@ -97,36 +97,53 @@ function checkUrl(
 }
 
 function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
-  const baseUrl = firstPresent(env, [
-    "LIGHTNING_BASE_URL",
-    "OPENAI_BASE_URL",
-    "REMOTE_INFERENCE_URL",
-  ]);
-  if (!baseUrl) {
+  const baseUrlKey = present(env, "LIGHTNING_BASE_URL")
+    ? "LIGHTNING_BASE_URL"
+    : present(env, "LIGHTNING_AI_URL")
+      ? "LIGHTNING_AI_URL"
+      : null;
+
+  if (!baseUrlKey) {
     checks.push({
-      name: "AI_BASE_URL",
+      name: "LIGHTNING_BASE_URL",
       severity: "error",
       message: "Not set. Lightning AI endpoint URL is required.",
-      hint: "Set OPENAI_BASE_URL=https://lightning.ai/api/v1 for Lightning's OpenAI-compatible API, or LIGHTNING_BASE_URL for a custom runner.",
+      hint: "Set LIGHTNING_BASE_URL to your Lightning AI endpoint.",
     });
   } else {
-    const check = checkUrl(env, baseUrl.key);
-    if (check) checks.push({ ...check, name: "AI_BASE_URL", message: `${baseUrl.key}: ${check.message}` });
+    const check = checkUrl(env, baseUrlKey);
+    if (check) checks.push({ ...check, name: "LIGHTNING_BASE_URL" });
   }
 
-  const defaultModel = firstPresent(env, [
-    "LIGHTNING_MODEL",
-    "OPENAI_MODEL",
-    "MODEL_NAME",
-    "ZED_MODEL_NAME",
+  const apiKeyKey = firstPresent(env, [
+    "LIGHTNING_API_KEY",
+    "LIGHTNING_AI_API_KEY",
+    "LIGHTNING_TOKEN",
   ]);
+  if (!apiKeyKey) {
+    checks.push({
+      name: "LIGHTNING_API_KEY",
+      severity: "error",
+      message:
+        "Not set. Lightning endpoints are token-protected; without it every model call fails with 401 'Missing or invalid Authorization header'.",
+      hint: "Set LIGHTNING_API_KEY to your Lightning AI endpoint token.",
+    });
+  } else {
+    checks.push({
+      name: "LIGHTNING_API_KEY",
+      severity: "ok",
+      message: "Set — sent as the Authorization: Bearer token on every Lightning request.",
+    });
+  }
+
+  const defaultModel = firstPresent(env, ["LIGHTNING_MODEL", "MODEL_NAME"]);
   if (!defaultModel) {
     checks.push({
       name: "AI_MODEL",
       severity: "warn",
       message:
         "Not set. Per-lane MODEL_<LANE> overrides must be set or the runner needs its own default.",
-      hint: "Set OPENAI_MODEL or LIGHTNING_MODEL to the default Lightning model slug.",
+      hint: "Set LIGHTNING_MODEL to the default Lightning model slug.",
     });
   } else {
     checks.push({
@@ -136,25 +153,6 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     });
   }
 
-  const apiKey = firstPresent(env, [
-    "LIGHTNING_API_KEY",
-    "OPENAI_API_KEY",
-    "REMOTE_INFERENCE_API_KEY",
-  ]);
-  if (!apiKey) {
-    checks.push({
-      name: "AI_API_KEY",
-      severity: "warn",
-      message: "Not set. Lightning's public API examples require a bearer token.",
-      hint: "Set LIGHTNING_API_KEY or OPENAI_API_KEY unless this endpoint is intentionally public.",
-    });
-  } else {
-    checks.push({
-      name: "AI_API_KEY",
-      severity: "ok",
-      message: `${apiKey.key} is set (length ${apiKey.value.length}).`,
-    });
-  }
 }
 
 function pushSessionSecretCheck(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {

@@ -13,6 +13,7 @@ import { ZedPrincipleEngine } from "./ZedPrincipleEngine";
 import { ZedStrategicReasoningEngine } from "./ZedStrategicReasoningEngine";
 import { ZedReflectionEngine } from "./ZedReflectionEngine";
 import { injectMemory } from "./MemoryInjector";
+import { buildWorkspaceMemoryContext } from "./WorkspaceMemoryService";
 import { buildZedAdminContext } from "./ZedContextBuilder";
 import { buildLearningTutorContext } from "./learning/LearningContextBuilder";
 import { getZedResponsePolicy } from "./ZedResponsePolicy";
@@ -355,6 +356,15 @@ export class ChatExecutionService {
             // inject the question as a reasoning signal (above), but
             // let the model decide how to weight it.
             const priorityHighEnough = Number(topQuestion.priority) >= 0.86;
+            // Only surface questions the USER can actually answer about
+            // their intent. Graph-bookkeeping categories (status,
+            // confidence, priority, importance, history) produce
+            // internal-sounding prompts like "Is X current, historical,
+            // rejected, or superseded?" — the user has no way to answer
+            // those. They still feed reasoning via contextInquiryPrompt
+            // above; they just must never hijack the reply.
+            const USER_ANSWERABLE = new Set(["identity", "purpose", "decision", "relationship"]);
+            const categoryIsUserFacing = USER_ANSWERABLE.has(String(topQuestion.category));
             // Don't ask twice in a row — if the previous assistant
             // message was itself a clarifying question, the user just
             // answered it, and it would be a bad experience to
@@ -366,7 +376,7 @@ export class ChatExecutionService {
             const priorWasClarifying =
               Boolean(priorAssistant?.metadata?.clarifyingQuestion) === true;
 
-            if (priorityHighEnough && !priorWasClarifying) {
+            if (priorityHighEnough && categoryIsUserFacing && !priorWasClarifying) {
               pauseAndAsk = {
                 reply: questionOnly(topQuestion.question),
                 question: topQuestion,
@@ -440,6 +450,19 @@ export class ChatExecutionService {
             userId: input.userId,
           }).catch(() => ({ formatted: "" }));
       if (injectedMemory.formatted) trace.memorySources.push("MemoryInjector");
+
+      // Workspace memory FIRST: whenever a request comes from a workspace,
+      // Zed grounds in that workspace's own knowledge before any other work.
+      const workspaceSlug = String(
+        input.workspaceId || input.context?.workspaceId || "",
+      ).trim();
+      const workspaceMemory = await buildWorkspaceMemoryContext(
+        workspaceSlug,
+        effectiveMessage,
+        input.userId,
+        Boolean(input.isAdmin),
+      ).catch(() => ({ prompt: "", count: 0, used: false }));
+      if (workspaceMemory.used) trace.memorySources.push("WorkspaceMemory");
 
       trace.servicesInvoked.push("KnowledgeService.buildContext");
       const knowledge = hooks.knowledgeContext
@@ -589,6 +612,9 @@ export class ChatExecutionService {
       const cognitiveKnowledgePrompt = [
         governancePrompt,
         contextInquiryPrompt,
+        // Workspace memory sits ahead of general knowledge so Zed always
+        // works from the workspace's own library first.
+        workspaceMemory.prompt,
         principlePrompt,
         strategicReasoning.prompt,
         intelligence.reasoningPrompt,

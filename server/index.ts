@@ -130,56 +130,25 @@ app.use((req, res, next) => {
     log("[ERROR] Failed to initialize fallback storage:", String(error));
   }
 
-  log("Checking database connection...");
-  let dbHealthy = false;
-
-  try {
-    dbHealthy = await checkDatabaseConnection();
-
-    if (dbHealthy) {
-      log("Database connection established successfully");
-
-      try {
-        await runMigrations();
-        log("Database migrations completed");
-      } catch (migrationError) {
-        log("[WARNING] Migration failed, but continuing with offline mode");
-        dbHealthy = false;
-      }
-    }
-  } catch (error) {
-    log("[WARNING] Database connection failed - initializing offline mode");
-    dbHealthy = false;
-  }
-
-  if (!dbHealthy) {
-    log("Offline database mode active; using fallback storage only");
-  }
-
+  // Start serving as EARLY as possible. Login, sessions, and /api/me
+  // depend only on local file state (file-backed session store + admin
+  // settings) — never the database. So we bind the HTTP server before
+  // the slow warmup (DB connect, migrations, core memory, curation). On
+  // a cold instance this is the difference between login responding in
+  // milliseconds and it hanging for minutes behind a cold database +
+  // migrations. Until the warmup flips the DB on, DB-backed requests
+  // transparently use fallback storage — the existing offline mode.
   const { setDatabaseStatus } = await import("./routes");
-  setDatabaseStatus(dbHealthy);
+  setDatabaseStatus(false);
 
-  if (!dbHealthy) {
-    log("[INFO] Application will run without database features");
-  }
-
-  try {
-    const { MemoryService } = await import("./services/memoryService");
-    await MemoryService.loadCoreMemoryFromFile();
-    log("Core memory loaded from core.memory.json successfully");
-  } catch (error) {
-    log("[WARNING] Failed to initialize core memory - using default memory");
-  }
-
-  try {
-    const { startKnowledgeCurationScheduler } = await import(
-      "./services/KnowledgeCurationEngine"
-    );
-    startKnowledgeCurationScheduler();
-    log("Knowledge curation scheduler active");
-  } catch (error) {
-    log("[WARNING] Failed to start knowledge curation scheduler:", String(error));
-  }
+  // Lightweight, unauthenticated liveness ping. Point an uptime monitor
+  // (e.g. every few minutes) at this to keep the instance warm and avoid
+  // idle-spindown cold starts. Always fast — never touches the DB or the
+  // model provider.
+  const bootedAt = Date.now();
+  app.get(["/api/health", "/healthz"], (_req, res) => {
+    res.status(200).json({ status: "ok", uptimeSeconds: Math.round((Date.now() - bootedAt) / 1000) });
+  });
 
   app.use("/api/auth/user", (_req, res) => {
     res.status(200).json({ message: "Auth temporarily disabled" });
@@ -202,15 +171,95 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
-      log("ZED AI Assistant ready with hardened database connection and fallback storage");
-
-      if (!dbHealthy) {
-        log("[INFO] Running in offline mode with fallback storage - full functionality maintained");
-      } else {
-        log("[INFO] Running online with database + fallback storage redundancy");
-      }
+      log("ZED AI accepting requests; warming up database + memory in the background");
     },
   );
+
+  // Background warmup — never blocks request serving. Runs after the
+  // server is already listening so a cold start doesn't delay login.
+  void (async () => {
+    log("Checking database connection...");
+    let dbHealthy = false;
+    try {
+      dbHealthy = await checkDatabaseConnection();
+      if (dbHealthy) {
+        log("Database connection established successfully");
+        try {
+          await runMigrations();
+          log("Database migrations completed");
+        } catch (migrationError) {
+          log("[WARNING] Migration failed, continuing in offline mode");
+          dbHealthy = false;
+        }
+      }
+    } catch (error) {
+      log("[WARNING] Database connection failed - offline mode");
+      dbHealthy = false;
+    }
+    setDatabaseStatus(dbHealthy);
+    log(
+      dbHealthy
+        ? "[INFO] Online with database + fallback storage redundancy"
+        : "[INFO] Offline mode with fallback storage - full functionality maintained",
+    );
+
+    // Restore admin settings (managed users + credentials) from the
+    // durable database into the local file cache, so an ephemeral
+    // redeploy doesn't erase users added via Settings. No-op offline.
+    if (dbHealthy) {
+      try {
+        const { hydrateAdminSettingsFromDb } = await import("./services/admin-settings/io");
+        await hydrateAdminSettingsFromDb();
+      } catch (error) {
+        log("[WARNING] admin-settings DB hydrate failed:", String((error as Error)?.message || error));
+      }
+    }
+
+    try {
+      const { MemoryService } = await import("./services/memoryService");
+      await MemoryService.loadCoreMemoryFromFile();
+      log("Core memory loaded from core.memory.json successfully");
+    } catch (error) {
+      log("[WARNING] Failed to initialize core memory - using default memory");
+    }
+
+    try {
+      const { startKnowledgeCurationScheduler } = await import(
+        "./services/KnowledgeCurationEngine"
+      );
+      startKnowledgeCurationScheduler();
+      log("Knowledge curation scheduler active");
+    } catch (error) {
+      log("[WARNING] Failed to start knowledge curation scheduler:", String(error));
+    }
+
+    // Lightning connectivity smoke check. Surfaces a misconfigured
+    // provider (missing LIGHTNING_BASE_URL / LIGHTNING_API_KEY, wrong
+    // endpoint, 401) as one clear line in the deploy log instead of a
+    // 401 on the user's phone.
+    try {
+      const { getProviderRuntimeConfig } = await import("./core/providers/provider-config");
+      const { checkModelProviderHealth } = await import("./services/ModelProviderService");
+      const cfg = getProviderRuntimeConfig();
+      if (!cfg.lightning.baseUrl) {
+        log("[LIGHTNING] OFFLINE — LIGHTNING_BASE_URL is not set; model calls will fail.");
+      } else {
+        if (!cfg.lightning.apiKey) {
+          log(
+            "[LIGHTNING] MISCONFIGURED — LIGHTNING_API_KEY is not set; requests will 401 'Missing or invalid Authorization header'.",
+          );
+        }
+        const health = await checkModelProviderHealth();
+        if (health.status === "online") {
+          log(`[LIGHTNING] online — ${health.target} (models: ${health.models.join(", ") || "n/a"})`);
+        } else {
+          log(`[LIGHTNING] OFFLINE — ${health.target || "no endpoint"} did not respond healthy.`);
+        }
+      }
+    } catch (error) {
+      log("[LIGHTNING] smoke check failed:", String((error as Error)?.message || error));
+    }
+  })();
 
   const shutdown = async (signal: string) => {
     log(`Received ${signal}, shutting down gracefully...`);

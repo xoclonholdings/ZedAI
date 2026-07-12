@@ -8,6 +8,7 @@ import { extractObjectsFromSource } from "../services/object-memory/extractor";
 import {
   graphStats,
   readAppliedGraph,
+  resolveObjectMemoryUserId,
   writeAppliedGraph,
 } from "../services/object-memory/store";
 import type { ObjectGraph } from "../../shared/object-memory-types";
@@ -54,6 +55,14 @@ function memoryScopeFrom(req: any): "admin" | "user" {
   return req.user?.claims?.isAdmin ? "admin" : "user";
 }
 
+async function memoryUserIdFrom(req: any): Promise<string> {
+  return (
+    (await resolveObjectMemoryUserId(userIdFrom(req), {
+      isAdmin: Boolean(req.user?.claims?.isAdmin),
+    })) || userIdFrom(req)
+  );
+}
+
 function emptyGraph(): ObjectGraph {
   return {
     version: "1",
@@ -77,7 +86,7 @@ export function registerMemoryUploadRoutes(app: Express): void {
     isAuthenticated,
     async (req: any, res) => {
       try {
-        const userId = userIdFrom(req);
+        const userId = await memoryUserIdFrom(req);
         const keepId = typeof req.body?.keepId === "string" ? req.body.keepId : "";
         const dropIds: string[] = Array.isArray(req.body?.dropIds)
           ? req.body.dropIds.filter((s: unknown): s is string => typeof s === "string")
@@ -183,7 +192,7 @@ export function registerMemoryUploadRoutes(app: Express): void {
 
   app.get("/api/me/memory/graph", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = userIdFrom(req);
+      const userId = await memoryUserIdFrom(req);
       const graph = await readAppliedGraph({ userId });
       if (!graph) {
         return res.json({ ...emptyGraph(), scope: memoryScopeFrom(req), userId });
@@ -200,7 +209,7 @@ export function registerMemoryUploadRoutes(app: Express): void {
     upload.array("files"),
     async (req: any, res) => {
       try {
-        const userId = userIdFrom(req);
+        const userId = await memoryUserIdFrom(req);
         const memoryScope = memoryScopeFrom(req);
         const now = new Date().toISOString();
 
