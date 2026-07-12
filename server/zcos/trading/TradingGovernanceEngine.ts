@@ -34,6 +34,10 @@ interface PaperTradeAuthorizationInput {
   size: number;
   riskAmount: number;
   entryReason: string;
+  /** Optional context Zed supplies so these checks resolve instead of UNKNOWN. */
+  session?: string;
+  newsContext?: string;
+  correlationNotes?: string;
 }
 
 function hasText(value: unknown): boolean {
@@ -250,8 +254,20 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
       hasText(input.thesis?.liquidityAnalysis) ? String(input.thesis?.liquidityAnalysis) : "Liquidity analysis is unavailable.",
       { missingInformation: hasText(input.thesis?.liquidityAnalysis) ? undefined : ["Liquidity analysis"], critical: true },
     ),
-    checklistItem("session", "Session", "UNKNOWN", "Market session was not supplied.", { missingInformation: ["Market session"], critical: false }),
-    checklistItem("news_filter", "News Filter", "UNKNOWN", "Economic/news calendar state was not supplied.", { missingInformation: ["Economic calendar/news filter"], critical: false }),
+    checklistItem(
+      "session",
+      "Session",
+      hasText(input.session) ? "PASS" : "UNKNOWN",
+      hasText(input.session) ? `Session: ${input.session}.` : "Market session was not supplied.",
+      { missingInformation: hasText(input.session) ? undefined : ["Market session"], critical: false },
+    ),
+    checklistItem(
+      "news_filter",
+      "News Filter",
+      hasText(input.newsContext) ? "PASS" : "UNKNOWN",
+      hasText(input.newsContext) ? String(input.newsContext) : "Economic/news calendar state was not supplied.",
+      { missingInformation: hasText(input.newsContext) ? undefined : ["Economic calendar/news filter"], critical: false },
+    ),
     checklistItem(
       "trade_thesis",
       "Trade Thesis",
@@ -296,7 +312,13 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
       `${openTrades.length} open paper trades; limit ${MAX_OPEN_PAPER_TRADES}.`,
       { critical: true },
     ),
-    checklistItem("correlation", "Correlation", "UNKNOWN", "Correlation data was not supplied.", { missingInformation: ["Correlation exposure"], critical: false }),
+    checklistItem(
+      "correlation",
+      "Correlation",
+      hasText(input.correlationNotes) ? "PASS" : "UNKNOWN",
+      hasText(input.correlationNotes) ? String(input.correlationNotes) : "Correlation data was not supplied.",
+      { missingInformation: hasText(input.correlationNotes) ? undefined : ["Correlation exposure"], critical: false },
+    ),
     checklistItem(
       "drawdown_limits",
       "Drawdown Limits",

@@ -198,6 +198,58 @@ export function registerTradingRoutes(app: Express): void {
     }
   });
 
+  /**
+   * Zed proposes a COMPLETE paper trade the user can approve in one tap.
+   * It generates the strategy (direction, thesis, structure, liquidity,
+   * concrete entry/stop/target/size/risk sized to clear governance), then
+   * persists a linked thesis so the market-structure and liquidity checks
+   * pass. Returns the strategy plus the thesisId to attach when logging.
+   */
+  app.post("/api/trading/strategies/propose", isAuthenticated, async (req: any, res) => {
+    const missing = requireFields(req.body || {}, ["symbol"]);
+    if (missing) return res.status(400).json({ error: `${missing} is required` });
+
+    try {
+      const userId = userIdFrom(req);
+      const asset = req.body.asset || "stock";
+      const market = req.body.market ? String(req.body.market) : "US";
+      const strategy = await generateTradeStrategy({
+        userId,
+        symbol: String(req.body.symbol),
+        asset,
+        market,
+        directionPreference: req.body.directionPreference || "auto",
+        timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
+        referencePrice:
+          req.body.referencePrice === undefined ? undefined : toNumber(req.body.referencePrice),
+      });
+
+      const thesis = await createTradeThesis({
+        userId,
+        market,
+        assetClass: asset,
+        symbol: strategy.symbol,
+        direction: strategy.direction,
+        reason: strategy.thesis,
+        marketStructure: strategy.marketStructure,
+        liquidityAnalysis: strategy.liquidityAnalysis,
+        timeframeAlignment: strategy.timeframeAlignment,
+        primaryTimeframe: strategy.timeframe,
+        entryPlan: strategy.entryPlan,
+        stopPlan: strategy.stopPlan,
+        targetPlan: strategy.targetPlan,
+        riskReward: strategy.riskReward,
+        invalidationConditions: strategy.invalidation.split("\n").map((s) => s.trim()).filter(Boolean),
+        confidenceScore: strategy.confidence,
+        notes: strategy.basis,
+      });
+
+      res.json({ ...strategy, thesisId: thesis.id, session: strategy.session });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "Trade proposal failed" });
+    }
+  });
+
   app.post("/api/trading/theses", isAuthenticated, async (req: any, res) => {
     const missing = requireFields(req.body || {}, [
       "market",
@@ -298,6 +350,9 @@ export function registerTradingRoutes(app: Express): void {
       size: toNumber(req.body.size),
       riskAmount: toNumber(req.body.riskAmount),
       entryReason: String(req.body.entryReason),
+      session: req.body.session ? String(req.body.session) : undefined,
+      newsContext: req.body.newsContext ? String(req.body.newsContext) : undefined,
+      correlationNotes: req.body.correlationNotes ? String(req.body.correlationNotes) : undefined,
     });
     res.json(authorization);
   });
@@ -333,6 +388,9 @@ export function registerTradingRoutes(app: Express): void {
       size: toNumber(req.body.size),
       riskAmount: toNumber(req.body.riskAmount),
       entryReason: String(req.body.entryReason),
+      session: req.body.session ? String(req.body.session) : undefined,
+      newsContext: req.body.newsContext ? String(req.body.newsContext) : undefined,
+      correlationNotes: req.body.correlationNotes ? String(req.body.correlationNotes) : undefined,
     });
 
     if (!authorization.authorized) {

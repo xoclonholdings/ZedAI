@@ -39,6 +39,10 @@ const EMPTY_LOG_FORM = {
   size: "1",
   riskAmount: "",
   entryReason: "",
+  // Filled by Zed's proposal so governance can link the thesis + context.
+  thesisId: "",
+  session: "",
+  referencePrice: "",
 };
 
 function num(v: string): number {
@@ -141,6 +145,8 @@ export default function SandboxWorkspace() {
           size: num(logForm.size) || 1,
           riskAmount: risk,
           entryReason: logForm.entryReason.trim(),
+          thesisId: logForm.thesisId || undefined,
+          session: logForm.session || undefined,
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -159,19 +165,22 @@ export default function SandboxWorkspace() {
     }
   }, [logForm, refresh]);
 
-  // Zed proposes the setup for the symbol you name — direction, thesis,
-  // and where to enter/stop/target — so you approve a trade rather than
-  // invent one. You still confirm the numeric levels (no live price feed).
+  // Zed proposes the COMPLETE trade for the symbol you name — direction,
+  // thesis, market structure, liquidity read, and the concrete
+  // entry/stop/target/size/risk numbers, all sized to clear governance.
+  // It also links a persisted thesis so nothing comes back UNKNOWN. You
+  // just approve. Levels anchor to the reference price if you gave one,
+  // otherwise a labelled paper reference (no live feed wired in yet).
   const suggest = useCallback(async () => {
     setError(null);
     setNotice(null);
     if (!logForm.symbol.trim()) {
-      setError("Enter a symbol first — Zed will propose the setup for it.");
+      setError("Enter a symbol first — Zed will build the whole trade for it.");
       return;
     }
     setSuggesting(true);
     try {
-      const res = await fetch("/api/trading/strategies/generate", {
+      const res = await fetch("/api/trading/strategies/propose", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -181,6 +190,7 @@ export default function SandboxWorkspace() {
           market: logForm.market,
           timeframe: logForm.timeframe.trim() || undefined,
           directionPreference: "auto",
+          referencePrice: logForm.referencePrice ? num(logForm.referencePrice) : undefined,
         }),
       });
       const s = await res.json().catch(() => ({}));
@@ -199,15 +209,32 @@ export default function SandboxWorkspace() {
         direction: s.direction === "short" ? "short" : "long",
         timeframe: s.timeframe || f.timeframe,
         setupName: "Zed proposal",
+        entry: s.entry != null ? String(s.entry) : f.entry,
+        stop: s.stop != null ? String(s.stop) : f.stop,
+        target: s.target != null ? String(s.target) : f.target,
+        size: s.size != null ? String(s.size) : f.size,
+        riskAmount: s.riskAmount != null ? String(s.riskAmount) : f.riskAmount,
         entryReason: reason || f.entryReason,
+        thesisId: s.thesisId || "",
+        session: s.session || "",
       }));
-      setNotice("Zed proposed the setup. Confirm the entry / stop / target levels, then approve.");
+      setNotice(
+        s.pricedFromReference
+          ? "Zed built the full trade at your reference price. Review and tap Approve & log."
+          : "Zed built the full trade on a paper reference price (no live feed yet). Set a reference price above for real levels, or tap Approve & log.",
+      );
     } catch (err: any) {
-      setError(err?.message || "Zed could not propose a setup. Try again.");
+      setError(err?.message || "Zed could not build the trade. Try again.");
     } finally {
       setSuggesting(false);
     }
-  }, [logForm.symbol, logForm.assetClass, logForm.market, logForm.timeframe]);
+  }, [
+    logForm.symbol,
+    logForm.assetClass,
+    logForm.market,
+    logForm.timeframe,
+    logForm.referencePrice,
+  ]);
 
   const submitClose = useCallback(async () => {
     if (!closeTarget) return;
@@ -256,9 +283,9 @@ export default function SandboxWorkspace() {
             Paper trading
           </h2>
           <p className="mt-1 text-[12.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Name a symbol and Zed proposes the setup — direction, thesis, and where to
-            enter, stop, and target. You confirm the levels and approve. Nothing here is
-            real money — Zed is proving the strategy.
+            Name a symbol and Zed builds the whole trade — direction, thesis, structure,
+            and the entry / stop / target / size / risk, sized to pass governance. You just
+            approve. Nothing here is real money — Zed is proving the strategy.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -501,19 +528,35 @@ function LogTradeForm({
         </button>
       </div>
 
-      {/* Zed proposes the setup for the symbol you name. */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] px-3 py-2">
-        <div className="text-[12px] text-cyan-100/90">
-          Enter a symbol, then let Zed propose the direction, thesis, and levels.
+      {/* Zed builds the whole trade for the symbol you name. */}
+      <div className="mb-4 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-[12px] text-cyan-100/90 max-w-[46ch] leading-snug">
+            Enter a symbol and Zed fills in everything — direction, thesis, structure,
+            and the entry / stop / target / size / risk. You just approve.
+          </div>
+          <button
+            type="button"
+            onClick={() => void onSuggest()}
+            disabled={suggesting}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
+          >
+            {suggesting ? "Zed is building…" : "Zed, build this trade"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => void onSuggest()}
-          disabled={suggesting}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
-        >
-          {suggesting ? "Zed is thinking…" : "Zed, propose this trade"}
-        </button>
+        <label className="mt-2 flex items-center gap-2">
+          <span className="text-[10.5px] uppercase tracking-[0.08em] text-cyan-100/60 whitespace-nowrap">
+            Reference price (optional)
+          </span>
+          <input
+            type="number"
+            step="0.01"
+            value={form.referencePrice}
+            onChange={(e) => set("referencePrice")(e.target.value)}
+            placeholder="live quote — leave blank for a paper reference"
+            className="min-w-0 flex-1 text-[12.5px] text-white bg-black/30 border border-white/10 rounded-lg px-2.5 py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 tabular-nums placeholder:text-white/25"
+          />
+        </label>
       </div>
 
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
@@ -521,7 +564,9 @@ function LogTradeForm({
           <input
             type="text"
             value={form.symbol}
-            onChange={(e) => set("symbol")(e.target.value.toUpperCase())}
+            onChange={(e) =>
+              onChange({ ...form, symbol: e.target.value.toUpperCase(), thesisId: "" })
+            }
             placeholder="AAPL"
             className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 uppercase"
           />

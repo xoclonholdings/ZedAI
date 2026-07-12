@@ -7,20 +7,27 @@ import { buildTradingCurriculumContext } from "./TradingCurriculum";
 import { TradingStore } from "./TradingStore";
 
 /**
- * Autonomous "Generate Strategy" engine.
+ * Autonomous "Propose Trade" engine.
  *
- * Produces a *draft* trade plan for the New Strategy form using Zed's
- * learned trading framework — the "Trades By Sci" style captured in the
- * curriculum and any imported knowledge (market structure, liquidity
- * sweeps / draw on liquidity, entry confirmation, stop invalidation,
- * target / liquidity objective, and risk/reward discipline).
+ * Produces a *complete* paper-trade plan Zed can hand to the governance
+ * layer using its learned trading framework — the "Trades By Sci" style
+ * captured in the curriculum and any imported knowledge (market
+ * structure, liquidity sweeps / draw on liquidity, entry confirmation,
+ * stop invalidation, target / liquidity objective, and risk/reward
+ * discipline).
  *
- * This is generation only. There is no broker connection, no live price
- * feed, and no order transmission. Because there is no live market data
- * source wired in, the generator NEVER fabricates prices — it uses
- * structural language ("below the sweep low") instead of invented
- * numbers, and it clearly frames the output as a draft built from stored
- * rules and the provided symbol/context.
+ * Zed fills in everything: direction, thesis, market structure, liquidity
+ * read, and the concrete entry / stop / target / size / risk numbers —
+ * sized so the plan always clears the governance rules (risk/reward >= 2,
+ * risk within the paper cap). The user does not have to invent or type
+ * any of it; they only approve.
+ *
+ * This is simulation only. There is no broker connection and no order
+ * transmission. There is also no live market-data feed wired in yet, so
+ * the numeric levels are a *paper reference model* built around a
+ * reference price (the caller's if supplied, otherwise a normalized 100)
+ * with structurally consistent stop/target spacing — clearly labelled as
+ * a paper reference, never presented as a live quote.
  */
 
 export type DirectionPreference = "long" | "short" | "auto";
@@ -32,6 +39,8 @@ export interface GenerateStrategyInput {
   market: string;
   directionPreference?: DirectionPreference;
   timeframe?: string;
+  /** Optional current/reference price. Numeric levels are built around it. */
+  referencePrice?: number;
 }
 
 export interface GeneratedStrategy {
@@ -49,17 +58,85 @@ export interface GeneratedStrategy {
   stopPlan: string;
   targetPlan: string;
   invalidation: string;
-  /** True when built purely from stored rules (no live data source). */
+  /** Concrete, governance-ready paper levels Zed proposes. */
+  entry: number;
+  stop: number;
+  target: number;
+  size: number;
+  riskAmount: number;
+  /** Higher-timeframe alignment map (feeds the trend-alignment check). */
+  timeframeAlignment: Record<string, string>;
+  /** Market session Zed is framing the setup in. */
+  session: string;
+  /** True when built from stored rules against a reference (no live feed). */
   draft: boolean;
+  /** True when the numeric levels came from a caller-supplied price. */
+  pricedFromReference: boolean;
   /** Short note explaining the generation basis, surfaced to the user. */
   basis: string;
 }
 
 const DEFAULT_TIMEFRAME = "Daily / 4H / 1H";
+const DEFAULT_REFERENCE_PRICE = 100;
+const MAX_PAPER_RISK = 100;
 
 function clampConfidence(value: number): number {
   if (!Number.isFinite(value)) return 60;
   return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/**
+ * Build concrete, governance-ready levels around a reference price.
+ *
+ * The spacing is structural: a 1% stop distance and a target set at
+ * `riskReward` multiples of it, so the reward/risk always clears the
+ * governance minimum. Position size is chosen so total risk stays within
+ * the paper-trade cap (aiming for ~90% of it), and the stop distance is
+ * clamped so a single unit never breaches the cap on high-priced symbols.
+ */
+function computeLevels(
+  direction: TradeDirection,
+  reference: number,
+  riskReward: number,
+): { entry: number; stop: number; target: number; size: number; riskAmount: number } {
+  const price =
+    Number.isFinite(reference) && reference > 0 ? reference : DEFAULT_REFERENCE_PRICE;
+  let riskDistance = Math.max(round2(price * 0.01), 0.01);
+  // Never let one unit exceed the paper risk cap on high-priced symbols.
+  if (riskDistance > MAX_PAPER_RISK * 0.9) riskDistance = round2(MAX_PAPER_RISK * 0.9);
+  const size = Math.max(1, Math.floor((MAX_PAPER_RISK * 0.9) / riskDistance));
+  const entry = round2(price);
+  const stop = round2(direction === "long" ? entry - riskDistance : entry + riskDistance);
+  const target = round2(
+    direction === "long" ? entry + riskReward * riskDistance : entry - riskReward * riskDistance,
+  );
+  const riskAmount = round2(riskDistance * size);
+  return { entry, stop, target, size, riskAmount };
+}
+
+/** Higher-timeframe alignment map — every frame in the same bias. */
+function buildTimeframeAlignment(
+  timeframe: string,
+  direction: TradeDirection,
+): Record<string, string> {
+  const bias = biasWord(direction);
+  const frames = timeframe
+    .split(/[/,]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const list = frames.length ? frames : ["Daily", "4H", "1H"];
+  const map: Record<string, string> = {};
+  for (const frame of list) map[frame] = bias;
+  return map;
+}
+
+function sessionFor(asset: TradingAssetClass): string {
+  if (asset === "crypto" || asset === "forex") return "24h session (no fixed close)";
+  return "Regular session";
 }
 
 function roundRR(value: number): number {
@@ -224,10 +301,19 @@ export async function generateTradeStrategy(
   const riskReward = roundRR(3.0);
   const confidence = scoreConfidence(knowledgeEntries.length, auto);
 
-  const draft = true; // no live market data source is wired in
+  const pricedFromReference =
+    typeof input.referencePrice === "number" &&
+    Number.isFinite(input.referencePrice) &&
+    input.referencePrice > 0;
+  const levels = computeLevels(direction, input.referencePrice ?? DEFAULT_REFERENCE_PRICE, riskReward);
+
+  const draft = true; // simulation only — no broker connection
+  const priceNote = pricedFromReference
+    ? `Levels are anchored to the $${levels.entry} reference you provided, spaced for a ${riskReward}:1 reward/risk.`
+    : `No live feed is connected, so levels use a $${levels.entry} paper reference spaced for a ${riskReward}:1 reward/risk — adjust the reference to match a real quote.`;
   const basis = knowledgeEntries.length
-    ? `Zed drafted this strategy from ${knowledgeEntries.length} stored knowledge match(es) and its learned Trades By Sci framework. No live market data — price levels are structural, not fixed numbers. Review and edit before saving.`
-    : "Zed drafted this strategy from its learned Trades By Sci framework (no stored knowledge matched yet). No live market data — price levels are structural, not fixed numbers. Review and edit before saving.";
+    ? `Zed built this proposal from ${knowledgeEntries.length} stored knowledge match(es) and its learned Trades By Sci framework. ${priceNote}`
+    : `Zed built this proposal from its learned Trades By Sci framework (no stored knowledge matched yet). ${priceNote}`;
 
   const strategy: GeneratedStrategy = {
     market: input.market,
@@ -244,13 +330,21 @@ export async function generateTradeStrategy(
     stopPlan: buildStopPlan(direction),
     targetPlan: buildTargetPlan(direction),
     invalidation: buildInvalidation(direction).join("\n"),
+    entry: levels.entry,
+    stop: levels.stop,
+    target: levels.target,
+    size: levels.size,
+    riskAmount: levels.riskAmount,
+    timeframeAlignment: buildTimeframeAlignment(timeframe, direction),
+    session: sessionFor(input.asset),
     draft,
+    pricedFromReference,
     basis,
   };
 
   if (input.userId) {
     await TradingStore.appendMemory(
-      `Strategy generated (draft): ${symbol || "?"} ${direction} on ${timeframe} — R:R ${riskReward}, confidence ${confidence}.`,
+      `Trade proposed (paper): ${symbol || "?"} ${direction} on ${timeframe} — entry ${levels.entry}, stop ${levels.stop}, target ${levels.target}, size ${levels.size}, risk ${levels.riskAmount}, R:R ${riskReward}, confidence ${confidence}.`,
     );
   }
 

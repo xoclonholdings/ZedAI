@@ -1,0 +1,191 @@
+[
+  {
+    "userId": "verify-user-1783842899107",
+    "thesisId": "337b2909-66c0-4dd7-8ebb-6e1462964ad7",
+    "symbol": "AAPL",
+    "decision": "AUTHORIZED_WITH_CONDITIONS",
+    "reason": "Critical risk checks passed, but validation or context remains incomplete. Paper trading may continue for validation only.",
+    "supportingEvidence": [
+      "Market Context: PASS - Market provided: US.",
+      "Trend Alignment: PASS - Timeframe alignment: {\"Daily\":\"bullish\",\"4H\":\"bullish\",\"1H\":\"bullish\"}.",
+      "Market Structure: PASS - Daily and 4H structure remain bullish with higher highs and higher lows. 1H shows a bullish break of structure after the sweep, confirming intent in the direction of the higher-timeframe bias (Daily / 4H / 1H).",
+      "Liquidity Conditions: PASS - Sell-side liquidity beyond the prior session / swing low has already been taken (stop hunt / sweep). Buy-side liquidity above/below the previous swing high remains the likely draw on price.",
+      "Session: PASS - Session: Regular session.",
+      "News Filter: PASS - No high-impact events flagged for this session.",
+      "Trade Thesis: PASS - Linked thesis 337b2909-66c0-4dd7-8ebb-6e1462964ad7.",
+      "Entry Rules: PASS - Entry 237.5: Higher-timeframe trend remains bullish across Daily / 4H / 1H. Price swept sell-side liquidity beyond the prior session / swing low and reclaimed support. Looking for continuation toward buy-side liquidity resting at the previous swing high.",
+      "Exit Rules: PASS - Stop 235.12, target 244.64.",
+      "Risk Limits: PASS - Risk amount 88.06; limit 100.",
+      "Position Size: PASS - Position size 37.",
+      "Portfolio Exposure: PASS - 0 open paper trades; limit 5.",
+      "Correlation: PASS - No correlated open paper trades.",
+      "Drawdown Limits: PASS - Current max drawdown 0; floor -500.",
+      "System Health: UNKNOWN - Validation sample 0/100; expectancy 0.",
+      "Risk/Reward Math: PASS - Calculated risk/reward 3; minimum 2."
+    ],
+    "requiredActions": [
+      "Provide Validated sample size."
+    ],
+    "nextReviewConditions": [
+      "Review after trade closure and journal update.",
+      "Recalculate expectancy, drawdown, and rule compliance after outcome is known."
+    ],
+    "checklist": [
+      {
+        "key": "market_context",
+        "label": "Market Context",
+        "result": "PASS",
+        "evidence": "Market provided: US.",
+        "critical": true
+      },
+      {
+        "key": "trend_alignment",
+        "label": "Trend Alignment",
+        "result": "PASS",
+        "evidence": "Timeframe alignment: {\"Daily\":\"bullish\",\"4H\":\"bullish\",\"1H\":\"bullish\"}.",
+        "critical": false
+      },
+      {
+        "key": "market_structure",
+        "label": "Market Structure",
+        "result": "PASS",
+        "evidence": "Daily and 4H structure remain bullish with higher highs and higher lows. 1H shows a bullish break of structure after the sweep, confirming intent in the direction of the higher-timeframe bias (Daily / 4H / 1H).",
+        "critical": true
+      },
+      {
+        "key": "liquidity_conditions",
+        "label": "Liquidity Conditions",
+        "result": "PASS",
+        "evidence": "Sell-side liquidity beyond the prior session / swing low has already been taken (stop hunt / sweep). Buy-side liquidity above/below the previous swing high remains the likely draw on price.",
+        "critical": true
+      },
+      {
+        "key": "session",
+        "label": "Session",
+        "result": "PASS",
+        "evidence": "Session: Regular session.",
+        "critical": false
+      },
+      {
+        "key": "news_filter",
+        "label": "News Filter",
+        "result": "PASS",
+        "evidence": "No high-impact events flagged for this session.",
+        "critical": false
+      },
+      {
+        "key": "trade_thesis",
+        "label": "Trade Thesis",
+        "result": "PASS",
+        "evidence": "Linked thesis 337b2909-66c0-4dd7-8ebb-6e1462964ad7.",
+        "critical": false
+      },
+      {
+        "key": "entry_rules",
+        "label": "Entry Rules",
+        "result": "PASS",
+        "evidence": "Entry 237.5: Higher-timeframe trend remains bullish across Daily / 4H / 1H. Price swept sell-side liquidity beyond the prior session / swing low and reclaimed support. Looking for continuation toward buy-side liquidity resting at the previous swing high.",
+        "missingInformation": [
+          "Entry price",
+          "Entry reason"
+        ],
+        "critical": true
+      },
+      {
+        "key": "exit_rules",
+        "label": "Exit Rules",
+        "result": "PASS",
+        "evidence": "Stop 235.12, target 244.64.",
+        "missingInformation": [
+          "Stop loss",
+          "Target"
+        ],
+        "critical": true
+      },
+      {
+        "key": "risk_limits",
+        "label": "Risk Limits",
+        "result": "PASS",
+        "evidence": "Risk amount 88.06; limit 100.",
+        "missingInformation": [
+          "Risk amount"
+        ],
+        "critical": true
+      },
+      {
+        "key": "position_size",
+        "label": "Position Size",
+        "result": "PASS",
+        "evidence": "Position size 37.",
+        "missingInformation": [
+          "Position size"
+        ],
+        "critical": true
+      },
+      {
+        "key": "portfolio_exposure",
+        "label": "Portfolio Exposure",
+        "result": "PASS",
+        "evidence": "0 open paper trades; limit 5.",
+        "critical": true
+      },
+      {
+        "key": "correlation",
+        "label": "Correlation",
+        "result": "PASS",
+        "evidence": "No correlated open paper trades.",
+        "critical": false
+      },
+      {
+        "key": "drawdown_limits",
+        "label": "Drawdown Limits",
+        "result": "PASS",
+        "evidence": "Current max drawdown 0; floor -500.",
+        "critical": true
+      },
+      {
+        "key": "system_health",
+        "label": "System Health",
+        "result": "UNKNOWN",
+        "evidence": "Validation sample 0/100; expectancy 0.",
+        "missingInformation": [
+          "Validated sample size"
+        ],
+        "critical": false
+      },
+      {
+        "key": "risk_reward",
+        "label": "Risk/Reward Math",
+        "result": "PASS",
+        "evidence": "Calculated risk/reward 3; minimum 2.",
+        "critical": true
+      }
+    ],
+    "riskMetrics": {
+      "entry": 237.5,
+      "stop": 235.12,
+      "target": 244.64,
+      "size": 37,
+      "riskAmount": 88.06,
+      "calculatedRiskReward": 3,
+      "openPaperTrades": 0,
+      "maximumDrawdown": 0,
+      "expectancy": 0
+    },
+    "liveTradingEligibility": "Not Eligible",
+    "paperTradingProgress": {
+      "currentSampleSize": 0,
+      "requiredSampleSize": 100,
+      "currentExpectancy": 0,
+      "currentDrawdown": 0,
+      "ruleCompliance": "clean_or_unproven",
+      "executionConsistency": "monitoring",
+      "status": "Continue Paper Trading"
+    },
+    "outcome": "pending",
+    "id": "9cbb7181-b34d-4e66-a4d1-ff9b7c88eb1a",
+    "createdAt": "2026-07-12T07:54:59.126Z",
+    "version": "phase1-governance-v1",
+    "reviewer": "TradingGovernanceEngine"
+  }
+]
