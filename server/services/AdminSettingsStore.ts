@@ -186,61 +186,55 @@ export async function updateIntegrationSettings(
       deployment: {
         ...current.integrations.deployment,
         ...(nextIntegrations.deployment || {}),
-        accessToken: preserveSecret(
-          current.integrations.deployment,
-          nextIntegrations.deployment,
-          "accessToken",
+        accounts: mergeSecretAccounts(
+          current.integrations.deployment.accounts || [],
+          nextIntegrations.deployment?.accounts,
+          ["accessToken"],
         ),
       },
       payments: {
         ...current.integrations.payments,
         ...(nextIntegrations.payments || {}),
-        secretKey: preserveSecret(
-          current.integrations.payments,
-          nextIntegrations.payments,
-          "secretKey",
-        ),
-        webhookSecret: preserveSecret(
-          current.integrations.payments,
-          nextIntegrations.payments,
-          "webhookSecret",
+        accounts: mergeSecretAccounts(
+          current.integrations.payments.accounts || [],
+          nextIntegrations.payments?.accounts,
+          ["secretKey", "webhookSecret"],
         ),
       },
       socialPublishing: {
         ...current.integrations.socialPublishing,
         ...(nextIntegrations.socialPublishing || {}),
-        accessToken: preserveSecret(
-          current.integrations.socialPublishing,
-          nextIntegrations.socialPublishing,
-          "accessToken",
+        accounts: mergeSecretAccounts(
+          current.integrations.socialPublishing.accounts || [],
+          nextIntegrations.socialPublishing?.accounts,
+          ["accessToken"],
         ),
       },
       crm: {
         ...current.integrations.crm,
         ...(nextIntegrations.crm || {}),
-        apiKey: preserveSecret(current.integrations.crm, nextIntegrations.crm, "apiKey"),
+        accounts: mergeSecretAccounts(
+          current.integrations.crm.accounts || [],
+          nextIntegrations.crm?.accounts,
+          ["apiKey"],
+        ),
       },
       accounting: {
         ...current.integrations.accounting,
         ...(nextIntegrations.accounting || {}),
-        clientSecret: preserveSecret(
-          current.integrations.accounting,
-          nextIntegrations.accounting,
-          "clientSecret",
-        ),
-        refreshToken: preserveSecret(
-          current.integrations.accounting,
-          nextIntegrations.accounting,
-          "refreshToken",
+        accounts: mergeSecretAccounts(
+          current.integrations.accounting.accounts || [],
+          nextIntegrations.accounting?.accounts,
+          ["clientSecret", "refreshToken"],
         ),
       },
       cloudStorage: {
         ...current.integrations.cloudStorage,
         ...(nextIntegrations.cloudStorage || {}),
-        accessToken: preserveSecret(
-          current.integrations.cloudStorage,
-          nextIntegrations.cloudStorage,
-          "accessToken",
+        accounts: mergeSecretAccounts(
+          current.integrations.cloudStorage.accounts || [],
+          nextIntegrations.cloudStorage?.accounts,
+          ["accessToken"],
         ),
       },
       tradingView: {
@@ -255,10 +249,10 @@ export async function updateIntegrationSettings(
       marketData: {
         ...current.integrations.marketData,
         ...(nextIntegrations.marketData || {}),
-        apiKey: preserveSecret(
-          current.integrations.marketData,
-          nextIntegrations.marketData,
-          "apiKey",
+        accounts: mergeSecretAccounts(
+          current.integrations.marketData.accounts || [],
+          nextIntegrations.marketData?.accounts,
+          ["apiKey"],
         ),
       },
       kalshi: {
@@ -274,6 +268,13 @@ export async function updateIntegrationSettings(
   return settings.integrations;
 }
 
+/**
+ * The admin UI never sends an empty string for a secret field except
+ * when the user explicitly hits Disconnect (the Connect dialog's Save
+ * button is disabled until the field is non-empty, so a real "save"
+ * can't produce ""). So an incoming "" means "clear this," while an
+ * omitted key or the masked placeholder both mean "leave it alone."
+ */
 function preserveSecret<T extends Record<string, any>>(
   current: T,
   next: Partial<T> | undefined,
@@ -281,24 +282,39 @@ function preserveSecret<T extends Record<string, any>>(
 ): string {
   if (!next || !(key in next)) return current[key];
   const incoming = next[key];
-  if (typeof incoming === "string" && incoming.trim() === "") return current[key];
   if (incoming === "•••••• (set)") return current[key];
   const value = incoming ?? current[key];
   return typeof value === "string" ? value : "";
 }
 
+/**
+ * Upserts each incoming account into the existing list by id. This
+ * must NOT reduce to `nextAccounts.map(...)` — every Connect action
+ * sends only the single account it just saved (e.g. just "gmail," or
+ * just "render"), so building the result solely from `nextAccounts`
+ * would silently delete every other already-connected account in the
+ * group. Accounts already on file that aren't mentioned in this patch
+ * are left untouched.
+ */
 function mergeSecretAccounts(
   currentAccounts: any[],
   nextAccounts: any[] | undefined,
   secretKeys: string[],
 ) {
   if (!Array.isArray(nextAccounts)) return currentAccounts;
-  return nextAccounts.map((nextAccount) => {
-    const currentAccount = currentAccounts.find((account) => account.id === nextAccount.id) || {};
+  const result = [...currentAccounts];
+  for (const nextAccount of nextAccounts) {
+    const idx = result.findIndex((account) => account.id === nextAccount.id);
+    const currentAccount = idx >= 0 ? result[idx] : {};
     const merged = { ...currentAccount, ...nextAccount };
     for (const key of secretKeys) {
       merged[key] = preserveSecret(currentAccount, nextAccount, key);
     }
-    return merged;
-  });
+    if (idx >= 0) {
+      result[idx] = merged;
+    } else {
+      result.push(merged);
+    }
+  }
+  return result;
 }

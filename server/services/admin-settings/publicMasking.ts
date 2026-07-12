@@ -67,6 +67,11 @@ export async function getPublicAdminSettings() {
         ...settings.integrations.deployment,
         accessToken: "",
         hasAccessToken: !!settings.integrations.deployment.accessToken,
+        accounts: (settings.integrations.deployment.accounts || []).map((acc) => ({
+          ...acc,
+          accessToken: "",
+          hasAccessToken: !!acc.accessToken,
+        })),
       },
       payments: {
         ...settings.integrations.payments,
@@ -74,16 +79,33 @@ export async function getPublicAdminSettings() {
         webhookSecret: "",
         hasSecretKey: !!settings.integrations.payments.secretKey,
         hasWebhookSecret: !!settings.integrations.payments.webhookSecret,
+        accounts: (settings.integrations.payments.accounts || []).map((acc) => ({
+          ...acc,
+          secretKey: "",
+          webhookSecret: "",
+          hasSecretKey: !!acc.secretKey,
+          hasWebhookSecret: !!acc.webhookSecret,
+        })),
       },
       socialPublishing: {
         ...settings.integrations.socialPublishing,
         accessToken: "",
         hasAccessToken: !!settings.integrations.socialPublishing.accessToken,
+        accounts: (settings.integrations.socialPublishing.accounts || []).map((acc) => ({
+          ...acc,
+          accessToken: "",
+          hasAccessToken: !!acc.accessToken,
+        })),
       },
       crm: {
         ...settings.integrations.crm,
         apiKey: "",
         hasApiKey: !!settings.integrations.crm.apiKey,
+        accounts: (settings.integrations.crm.accounts || []).map((acc) => ({
+          ...acc,
+          apiKey: "",
+          hasApiKey: !!acc.apiKey,
+        })),
       },
       accounting: {
         ...settings.integrations.accounting,
@@ -94,11 +116,22 @@ export async function getPublicAdminSettings() {
           settings.integrations.accounting.clientSecret &&
           settings.integrations.accounting.refreshToken
         ),
+        accounts: (settings.integrations.accounting.accounts || []).map((acc) => ({
+          ...acc,
+          clientSecret: "",
+          refreshToken: "",
+          hasCredentials: !!acc.refreshToken,
+        })),
       },
       cloudStorage: {
         ...settings.integrations.cloudStorage,
         accessToken: "",
         hasAccessToken: !!settings.integrations.cloudStorage.accessToken,
+        accounts: (settings.integrations.cloudStorage.accounts || []).map((acc) => ({
+          ...acc,
+          accessToken: "",
+          hasAccessToken: !!acc.accessToken,
+        })),
       },
       tradingView: {
         ...settings.integrations.tradingView,
@@ -109,6 +142,11 @@ export async function getPublicAdminSettings() {
         ...settings.integrations.marketData,
         apiKey: "",
         hasApiKey: !!settings.integrations.marketData.apiKey,
+        accounts: (settings.integrations.marketData.accounts || []).map((acc) => ({
+          ...acc,
+          apiKey: "",
+          hasApiKey: !!acc.apiKey,
+        })),
       },
     },
     users: settings.users.map(sanitizeUser),

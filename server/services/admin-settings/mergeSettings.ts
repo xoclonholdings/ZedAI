@@ -53,92 +53,35 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
       github: mergeGitHub(raw),
       email: mergeEmail(raw),
       google: mergeGoogle(raw),
+      deployment: mergeDeployment(raw),
+      payments: mergePayments(raw),
+      socialPublishing: mergeSocialPublishing(raw),
+      crm: mergeCrm(raw),
+      accounting: mergeAccounting(raw),
+      cloudStorage: mergeCloudStorage(raw),
+      marketData: mergeMarketData(raw),
       telephony: {
         ...defaultIntegrations.telephony,
         ...(raw?.integrations?.telephony || {}),
-        hasApiKey: !!(
-          raw?.integrations?.telephony?.apiKey || raw?.integrations?.telephony?.hasApiKey
-        ),
+        // Derived purely from the secret's presence, not OR'd with the
+        // previously-stored flag: this same pipeline is the only writer
+        // of hasApiKey, so an OR'd fallback can only ever latch true and
+        // would never let a Disconnect show as disconnected again.
+        hasApiKey: !!raw?.integrations?.telephony?.apiKey,
       },
       firewall: {
         ...defaultIntegrations.firewall,
         ...(raw?.integrations?.firewall || {}),
-        hasAuthToken: !!(
-          raw?.integrations?.firewall?.authToken ||
-          raw?.integrations?.firewall?.hasAuthToken
-        ),
+        hasAuthToken: !!raw?.integrations?.firewall?.authToken,
       },
       businessOperations: {
         ...defaultIntegrations.businessOperations,
         ...(raw?.integrations?.businessOperations || {}),
       },
-      deployment: {
-        ...defaultIntegrations.deployment,
-        ...(raw?.integrations?.deployment || {}),
-        hasAccessToken: !!(
-          raw?.integrations?.deployment?.accessToken ||
-          raw?.integrations?.deployment?.hasAccessToken
-        ),
-      },
-      payments: {
-        ...defaultIntegrations.payments,
-        ...(raw?.integrations?.payments || {}),
-        hasSecretKey: !!(
-          raw?.integrations?.payments?.secretKey || raw?.integrations?.payments?.hasSecretKey
-        ),
-        hasWebhookSecret: !!(
-          raw?.integrations?.payments?.webhookSecret ||
-          raw?.integrations?.payments?.hasWebhookSecret
-        ),
-      },
-      socialPublishing: {
-        ...defaultIntegrations.socialPublishing,
-        ...(raw?.integrations?.socialPublishing || {}),
-        platforms: Array.isArray(raw?.integrations?.socialPublishing?.platforms)
-          ? raw!.integrations!.socialPublishing!.platforms
-          : defaultIntegrations.socialPublishing.platforms,
-        hasAccessToken: !!(
-          raw?.integrations?.socialPublishing?.accessToken ||
-          raw?.integrations?.socialPublishing?.hasAccessToken
-        ),
-      },
-      crm: {
-        ...defaultIntegrations.crm,
-        ...(raw?.integrations?.crm || {}),
-        hasApiKey: !!(raw?.integrations?.crm?.apiKey || raw?.integrations?.crm?.hasApiKey),
-      },
-      accounting: {
-        ...defaultIntegrations.accounting,
-        ...(raw?.integrations?.accounting || {}),
-        hasCredentials: !!(
-          (raw?.integrations?.accounting?.clientId &&
-            raw?.integrations?.accounting?.clientSecret &&
-            raw?.integrations?.accounting?.refreshToken) ||
-          raw?.integrations?.accounting?.hasCredentials
-        ),
-      },
-      cloudStorage: {
-        ...defaultIntegrations.cloudStorage,
-        ...(raw?.integrations?.cloudStorage || {}),
-        hasAccessToken: !!(
-          raw?.integrations?.cloudStorage?.accessToken ||
-          raw?.integrations?.cloudStorage?.hasAccessToken
-        ),
-      },
       tradingView: {
         ...defaultIntegrations.tradingView,
         ...(raw?.integrations?.tradingView || {}),
-        hasAlertWebhookSecret: !!(
-          raw?.integrations?.tradingView?.alertWebhookSecret ||
-          raw?.integrations?.tradingView?.hasAlertWebhookSecret
-        ),
-      },
-      marketData: {
-        ...defaultIntegrations.marketData,
-        ...(raw?.integrations?.marketData || {}),
-        hasApiKey: !!(
-          raw?.integrations?.marketData?.apiKey || raw?.integrations?.marketData?.hasApiKey
-        ),
+        hasAlertWebhookSecret: !!raw?.integrations?.tradingView?.alertWebhookSecret,
       },
       kalshi: {
         ...defaultIntegrations.kalshi,
@@ -249,9 +192,7 @@ function mergeGitHub(raw: Partial<AdminSettings> | null | undefined) {
     accounts: Array.isArray(raw?.integrations?.github?.accounts)
       ? raw!.integrations!.github!.accounts!
       : [],
-    hasToken: !!(
-      raw?.integrations?.github?.token || raw?.integrations?.github?.hasToken
-    ),
+    hasToken: !!raw?.integrations?.github?.token,
   };
 
   // Migrate legacy single-repo fields → first account, only when no
@@ -272,10 +213,12 @@ function mergeGitHub(raw: Partial<AdminSettings> | null | undefined) {
       },
     ];
   }
-  // Per-account hasToken flag is derived from token presence.
+  // Per-account hasToken flag is derived purely from token presence —
+  // never OR'd with the account's own stored hasToken, which would
+  // latch true forever and make Disconnect stop showing as cleared.
   merged.accounts = merged.accounts.map((acc: any) => ({
     ...acc,
-    hasToken: !!(acc?.token || acc?.hasToken),
+    hasToken: !!acc?.token,
   }));
   return merged;
 }
@@ -287,9 +230,7 @@ function mergeEmail(raw: Partial<AdminSettings> | null | undefined) {
     accounts: Array.isArray(raw?.integrations?.email?.accounts)
       ? raw!.integrations!.email!.accounts!
       : [],
-    hasPassword: !!(
-      raw?.integrations?.email?.password || raw?.integrations?.email?.hasPassword
-    ),
+    hasPassword: !!raw?.integrations?.email?.password,
   };
 
   // Migrate legacy single-sender fields → first account.
@@ -314,7 +255,7 @@ function mergeEmail(raw: Partial<AdminSettings> | null | undefined) {
   }
   merged.accounts = merged.accounts.map((acc: any) => ({
     ...acc,
-    hasPassword: !!(acc?.password || acc?.hasPassword),
+    hasPassword: !!acc?.password,
   }));
   if (!merged.notes) merged.notes = defaultIntegrations.email.notes;
   return merged;
@@ -331,11 +272,192 @@ function mergeGoogle(raw: Partial<AdminSettings> | null | undefined) {
   merged.accounts = merged.accounts.map((acc: any) => ({
     ...acc,
     scopes: Array.isArray(acc?.scopes) ? acc.scopes : [],
-    hasCredentials: !!(
-      (acc?.clientId && acc?.clientSecret && acc?.refreshToken) || acc?.hasCredentials
-    ),
+    hasCredentials: !!(acc?.clientId && acc?.clientSecret && acc?.refreshToken),
   }));
   return merged;
+}
+
+/**
+ * Shared migration helper for the seven integration groups that can
+ * hold more than one connectable provider (deployment, payments,
+ * social publishing, CRM, accounting, cloud storage, market data).
+ * Each provider gets its own account entry so connecting a second
+ * provider in the group can't clobber the first. Legacy single-slot
+ * fields (written before accounts existed) seed the first account
+ * once, so an existing connection isn't dropped by this migration.
+ */
+function mergeMultiProviderGroup<T extends Record<string, any>>(
+  defaultGroup: T,
+  rawGroup: Record<string, any> | null | undefined,
+  buildLegacyAccount: (raw: Record<string, any>) => Record<string, any> | null,
+  deriveFlags: (acc: Record<string, any>) => Record<string, any>,
+): T {
+  const merged: Record<string, any> = {
+    ...defaultGroup,
+    ...(rawGroup || {}),
+    accounts: Array.isArray(rawGroup?.accounts) ? rawGroup!.accounts : [],
+  };
+  if (merged.accounts.length === 0) {
+    const legacy = buildLegacyAccount(rawGroup || {});
+    if (legacy) merged.accounts = [legacy];
+  }
+  merged.accounts = merged.accounts.map((acc: Record<string, any>) => ({
+    ...acc,
+    ...deriveFlags(acc),
+  }));
+  return merged as T;
+}
+
+function mergeDeployment(raw: Partial<AdminSettings> | null | undefined) {
+  const rawGroup = raw?.integrations?.deployment;
+  return mergeMultiProviderGroup(
+    defaultIntegrations.deployment,
+    rawGroup,
+    (legacy) =>
+      legacy.accessToken
+        ? {
+            id: `deployment-${legacy.provider || "netlify"}`,
+            label: legacy.provider || "Deployment",
+            provider: legacy.provider || "netlify",
+            dashboardUrl: legacy.dashboardUrl || "",
+            apiBaseUrl: legacy.apiBaseUrl || "",
+            siteId: legacy.siteId || "",
+            serviceId: legacy.serviceId || "",
+            accessToken: legacy.accessToken,
+          }
+        : null,
+    (acc) => ({ hasAccessToken: !!acc.accessToken }),
+  );
+}
+
+function mergePayments(raw: Partial<AdminSettings> | null | undefined) {
+  const rawGroup = raw?.integrations?.payments;
+  return mergeMultiProviderGroup(
+    defaultIntegrations.payments,
+    rawGroup,
+    (legacy) =>
+      legacy.secretKey
+        ? {
+            id: `payments-${legacy.provider || "stripe"}`,
+            label: legacy.provider || "Payments",
+            provider: legacy.provider || "stripe",
+            dashboardUrl: legacy.dashboardUrl || "",
+            publishableKey: legacy.publishableKey || "",
+            secretKey: legacy.secretKey,
+            webhookSecret: legacy.webhookSecret || "",
+          }
+        : null,
+    (acc) => ({
+      hasSecretKey: !!acc.secretKey,
+      hasWebhookSecret: !!acc.webhookSecret,
+    }),
+  );
+}
+
+function mergeSocialPublishing(raw: Partial<AdminSettings> | null | undefined) {
+  const rawGroup = raw?.integrations?.socialPublishing;
+  const merged = mergeMultiProviderGroup(
+    defaultIntegrations.socialPublishing,
+    rawGroup,
+    (legacy) =>
+      legacy.accessToken
+        ? {
+            id: "social-twitter",
+            label: "Twitter / X",
+            platform: "twitter",
+            dashboardUrl: legacy.dashboardUrl || "",
+            accessToken: legacy.accessToken,
+          }
+        : null,
+    (acc) => ({ hasAccessToken: !!acc.accessToken }),
+  );
+  merged.platforms = Array.isArray(rawGroup?.platforms)
+    ? rawGroup!.platforms
+    : defaultIntegrations.socialPublishing.platforms;
+  return merged;
+}
+
+function mergeCrm(raw: Partial<AdminSettings> | null | undefined) {
+  const rawGroup = raw?.integrations?.crm;
+  return mergeMultiProviderGroup(
+    defaultIntegrations.crm,
+    rawGroup,
+    (legacy) =>
+      legacy.apiKey
+        ? {
+            id: `crm-${legacy.provider || "hubspot"}`,
+            label: legacy.provider || "CRM",
+            provider: legacy.provider || "hubspot",
+            workspaceUrl: legacy.workspaceUrl || "",
+            apiKey: legacy.apiKey,
+          }
+        : null,
+    (acc) => ({ hasApiKey: !!acc.apiKey }),
+  );
+}
+
+function mergeAccounting(raw: Partial<AdminSettings> | null | undefined) {
+  const rawGroup = raw?.integrations?.accounting;
+  return mergeMultiProviderGroup(
+    defaultIntegrations.accounting,
+    rawGroup,
+    (legacy) =>
+      legacy.refreshToken
+        ? {
+            id: `accounting-${legacy.provider || "wave"}`,
+            label: legacy.provider || "Accounting",
+            provider: legacy.provider || "wave",
+            dashboardUrl: legacy.dashboardUrl || "",
+            clientId: legacy.clientId || "",
+            clientSecret: legacy.clientSecret || "",
+            refreshToken: legacy.refreshToken,
+          }
+        : null,
+    (acc) => ({
+      // Wave's "full-access token" is a single value (stored as
+      // refreshToken); requiring clientId+clientSecret too would mean
+      // Wave could never show as connected, since it never issues those.
+      hasCredentials: !!acc.refreshToken,
+    }),
+  );
+}
+
+function mergeCloudStorage(raw: Partial<AdminSettings> | null | undefined) {
+  const rawGroup = raw?.integrations?.cloudStorage;
+  return mergeMultiProviderGroup(
+    defaultIntegrations.cloudStorage,
+    rawGroup,
+    (legacy) =>
+      legacy.accessToken
+        ? {
+            id: `cloudstorage-${legacy.provider || "dropbox"}`,
+            label: legacy.provider || "Cloud storage",
+            provider: legacy.provider || "dropbox",
+            rootFolderUrl: legacy.rootFolderUrl || "",
+            accessToken: legacy.accessToken,
+          }
+        : null,
+    (acc) => ({ hasAccessToken: !!acc.accessToken }),
+  );
+}
+
+function mergeMarketData(raw: Partial<AdminSettings> | null | undefined) {
+  const rawGroup = raw?.integrations?.marketData;
+  return mergeMultiProviderGroup(
+    defaultIntegrations.marketData,
+    rawGroup,
+    (legacy) =>
+      legacy.apiKey
+        ? {
+            id: `marketdata-${legacy.provider || "polygon"}`,
+            label: legacy.provider || "Market data",
+            provider: legacy.provider || "polygon",
+            apiBaseUrl: legacy.apiBaseUrl || "",
+            apiKey: legacy.apiKey,
+          }
+        : null,
+    (acc) => ({ hasApiKey: !!acc.apiKey }),
+  );
 }
 
 function normalizeCustomIntegrations(raw: Partial<AdminSettings> | null | undefined) {

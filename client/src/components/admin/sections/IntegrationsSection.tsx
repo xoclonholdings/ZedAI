@@ -230,10 +230,15 @@ const GROUPS: ProviderGroup[] = [
           "Name it “Zed” and copy the key.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.deployment?.provider === "render" && !!i?.deployment?.hasAccessToken,
+        connectedFn: (i) => {
+          const acc = (i?.deployment?.accounts || []).find((a: any) => a.provider === "render");
+          return { connected: Boolean(acc?.hasAccessToken), account: acc?.label };
+        },
+        patch: (value) => ({
+          deployment: {
+            accounts: [{ id: "deployment-render", label: "Render", provider: "render", accessToken: value }],
+          },
         }),
-        patch: (value) => ({ deployment: { provider: "render", accessToken: value } }),
       },
       {
         key: "netlify",
@@ -246,10 +251,15 @@ const GROUPS: ProviderGroup[] = [
           "Name it “Zed” and copy the token.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.deployment?.provider === "netlify" && !!i?.deployment?.hasAccessToken,
+        connectedFn: (i) => {
+          const acc = (i?.deployment?.accounts || []).find((a: any) => a.provider === "netlify");
+          return { connected: Boolean(acc?.hasAccessToken), account: acc?.label };
+        },
+        patch: (value) => ({
+          deployment: {
+            accounts: [{ id: "deployment-netlify", label: "Netlify", provider: "netlify", accessToken: value }],
+          },
         }),
-        patch: (value) => ({ deployment: { provider: "netlify", accessToken: value } }),
       },
       {
         key: "vercel",
@@ -262,10 +272,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy the token before you close the page — Vercel only shows it once.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.deployment?.provider === "vercel" && !!i?.deployment?.hasAccessToken,
+        connectedFn: (i) => {
+          const acc = (i?.deployment?.accounts || []).find((a: any) => a.provider === "vercel");
+          return { connected: Boolean(acc?.hasAccessToken), account: acc?.label };
+        },
+        patch: (value) => ({
+          deployment: {
+            accounts: [{ id: "deployment-vercel", label: "Vercel", provider: "vercel", accessToken: value }],
+          },
         }),
-        patch: (value) => ({ deployment: { provider: "vercel", accessToken: value } }),
       },
       {
         key: "railway",
@@ -278,10 +293,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy the token.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.deployment?.provider === "railway" && !!i?.deployment?.hasAccessToken,
+        connectedFn: (i) => {
+          const acc = (i?.deployment?.accounts || []).find((a: any) => a.provider === "railway");
+          return { connected: Boolean(acc?.hasAccessToken), account: acc?.label };
+        },
+        patch: (value) => ({
+          deployment: {
+            accounts: [{ id: "deployment-railway", label: "Railway", provider: "railway", accessToken: value }],
+          },
         }),
-        patch: (value) => ({ deployment: { provider: "railway", accessToken: value } }),
       },
     ],
   },
@@ -303,10 +323,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy the token that appears.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.cloudStorage?.provider === "dropbox" && !!i?.cloudStorage?.hasAccessToken,
+        connectedFn: (i) => {
+          const acc = (i?.cloudStorage?.accounts || []).find((a: any) => a.provider === "dropbox");
+          return { connected: Boolean(acc?.hasAccessToken), account: acc?.label };
+        },
+        patch: (value) => ({
+          cloudStorage: {
+            accounts: [{ id: "cloudstorage-dropbox", label: "Dropbox", provider: "dropbox", accessToken: value }],
+          },
         }),
-        patch: (value) => ({ cloudStorage: { provider: "dropbox", accessToken: value } }),
       },
       {
         key: "gdrive-info",
@@ -351,10 +376,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy the key.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.payments?.provider === "stripe" && !!i?.payments?.hasSecretKey,
+        connectedFn: (i) => {
+          const acc = (i?.payments?.accounts || []).find((a: any) => a.provider === "stripe");
+          return { connected: Boolean(acc?.hasSecretKey), account: acc?.label };
+        },
+        patch: (value) => ({
+          payments: {
+            accounts: [{ id: "payments-stripe", label: "Stripe", provider: "stripe", secretKey: value }],
+          },
         }),
-        patch: (value) => ({ payments: { provider: "stripe", secretKey: value } }),
       },
       {
         key: "square",
@@ -367,10 +397,15 @@ const GROUPS: ProviderGroup[] = [
           "Under Credentials, copy your Access token. Use Sandbox for testing.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.payments?.provider === "square" && !!i?.payments?.hasSecretKey,
+        connectedFn: (i) => {
+          const acc = (i?.payments?.accounts || []).find((a: any) => a.provider === "square");
+          return { connected: Boolean(acc?.hasSecretKey), account: acc?.label };
+        },
+        patch: (value) => ({
+          payments: {
+            accounts: [{ id: "payments-square", label: "Square", provider: "square", secretKey: value }],
+          },
         }),
-        patch: (value) => ({ payments: { provider: "square", secretKey: value } }),
       },
       {
         key: "paypal-info",
@@ -401,10 +436,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy the full-access token that Wave shows you.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.accounting?.provider === "wave" && !!i?.accounting?.hasCredentials,
+        connectedFn: (i) => {
+          const acc = (i?.accounting?.accounts || []).find((a: any) => a.provider === "wave");
+          return { connected: Boolean(acc?.hasCredentials), account: acc?.label };
+        },
+        patch: (value) => ({
+          accounting: {
+            accounts: [{ id: "accounting-wave", label: "Wave", provider: "wave", refreshToken: value }],
+          },
         }),
-        patch: (value) => ({ accounting: { provider: "wave", refreshToken: value, clientId: "wave", clientSecret: "" } }),
       },
       {
         key: "quickbooks-info",
@@ -448,10 +488,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy the bearer token.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.socialPublishing?.provider === "twitter" && !!i?.socialPublishing?.hasAccessToken,
+        connectedFn: (i) => {
+          const acc = (i?.socialPublishing?.accounts || []).find((a: any) => a.platform === "twitter");
+          return { connected: Boolean(acc?.hasAccessToken), account: acc?.label };
+        },
+        patch: (value) => ({
+          socialPublishing: {
+            accounts: [{ id: "social-twitter", label: "Twitter / X", platform: "twitter", accessToken: value }],
+          },
         }),
-        patch: (value) => ({ socialPublishing: { provider: "twitter", accessToken: value } }),
       },
       {
         key: "tiktok-info",
@@ -527,10 +572,13 @@ const GROUPS: ProviderGroup[] = [
           "Copy the token.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.crm?.provider === "hubspot" && !!i?.crm?.hasApiKey,
+        connectedFn: (i) => {
+          const acc = (i?.crm?.accounts || []).find((a: any) => a.provider === "hubspot");
+          return { connected: Boolean(acc?.hasApiKey), account: acc?.label };
+        },
+        patch: (value) => ({
+          crm: { accounts: [{ id: "crm-hubspot", label: "HubSpot", provider: "hubspot", apiKey: value }] },
         }),
-        patch: (value) => ({ crm: { provider: "hubspot", apiKey: value } }),
       },
       {
         key: "pipedrive",
@@ -542,10 +590,13 @@ const GROUPS: ProviderGroup[] = [
           "Copy the API token shown there.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.crm?.provider === "pipedrive" && !!i?.crm?.hasApiKey,
+        connectedFn: (i) => {
+          const acc = (i?.crm?.accounts || []).find((a: any) => a.provider === "pipedrive");
+          return { connected: Boolean(acc?.hasApiKey), account: acc?.label };
+        },
+        patch: (value) => ({
+          crm: { accounts: [{ id: "crm-pipedrive", label: "Pipedrive", provider: "pipedrive", apiKey: value }] },
         }),
-        patch: (value) => ({ crm: { provider: "pipedrive", apiKey: value } }),
       },
       {
         key: "salesforce-info",
@@ -598,10 +649,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy your API key.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.marketData?.provider === "polygon" && !!i?.marketData?.hasApiKey,
+        connectedFn: (i) => {
+          const acc = (i?.marketData?.accounts || []).find((a: any) => a.provider === "polygon");
+          return { connected: Boolean(acc?.hasApiKey), account: acc?.label };
+        },
+        patch: (value) => ({
+          marketData: {
+            accounts: [{ id: "marketdata-polygon", label: "Polygon.io", provider: "polygon", apiKey: value }],
+          },
         }),
-        patch: (value) => ({ marketData: { provider: "polygon", apiKey: value } }),
       },
       {
         key: "alphavantage",
@@ -614,10 +670,15 @@ const GROUPS: ProviderGroup[] = [
           "Copy the free API key they email or show you.",
           "Paste it below and tap Save.",
         ],
-        connectedFn: (i) => ({
-          connected: i?.marketData?.provider === "alphavantage" && !!i?.marketData?.hasApiKey,
+        connectedFn: (i) => {
+          const acc = (i?.marketData?.accounts || []).find((a: any) => a.provider === "alphavantage");
+          return { connected: Boolean(acc?.hasApiKey), account: acc?.label };
+        },
+        patch: (value) => ({
+          marketData: {
+            accounts: [{ id: "marketdata-alphavantage", label: "Alpha Vantage", provider: "alphavantage", apiKey: value }],
+          },
         }),
-        patch: (value) => ({ marketData: { provider: "alphavantage", apiKey: value } }),
       },
     ],
   },
@@ -659,6 +720,7 @@ export default function IntegrationsSection() {
     label: string;
     value: string;
   } | null>(null);
+  const [dbOffline, setDbOffline] = useState<boolean>(false);
 
   const load = useCallback(async () => {
     try {
@@ -674,6 +736,19 @@ export default function IntegrationsSection() {
 
   useEffect(() => {
     void load();
+    // Connections are written through to the database so they survive
+    // a redeploy — but only when one is actually attached. Surface
+    // that here so a missing DATABASE_URL isn't a silent data-loss trap.
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/system-status", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setDbOffline(data?.database === "offline");
+      } catch {
+        // Non-critical: skip the banner rather than block the page.
+      }
+    })();
   }, [load]);
 
   const submit = useCallback(
@@ -780,6 +855,14 @@ export default function IntegrationsSection() {
     <div>
       {header}
       {loadError && <LoadErrorBanner onRetry={() => void load()} />}
+      {dbOffline && (
+        <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-[13px] text-amber-200/90 leading-snug">
+          <span className="font-medium">No database connected.</span> Connections are saved to disk
+          only right now, so a redeploy or container restart will wipe them out. Attach a database
+          (set <code className="text-amber-100">DATABASE_URL</code>) so what you connect here stays
+          connected.
+        </div>
+      )}
 
       {GROUPS.map((group, gi) => (
         <SettingGroup

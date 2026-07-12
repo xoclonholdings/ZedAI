@@ -153,6 +153,7 @@ export const defaultIntegrations: IntegrationsSettings = {
   deployment: {
     enabled: false,
     status: "planned",
+    accounts: [],
     provider: "netlify",
     dashboardUrl: "https://app.netlify.com",
     apiBaseUrl: "https://api.netlify.com/api/v1",
@@ -165,6 +166,7 @@ export const defaultIntegrations: IntegrationsSettings = {
   payments: {
     enabled: false,
     status: "planned",
+    accounts: [],
     provider: "stripe",
     dashboardUrl: "https://dashboard.stripe.com",
     publishableKey: "",
@@ -177,6 +179,7 @@ export const defaultIntegrations: IntegrationsSettings = {
   socialPublishing: {
     enabled: false,
     status: "planned",
+    accounts: [],
     platforms: ["YouTube", "TikTok", "Instagram", "Facebook", "X", "LinkedIn"],
     contentApprovalRequired: true,
     dashboardUrl: "",
@@ -187,6 +190,7 @@ export const defaultIntegrations: IntegrationsSettings = {
   crm: {
     enabled: false,
     status: "planned",
+    accounts: [],
     provider: "hubspot",
     workspaceUrl: "",
     apiKey: "",
@@ -196,6 +200,7 @@ export const defaultIntegrations: IntegrationsSettings = {
   accounting: {
     enabled: false,
     status: "planned",
+    accounts: [],
     provider: "quickbooks",
     dashboardUrl: "",
     clientId: "",
@@ -207,6 +212,7 @@ export const defaultIntegrations: IntegrationsSettings = {
   cloudStorage: {
     enabled: false,
     status: "planned",
+    accounts: [],
     provider: "google_drive",
     rootFolderUrl: "",
     accessToken: "",
@@ -226,6 +232,7 @@ export const defaultIntegrations: IntegrationsSettings = {
   marketData: {
     enabled: false,
     status: "planned",
+    accounts: [],
     provider: "polygon",
     apiBaseUrl: "https://api.polygon.io",
     apiKey: "",

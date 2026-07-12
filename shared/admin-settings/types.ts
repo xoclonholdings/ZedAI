@@ -200,71 +200,154 @@ export interface BusinessOperationsSettings {
   notes: string;
 }
 
+/**
+ * These seven integration groups (deployment, payments, social
+ * publishing, CRM, accounting, cloud storage, market data) each hold
+ * more than one connectable provider (e.g. Render + Netlify, or
+ * Stripe + Square). Each provider gets its own account entry keyed
+ * by a stable id so connecting a second provider in the group can't
+ * clobber the first — the same multi-account pattern already used
+ * for github/email/google.
+ */
+export interface DeploymentAccount {
+  id: string;
+  label: string;
+  provider: "netlify" | "render" | "vercel" | "railway" | "custom";
+  dashboardUrl?: string;
+  apiBaseUrl?: string;
+  siteId?: string;
+  serviceId?: string;
+  accessToken: string;
+  hasAccessToken?: boolean;
+}
+
 export interface DeploymentIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
-  provider: "netlify" | "render" | "vercel" | "railway" | "custom";
-  dashboardUrl: string;
-  apiBaseUrl: string;
-  siteId: string;
-  serviceId: string;
-  accessToken: string;
+  accounts: DeploymentAccount[];
+  /** Legacy single-provider fields preserved for backward-compat. */
+  provider?: "netlify" | "render" | "vercel" | "railway" | "custom";
+  dashboardUrl?: string;
+  apiBaseUrl?: string;
+  siteId?: string;
+  serviceId?: string;
+  accessToken?: string;
   hasAccessToken?: boolean;
   notes: string;
+}
+
+export interface PaymentsAccount {
+  id: string;
+  label: string;
+  provider: "stripe" | "paypal" | "square" | "custom";
+  dashboardUrl?: string;
+  publishableKey?: string;
+  secretKey: string;
+  webhookSecret?: string;
+  hasSecretKey?: boolean;
+  hasWebhookSecret?: boolean;
 }
 
 export interface PaymentsIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
-  provider: "stripe" | "paypal" | "square" | "custom";
-  dashboardUrl: string;
-  publishableKey: string;
-  secretKey: string;
-  webhookSecret: string;
+  accounts: PaymentsAccount[];
+  /** Legacy single-provider fields preserved for backward-compat. */
+  provider?: "stripe" | "paypal" | "square" | "custom";
+  dashboardUrl?: string;
+  publishableKey?: string;
+  secretKey?: string;
+  webhookSecret?: string;
   hasSecretKey?: boolean;
   hasWebhookSecret?: boolean;
   notes: string;
 }
 
+export interface SocialPublishingAccount {
+  id: string;
+  label: string;
+  platform: string;
+  dashboardUrl?: string;
+  accessToken: string;
+  hasAccessToken?: boolean;
+}
+
 export interface SocialPublishingIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
+  accounts: SocialPublishingAccount[];
   platforms: string[];
   contentApprovalRequired: boolean;
-  dashboardUrl: string;
-  accessToken: string;
+  /** Legacy single-provider fields preserved for backward-compat. */
+  dashboardUrl?: string;
+  accessToken?: string;
   hasAccessToken?: boolean;
   notes: string;
+}
+
+export interface CrmAccount {
+  id: string;
+  label: string;
+  provider: "hubspot" | "salesforce" | "zoho" | "airtable" | "pipedrive" | "custom";
+  workspaceUrl?: string;
+  apiKey: string;
+  hasApiKey?: boolean;
 }
 
 export interface CrmIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
-  provider: "hubspot" | "salesforce" | "zoho" | "airtable" | "custom";
-  workspaceUrl: string;
-  apiKey: string;
+  accounts: CrmAccount[];
+  /** Legacy single-provider fields preserved for backward-compat. */
+  provider?: "hubspot" | "salesforce" | "zoho" | "airtable" | "custom";
+  workspaceUrl?: string;
+  apiKey?: string;
   hasApiKey?: boolean;
   notes: string;
+}
+
+export interface AccountingAccount {
+  id: string;
+  label: string;
+  provider: "quickbooks" | "xero" | "wave" | "custom";
+  dashboardUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  refreshToken: string;
+  hasCredentials?: boolean;
 }
 
 export interface AccountingIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
-  provider: "quickbooks" | "xero" | "wave" | "custom";
-  dashboardUrl: string;
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
+  accounts: AccountingAccount[];
+  /** Legacy single-provider fields preserved for backward-compat. */
+  provider?: "quickbooks" | "xero" | "wave" | "custom";
+  dashboardUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  refreshToken?: string;
   hasCredentials?: boolean;
   notes: string;
+}
+
+export interface CloudStorageAccount {
+  id: string;
+  label: string;
+  provider: "google_drive" | "dropbox" | "onedrive" | "s3" | "custom";
+  rootFolderUrl?: string;
+  accessToken: string;
+  hasAccessToken?: boolean;
 }
 
 export interface CloudStorageIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
-  provider: "google_drive" | "dropbox" | "onedrive" | "s3" | "custom";
-  rootFolderUrl: string;
-  accessToken: string;
+  accounts: CloudStorageAccount[];
+  /** Legacy single-provider fields preserved for backward-compat. */
+  provider?: "google_drive" | "dropbox" | "onedrive" | "s3" | "custom";
+  rootFolderUrl?: string;
+  accessToken?: string;
   hasAccessToken?: boolean;
   notes: string;
 }
@@ -280,12 +363,23 @@ export interface TradingViewIntegrationSettings {
   notes: string;
 }
 
+export interface MarketDataAccount {
+  id: string;
+  label: string;
+  provider: "polygon" | "alphavantage" | "twelvedata" | "finnhub" | "custom";
+  apiBaseUrl?: string;
+  apiKey: string;
+  hasApiKey?: boolean;
+}
+
 export interface MarketDataIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
-  provider: "polygon" | "alphavantage" | "twelvedata" | "finnhub" | "custom";
-  apiBaseUrl: string;
-  apiKey: string;
+  accounts: MarketDataAccount[];
+  /** Legacy single-provider fields preserved for backward-compat. */
+  provider?: "polygon" | "alphavantage" | "twelvedata" | "finnhub" | "custom";
+  apiBaseUrl?: string;
+  apiKey?: string;
   hasApiKey?: boolean;
   notes: string;
 }
