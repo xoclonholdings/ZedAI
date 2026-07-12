@@ -286,3 +286,60 @@ export function hasKeyedMarketDataProvider(): boolean {
       process.env.FINNHUB_API_KEY,
   );
 }
+
+/** Names of the keyed vendors currently configured via env. */
+export function configuredKeyedProviders(): string[] {
+  const list: string[] = [];
+  if (process.env.ALPHAVANTAGE_API_KEY) list.push("Alpha Vantage");
+  if (process.env.TWELVEDATA_API_KEY) list.push("Twelve Data");
+  if (process.env.FINNHUB_API_KEY) list.push("Finnhub");
+  return list;
+}
+
+export interface MarketDataStatus {
+  live: boolean;
+  source: string | null;
+  price: number | null;
+  asOf: string | null;
+  latencyMs: number;
+  probeSymbol: string;
+  keyedProviders: string[];
+  note: string;
+}
+
+/**
+ * Probe whether the server can actually reach a live feed right now, using
+ * a liquid reference symbol. Lets the app self-report — from the deployed
+ * environment — whether Zed has real data or is falling back to a paper
+ * reference (usually an outbound-network policy question, not code).
+ */
+export async function getMarketDataStatus(probeSymbol = "SPY"): Promise<MarketDataStatus> {
+  const startedAt = Date.now();
+  const quote = await getMarketQuote(probeSymbol, "etf");
+  const latencyMs = Date.now() - startedAt;
+  const keyedProviders = configuredKeyedProviders();
+  if (quote) {
+    return {
+      live: true,
+      source: quote.source,
+      price: quote.price,
+      asOf: quote.asOf,
+      latencyMs,
+      probeSymbol,
+      keyedProviders,
+      note: `Live market data is reachable via ${quote.source}.`,
+    };
+  }
+  return {
+    live: false,
+    source: null,
+    price: null,
+    asOf: null,
+    latencyMs,
+    probeSymbol,
+    keyedProviders,
+    note: keyedProviders.length
+      ? "No live source answered even though an API key is configured — check the key or the app's outbound-network policy."
+      : "No live source is reachable. This is usually the deployed app's outbound-network policy; add a data-vendor API key or allow outbound HTTPS.",
+  };
+}

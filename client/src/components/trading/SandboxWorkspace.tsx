@@ -77,6 +77,29 @@ export default function SandboxWorkspace() {
   const [closeTarget, setCloseTarget] = useState<CloseTarget | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [suggesting, setSuggesting] = useState<boolean>(false);
+  const [dataStatus, setDataStatus] = useState<{
+    live: boolean;
+    source: string | null;
+    note: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/trading/market-data/status", { credentials: "include" });
+        if (res.ok && !cancelled) {
+          const s = await res.json();
+          setDataStatus({ live: !!s.live, source: s.source, note: s.note });
+        }
+      } catch {
+        /* leave unknown */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -295,6 +318,25 @@ export default function SandboxWorkspace() {
             and the entry / stop / target / size / risk, sized to pass governance. You just
             approve. Nothing here is real money — Zed is proving the strategy.
           </p>
+          {dataStatus && (
+            <div
+              title={dataStatus.note}
+              className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                dataStatus.live
+                  ? "bg-emerald-400/15 text-emerald-300"
+                  : "bg-amber-400/15 text-amber-300"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  dataStatus.live ? "bg-emerald-400" : "bg-amber-400"
+                }`}
+              />
+              {dataStatus.live
+                ? `Live market data · ${dataStatus.source}`
+                : "No live feed — using paper reference"}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button

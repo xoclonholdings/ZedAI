@@ -18,7 +18,7 @@ import {
 import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
 import { TradingStore } from "../zcos/trading/TradingStore";
 import { importTradingViewSnapshot } from "../zcos/trading/TradingViewBridge";
-import { getMarketQuote } from "../zcos/trading/MarketDataService";
+import { getMarketQuote, getMarketDataStatus } from "../zcos/trading/MarketDataService";
 
 function userIdFrom(req: any): string {
   return req.user?.claims?.sub || "unknown";
@@ -264,6 +264,12 @@ export function registerTradingRoutes(app: Express): void {
     } catch (error: any) {
       res.status(500).json({ error: error?.message || "Trade proposal failed" });
     }
+  });
+
+  /** Self-report whether the server can reach a live feed right now. */
+  app.get("/api/trading/market-data/status", isAuthenticated, async (_req, res) => {
+    const status = await getMarketDataStatus();
+    res.json(status);
   });
 
   /** Live quote lookup Zed and the UI use to show real prices. */
