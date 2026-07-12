@@ -115,7 +115,7 @@ export default function SandboxWorkspace() {
       return;
     }
     if (!logForm.entry || !logForm.stop || !logForm.target) {
-      setError("Entry, stop, and target are all required.");
+      setError("Use Zed, propose this trade first so ZED fills entry, stop, target, risk, and thesis.");
       return;
     }
     const entry = num(logForm.entry);
@@ -187,10 +187,13 @@ export default function SandboxWorkspace() {
       if (!res.ok) throw new Error(s?.error || `HTTP ${res.status}`);
       const reason = [
         s.thesis,
+        s.marketStructure ? `Market structure: ${s.marketStructure}` : "",
+        s.liquidityAnalysis ? `Liquidity: ${s.liquidityAnalysis}` : "",
         s.entryPlan ? `Entry: ${s.entryPlan}` : "",
         s.stopPlan ? `Stop: ${s.stopPlan}` : "",
         s.targetPlan ? `Target: ${s.targetPlan}` : "",
         s.invalidation ? `Invalidation: ${String(s.invalidation).replace(/\n/g, "; ")}` : "",
+        s.basis ? `Basis: ${s.basis}` : "",
       ]
         .filter(Boolean)
         .join("\n");
@@ -198,10 +201,21 @@ export default function SandboxWorkspace() {
         ...f,
         direction: s.direction === "short" ? "short" : "long",
         timeframe: s.timeframe || f.timeframe,
-        setupName: "Zed proposal",
+        setupName: s.setupName || "Zed proposal",
+        entry: s.entry !== undefined ? String(s.entry) : f.entry,
+        stop: s.stop !== undefined ? String(s.stop) : f.stop,
+        target: s.target !== undefined ? String(s.target) : f.target,
+        size: s.size !== undefined ? String(s.size) : f.size,
+        riskAmount: s.riskAmount !== undefined ? String(s.riskAmount) : f.riskAmount,
         entryReason: reason || f.entryReason,
+        marketStructure: s.marketStructure || "",
+        liquidityAnalysis: s.liquidityAnalysis || "",
+        timeframeAlignment: s.timeframeAlignment || {},
+        session: s.session || "Generated paper-trade proposal",
+        newsFilter: s.newsFilter || "No live news feed connected; paper validation only.",
+        correlationExposure: s.correlationExposure || "Not supplied; monitor manually before adding correlated trades.",
       }));
-      setNotice("Zed proposed the setup. Confirm the entry / stop / target levels, then approve.");
+      setNotice("Zed filled the paper-trade proposal. Review it, then approve.");
     } catch (err: any) {
       setError(err?.message || "Zed could not propose a setup. Try again.");
     } finally {
