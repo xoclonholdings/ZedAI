@@ -88,7 +88,7 @@ export class LightningProvider implements ModelProvider {
     const config = this.getConfig();
     if (!config.baseUrl) {
       throw new Error(
-        "LIGHTNING_BASE_URL / OPENAI_BASE_URL is not configured — point it at your Lightning AI endpoint.",
+        "LIGHTNING_BASE_URL is not configured — point it at your Lightning AI endpoint.",
       );
     }
     return config;
