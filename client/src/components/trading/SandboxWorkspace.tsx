@@ -218,11 +218,19 @@ export default function SandboxWorkspace() {
         thesisId: s.thesisId || "",
         session: s.session || "",
       }));
-      setNotice(
-        s.pricedFromReference
-          ? "Zed built the full trade at your reference price. Review and tap Approve & log."
-          : "Zed built the full trade on a paper reference price (no live feed yet). Set a reference price above for real levels, or tap Approve & log.",
-      );
+      const md = s.marketData;
+      if (md?.live) {
+        const when = md.asOf ? new Date(md.asOf).toLocaleString() : "just now";
+        setNotice(
+          `Zed built the full trade on LIVE data — ${md.source} $${md.price} (as of ${when}). Review and tap Approve & log.`,
+        );
+      } else if (s.pricedFromReference) {
+        setNotice("Zed built the full trade at your reference price. Review and tap Approve & log.");
+      } else {
+        setNotice(
+          "No live feed was reachable, so Zed used a paper reference price. Enter a reference price above for real levels, or tap Approve & log.",
+        );
+      }
     } catch (err: any) {
       setError(err?.message || "Zed could not build the trade. Try again.");
     } finally {

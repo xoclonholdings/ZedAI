@@ -41,6 +41,12 @@ export interface GenerateStrategyInput {
   timeframe?: string;
   /** Optional current/reference price. Numeric levels are built around it. */
   referencePrice?: number;
+  /**
+   * Optional real stop distance (e.g. ATR from live data) in absolute
+   * price. When supplied, stops/targets reflect actual volatility instead
+   * of a flat percentage of the reference price.
+   */
+  stopDistance?: number;
 }
 
 export interface GeneratedStrategy {
@@ -102,10 +108,16 @@ function computeLevels(
   direction: TradeDirection,
   reference: number,
   riskReward: number,
+  stopDistance?: number,
 ): { entry: number; stop: number; target: number; size: number; riskAmount: number } {
   const price =
     Number.isFinite(reference) && reference > 0 ? reference : DEFAULT_REFERENCE_PRICE;
-  let riskDistance = Math.max(round2(price * 0.01), 0.01);
+  // Real volatility (ATR) when we have it, otherwise a 1% structural stop.
+  let riskDistance =
+    typeof stopDistance === "number" && Number.isFinite(stopDistance) && stopDistance > 0
+      ? round2(stopDistance)
+      : Math.max(round2(price * 0.01), 0.01);
+  if (riskDistance < 0.01) riskDistance = 0.01;
   // Never let one unit exceed the paper risk cap on high-priced symbols.
   if (riskDistance > MAX_PAPER_RISK * 0.9) riskDistance = round2(MAX_PAPER_RISK * 0.9);
   const size = Math.max(1, Math.floor((MAX_PAPER_RISK * 0.9) / riskDistance));
@@ -305,7 +317,12 @@ export async function generateTradeStrategy(
     typeof input.referencePrice === "number" &&
     Number.isFinite(input.referencePrice) &&
     input.referencePrice > 0;
-  const levels = computeLevels(direction, input.referencePrice ?? DEFAULT_REFERENCE_PRICE, riskReward);
+  const levels = computeLevels(
+    direction,
+    input.referencePrice ?? DEFAULT_REFERENCE_PRICE,
+    riskReward,
+    input.stopDistance,
+  );
 
   const draft = true; // simulation only — no broker connection
   const priceNote = pricedFromReference

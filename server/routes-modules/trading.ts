@@ -18,6 +18,7 @@ import {
 import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
 import { TradingStore } from "../zcos/trading/TradingStore";
 import { importTradingViewSnapshot } from "../zcos/trading/TradingViewBridge";
+import { getMarketQuote } from "../zcos/trading/MarketDataService";
 
 function userIdFrom(req: any): string {
   return req.user?.claims?.sub || "unknown";
@@ -213,16 +214,31 @@ export function registerTradingRoutes(app: Express): void {
       const userId = userIdFrom(req);
       const asset = req.body.asset || "stock";
       const market = req.body.market ? String(req.body.market) : "US";
+      const symbol = String(req.body.symbol);
+
+      // Pull a live quote so Zed prices the setup off real levels. A user-
+      // supplied referencePrice always wins; otherwise the live price is
+      // used, and the live ATR sizes the stop to real volatility. If no
+      // source is reachable, the generator falls back to a paper reference.
+      const overridePrice =
+        req.body.referencePrice === undefined ? undefined : toNumber(req.body.referencePrice);
+      const quote = await getMarketQuote(symbol, asset);
+      const referencePrice = overridePrice ?? quote?.price;
+
       const strategy = await generateTradeStrategy({
         userId,
-        symbol: String(req.body.symbol),
+        symbol,
         asset,
         market,
         directionPreference: req.body.directionPreference || "auto",
         timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
-        referencePrice:
-          req.body.referencePrice === undefined ? undefined : toNumber(req.body.referencePrice),
+        referencePrice,
+        stopDistance: quote?.atr,
       });
+
+      const marketData = quote
+        ? { live: true, source: quote.source, price: quote.price, asOf: quote.asOf, atr: quote.atr ?? null }
+        : { live: false, source: null, price: null, asOf: null, atr: null };
 
       const thesis = await createTradeThesis({
         userId,
@@ -244,10 +260,26 @@ export function registerTradingRoutes(app: Express): void {
         notes: strategy.basis,
       });
 
-      res.json({ ...strategy, thesisId: thesis.id, session: strategy.session });
+      res.json({ ...strategy, thesisId: thesis.id, session: strategy.session, marketData });
     } catch (error: any) {
       res.status(500).json({ error: error?.message || "Trade proposal failed" });
     }
+  });
+
+  /** Live quote lookup Zed and the UI use to show real prices. */
+  app.get("/api/trading/market-data/quote", isAuthenticated, async (req: any, res) => {
+    const symbol = String(req.query.symbol || "").trim();
+    if (!symbol) return res.status(400).json({ error: "symbol is required" });
+    const asset = (req.query.asset ? String(req.query.asset) : "stock") as any;
+    const quote = await getMarketQuote(symbol, asset);
+    if (!quote) {
+      return res.json({
+        live: false,
+        quote: null,
+        note: "No live market-data source is reachable from the server right now. Zed will use a paper reference until a data feed or API key is available.",
+      });
+    }
+    res.json({ live: true, quote });
   });
 
   app.post("/api/trading/theses", isAuthenticated, async (req: any, res) => {
