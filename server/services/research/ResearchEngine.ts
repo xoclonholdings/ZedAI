@@ -144,6 +144,104 @@ export async function runResearchAction(input: RunActionInput): Promise<ActionRe
   }
 }
 
+// ── Create / Document ──────────────────────────────────────────────
+
+export interface ResearchDocument {
+  id: string;
+  createdAt: string;
+  title: string;
+  content: string;
+}
+
+export interface DocumentDraft {
+  ok: boolean;
+  title: string;
+  content: string;
+  retryable: boolean;
+}
+
+const DOCS_SCOPE = "research:documents";
+const MAX_DOCS = 200;
+
+export async function createResearchDocument(input: {
+  userId: string;
+  instruction: string;
+  title?: string;
+  sources?: string;
+}): Promise<DocumentDraft> {
+  const instruction = String(input.instruction || "").trim();
+  const sourceText = String(input.sources || "").trim();
+
+  const memory = await buildWorkspaceMemoryContext("research", instruction).catch(() => ({
+    prompt: "",
+    count: 0,
+    used: false,
+  }));
+
+  const prompt = [
+    memory.used ? `${memory.prompt}\n` : "",
+    `Write this up as a clean, readable document a normal person could open later and get everything they need.`,
+    input.title ? `Suggested title: ${input.title}` : "",
+    `What it should cover: ${instruction || "Write up the research below."}`,
+    sourceText ? `\nMaterial to base it on:\n"""\n${sourceText.slice(0, 8000)}\n"""` : "",
+    `\nUse plain language and clear headings. Start with a one-line title on the first line, then the body. No jargon, no invented facts.`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  try {
+    const raw = await generateChatFromProvider(
+      [{ role: "user", content: prompt }],
+      "You are Zed, writing a clear, honest document for a real person. Plain language, no filler, no invented facts or sources.",
+      { lane: "research" },
+    );
+    const text = (raw || "").trim();
+    if (!text) {
+      return { ok: false, title: input.title || "", content: "I came up empty writing that. Try again?", retryable: true };
+    }
+    // First non-empty line becomes the title; the rest is the body.
+    const lines = text.split("\n");
+    const firstIdx = lines.findIndex((l) => l.trim());
+    const title =
+      (input.title && input.title.trim()) ||
+      lines[firstIdx]?.replace(/^#+\s*/, "").trim().slice(0, 120) ||
+      "Untitled document";
+    const content = input.title ? text : lines.slice(firstIdx + 1).join("\n").trim() || text;
+    return { ok: true, title, content, retryable: false };
+  } catch (error) {
+    console.warn("[Research] document failed:", error);
+    return { ok: false, title: input.title || "", content: friendlyBrainFailure(error), retryable: true };
+  }
+}
+
+export async function listResearchDocuments(userId: string): Promise<ResearchDocument[]> {
+  const stored = await readAppState<ResearchDocument[]>(DOCS_SCOPE, userId);
+  return Array.isArray(stored) ? stored : [];
+}
+
+export async function saveResearchDocument(input: {
+  userId: string;
+  title: string;
+  content: string;
+}): Promise<ResearchDocument> {
+  const doc: ResearchDocument = {
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+    title: String(input.title || "Untitled document").trim(),
+    content: String(input.content || "").trim(),
+  };
+  const existing = await listResearchDocuments(input.userId);
+  await writeAppState(DOCS_SCOPE, input.userId, [doc, ...existing].slice(0, MAX_DOCS));
+  return doc;
+}
+
+export async function deleteResearchDocument(userId: string, id: string): Promise<ResearchDocument[]> {
+  const docs = await listResearchDocuments(userId);
+  const next = docs.filter((d) => d.id !== id);
+  await writeAppState(DOCS_SCOPE, userId, next);
+  return next;
+}
+
 export async function listSavedResearch(userId: string): Promise<SavedResearchItem[]> {
   const stored = await readAppState<SavedResearchItem[]>(SAVED_SCOPE, userId);
   return Array.isArray(stored) ? stored : [];
