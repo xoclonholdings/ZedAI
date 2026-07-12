@@ -58,16 +58,22 @@ export function registerResearchRoutes(app: Express): void {
       return res.status(400).json({ error: "action must be summarize, verify, or other" });
     }
     try {
-      const text = await runResearchAction({
+      const result = await runResearchAction({
         userId: userIdFrom(req),
         action,
         query: String(req.body?.query || ""),
         results: toResults(req.body?.results),
         instruction: req.body?.instruction ? String(req.body.instruction) : undefined,
       });
-      res.json({ text });
+      // Always 200 — Zed explains any hiccup in plain language via the
+      // payload, so the UI can show it in his voice with a retry.
+      res.json(result);
     } catch (err: any) {
-      res.status(500).json({ error: err?.message || "Zed couldn't do that right now." });
+      res.json({
+        ok: false,
+        text: "Something hiccuped on my end and I couldn't finish that. Mind trying again?",
+        retryable: true,
+      });
     }
   });
 

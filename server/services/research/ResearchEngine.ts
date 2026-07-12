@@ -58,7 +58,50 @@ export interface RunActionInput {
   instruction?: string;
 }
 
-export async function runResearchAction(input: RunActionInput): Promise<string> {
+export interface ActionResult {
+  ok: boolean;
+  text: string;
+  /** True when it's worth tapping "try again". */
+  retryable: boolean;
+}
+
+/**
+ * Turn any brain/model failure into something Zed would actually say to a
+ * person — plain, warm, no error codes — and tell them whether to retry.
+ */
+function friendlyBrainFailure(error: unknown): string {
+  const message = (error instanceof Error ? error.message : String(error || "")).toLowerCase();
+  if (
+    message.includes("timeout") ||
+    message.includes("aborted") ||
+    message.includes("timed out")
+  ) {
+    return "That one took too long and timed out on my end. Give it another tap and I'll try again.";
+  }
+  if (
+    message.includes("fetch failed") ||
+    message.includes("econnrefused") ||
+    message.includes("enotfound") ||
+    message.includes("unreachable") ||
+    message.includes("network")
+  ) {
+    return "I couldn't reach my brain just now, so I couldn't think that through. Give it a moment and try again.";
+  }
+  if (
+    message.includes("not configured") ||
+    message.includes("lightning") ||
+    message.includes("base_url") ||
+    message.includes("api key") ||
+    message.includes("401") ||
+    message.includes("403") ||
+    message.includes("unauthorized")
+  ) {
+    return "My thinking isn't switched on yet on this end, so I can't write that up. Once it's connected, tap try again and I'll do it.";
+  }
+  return "Something hiccuped on my end and I couldn't finish that. Mind trying again?";
+}
+
+export async function runResearchAction(input: RunActionInput): Promise<ActionResult> {
   const query = String(input.query || "").trim();
 
   const memory = await buildWorkspaceMemoryContext("research", query || input.instruction || "").catch(
@@ -81,11 +124,24 @@ export async function runResearchAction(input: RunActionInput): Promise<string> 
     .filter(Boolean)
     .join("\n");
 
-  return generateChatFromProvider(
-    [{ role: "user", content: prompt }],
-    "You are Zed, a warm, plain-spoken personal assistant. You never use jargon or corporate filler. You are honest, and you never invent facts or sources.",
-    { lane: "research" },
-  );
+  try {
+    const text = await generateChatFromProvider(
+      [{ role: "user", content: prompt }],
+      "You are Zed, a warm, plain-spoken personal assistant. You never use jargon or corporate filler. You are honest, and you never invent facts or sources.",
+      { lane: "research" },
+    );
+    if (!text || !text.trim()) {
+      return {
+        ok: false,
+        text: "I came up empty on that one — nothing useful came back. Give it another try?",
+        retryable: true,
+      };
+    }
+    return { ok: true, text: text.trim(), retryable: false };
+  } catch (error) {
+    console.warn("[Research] action failed:", error);
+    return { ok: false, text: friendlyBrainFailure(error), retryable: true };
+  }
 }
 
 export async function listSavedResearch(userId: string): Promise<SavedResearchItem[]> {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { Bookmark, ChevronLeft, ExternalLink, Search, Trash2 } from "lucide-react";
+import { Bookmark, ChevronLeft, ExternalLink, RotateCcw, Search, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import WorkspaceLibrary from "@/components/WorkspaceLibrary";
@@ -42,6 +42,8 @@ export default function ResearchDesk() {
   const [otherText, setOtherText] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [zedText, setZedText] = useState<string | null>(null);
+  const [zedFailed, setZedFailed] = useState(false);
+  const [lastAct, setLastAct] = useState<{ action: "summarize" | "verify" | "other"; instruction?: string } | null>(null);
 
   const [saved, setSaved] = useState<SavedItem[]>([]);
 
@@ -88,8 +90,8 @@ export default function ResearchDesk() {
             : "Nothing came back for that. Try different words.",
         );
       }
-    } catch (err: any) {
-      setError(err?.message || "Search didn't work. Try again.");
+    } catch {
+      setError("I couldn't run that search just now. Give it another go in a moment.");
     } finally {
       setSearching(false);
     }
@@ -100,6 +102,8 @@ export default function ResearchDesk() {
       setError(null);
       setBusy(action);
       setZedText(null);
+      setZedFailed(false);
+      setLastAct({ action, instruction });
       try {
         const res = await fetch("/api/research/act", {
           method: "POST",
@@ -108,12 +112,17 @@ export default function ResearchDesk() {
           body: JSON.stringify({ action, query: lastQuery, results, instruction }),
         });
         const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
-        setZedText(body.text || "");
-        setOtherOpen(false);
-        setOtherText("");
-      } catch (err: any) {
-        setError(err?.message || "Zed couldn't do that. Try again.");
+        // Zed always speaks in plain language via body.text; body.ok tells
+        // us whether it worked so we can show a "try again".
+        setZedText(body.text || "I couldn't finish that. Mind trying again?");
+        setZedFailed(body.ok === false);
+        if (body.ok !== false) {
+          setOtherOpen(false);
+          setOtherText("");
+        }
+      } catch {
+        setZedText("I couldn't reach my brain just now. Give it a moment and try again.");
+        setZedFailed(true);
       } finally {
         setBusy(null);
       }
@@ -258,13 +267,28 @@ export default function ResearchDesk() {
 
         {/* Zed's answer */}
         {zedText && (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+          <div
+            className={`rounded-2xl border p-4 ${
+              zedFailed ? "border-amber-400/30 bg-amber-400/[0.05]" : "border-white/10 bg-black/30"
+            }`}
+          >
             <div className="whitespace-pre-line text-[13.5px] text-white/85 leading-relaxed">{zedText}</div>
-            <div className="mt-3 flex justify-end">
-              <button className={chip} disabled={!!busy} onClick={() => void save()}>
-                <Bookmark size={12} className="inline mr-1" />
-                {busy === "save" ? "Saving…" : "Save this"}
-              </button>
+            <div className="mt-3 flex justify-end gap-2">
+              {zedFailed ? (
+                <button
+                  className={chip}
+                  disabled={!!busy}
+                  onClick={() => lastAct && void act(lastAct.action, lastAct.instruction)}
+                >
+                  <RotateCcw size={12} className="inline mr-1" />
+                  {busy ? "Trying…" : "Try again"}
+                </button>
+              ) : (
+                <button className={chip} disabled={!!busy} onClick={() => void save()}>
+                  <Bookmark size={12} className="inline mr-1" />
+                  {busy === "save" ? "Saving…" : "Save this"}
+                </button>
+              )}
             </div>
           </div>
         )}
