@@ -28,6 +28,12 @@ interface PaperTradeAuthorizationInput {
   direction: "long" | "short";
   timeframe?: string;
   setupName?: string;
+  marketStructure?: string;
+  liquidityAnalysis?: string;
+  timeframeAlignment?: Record<string, string>;
+  session?: string;
+  newsFilter?: string;
+  correlationExposure?: string;
   entry: number;
   stop: number;
   target: number;
@@ -42,6 +48,15 @@ function hasText(value: unknown): boolean {
 
 function hasPositiveNumber(value: unknown): boolean {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function usableText(...values: unknown[]): string | undefined {
+  const found = values.find(hasText);
+  return typeof found === "string" ? found.trim() : undefined;
+}
+
+function hasAlignment(value: unknown): value is Record<string, string> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0);
 }
 
 function riskRewardFrom(input: { direction: "long" | "short"; entry: number; stop: number; target: number }): number | null {
@@ -219,6 +234,13 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
   const performance = await TradingStore.getPerformance(input.userId);
   const openTrades = await TradingStore.listPaperTrades(input.userId, "open");
   const rr = riskRewardFrom(input);
+  const marketStructure = usableText(input.thesis?.marketStructure, input.marketStructure);
+  const liquidityAnalysis = usableText(input.thesis?.liquidityAnalysis, input.liquidityAnalysis);
+  const alignment = hasAlignment(input.thesis?.timeframeAlignment)
+    ? input.thesis?.timeframeAlignment
+    : hasAlignment(input.timeframeAlignment)
+      ? input.timeframeAlignment
+      : undefined;
   const checklist: TradingGovernanceChecklistItem[] = [
     checklistItem(
       "market_context",
@@ -230,34 +252,48 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
     checklistItem(
       "trend_alignment",
       "Trend Alignment",
-      input.thesis?.timeframeAlignment && Object.keys(input.thesis.timeframeAlignment).length ? "PASS" : "UNKNOWN",
-      input.thesis?.timeframeAlignment && Object.keys(input.thesis.timeframeAlignment).length
-        ? `Timeframe alignment: ${JSON.stringify(input.thesis.timeframeAlignment)}.`
-        : "Timeframe alignment is unavailable.",
-      { missingInformation: input.thesis?.timeframeAlignment && Object.keys(input.thesis.timeframeAlignment).length ? undefined : ["Multi-timeframe alignment"], critical: false },
+      alignment || hasText(input.timeframe) ? "PASS" : "UNKNOWN",
+      alignment
+        ? `Timeframe alignment: ${JSON.stringify(alignment)}.`
+        : hasText(input.timeframe)
+          ? `Timeframe supplied: ${input.timeframe}.`
+          : "Timeframe alignment is unavailable.",
+      { missingInformation: alignment || hasText(input.timeframe) ? undefined : ["Multi-timeframe alignment"], critical: false },
     ),
     checklistItem(
       "market_structure",
       "Market Structure",
-      hasText(input.thesis?.marketStructure) ? "PASS" : "UNKNOWN",
-      hasText(input.thesis?.marketStructure) ? String(input.thesis?.marketStructure) : "Market structure is unavailable.",
-      { missingInformation: hasText(input.thesis?.marketStructure) ? undefined : ["Market structure"], critical: true },
+      marketStructure ? "PASS" : "UNKNOWN",
+      marketStructure || "Market structure is unavailable.",
+      { missingInformation: marketStructure ? undefined : ["Market structure"], critical: true },
     ),
     checklistItem(
       "liquidity_conditions",
       "Liquidity Conditions",
-      hasText(input.thesis?.liquidityAnalysis) ? "PASS" : "UNKNOWN",
-      hasText(input.thesis?.liquidityAnalysis) ? String(input.thesis?.liquidityAnalysis) : "Liquidity analysis is unavailable.",
-      { missingInformation: hasText(input.thesis?.liquidityAnalysis) ? undefined : ["Liquidity analysis"], critical: true },
+      liquidityAnalysis ? "PASS" : "UNKNOWN",
+      liquidityAnalysis || "Liquidity analysis is unavailable.",
+      { missingInformation: liquidityAnalysis ? undefined : ["Liquidity analysis"], critical: true },
     ),
-    checklistItem("session", "Session", "UNKNOWN", "Market session was not supplied.", { missingInformation: ["Market session"], critical: false }),
-    checklistItem("news_filter", "News Filter", "UNKNOWN", "Economic/news calendar state was not supplied.", { missingInformation: ["Economic calendar/news filter"], critical: false }),
+    checklistItem(
+      "session",
+      "Session",
+      hasText(input.session) ? "PASS" : "UNKNOWN",
+      hasText(input.session) ? `Session: ${input.session}.` : "Market session was not supplied.",
+      { missingInformation: hasText(input.session) ? undefined : ["Market session"], critical: false },
+    ),
+    checklistItem(
+      "news_filter",
+      "News Filter",
+      hasText(input.newsFilter) ? "PASS" : "UNKNOWN",
+      hasText(input.newsFilter) ? `News filter: ${input.newsFilter}.` : "Economic/news calendar state was not supplied.",
+      { missingInformation: hasText(input.newsFilter) ? undefined : ["Economic calendar/news filter"], critical: false },
+    ),
     checklistItem(
       "trade_thesis",
       "Trade Thesis",
-      input.thesis ? "PASS" : "UNKNOWN",
-      input.thesis ? `Linked thesis ${input.thesis.id}.` : "No thesis is linked to this paper trade.",
-      { missingInformation: input.thesis ? undefined : ["Linked trade thesis"], critical: false },
+      input.thesis || (marketStructure && liquidityAnalysis && hasText(input.entryReason)) ? "PASS" : "UNKNOWN",
+      input.thesis ? `Linked thesis ${input.thesis.id}.` : "Generated proposal evidence supplied without a saved thesis.",
+      { missingInformation: input.thesis || (marketStructure && liquidityAnalysis && hasText(input.entryReason)) ? undefined : ["Linked trade thesis or generated proposal evidence"], critical: false },
     ),
     checklistItem(
       "entry_rules",
@@ -296,7 +332,13 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
       `${openTrades.length} open paper trades; limit ${MAX_OPEN_PAPER_TRADES}.`,
       { critical: true },
     ),
-    checklistItem("correlation", "Correlation", "UNKNOWN", "Correlation data was not supplied.", { missingInformation: ["Correlation exposure"], critical: false }),
+    checklistItem(
+      "correlation",
+      "Correlation",
+      hasText(input.correlationExposure) ? "PASS" : "UNKNOWN",
+      hasText(input.correlationExposure) ? `Correlation exposure: ${input.correlationExposure}.` : "Correlation data was not supplied.",
+      { missingInformation: hasText(input.correlationExposure) ? undefined : ["Correlation exposure"], critical: false },
+    ),
     checklistItem(
       "drawdown_limits",
       "Drawdown Limits",
