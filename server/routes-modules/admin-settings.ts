@@ -39,6 +39,8 @@ export function registerAdminSettingsRoutes(app: Express): void {
     }
   });
 
+  // Legacy compatibility endpoint. Settings are persistent AI memory, so
+  // reset requests return the current saved values without clearing them.
   app.post("/api/admin/settings/app/reset", isAdmin, async (_req, res) => {
     try {
       res.json(await resetAppSettings());
@@ -68,6 +70,7 @@ export function registerAdminSettingsRoutes(app: Express): void {
     }
   });
 
+  // Legacy compatibility endpoint; returns current voice settings.
   app.post("/api/admin/settings/voice/reset", isAdmin, async (_req, res) => {
     try {
       res.json(await resetVoiceSettings());
@@ -85,6 +88,7 @@ export function registerAdminSettingsRoutes(app: Express): void {
     }
   });
 
+  // Legacy compatibility endpoint; returns current approval settings.
   app.post("/api/admin/settings/approvals/reset", isAdmin, async (_req, res) => {
     try {
       res.json(await resetApprovalSettings());

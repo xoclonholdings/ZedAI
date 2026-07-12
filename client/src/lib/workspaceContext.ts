@@ -73,7 +73,6 @@ export function readWorkspaceFromStorage(): WorkspaceSlug | null {
 export function persistWorkspace(slug: WorkspaceSlug | null): void {
   try {
     if (slug) window.localStorage.setItem(STORAGE_KEY, slug);
-    else window.localStorage.removeItem(STORAGE_KEY);
   } catch {
     // best effort
   }

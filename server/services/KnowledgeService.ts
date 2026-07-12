@@ -47,10 +47,10 @@ export class KnowledgeService {
     const keywords = extractKeywords(params.query);
     const includeAdminKnowledge = params.includeAdminFoundation === true;
 
-    // Trim expired scratchpad entries before reading — best-effort,
-    // failures here just mean we read a slightly larger working set.
+    // Legacy hook retained for older storage adapters. Scratchpad
+    // entries persist unless the user explicitly deletes them.
     await MemoryService.resetScratchpadMemory().catch(() => {
-      /* see comment above */
+      /* persistence cleanup is best-effort and non-destructive */
     });
 
     const [

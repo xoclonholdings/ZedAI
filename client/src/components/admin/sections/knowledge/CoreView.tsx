@@ -176,7 +176,7 @@ export function CoreView({
               className="border-white/10"
               onClick={() => setCoreDraft(EMPTY_CORE_MEMORY)}
             >
-              Reset
+              Clear editor
             </Button>
             {coreStatus === "error" ? (
               <span className="text-xs text-red-400">Key and value are required.</span>

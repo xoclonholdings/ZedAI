@@ -46,12 +46,9 @@ export default function Chat() {
     };
   }, [search]);
 
-  // Persist whatever we resolved so the next full reload has it, and
-  // clear when the user explicitly exits (?ctx=none).
+  // Persist whatever we resolved so the next full reload has it.
   useEffect(() => {
-    const explicitClear = /(?:^|[?&])ctx=none(?:&|$)/.test(search);
-    if (explicitClear) persistWorkspace(null);
-    else if (workspaceSlug) persistWorkspace(workspaceSlug);
+    if (workspaceSlug) persistWorkspace(workspaceSlug);
   }, [search, workspaceSlug]);
 
   const workspaceContext: AgentTarget | undefined = workspaceSlug

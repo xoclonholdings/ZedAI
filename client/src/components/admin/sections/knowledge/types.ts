@@ -118,7 +118,7 @@ export const VIEW_META: Record<
   },
   scratchpad: {
     label: "Working notes",
-    description: "Short-term stuff from this session. Cleared regularly.",
+    description: "Persistent operating context Zed should keep using.",
     icon: FileStack,
   },
   core: {

@@ -99,18 +99,7 @@ export function useAppSettings() {
 }
 
 export async function clearAppSettings() {
-  try {
-    localStorage.removeItem(LOCAL_APP_SETTINGS_KEY);
-  } catch {
-    // ignore local reset errors in destructive reset flow
-  }
-
-  try {
-    await fetch("/api/admin/settings/app/reset", {
-      method: "POST",
-      credentials: "include",
-    });
-  } catch {
-    // ignore admin reset errors for non-admin users
-  }
+  // Legacy compatibility hook. Settings are part of Zed's persistent
+  // operating memory, so this intentionally does not clear local or
+  // server-side preferences.
 }

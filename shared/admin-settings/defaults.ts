@@ -1,7 +1,6 @@
 /**
  * Default values for the admin-settings shapes. These are the
- * starting state when no admin-settings.json exists on disk, and
- * the per-section reset in `resetAppSettings`. Edit here when you
+ * starting state when no admin-settings.json exists on disk. Edit here when you
  * want to change "what shows up first-run".
  *
  * Secret-bearing fields (tokens, passwords, API keys) intentionally

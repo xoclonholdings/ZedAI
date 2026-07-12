@@ -1,8 +1,7 @@
 import { useLocation } from "wouter";
-import { Archive, Menu, X } from "lucide-react";
+import { Archive, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
-import { persistWorkspace } from "@/lib/workspaceContext";
 
 interface ChatHeaderProps {
   isMobile?: boolean;
@@ -24,11 +23,6 @@ export default function ChatHeader({
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const compact = !!user?.personalization?.compactMessages;
-
-  const exitWorkspace = () => {
-    persistWorkspace(null);
-    navigate("/chat");
-  };
 
   return (
     <div
@@ -59,14 +53,6 @@ export default function ChatHeader({
               title="Open workspace"
             >
               In {workspaceLabel}
-              <X
-                size={11}
-                className="text-cyan-200/70 hover:text-white"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  exitWorkspace();
-                }}
-              />
             </button>
           ) : (
             <div className="text-[15px] font-semibold text-foreground leading-tight tracking-tight">

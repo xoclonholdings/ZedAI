@@ -28,7 +28,6 @@ import {
 
 import { useAuth } from "@/components/auth/UseAuth";
 import {
-  persistWorkspace,
   readWorkspaceFromStorage,
   WORKSPACE_LABEL,
   type WorkspaceSlug,
@@ -144,11 +143,6 @@ export default function HomePage() {
 
   useEffect(() => {
     setActiveWorkspace(readWorkspaceFromStorage());
-  }, []);
-
-  const exitWorkspace = useCallback(() => {
-    persistWorkspace(null);
-    setActiveWorkspace(null);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -357,13 +351,6 @@ export default function HomePage() {
             >
               Continue
             </button>
-            <button
-              type="button"
-              onClick={exitWorkspace}
-              className="shrink-0 rounded-lg border border-white/10 bg-white/[0.02] text-white/60 hover:text-white/85 px-3 py-1.5 text-[12px]"
-            >
-              Exit
-            </button>
           </section>
         )}
 
@@ -556,7 +543,7 @@ export default function HomePage() {
 
         <div className="pt-2 text-center text-[11.5px] text-white/30">
           <BookOpen size={11} className="inline mr-1 opacity-60" />
-          Home refreshes on every visit. Full activity lives in Admin.
+          Memory, settings, and workspace context persist across visits.
         </div>
       </main>
     </div>

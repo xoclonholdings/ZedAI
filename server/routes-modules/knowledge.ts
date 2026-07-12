@@ -19,7 +19,7 @@ import { users } from "../../shared/schema";
  *   - /api/knowledge/voice-memory                (ZED voice formation)
  *   - /api/knowledge/project-memory              (per-user long-term)
  *   - /api/knowledge/personal-base               (the "profile" entry)
- *   - /api/knowledge/scratchpad                  (24h short-term notes)
+ *   - /api/knowledge/scratchpad                  (persistent working notes)
  */
 
 /** Ensures req.user maps to an actual users-table row before we
@@ -351,7 +351,7 @@ export function registerKnowledgeRoutes(app: Express): void {
           conversationId: req.body?.conversationId || null,
           content: req.body?.content || "",
           tags: Array.isArray(req.body?.tags) ? req.body.tags : [],
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          expiresAt: new Date("2100-01-01T00:00:00.000Z"),
         }),
       );
       res.json({ item });

@@ -171,31 +171,6 @@ export function HowZedSounds() {
     [flush],
   );
 
-  const onReset = useCallback(async () => {
-    if (!window.confirm("Reset ‘How Zed sounds’ to defaults?")) return;
-    try {
-      setStatus("saving");
-      setErrorMessage(undefined);
-      const res = await fetch("/api/admin/settings/voice/reset", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error || `Reset failed (${res.status})`);
-      }
-      const next = (await res.json()) as VoiceSettings;
-      setVoice(next);
-      setPhrasesText(next.prohibitedPhrases.join("\n"));
-      setStatus("saved");
-      if (savedTimer.current) window.clearTimeout(savedTimer.current);
-      savedTimer.current = window.setTimeout(() => setStatus("idle"), 1500);
-    } catch (err: any) {
-      setErrorMessage(err?.message);
-      setStatus("error");
-    }
-  }, []);
-
   const header = useMemo(
     () => (
       <header className="mb-6 flex w-full min-w-0 max-w-full flex-wrap items-start justify-between gap-4 overflow-hidden">
@@ -318,15 +293,6 @@ export function HowZedSounds() {
         </SettingRow>
       </SettingGroup>
 
-      <div className="mt-8 flex w-full max-w-full justify-end border-t border-white/[0.06] pt-5">
-        <button
-          type="button"
-          onClick={onReset}
-          className="max-w-full break-words rounded-md px-3 py-1.5 text-[13px] text-white/50 transition-colors [overflow-wrap:anywhere] hover:bg-white/[0.04] hover:text-red-300"
-        >
-          Reset this section to defaults
-        </button>
-      </div>
     </div>
   );
 }

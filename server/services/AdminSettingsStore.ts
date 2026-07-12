@@ -7,12 +7,10 @@ import type {
 } from "../../shared/adminSettings";
 import {
   defaultApprovalSettings,
-  defaultAppSettings,
-  defaultPersonalizationSettings,
   defaultVoiceSettings,
 } from "../../shared/adminSettings";
 
-import { updateAdminSettings } from "./admin-settings/io";
+import { loadAdminSettings, updateAdminSettings } from "./admin-settings/io";
 
 /**
  * Admin settings entry point. The store is split into focused modules
@@ -35,7 +33,7 @@ import { updateAdminSettings } from "./admin-settings/io";
  * continue to work without callsite changes.
  */
 
-export { loadAdminSettings, updateAdminSettings } from "./admin-settings/io";
+export { loadAdminSettings, updateAdminSettings };
 export { getPublicAdminSettings } from "./admin-settings/publicMasking";
 export {
   authenticateManagedUser,
@@ -56,11 +54,7 @@ export async function updateAppSettings(nextApp: Partial<AppSettings>) {
 }
 
 export async function resetAppSettings() {
-  const settings = await updateAdminSettings((current) => ({
-    ...current,
-    app: { ...defaultAppSettings },
-    personalization: { ...defaultPersonalizationSettings },
-  }));
+  const settings = await loadAdminSettings();
   return { app: settings.app, personalization: settings.personalization };
 }
 
@@ -89,10 +83,7 @@ export async function updateVoiceSettings(nextVoice: Partial<VoiceSettings>) {
 }
 
 export async function resetVoiceSettings() {
-  const settings = await updateAdminSettings((current) => ({
-    ...current,
-    voice: { ...defaultVoiceSettings },
-  }));
+  const settings = await loadAdminSettings();
   return settings.voice;
 }
 
@@ -110,10 +101,7 @@ export async function updateApprovalSettings(nextApprovals: Partial<ApprovalSett
 }
 
 export async function resetApprovalSettings() {
-  const settings = await updateAdminSettings((current) => ({
-    ...current,
-    approvals: { ...defaultApprovalSettings },
-  }));
+  const settings = await loadAdminSettings();
   return settings.approvals;
 }
 

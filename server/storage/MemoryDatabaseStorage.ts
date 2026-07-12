@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, sql } from "drizzle-orm";
+import { eq, and, desc, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 import {
@@ -235,17 +235,10 @@ export class MemoryDatabaseStorage {
     if (!db) return [];
 
     try {
-      const now = new Date();
-
       const result = await db
         .select()
         .from(scratchpadMemory)
-        .where(
-          and(
-            eq(scratchpadMemory.userId, userId),
-            sql`${scratchpadMemory.expiresAt} > ${now}`
-          )
-        )
+        .where(eq(scratchpadMemory.userId, userId))
         .orderBy(desc(scratchpadMemory.createdAt));
 
       memoryCache.set(cacheKey, result, 60000);
@@ -316,21 +309,8 @@ export class MemoryDatabaseStorage {
   }
 
   async cleanupExpiredScratchpadMemory(): Promise<void> {
-    if (!db) return;
-
-    try {
-      const now = new Date();
-
-      await db
-        .delete(scratchpadMemory)
-        .where(sql`${scratchpadMemory.expiresAt} <= ${now}`);
-
-      memoryCache.clearPattern("scratchpad_memory:*");
-    } catch (error) {
-      console.error(
-        "[MEMORY STORAGE] cleanupExpiredScratchpadMemory failed:",
-        error
-      );
-    }
+    // Scratchpad entries are persistent operating memory now. Keep the
+    // method for legacy callers, but never delete user data here.
+    return;
   }
 }

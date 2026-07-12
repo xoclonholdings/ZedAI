@@ -29,10 +29,10 @@ export function ScratchpadView({
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Edit3 size={16} className="text-purple-300" />
-            Temporary Working Memory
+            Persistent Working Notes
           </CardTitle>
           <CardDescription>
-            Capture near-term operating context without polluting the permanent knowledge base.
+            Capture active operating context that Zed should keep across sessions.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -45,7 +45,7 @@ export function ScratchpadView({
               value={draft.content}
               onChange={(e) => setDraft((prev) => ({ ...prev, content: e.target.value }))}
               className="zed-glass border-white/10 text-sm"
-              placeholder="Capture active priorities, immediate context, temporary findings, or session-only details."
+              placeholder="Capture active priorities, immediate context, findings, or decisions Zed should retain."
             />
           </label>
           <LabeledInput
@@ -64,17 +64,16 @@ export function ScratchpadView({
             ) : null}
           </div>
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-muted-foreground">
-            Scratchpad memory is for immediate work. It should be trimmed aggressively and only
-            promoted into durable memory when it becomes stable knowledge.
+            Working notes persist as part of Zed's operating memory unless you explicitly delete them.
           </div>
         </CardContent>
       </Card>
 
       <Card className="zed-glass border-white/10">
         <CardHeader>
-          <CardTitle className="text-base">Active Scratchpad Entries</CardTitle>
+          <CardTitle className="text-base">Saved Working Notes</CardTitle>
           <CardDescription>
-            Review and clear temporary context that is still influencing retrieval.
+            Review persistent context that is still influencing retrieval.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -96,11 +95,11 @@ export function ScratchpadView({
                         ))}
                       </div>
                     ) : (
-                      <div className="text-xs text-muted-foreground">Untagged temporary note</div>
+                      <div className="text-xs text-muted-foreground">Untagged working note</div>
                     )}
                     {item.expiresAt ? (
                       <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                        Expires {new Date(item.expiresAt).toLocaleString()}
+                        Persistent
                       </div>
                     ) : null}
                   </div>
@@ -111,7 +110,7 @@ export function ScratchpadView({
                     onClick={() => onDelete(item.id)}
                   >
                     <Trash2 size={12} className="mr-1" />
-                    Clear
+                    Delete note
                   </Button>
                 </div>
                 <div className="whitespace-pre-wrap text-sm text-foreground/85">

@@ -12,6 +12,8 @@ import { initializeDefaultCoreMemory } from "./memory/initializeDefault";
 import { loadCoreMemoryFromFile } from "./memory/loadFromFile";
 
 export class MemoryService {
+  private static readonly PERSISTENT_SCRATCHPAD_EXPIRES_AT = new Date("2100-01-01T00:00:00.000Z");
+
   // Core Memory - Persistent system configuration
   static async getCoreMemory(key: string): Promise<CoreMemory | null> {
     return await storage.getCoreMemoryByKey(key);
@@ -47,7 +49,7 @@ export class MemoryService {
     return await storage.deleteProjectMemory(id);
   }
 
-  // Scratchpad Memory - Temporary working memory
+  // Scratchpad Memory - Persistent working memory
   static async getScratchpadMemory(userId: string): Promise<ScratchpadMemory[]> {
     return await storage.getScratchpadMemoryByUser(userId);
   }
@@ -55,12 +57,9 @@ export class MemoryService {
   static async createScratchpadMemory(
     data: InsertScratchpadMemory,
   ): Promise<ScratchpadMemory> {
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 24);
-
     return await storage.createScratchpadMemory({
       ...data,
-      expiresAt,
+      expiresAt: this.PERSISTENT_SCRATCHPAD_EXPIRES_AT,
     });
   }
 
@@ -68,9 +67,9 @@ export class MemoryService {
     return await storage.deleteScratchpadMemory(id);
   }
 
-  // Daily reset for scratchpad memory
+  // Legacy no-op. Scratchpad memory is persistent unless the user deletes it.
   static async resetScratchpadMemory(): Promise<void> {
-    await storage.cleanupExpiredScratchpadMemory();
+    return;
   }
 
   /**
