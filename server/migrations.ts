@@ -15,6 +15,20 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON sessions ("expire");
     `);
 
+    // Durable key/value store for admin settings (managed users,
+    // credentials, voice, approvals, integrations). The runtime keeps a
+    // local hub/config/admin-settings.json cache for fast reads, but on
+    // an ephemeral host (e.g. Render) that file is wiped on every
+    // redeploy — so this table is the source of truth that survives
+    // redeploys and is hydrated back into the file at boot.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        id text PRIMARY KEY,
+        data jsonb NOT NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+
     // Users (single Admin row; seeded below)
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS users (

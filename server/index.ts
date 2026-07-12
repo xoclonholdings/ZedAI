@@ -141,6 +141,15 @@ app.use((req, res, next) => {
   const { setDatabaseStatus } = await import("./routes");
   setDatabaseStatus(false);
 
+  // Lightweight, unauthenticated liveness ping. Point an uptime monitor
+  // (e.g. every few minutes) at this to keep the instance warm and avoid
+  // idle-spindown cold starts. Always fast — never touches the DB or the
+  // model provider.
+  const bootedAt = Date.now();
+  app.get(["/api/health", "/healthz"], (_req, res) => {
+    res.status(200).json({ status: "ok", uptimeSeconds: Math.round((Date.now() - bootedAt) / 1000) });
+  });
+
   app.use("/api/auth/user", (_req, res) => {
     res.status(200).json({ message: "Auth temporarily disabled" });
   });
@@ -193,6 +202,18 @@ app.use((req, res, next) => {
         ? "[INFO] Online with database + fallback storage redundancy"
         : "[INFO] Offline mode with fallback storage - full functionality maintained",
     );
+
+    // Restore admin settings (managed users + credentials) from the
+    // durable database into the local file cache, so an ephemeral
+    // redeploy doesn't erase users added via Settings. No-op offline.
+    if (dbHealthy) {
+      try {
+        const { hydrateAdminSettingsFromDb } = await import("./services/admin-settings/io");
+        await hydrateAdminSettingsFromDb();
+      } catch (error) {
+        log("[WARNING] admin-settings DB hydrate failed:", String((error as Error)?.message || error));
+      }
+    }
 
     try {
       const { MemoryService } = await import("./services/memoryService");

@@ -252,8 +252,9 @@ Per the buffer requirement above, the provider layer supports true streaming via
 
 - Session-based local auth is implemented in `server/localAuth.ts`
 - Session data uses server-side persistence via file-backed session storage
-- Admin/user settings are persisted in `hub/config/admin-settings.json` locally and are not part of source control
+- Admin/user settings (managed users, credentials, voice, approvals, integrations) use a two-tier store: the local `hub/config/admin-settings.json` is a fast runtime cache, and the durable source of truth is the Postgres `app_settings` table. Every mutation via `updateAdminSettings` writes both; at boot (after the DB is confirmed healthy) `hydrateAdminSettingsFromDb` restores the file from the table. This is what keeps users and credential changes from being erased when an ephemeral host (e.g. Render) wipes the container filesystem on redeploy. The JSON cache is not part of source control.
 - The app currently supports one admin account plus admin-managed local users
+- `GET /api/health` (alias `GET /healthz`) is an unauthenticated liveness ping that never touches the database or model provider; point an uptime monitor at it to keep the instance warm and avoid idle-spindown cold starts. Boot binds the HTTP server before the database/migration/memory warmup, so login (which needs only file-backed session + admin settings) responds immediately on a cold start while the DB warms up in the background.
 
 ## Data and Service Dependencies
 
@@ -355,6 +356,7 @@ The detailed operating policy is `docs/policies/KNOWLEDGE_CURATION_ENGINE.md`.
 
 The server currently exposes at least these API routes:
 
+- `GET /api/health` (alias `GET /healthz`)
 - `GET /api/me`
 - `GET /api/conversations`
 - `POST /api/conversations`
