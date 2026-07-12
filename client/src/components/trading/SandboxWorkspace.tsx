@@ -39,6 +39,12 @@ const EMPTY_LOG_FORM = {
   size: "1",
   riskAmount: "",
   entryReason: "",
+  marketStructure: "",
+  liquidityAnalysis: "",
+  timeframeAlignment: {} as Record<string, string>,
+  session: "",
+  newsFilter: "",
+  correlationExposure: "",
 };
 
 function num(v: string): number {
@@ -141,6 +147,12 @@ export default function SandboxWorkspace() {
           size: num(logForm.size) || 1,
           riskAmount: risk,
           entryReason: logForm.entryReason.trim(),
+          marketStructure: logForm.marketStructure.trim() || undefined,
+          liquidityAnalysis: logForm.liquidityAnalysis.trim() || undefined,
+          timeframeAlignment: logForm.timeframeAlignment,
+          session: logForm.session.trim() || undefined,
+          newsFilter: logForm.newsFilter.trim() || undefined,
+          correlationExposure: logForm.correlationExposure.trim() || undefined,
         }),
       });
       const body = await res.json().catch(() => ({}));
