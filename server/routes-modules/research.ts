@@ -2,9 +2,13 @@ import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
 import {
+  createResearchDocument,
+  deleteResearchDocument,
   deleteSavedResearch,
+  listResearchDocuments,
   listSavedResearch,
   runResearchAction,
+  saveResearchDocument,
   saveResearchItem,
   type ResearchAction,
   type ResearchResult,
@@ -74,6 +78,60 @@ export function registerResearchRoutes(app: Express): void {
         text: "Something hiccuped on my end and I couldn't finish that. Mind trying again?",
         retryable: true,
       });
+    }
+  });
+
+  // Create/Document — Zed writes the research up as a document.
+  app.post("/api/research/document", isAuthenticated, async (req: any, res) => {
+    try {
+      const draft = await createResearchDocument({
+        userId: userIdFrom(req),
+        instruction: String(req.body?.instruction || ""),
+        title: req.body?.title ? String(req.body.title) : undefined,
+        sources: req.body?.sources ? String(req.body.sources) : undefined,
+      });
+      res.json(draft);
+    } catch {
+      res.json({
+        ok: false,
+        title: "",
+        content: "Something hiccuped and I couldn't write that up. Mind trying again?",
+        retryable: true,
+      });
+    }
+  });
+
+  // Zed's Files — keep a filed document in the workspace (a home for
+  // documents until the user connects iCloud / Google Drive).
+  app.get("/api/research/documents", isAuthenticated, async (req: any, res) => {
+    try {
+      res.json({ documents: await listResearchDocuments(userIdFrom(req)) });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to load documents" });
+    }
+  });
+
+  app.post("/api/research/documents", isAuthenticated, async (req: any, res) => {
+    const content = String(req.body?.content || "").trim();
+    if (!content) return res.status(400).json({ error: "content is required" });
+    try {
+      const document = await saveResearchDocument({
+        userId: userIdFrom(req),
+        title: String(req.body?.title || "Untitled document"),
+        content,
+      });
+      res.json({ document });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to file document" });
+    }
+  });
+
+  app.delete("/api/research/documents/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const documents = await deleteResearchDocument(userIdFrom(req), String(req.params.id));
+      res.json({ documents });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to delete" });
     }
   });
 

@@ -4,6 +4,7 @@ import { Bookmark, ChevronLeft, ExternalLink, RotateCcw, Search, Trash2 } from "
 
 import { Button } from "@/components/ui/button";
 import WorkspaceLibrary from "@/components/WorkspaceLibrary";
+import ResearchDocuments from "@/components/research/ResearchDocuments";
 
 /**
  * The Research workspace.
@@ -367,6 +368,16 @@ export default function ResearchDesk() {
             </div>
           </section>
         )}
+
+        <ResearchDocuments
+          seedInstruction={lastQuery ? `Write up my research on "${lastQuery}".` : ""}
+          seedSources={
+            zedText ||
+            (results.length > 0
+              ? results.map((r) => `- ${r.title}\n  ${r.snippet}\n  ${r.url}`).join("\n")
+              : "")
+          }
+        />
 
         <WorkspaceLibrary workspace="research" label="Research library" />
       </main>
