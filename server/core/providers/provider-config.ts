@@ -15,6 +15,7 @@ export interface ProviderRuntimeConfig {
    *   MODEL_CHAT, MODEL_MANAGER, MODEL_OPERATIONS,
    *   MODEL_RESEARCH, MODEL_BUSINESS, MODEL_FINANCE,
    *   MODEL_STRATEGY, MODEL_ADMIN.
+   * These are Lightning model selections, not provider selections.
    */
   laneModels: Partial<Record<ProviderLane, string>>;
   reasoningModels: Partial<Record<ReasoningEffort, string>>;
@@ -105,11 +106,11 @@ function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record
 }
 
 /**
- * Resolve the model name to use for a given lane. Priority:
+ * Resolve the Lightning model name to use for a given lane. Priority:
  *   1. Lane + reasoning override (MODEL_FINANCE_DEEP, MODEL_RESEARCH_HIGH, ...)
  *   2. Reasoning override (MODEL_REASONING_DEEP, MODEL_REASONING_HIGH, ...)
  *   3. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
- *   4. Global MODEL_NAME / ZED_MODEL_NAME
+ *   4. Global LIGHTNING_MODEL / MODEL_NAME / ZED_MODEL_NAME
  *   5. The Lightning-configured fallback.
  */
 export function resolveModelForLane(
@@ -130,7 +131,7 @@ export function resolveModelForLane(
     if (laneValue) return laneValue;
   }
   return (
-    process.env.OPENAI_MODEL?.trim() ||
+    process.env.LIGHTNING_MODEL?.trim() ||
     process.env.MODEL_NAME?.trim() ||
     process.env.ZED_MODEL_NAME?.trim() ||
     fallback
@@ -138,16 +139,13 @@ export function resolveModelForLane(
 }
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
-  const openAiCompatibleBaseUrl = process.env.OPENAI_BASE_URL?.trim() || "";
   const baseUrl = trimTrailingSlash(
     process.env.LIGHTNING_BASE_URL ||
-      openAiCompatibleBaseUrl ||
       process.env.REMOTE_INFERENCE_URL ||
       "",
   );
   const model =
     process.env.LIGHTNING_MODEL ||
-    process.env.OPENAI_MODEL ||
     process.env.MODEL_NAME ||
     process.env.ZED_MODEL_NAME ||
     "";
@@ -162,7 +160,7 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
     lightning: {
       baseUrl,
       model,
-      chatPath: process.env.LIGHTNING_CHAT_PATH || (openAiCompatibleBaseUrl ? "/chat/completions" : "/chat"),
+      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
       healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
       timeoutMs: Number(
         process.env.LIGHTNING_TIMEOUT_MS ||
