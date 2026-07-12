@@ -12,6 +12,7 @@ import { registerExecutionRoutes } from "./services/execution/registerExecutionR
 import { registerIntakeRoutes } from "./services/intake/registerIntakeRoutes";
 import { registerProjectRoutes } from "./routes-modules/projects";
 import { registerResearchRoutes } from "./routes-modules/research";
+import { registerWorkspaceDeskRoutes } from "./routes-modules/workspace-desk";
 import { registerDiagnosticsRoutes } from "./routes-modules/diagnostics";
 import { registerAiHostTestRoute } from "./routes-modules/ai-host-test";
 import { registerRulesetRoutes } from "./routes-modules/ruleset";
@@ -69,6 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerEmailInboxRoutes(app);
   registerProjectRoutes(app);
   registerResearchRoutes(app);
+  registerWorkspaceDeskRoutes(app);
   registerOrchestrateAndMiscRoutes(app, {
     isDatabaseHealthy: () => isDatabaseHealthy,
   });
