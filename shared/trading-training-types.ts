@@ -84,6 +84,8 @@ export type IntegrationProvider =
   | "tradingview"
   | "lucid"
   | "tradovate"
+  | "kalshi"
+  | "polymarket"
   | "custom";
 
 export type IntegrationStatus =
@@ -160,6 +162,20 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
     provider: "tradovate",
     label: "Tradovate",
     purpose: "Zed signs in to your Tradovate account and works in it for you.",
+    fields: LOGIN_FIELDS,
+    liveBridge: false,
+  },
+  {
+    provider: "kalshi",
+    label: "Kalshi",
+    purpose: "Zed signs in to your Kalshi account for event/prediction (props) markets.",
+    fields: LOGIN_FIELDS,
+    liveBridge: false,
+  },
+  {
+    provider: "polymarket",
+    label: "Polymarket",
+    purpose: "Zed signs in to your Polymarket account for prediction (props) markets.",
     fields: LOGIN_FIELDS,
     liveBridge: false,
   },

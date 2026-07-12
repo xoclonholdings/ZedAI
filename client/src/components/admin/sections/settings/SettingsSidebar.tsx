@@ -15,7 +15,7 @@ export function SettingsSidebar({
   onSelect: (id: SettingsCategoryId) => void;
 }) {
   return (
-    <nav aria-label="Settings sections" className="md:sticky md:top-6">
+    <nav aria-label="Settings sections" className="w-full min-w-0 max-w-full md:sticky md:top-6">
       <div className="hidden md:flex md:flex-col md:gap-[2px]">
         {SETTINGS_CATEGORIES.map((cat) => {
           const isActive = cat.id === active;
@@ -47,10 +47,12 @@ export function SettingsSidebar({
       </div>
 
       {/* Mobile: horizontal pill scroll */}
-      <div className="md:hidden w-full max-w-full overflow-hidden">
+      <div
+        className="w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain pb-1 md:hidden"
+        style={{ scrollbarWidth: "none" }}
+      >
         <div
-          className="flex max-w-full gap-1.5 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-1"
-          style={{ scrollbarWidth: "none" }}
+          className="flex w-max max-w-none gap-1.5"
         >
           {SETTINGS_CATEGORIES.map((cat) => {
             const isActive = cat.id === active;

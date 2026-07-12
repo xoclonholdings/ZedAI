@@ -82,9 +82,9 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     order: 2,
     label: "Build the strategy",
     shortLabel: "Strategy",
-    purpose: "Turn what Zed learned into repeatable, versioned trading systems.",
+    purpose: "Zed turns what it learned into repeatable, versioned trading systems.",
     yourMove:
-      "Define the systems you want — entry model, exits, timeframes, markets, sizing, and no-trade rules — and let Zed structure each as a versioned strategy.",
+      "Tell Zed which systems to build — the markets, entries, exits, sizing, and no-trade rules to encode.",
     whatZedDoes:
       "Stores each strategy as a versioned object with full history you can roll back to, and auto-runs a governance review so you see a verdict on every one.",
     readyWhen: [
@@ -104,8 +104,8 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     order: 3,
     label: "Validate the strategy",
     shortLabel: "Validation",
-    purpose: "Have Zed objectively decide whether a strategy deserves testing.",
-    yourMove: "Submit a strategy for Zed's Trading Intelligence review.",
+    purpose: "Zed objectively decides whether a strategy deserves testing.",
+    yourMove: "Point Zed at a strategy to review.",
     whatZedDoes:
       "Runs market context, binary triggers, statistical edge, risk math, systemic-weakness, optimization, and governance review — returning Approved / Conditionally Approved / Paper Trade Only / Requires Revision / Rejected.",
     readyWhen: [
@@ -125,9 +125,9 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     order: 4,
     label: "Sandbox trading",
     shortLabel: "Sandbox",
-    purpose: "Prove the strategy inside Zed's simulator before any external evaluation.",
+    purpose: "Zed proves the strategy in its simulator before any external evaluation.",
     yourMove:
-      "Log paper trades against the strategy — each with a thesis, entry / stop / target, and a lesson on close.",
+      "Hand Zed setups to paper-trade — each with a thesis it authorizes, simulates, and journals.",
     whatZedDoes:
       "Authorizes each trade through the governance layer, simulates the outcome, compares expected vs actual, flags rule violations, and tracks performance against the exact strategy version used.",
     readyWhen: [
@@ -147,9 +147,9 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     order: 5,
     label: "External evaluation",
     shortLabel: "Evaluation",
-    purpose: "Validate the process inside professional evaluation environments.",
+    purpose: "Zed's process is validated inside professional evaluation environments.",
     yourMove:
-      "Connect Lucid, Tradovate Paper, or TradingView, then trade under evaluation rules (objective, daily loss, drawdown, consistency).",
+      "Connect an evaluation provider (Lucid, Tradovate Paper, or TradingView) so Zed can run the process under real evaluation rules.",
     whatZedDoes:
       "Tracks evaluation progress, imports trades when a provider bridge is live or preserves a structured manual workflow when it isn't, and reports how far you are from the objective.",
     readyWhen: [
@@ -169,9 +169,9 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     order: 6,
     label: "Qualification",
     shortLabel: "Qualification",
-    purpose: "Confirm the process consistently satisfies professional evaluation requirements.",
+    purpose: "Zed confirms it consistently satisfies professional evaluation requirements.",
     yourMove:
-      "Keep executing while Zed watches the readiness scorecard — consistency, drawdown, rule compliance, average R, expectancy, profit factor.",
+      "Let Zed keep running and read the daily readiness scorecard it produces.",
     whatZedDoes:
       "Reports current strengths, weaknesses, required improvements, and readiness every day.",
     readyWhen: [
@@ -190,9 +190,9 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     order: 7,
     label: "Live trading",
     shortLabel: "Live",
-    purpose: "Operate a professionally governed trading environment.",
+    purpose: "Zed operates a professionally governed live trading environment.",
     yourMove:
-      "Authorize real trades within the risk framework Zed proved out through the earlier stages.",
+      "Authorize Zed to execute within the risk framework it proved out through the earlier stages.",
     whatZedDoes:
       "Runs broker connectivity, portfolio and execution engines, the risk engine, position/order monitoring, trade authorization, analytics, a kill switch, and drawdown controls — all inside the discipline built in stages 1–6.",
     readyWhen: [

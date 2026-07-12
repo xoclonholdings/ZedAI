@@ -123,7 +123,7 @@ export class LightningProvider implements ModelProvider {
       : buildPromptFromMessages(composed, options?.systemPrompt);
 
     const requestBody: Record<string, unknown> = {
-      model: options?.model || resolveModelForLane(options?.lane, config.model),
+      model: options?.model || resolveModelForLane(options?.lane, config.model, options?.reasoningEffort),
       // OpenAI-compatible messages with content blocks so LitServe /
       // vLLM / TGI runners that speak OpenAI schema light up.
       messages: composed.map((m) => ({

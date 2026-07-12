@@ -65,6 +65,14 @@ export function registerDiagnosticsRoutes(
           research: config.laneModels.research || "",
           business: config.laneModels.business || "",
           finance: config.laneModels.finance || "",
+          strategy: config.laneModels.strategy || "",
+          admin: config.laneModels.admin || "",
+        },
+        reasoning_models: {
+          low: config.reasoningModels.low || "",
+          medium: config.reasoningModels.medium || "",
+          high: config.reasoningModels.high || "",
+          deep: config.reasoningModels.deep || "",
         },
       });
     } catch (err: any) {
@@ -148,7 +156,16 @@ export function registerDiagnosticsRoutes(
         research: providerConfig.laneModels.research || "",
         business: providerConfig.laneModels.business || "",
         finance: providerConfig.laneModels.finance || "",
+        strategy: providerConfig.laneModels.strategy || "",
+        admin: providerConfig.laneModels.admin || "",
       },
+      reasoningModels: {
+        low: providerConfig.reasoningModels.low || "",
+        medium: providerConfig.reasoningModels.medium || "",
+        high: providerConfig.reasoningModels.high || "",
+        deep: providerConfig.reasoningModels.deep || "",
+      },
+      laneReasoningModels: providerConfig.laneReasoningModels,
       routing: routingSummary.routing,
     });
   });

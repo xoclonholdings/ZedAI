@@ -37,9 +37,9 @@ export default function AdminNav({
   const activeTab = TABS.find((t) => t.id === active) || TABS[0];
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden border-b border-white/10 bg-black/60">
+    <div className="relative z-30 w-full max-w-[100vw] border-b border-white/10 bg-black/60">
       {/* Mobile dropdown picker (≤ md) */}
-      <div ref={wrapperRef} className="relative max-w-full px-4 py-2.5 md:hidden">
+      <div ref={wrapperRef} className="relative w-full max-w-full px-4 py-2.5 md:hidden">
         <button
           type="button"
           onClick={() => setPickerOpen((v) => !v)}
@@ -60,7 +60,7 @@ export default function AdminNav({
         {pickerOpen && (
           <div
             role="menu"
-            className="absolute left-4 right-4 z-30 mt-1 rounded-xl border border-white/10 bg-black/95 p-1 shadow-2xl backdrop-blur"
+            className="absolute left-4 right-4 top-full z-50 mt-1 rounded-xl border border-white/10 bg-black/95 p-1 shadow-2xl backdrop-blur"
           >
             {TABS.map(({ id, label }) => {
               const badge = id === "approvals" ? pendingApprovals : 0;
@@ -93,7 +93,7 @@ export default function AdminNav({
       </div>
 
       {/* Desktop tab strip (md+) */}
-      <div className="hidden max-w-full gap-1 overflow-x-auto px-4 md:flex">
+      <div className="hidden max-w-full min-w-0 gap-1 overflow-x-auto px-4 md:flex">
         {TABS.map(({ id, label }) => {
           const badge = id === "approvals" ? pendingApprovals : 0;
           const isActive = active === id;

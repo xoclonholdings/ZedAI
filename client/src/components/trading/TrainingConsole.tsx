@@ -9,6 +9,13 @@ import type {
 
 import { EmptyBox, NoticeBanner, StageShell, inputClass } from "./stage-atoms";
 
+const STATUS_LABEL: Record<string, string> = {
+  connected: "connected",
+  configured: "signed in",
+  error: "needs attention",
+  disconnected: "not connected",
+};
+
 /**
  * How you feed and connect Zed for training:
  *   - Upload material (files) so Zed ingests it into its knowledge.
@@ -37,6 +44,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
 
   const [providers, setProviders] = useState<IntegrationProviderInfo[]>([]);
   const [integrations, setIntegrations] = useState<TradingIntegration[]>([]);
+  const [selected, setSelected] = useState<string>("");
 
   const loadIntegrations = useCallback(async () => {
     try {
@@ -54,6 +62,13 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
   useEffect(() => {
     void loadIntegrations();
   }, [loadIntegrations]);
+
+  useEffect(() => {
+    if (!selected && providers.length > 0) setSelected(providers[0].provider);
+  }, [providers, selected]);
+
+  const selectedInfo = providers.find((p) => p.provider === selected);
+  const connectedCount = integrations.filter((i) => i.status !== "disconnected").length;
 
   const upload = useCallback(async () => {
     setError(null);
@@ -169,16 +184,43 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
         {providers.length === 0 ? (
           <EmptyBox>Loading providers…</EmptyBox>
         ) : (
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            {providers.map((info) => (
-              <ProviderCard
-                key={info.provider}
-                info={info}
-                integration={integrations.find((i) => i.provider === info.provider)}
-                onChanged={loadIntegrations}
-              />
-            ))}
-          </div>
+          <>
+            <label className="block">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-[11px] uppercase tracking-[0.08em] text-white/50">
+                  Choose an account
+                </span>
+                <span className="text-[10.5px] text-white/35">
+                  {connectedCount} of {providers.length} connected
+                </span>
+              </div>
+              <select
+                value={selected}
+                onChange={(e) => setSelected(e.target.value)}
+                className={inputClass}
+              >
+                {providers.map((info) => {
+                  const st = integrations.find((i) => i.provider === info.provider)?.status;
+                  const label = STATUS_LABEL[st || "disconnected"];
+                  return (
+                    <option key={info.provider} value={info.provider} className="bg-neutral-900">
+                      {info.label} — {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+            {selectedInfo && (
+              <div className="mt-2.5">
+                <ProviderCard
+                  key={selectedInfo.provider}
+                  info={selectedInfo}
+                  integration={integrations.find((i) => i.provider === selectedInfo.provider)}
+                  onChanged={loadIntegrations}
+                />
+              </div>
+            )}
+          </>
         )}
       </div>
     </StageShell>

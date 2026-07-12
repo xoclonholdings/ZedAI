@@ -37,12 +37,22 @@ export type ProviderLane =
   | "operations"
   | "research"
   | "business"
-  | "finance";
+  | "finance"
+  | "strategy"
+  | "admin";
+
+/**
+ * Reasoning effort is separate from lane. Lane answers "what kind of
+ * work is this?", effort answers "how hard is this turn?".
+ */
+export type ReasoningEffort = "low" | "medium" | "high" | "deep";
 
 export interface ProviderExecutionOptions {
   model?: string;
   systemPrompt?: string;
   lane?: ProviderLane;
+  /** Lets the provider pick a lighter/heavier configured model for this turn. */
+  reasoningEffort?: ReasoningEffort;
   /**
    * Generation parameters. When any of these are set, providers forward
    * them into the request body; when unset, provider-executor derives

@@ -1,3 +1,5 @@
+import type { ProviderLane, ReasoningEffort } from "./provider-interface";
+
 /**
  * Lightning AI is the only provider. The concept of a "provider name"
  * is kept only so downstream diagnostics and admin UI have a stable
@@ -5,28 +7,18 @@
  */
 export type ProviderName = "lightning";
 
-export type ProviderLane =
-  | "chat"
-  | "manager"
-  | "operations"
-  | "research"
-  | "business"
-  | "finance";
-
 export interface ProviderRuntimeConfig {
   activeProvider: ProviderName;
   activeModel: string;
   /**
    * Per-lane model overrides. Set via env vars:
    *   MODEL_CHAT, MODEL_MANAGER, MODEL_OPERATIONS,
-   *   MODEL_RESEARCH, MODEL_BUSINESS, MODEL_FINANCE.
-   * When a lane has no explicit override, the runner falls back to
-   * MODEL_NAME / LIGHTNING_MODEL / a built-in default.
-   *
-   * This is where "switch based on reasoning need" lives: point the
-   * research lane at a heavier model, keep chat on something fast.
+   *   MODEL_RESEARCH, MODEL_BUSINESS, MODEL_FINANCE,
+   *   MODEL_STRATEGY, MODEL_ADMIN.
    */
   laneModels: Partial<Record<ProviderLane, string>>;
+  reasoningModels: Partial<Record<ReasoningEffort, string>>;
+  laneReasoningModels: Partial<Record<ProviderLane, Partial<Record<ReasoningEffort, string>>>>;
   lightning: {
     baseUrl: string;
     apiKey: string;
@@ -51,33 +43,90 @@ function laneEnv(lane: ProviderLane): string | undefined {
   );
 }
 
+const PROVIDER_LANES: ProviderLane[] = [
+  "chat",
+  "manager",
+  "operations",
+  "research",
+  "business",
+  "finance",
+  "strategy",
+  "admin",
+];
+
+const REASONING_EFFORTS: ReasoningEffort[] = ["low", "medium", "high", "deep"];
+
 function buildLaneModels(): Partial<Record<ProviderLane, string>> {
-  const lanes: ProviderLane[] = [
-    "chat",
-    "manager",
-    "operations",
-    "research",
-    "business",
-    "finance",
-  ];
   const out: Partial<Record<ProviderLane, string>> = {};
-  for (const lane of lanes) {
+  for (const lane of PROVIDER_LANES) {
     const value = laneEnv(lane);
     if (value) out[lane] = value;
   }
   return out;
 }
 
+function reasoningEnv(effort: ReasoningEffort): string | undefined {
+  const upper = effort.toUpperCase();
+  return (
+    process.env[`MODEL_REASONING_${upper}`]?.trim() ||
+    process.env[`REASONING_${upper}_MODEL`]?.trim() ||
+    undefined
+  );
+}
+
+function laneReasoningEnv(lane: ProviderLane, effort: ReasoningEffort): string | undefined {
+  const upperLane = lane.toUpperCase();
+  const upperEffort = effort.toUpperCase();
+  return (
+    process.env[`MODEL_${upperLane}_${upperEffort}`]?.trim() ||
+    process.env[`LANE_${upperLane}_${upperEffort}_MODEL`]?.trim() ||
+    undefined
+  );
+}
+
+function buildReasoningModels(): Partial<Record<ReasoningEffort, string>> {
+  const out: Partial<Record<ReasoningEffort, string>> = {};
+  for (const effort of REASONING_EFFORTS) {
+    const value = reasoningEnv(effort);
+    if (value) out[effort] = value;
+  }
+  return out;
+}
+
+function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record<ReasoningEffort, string>>>> {
+  const out: Partial<Record<ProviderLane, Partial<Record<ReasoningEffort, string>>>> = {};
+  for (const lane of PROVIDER_LANES) {
+    const laneOut: Partial<Record<ReasoningEffort, string>> = {};
+    for (const effort of REASONING_EFFORTS) {
+      const value = laneReasoningEnv(lane, effort);
+      if (value) laneOut[effort] = value;
+    }
+    if (Object.keys(laneOut).length > 0) out[lane] = laneOut;
+  }
+  return out;
+}
+
 /**
  * Resolve the model name to use for a given lane. Priority:
- *   1. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
- *   2. Global MODEL_NAME / ZED_MODEL_NAME
- *   3. The Lightning-configured fallback.
+ *   1. Lane + reasoning override (MODEL_FINANCE_DEEP, MODEL_RESEARCH_HIGH, ...)
+ *   2. Reasoning override (MODEL_REASONING_DEEP, MODEL_REASONING_HIGH, ...)
+ *   3. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
+ *   4. Global MODEL_NAME / ZED_MODEL_NAME
+ *   5. The Lightning-configured fallback.
  */
 export function resolveModelForLane(
   lane: ProviderLane | undefined,
   fallback: string,
+  reasoningEffort?: ReasoningEffort,
 ): string {
+  if (lane && reasoningEffort) {
+    const laneReasoningValue = laneReasoningEnv(lane, reasoningEffort);
+    if (laneReasoningValue) return laneReasoningValue;
+  }
+  if (reasoningEffort) {
+    const reasoningValue = reasoningEnv(reasoningEffort);
+    if (reasoningValue) return reasoningValue;
+  }
   if (lane) {
     const laneValue = laneEnv(lane);
     if (laneValue) return laneValue;
@@ -106,6 +155,8 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
     activeProvider: "lightning",
     activeModel,
     laneModels: buildLaneModels(),
+    reasoningModels: buildReasoningModels(),
+    laneReasoningModels: buildLaneReasoningModels(),
     lightning: {
       baseUrl,
       apiKey:

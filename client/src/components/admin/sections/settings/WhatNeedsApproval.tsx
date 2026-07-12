@@ -221,12 +221,12 @@ export function WhatNeedsApproval() {
 
   const header = useMemo(
     () => (
-      <header className="mb-6 flex max-w-full flex-wrap items-start justify-between gap-4">
+      <header className="mb-6 flex w-full min-w-0 max-w-full flex-wrap items-start justify-between gap-4 overflow-hidden">
         <div className="min-w-0 flex-1">
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
             What needs your approval
           </h2>
-          <p className="mt-1.5 max-w-full break-words text-[13.5px] leading-snug text-white/50 sm:max-w-[62ch]">
+          <p className="mt-1.5 max-w-full break-words text-[13.5px] leading-snug text-white/50 [overflow-wrap:anywhere] sm:max-w-[62ch]">
             For each thing Zed might do on your behalf, choose whether Zed goes
             ahead automatically, drafts and asks you first, or never does it at
             all.{" "}
@@ -242,7 +242,7 @@ export function WhatNeedsApproval() {
   );
 
   return (
-    <div>
+    <div className="w-full min-w-0 max-w-full overflow-hidden">
       {header}
       {loadError && <LoadErrorBanner onRetry={() => void load()} />}
 
@@ -268,11 +268,11 @@ export function WhatNeedsApproval() {
         </SettingGroup>
       ))}
 
-      <div className="flex justify-end pt-5 mt-8 border-t border-white/[0.06]">
+      <div className="mt-8 flex w-full max-w-full justify-end border-t border-white/[0.06] pt-5">
         <button
           type="button"
           onClick={onReset}
-          className="text-[13px] text-white/50 hover:text-red-300 hover:bg-white/[0.04] px-3 py-1.5 rounded-md transition-colors"
+          className="max-w-full break-words rounded-md px-3 py-1.5 text-[13px] text-white/50 transition-colors [overflow-wrap:anywhere] hover:bg-white/[0.04] hover:text-red-300"
         >
           Reset this section to defaults
         </button>

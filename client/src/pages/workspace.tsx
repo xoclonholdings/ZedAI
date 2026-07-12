@@ -20,6 +20,10 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import ResearchDesk from "./ResearchDesk";
+import WorkspaceDesk from "./WorkspaceDesk";
+import WorkspaceLibrary from "@/components/WorkspaceLibrary";
+import { WORKSPACE_DESK_SPECS } from "@shared/workspace-desk-types";
 
 interface PublishedWorkItem {
   id: string;
@@ -79,38 +83,14 @@ const FINANCE: WorkspaceConfig = {
 
 const WORKSPACES: Record<string, WorkspaceConfig> = {
   research: {
+    // Research renders the ResearchDesk working surface (see WorkspacePage);
+    // this config stays only as a fallback.
     label: "Research",
     purpose:
       "Research people, companies, markets, competitors, technologies, products, trends, papers, and documents.",
     icon: Search,
     categories: ["research"],
     empty: "No research tools are published yet.",
-    subspaces: [
-      {
-        label: "Discovery",
-        description:
-          "Explore people, companies, markets, and topics. Zed gathers sources so you start from signal, not a blank page.",
-        href: "/discovery",
-        icon: Search,
-        accent: "cyan",
-      },
-      {
-        label: "Projects",
-        description:
-          "Keep each research initiative in its own space with its own sources and memory, so Zed answers in-context.",
-        href: "/projects",
-        icon: FolderKanban,
-        accent: "fuchsia",
-      },
-      {
-        label: "Run History",
-        description:
-          "Every research flow Zed has run, with inputs, outputs, and traces. Revisit what worked and rerun it.",
-        href: "/runs",
-        icon: History,
-        accent: "emerald",
-      },
-    ],
   },
   operations: {
     label: "Operations",
@@ -227,6 +207,15 @@ export default function WorkspacePage() {
     return items.filter((item) => config.categories.includes(item.category));
   }, [config.categories, items]);
 
+  // Workspaces are real working surfaces (a desk you do the work in), not
+  // menus of cards. Placed after all hooks so hook order stays stable.
+  if (workspace === "research") {
+    return <ResearchDesk />;
+  }
+  if (WORKSPACE_DESK_SPECS[workspace]) {
+    return <WorkspaceDesk workspace={workspace} />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
       <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
@@ -267,6 +256,8 @@ export default function WorkspacePage() {
           <MessageSquare size={14} className="mr-2" />
           Ask Zed in {config.label}
         </Button>
+
+        <WorkspaceLibrary workspace={workspace} label={`${config.label} library`} />
 
         {config.subspaces && config.subspaces.length > 0 && (
           <section className="space-y-2">

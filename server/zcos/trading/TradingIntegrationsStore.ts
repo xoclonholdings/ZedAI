@@ -3,6 +3,10 @@ import path from "path";
 
 import { HUB_DIR } from "../../utils/repoPaths";
 import {
+  readTradingState,
+  writeTradingState,
+} from "./tradingPersistence";
+import {
   INTEGRATION_PROVIDERS,
   integrationProviderInfo,
   type IntegrationProvider,
@@ -12,15 +16,20 @@ import {
 
 /**
  * Per-user trading provider connections (TopStep, TradingView, Lucid,
- * Tradovate, custom).
+ * Tradovate, Kalshi, Polymarket, custom).
  *
  * This is the real connection/credential layer that live sync will
  * use. Secrets are stored server-side and NEVER returned to the
  * client — the API only exposes whether a credential is present.
  *
- * Storage: hub/trading/integrations/<userId>.json
+ * Storage: durable `trading_state` table (scope "integrations", key
+ * per user) so a login survives restarts/redeploys and the user
+ * staying signed out of the app never wipes what Zed can sign into.
+ * On hosts with no database configured we fall back to the legacy
+ * JSON file at hub/trading/integrations/<userId>.json.
  */
 
+const INTEGRATIONS_SCOPE = "integrations";
 const INTEGRATIONS_DIR = path.resolve(HUB_DIR, "trading", "integrations");
 
 interface StoredIntegration {
@@ -37,9 +46,12 @@ interface StoredIntegration {
   updatedAt: string;
 }
 
+function keyFor(userId: string): string {
+  return userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
 function fileFor(userId: string): string {
-  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
-  return path.resolve(INTEGRATIONS_DIR, `${safe}.json`);
+  return path.resolve(INTEGRATIONS_DIR, `${keyFor(userId)}.json`);
 }
 
 function now(): string {
@@ -47,6 +59,11 @@ function now(): string {
 }
 
 async function readAll(userId: string): Promise<StoredIntegration[]> {
+  // Durable DB is the source of truth so connections survive restarts.
+  const fromDb = await readTradingState<StoredIntegration[]>(INTEGRATIONS_SCOPE, keyFor(userId));
+  if (Array.isArray(fromDb)) return fromDb;
+  // No DB row yet (offline mode, or data written before this migration) —
+  // seed from the legacy JSON file; the next write persists it to the DB.
   try {
     const raw = await fs.readFile(fileFor(userId), "utf8");
     const parsed = JSON.parse(raw);
@@ -57,6 +74,9 @@ async function readAll(userId: string): Promise<StoredIntegration[]> {
 }
 
 async function writeAll(userId: string, records: StoredIntegration[]): Promise<void> {
+  const wroteDb = await writeTradingState(INTEGRATIONS_SCOPE, keyFor(userId), records);
+  if (wroteDb) return;
+  // No database configured — keep the legacy JSON file working offline.
   await fs.mkdir(INTEGRATIONS_DIR, { recursive: true });
   await fs.writeFile(fileFor(userId), JSON.stringify(records, null, 2), "utf8");
 }

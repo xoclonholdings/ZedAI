@@ -69,6 +69,7 @@ export default function LearnStage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [query, setQuery] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [notice, setNotice] = useState<string | null>(null);
@@ -151,6 +152,23 @@ export default function LearnStage() {
     }
     return groups;
   }, [entries]);
+
+  // Categories ordered by size (biggest first) for the filter row.
+  const categories = useMemo(
+    () => Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]),
+    [categoryCounts],
+  );
+
+  // If the active category disappears (e.g. after a text search), reset it.
+  useEffect(() => {
+    if (activeCategory && !categoryCounts[activeCategory]) setActiveCategory(null);
+  }, [activeCategory, categoryCounts]);
+
+  const visibleGroups = useMemo(() => {
+    if (!activeCategory) return Object.entries(grouped);
+    const list = grouped[activeCategory];
+    return list ? [[activeCategory, list] as [string, TradingKnowledgeEntry[]]] : [];
+  }, [grouped, activeCategory]);
 
   return (
     <StageShell
@@ -269,21 +287,61 @@ export default function LearnStage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search your library"
+            placeholder="Search notes or tags"
             className={`${inputClass} pl-8`}
           />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+              aria-label="Clear search"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
         <div className="text-[12px] text-white/40 whitespace-nowrap">
           {entries.length} in library
         </div>
       </div>
 
+      {categories.length > 1 && (
+        <div className="mb-4 -mx-0.5 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveCategory(null)}
+            className={`rounded-full px-2.5 py-1 text-[11px] transition-colors ${
+              activeCategory === null
+                ? "bg-cyan-400 text-black font-medium"
+                : "bg-white/[0.05] text-white/60 hover:text-white"
+            }`}
+          >
+            All ({entries.length})
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setActiveCategory((c) => (c === cat ? null : cat))}
+              className={`rounded-full px-2.5 py-1 text-[11px] transition-colors ${
+                activeCategory === cat
+                  ? "bg-cyan-400 text-black font-medium"
+                  : "bg-white/[0.05] text-white/60 hover:text-white"
+              }`}
+            >
+              {friendlyCategory(cat)} ({categoryCounts[cat]})
+            </button>
+          ))}
+        </div>
+      )}
+
       {entries.length === 0 ? (
         <EmptyBox>
           Nothing here yet. Tap Add knowledge and paste what you're studying.
         </EmptyBox>
       ) : (
-        Object.entries(grouped).map(([category, list]) => (
+        visibleGroups.map(([category, list]) => (
           <div key={category} className="mb-5">
             <GroupHeading label={friendlyCategory(category)} count={categoryCounts[category]} />
             <div className="space-y-1.5">
@@ -306,12 +364,15 @@ export default function LearnStage() {
                     {entry.tags && entry.tags.length > 0 && (
                       <div className="flex gap-1 flex-wrap">
                         {entry.tags.slice(0, 3).map((t) => (
-                          <span
+                          <button
                             key={t}
-                            className="text-[10px] uppercase tracking-[0.06em] bg-white/[0.06] text-white/60 rounded-full px-2 py-0.5"
+                            type="button"
+                            onClick={() => setQuery(t)}
+                            title={`Search “${t}”`}
+                            className="text-[10px] uppercase tracking-[0.06em] bg-white/[0.06] text-white/60 rounded-full px-2 py-0.5 hover:bg-cyan-400/20 hover:text-cyan-200 transition-colors"
                           >
                             {t}
-                          </span>
+                          </button>
                         ))}
                       </div>
                     )}

@@ -266,13 +266,30 @@ export function validateEnv(
   pushLightningChecks(env, checks);
 
   // 2. Per-lane overrides (informational only)
-  const lanes = ["CHAT", "MANAGER", "OPERATIONS", "RESEARCH", "BUSINESS", "FINANCE"];
+  const lanes = ["CHAT", "MANAGER", "OPERATIONS", "RESEARCH", "BUSINESS", "FINANCE", "STRATEGY", "ADMIN"];
   const overrideCount = lanes.filter((lane) => present(env, `MODEL_${lane}`)).length;
   if (overrideCount > 0) {
     checks.push({
       name: "MODEL_<lane> overrides",
       severity: "ok",
       message: `${overrideCount} of ${lanes.length} lanes have explicit overrides.`,
+    });
+  }
+
+  const reasoningEfforts = ["LOW", "MEDIUM", "HIGH", "DEEP"];
+  const reasoningOverrideCount = reasoningEfforts.filter((effort) =>
+    present(env, `MODEL_REASONING_${effort}`),
+  ).length;
+  const laneReasoningOverrideCount = lanes.reduce(
+    (count, lane) =>
+      count + reasoningEfforts.filter((effort) => present(env, `MODEL_${lane}_${effort}`)).length,
+    0,
+  );
+  if (reasoningOverrideCount > 0 || laneReasoningOverrideCount > 0) {
+    checks.push({
+      name: "MODEL_REASONING_<effort> overrides",
+      severity: "ok",
+      message: `${reasoningOverrideCount} general and ${laneReasoningOverrideCount} lane-specific reasoning overrides configured.`,
     });
   }
 
