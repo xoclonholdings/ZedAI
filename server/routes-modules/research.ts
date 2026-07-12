@@ -6,6 +6,7 @@ import {
   generateResearchBrief,
   listResearchBriefs,
 } from "../services/research/ResearchEngine";
+import { getWebSearchStatus, webSearch } from "../services/WebSearchService";
 
 /**
  * Research workspace routes — the working surface where you hand Zed a
@@ -17,6 +18,24 @@ function userIdFrom(req: any): string {
 }
 
 export function registerResearchRoutes(app: Express): void {
+  // Research component #1 — Search. Real web search via the existing
+  // WebSearchService (Brave -> Serper, access-policy enforced).
+  app.post("/api/research/search", isAuthenticated, async (req: any, res) => {
+    const query = String(req.body?.query || "").trim();
+    if (!query) return res.status(400).json({ error: "query is required" });
+    try {
+      const response = await webSearch(query, Math.min(Number(req.body?.count) || 8, 15));
+      res.json(response);
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Search failed" });
+    }
+  });
+
+  app.get("/api/research/search/status", isAuthenticated, async (_req: any, res) => {
+    const s = getWebSearchStatus();
+    res.json({ available: s.braveConfigured || s.serperConfigured, ...s });
+  });
+
   app.get("/api/research/briefs", isAuthenticated, async (req: any, res) => {
     try {
       const briefs = await listResearchBriefs(userIdFrom(req));
