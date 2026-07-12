@@ -1,0 +1,867 @@
+{
+  "version": "1",
+  "generatedAt": "2026-07-12T01:30:57.165Z",
+  "candidates": [
+    {
+      "id": "obj_project_73050ed7",
+      "type": "project",
+      "canonicalName": "Zed",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_0143a735",
+      "type": "project",
+      "canonicalName": "ZedAI",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_059894b0",
+      "type": "project",
+      "canonicalName": "Xoclon",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_1ce63fc7",
+      "type": "project",
+      "canonicalName": "Fantasma",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_019ff5aa",
+      "type": "project",
+      "canonicalName": "xoclonholdings",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_integration_43c4dfbc",
+      "type": "integration",
+      "canonicalName": "GitHub",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_integration_ff0487a5",
+      "type": "integration",
+      "canonicalName": "Neon",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_integration_1ddf63d1",
+      "type": "integration",
+      "canonicalName": "Stripe",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_integration_15821b14",
+      "type": "integration",
+      "canonicalName": "Gmail",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_rule_257f2cbb",
+      "type": "rule",
+      "canonicalName": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplemen",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_task_e0ea8fb6",
+      "type": "task",
+      "canonicalName": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_22d44ec9",
+      "type": "task",
+      "canonicalName": "Or should I just leave it as the first one? \\n\\nIf it's leav",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_event_a336456b",
+      "type": "event",
+      "canonicalName": "Coin is a real, on-chain cryptocurrency deployed on the Poly",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_rule_23cf8e4b",
+      "type": "rule",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_task_1fa9c107",
+      "type": "task",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_rule_b336b69e",
+      "type": "rule",
+      "canonicalName": "Do not jump ahead.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_rule_ac95f91a",
+      "type": "rule",
+      "canonicalName": "Do not batch steps.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_event_cc32f667",
+      "type": "event",
+      "canonicalName": "The **USB connection failed**\\n2.",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_event_7640d95c",
+      "type": "event",
+      "canonicalName": "The **drive hardware itself failed**\\n\\nWe’ll check them **i",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_319903cd",
+      "type": "task",
+      "canonicalName": "I do get royalties as an actor, dancer, and artist under my ",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_be470434",
+      "type": "preference",
+      "canonicalName": "It's a polygon coin and I already have some liquidity in tha",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_935bee11",
+      "type": "task",
+      "canonicalName": "We’ll need to carefully break this down because BTC is on a ",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_8068418f",
+      "type": "task",
+      "canonicalName": "Act as if I am a 13 year old and give me the step by step, s",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_d72e94fc",
+      "type": "task",
+      "canonicalName": "Any information you may need to finish this list please ask ",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_rule_db558059",
+      "type": "rule",
+      "canonicalName": "Here's a breakdown of what's likely going on with this type ",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_task_b880abdf",
+      "type": "task",
+      "canonicalName": "I only have 46 miles left and I need to get back home, which",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_4f260b45",
+      "type": "task",
+      "canonicalName": "The coin should have a premium, futuristic look with a sleek",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_ab5efb0f",
+      "type": "task",
+      "canonicalName": "What items should be here? \\n\\nI know getting fitness gear w",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_2eb31f3e",
+      "type": "task",
+      "canonicalName": "To buy GoMining tokens I have to deposit them…which takes me",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_d9e363ba",
+      "type": "task",
+      "canonicalName": "Dead giveaway.\\n\\nHere’s the real tea:\\n\\n### 🕷️ What You L",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_7d996872",
+      "type": "task",
+      "canonicalName": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already dep",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_event_d2127f53",
+      "type": "event",
+      "canonicalName": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already dep",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_74e2f213",
+      "type": "task",
+      "canonicalName": "Prepare Allocation Wallets (per category)\\n\\nEach category i",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_cf653674",
+      "type": "preference",
+      "canonicalName": "I havent decided exactly which one I want to incorporate wit",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_open_question_504d4e8c",
+      "type": "open_question",
+      "canonicalName": "The current EIN is filed under GRATIA DEI as a corporation, ",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.6
+    },
+    {
+      "id": "obj_preference_6c153972",
+      "type": "preference",
+      "canonicalName": "Ready to dive back into the #TLDR ebook series?\\nuser: yes I",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_preference_6a6f6267",
+      "type": "preference",
+      "canonicalName": "I can always add it in.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_7e5a8bad",
+      "type": "task",
+      "canonicalName": "I need to get this on the amazon kindle.",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_d2dfd9fd",
+      "type": "preference",
+      "canonicalName": "Can we explore approval options based on what I’ve got?**\\n\\",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_preference_7624efc4",
+      "type": "preference",
+      "canonicalName": "He never responded to the email I sent him as a friend of Sa",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_ac687bcc",
+      "type": "task",
+      "canonicalName": "Lol I have to get the EIN from the IRS...I forgot I made thi",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_638e2ecd",
+      "type": "preference",
+      "canonicalName": "Here’s Step 1 of your Vendor Deal Checklist — let’s start wi",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_dcb9dbdb",
+      "type": "task",
+      "canonicalName": "Here’s Step 1 of your Vendor Deal Checklist — let’s start wi",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_dc8d7310",
+      "type": "task",
+      "canonicalName": "Its not autoconnecting and I need to send out these emails o",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_818a00d1",
+      "type": "task",
+      "canonicalName": "The assigned EIN is **39-2284835**, as shown in the confirma",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_rule_36f045c7",
+      "type": "rule",
+      "canonicalName": "Identify 2-3 tasks and provide plenty of details to explain.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_task_3137c1cf",
+      "type": "task",
+      "canonicalName": "Identify 2-3 tasks and provide plenty of details to explain.",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_21f1d66a",
+      "type": "task",
+      "canonicalName": "Ask me 3 questions first on whatever you need to know.\\nassi",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_project_b3ecd5de",
+      "type": "project",
+      "canonicalName": "XOCLON",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_integration_49601898",
+      "type": "integration",
+      "canonicalName": "Stripe",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_integration_4f920a7e",
+      "type": "integration",
+      "canonicalName": "PayPal",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_task_87cf6154",
+      "type": "task",
+      "canonicalName": "No overwhelm.\"},{\"id\":\"4e060163-a35f-495d-981a-a7de6ebac91c\"",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_4ed22d45",
+      "type": "preference",
+      "canonicalName": "I know most people dont think like that BUT Ive also never s",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_48192a48",
+      "type": "task",
+      "canonicalName": "Or define **what happens after each option is selected**\\n\\n",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_da470126",
+      "type": "task",
+      "canonicalName": "That’s exactly what you should do right now.\\n\\nDon’t rush t",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_822cb473",
+      "type": "preference",
+      "canonicalName": "And in a way I want it to feel ginmicky honestly.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_3606d554",
+      "type": "task",
+      "canonicalName": "Don’t over-whisper\\nIt should feel:\\n- intentional \\n- confi",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_3743fa23",
+      "type": "task",
+      "canonicalName": "Thats it.\"},{\"id\":\"7bdebc97-0169-4d4c-bc64-5d28621fe055\",\"ro",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_rule_a5cb97ac",
+      "type": "rule",
+      "canonicalName": "Subtle expansion (DO NOT dump features)\\n\\nNow give **ONE ne",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_preference_595f59e8",
+      "type": "preference",
+      "canonicalName": "Never block entry\\nPermissions should not feel like a wall.\\",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_rule_05de635c",
+      "type": "rule",
+      "canonicalName": "Never block entry\\nPermissions should not feel like a wall.\\",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_task_7655d568",
+      "type": "task",
+      "canonicalName": "Never block entry\\nPermissions should not feel like a wall.\\",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_9d69bb23",
+      "type": "preference",
+      "canonicalName": "Never show a dead screen\\nEven at 0 steps, something should ",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_5aca56b5",
+      "type": "task",
+      "canonicalName": "Never show a dead screen\\nEven at 0 steps, something should ",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_ad0032a3",
+      "type": "task",
+      "canonicalName": "The tone is almost there.\\n\\nWe just need to tighten two thi",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_09efbbbf",
+      "type": "preference",
+      "canonicalName": "We're here.\"},{\"id\":\"8642d5cc-3eb6-48d4-86f6-69ed5f83be78\",\"",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_2d93f215",
+      "type": "task",
+      "canonicalName": "We’re here.”**\\n\\n- removes urgency \\n- builds comfort \\n- f",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_ba96af48",
+      "type": "task",
+      "canonicalName": "This is the **calibration moment**.\\n\\nIf you get this wrong",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_e72a18ba",
+      "type": "task",
+      "canonicalName": "We just need to make the transitions feel natural.\\n\\n# Clea",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_5048587e",
+      "type": "task",
+      "canonicalName": "Let me in.”\\n\\nThat should exist.\\n\\n# The rule\\n\\nAfter the",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_bbd4784a",
+      "type": "task",
+      "canonicalName": "I’m going inside now.”\\n\\n# Final answer\\n\\nYes, they absolu",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_1a3a168d",
+      "type": "task",
+      "canonicalName": "We just need to do it without breaking the loop.\\n\\n---\\n\\n#",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_3c11eda7",
+      "type": "task",
+      "canonicalName": "They dont need to learn the game\"},{\"id\":\"eb2acb0c-95aa-48f8",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_3d894f78",
+      "type": "task",
+      "canonicalName": "Show only what they already understand\\n\\nBecause they came ",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_open_question_6ee1fd7b",
+      "type": "open_question",
+      "canonicalName": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.6
+    },
+    {
+      "id": "obj_task_e8e68985",
+      "type": "task",
+      "canonicalName": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_constraint_b7462ffd",
+      "type": "constraint",
+      "canonicalName": "Buying behavior\\n\\nPick ONE (don’t mix):\\n\\n### Option A (cl",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.65
+    },
+    {
+      "id": "obj_task_d6ec748e",
+      "type": "task",
+      "canonicalName": "You got all this right? \\n\\nI really need to build a Onboard",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_8a8203c9",
+      "type": "preference",
+      "canonicalName": "We’re here.\\n\\n### Moving:\\n> We’re still counting.\\n\\n### A",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_7ddbfb3d",
+      "type": "task",
+      "canonicalName": "Move / Play = PRIMARY\\n\\nThese should dominate visually.\\n\\n",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_825f9c7a",
+      "type": "task",
+      "canonicalName": "Account Drawer (circle)\\n\\nGood placement.\\n\\nBut:\\n\\n> it s",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_ec04e22b",
+      "type": "task",
+      "canonicalName": "No reset.\\n\\n---\\n\\n# 🧠 This is very important\\n\\nMost apps",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_aab15f42",
+      "type": "task",
+      "canonicalName": "Onboarding flow\\nThis is its own world.\\n\\nIt should control",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_3f0e48aa",
+      "type": "task",
+      "canonicalName": "Main entry surface\\nThis is the pared-down post-auth app.\\n\\",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_484d3cfd",
+      "type": "task",
+      "canonicalName": "System voice engine\\nThis must be separate.\\n\\nIt should con",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_32bfcd37",
+      "type": "preference",
+      "canonicalName": "Caption → secondary (most users never open it)\\n4.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_rule_f9b41e49",
+      "type": "rule",
+      "canonicalName": "No deviation.\\n\\n---\\n\\n# ⚙️ GLOBAL RULES (do not break thes",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_open_question_c023f2d3",
+      "type": "open_question",
+      "canonicalName": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.6
+    },
+    {
+      "id": "obj_preference_011b7cc5",
+      "type": "preference",
+      "canonicalName": "SWAP (advanced — never early)\\n\\n### Trigger:\\nUser accumula",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_faa8929e",
+      "type": "task",
+      "canonicalName": "I also think its should be that 4 box.",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_d40645d8",
+      "type": "task",
+      "canonicalName": "It answers “why should I open this app?”\\n> “Because I’m alr",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_74b06526",
+      "type": "preference",
+      "canonicalName": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_e7584b6f",
+      "type": "task",
+      "canonicalName": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_7e1770a6",
+      "type": "preference",
+      "canonicalName": "It never blocks the user\\n\\nNo:\\n- full modals ❌ \\n- forced ",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_preference_349d7b7c",
+      "type": "preference",
+      "canonicalName": "I just have never had a thing that is literally scalable inf",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_preference_15409f94",
+      "type": "preference",
+      "canonicalName": "No simultaneous complexity\\nUser should NEVER see:\\n- Move +",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_95cef4c3",
+      "type": "task",
+      "canonicalName": "No simultaneous complexity\\nUser should NEVER see:\\n- Move +",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_preference_71771b03",
+      "type": "preference",
+      "canonicalName": "No infinite loop\\nYou avoid:\\n- distraction \\n- fatigue \\n- ",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_preference_1d29a52f",
+      "type": "preference",
+      "canonicalName": "I want them to try both first\"},{\"id\":\"4d9992da-4f31-4a60-95",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_preference_c49402e5",
+      "type": "preference",
+      "canonicalName": "That’s the clean rule. \\nLet’s lock it so it’s **unambiguous",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_task_20ba23c1",
+      "type": "task",
+      "canonicalName": "Get Your Wallet\\\",\\n desc: \\\"When you’re ready, create a wal",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_26c77d0d",
+      "type": "task",
+      "canonicalName": "It explains too much, too early\\nYou’ve got:\\n- Move\\n- Play",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_7ab627d3",
+      "type": "task",
+      "canonicalName": "It exposes features that should now be staged\\nRight now thi",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_ea405fc5",
+      "type": "task",
+      "canonicalName": "It’s still “about the app”\\nYour new version should be:\\n\\n>",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_project_aa140484",
+      "type": "project",
+      "canonicalName": "zed",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_50d781ad",
+      "type": "project",
+      "canonicalName": "Zed",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_f77fb19c",
+      "type": "project",
+      "canonicalName": "ZedAI",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_dee51b31",
+      "type": "project",
+      "canonicalName": "Xoclon",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_integration_c11771cd",
+      "type": "integration",
+      "canonicalName": "GitHub",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_integration_bd615869",
+      "type": "integration",
+      "canonicalName": "Neon",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_integration_16ea71d4",
+      "type": "integration",
+      "canonicalName": "Stripe",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    },
+    {
+      "id": "obj_rule_4c29887a",
+      "type": "rule",
+      "canonicalName": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplemen",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_task_4df3551b",
+      "type": "task",
+      "canonicalName": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_task_3d1ef18c",
+      "type": "task",
+      "canonicalName": "Or should I just leave it as the first one? \\n\\nIf it's leav",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_event_7575ff8e",
+      "type": "event",
+      "canonicalName": "Coin is a real, on-chain cryptocurrency deployed on the Poly",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.7
+    },
+    {
+      "id": "obj_rule_675b0f77",
+      "type": "rule",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_task_f7e8d728",
+      "type": "task",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "promotionTier": "working_memory_candidate",
+      "confidence": 0.55
+    },
+    {
+      "id": "obj_rule_78cc6772",
+      "type": "rule",
+      "canonicalName": "Do not jump ahead.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_rule_fbdc3f79",
+      "type": "rule",
+      "canonicalName": "Do not batch steps.",
+      "promotionTier": "core_memory_candidate",
+      "confidence": 0.75
+    },
+    {
+      "id": "obj_project_0aff9be4",
+      "type": "project",
+      "canonicalName": "Zed",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_87b0d031",
+      "type": "project",
+      "canonicalName": "ZedAI",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_project_ca16bf97",
+      "type": "project",
+      "canonicalName": "zed",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.85
+    },
+    {
+      "id": "obj_integration_781d573b",
+      "type": "integration",
+      "canonicalName": "GitHub",
+      "promotionTier": "project_memory_candidate",
+      "confidence": 0.8
+    }
+  ]
+}

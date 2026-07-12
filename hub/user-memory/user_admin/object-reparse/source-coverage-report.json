@@ -1,0 +1,41 @@
+{
+  "version": "1",
+  "generatedAt": "2026-07-12T01:30:57.165Z",
+  "perSource": [
+    {
+      "source": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+      "objectsFound": 48,
+      "bytes": 505729
+    },
+    {
+      "source": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+      "objectsFound": 56,
+      "bytes": 535837
+    },
+    {
+      "source": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-summary.json",
+      "objectsFound": 1,
+      "bytes": 984
+    },
+    {
+      "source": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+      "objectsFound": 14,
+      "bytes": 71504
+    },
+    {
+      "source": "hub\\user-memory\\user_admin\\foundation\\semantic\\source-manifest.json",
+      "objectsFound": 2,
+      "bytes": 1633
+    },
+    {
+      "source": "hub\\user-memory\\user_admin\\foundation\\consensus\\foundation-overview.md",
+      "objectsFound": 2,
+      "bytes": 2602
+    },
+    {
+      "source": "hub\\user-memory\\user_admin\\foundation\\consensus\\lightweight-access.md",
+      "objectsFound": 0,
+      "bytes": 780
+    }
+  ]
+}

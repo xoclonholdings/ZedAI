@@ -1,6 +1,6 @@
 # Foundation Memory Overview
 
-This file is the canonical summary of imported legacy ChatGPT knowledge that now feeds the active ZED hub memory.
+This file is the canonical summary of imported legacy ChatGPT knowledge that now feeds Admin memory.
 
 ## Import Summary
 
@@ -16,11 +16,11 @@ This file is the canonical summary of imported legacy ChatGPT knowledge that now
 
 ## Canonical Files
 
-- Semantic archive: `hub/shared-memory/semantic/foundation/merged-conversations.json`
-- Summary manifest: `hub/shared-memory/semantic/foundation/merged-summary.json`
-- Source manifest: `hub/shared-memory/semantic/foundation/source-manifest.json`
-- Timeline view: `hub/shared-memory/episodic/imported/conversation-timeline.json`
-- Imported docs: `hub/shared-memory/consensus/foundation/imported-docs/`
+- Semantic archive: `hub/user-memory/user_admin/foundation/semantic/merged-conversations.json`
+- Summary manifest: `hub/user-memory/user_admin/foundation/semantic/merged-summary.json`
+- Source manifest: `hub/user-memory/user_admin/foundation/semantic/source-manifest.json`
+- Timeline view: `hub/user-memory/user_admin/foundation/episodic/conversation-timeline.json`
+- Imported docs: `hub/user-memory/user_admin/foundation/consensus/imported-docs/`
 - Zync coding operator registry: `hub/shared-memory/consensus/foundation/zync-coding-operator/`
 
 ## Zync Coding Operator

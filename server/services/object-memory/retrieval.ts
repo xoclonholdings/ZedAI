@@ -24,6 +24,7 @@ const STOP_WORDS = new Set([
   "which",
   "into",
   "about",
+  "project",
 ]);
 
 function keywords(query: string): string[] {
@@ -40,7 +41,15 @@ function keywords(query: string): string[] {
 
 function score(obj: AnyMemoryObject, keys: string[]): number {
   if (keys.length === 0) return 0;
-  const haystack = `${obj.canonicalName} ${obj.summary} ${JSON.stringify(obj.properties)}`.toLowerCase();
+  const haystack = [
+    obj.canonicalName,
+    obj.summary,
+    ...(obj.aliases || []),
+    JSON.stringify(obj.properties),
+    JSON.stringify(obj.sourceRefs || []),
+  ]
+    .join(" ")
+    .toLowerCase();
   let s = 0;
   for (const k of keys) {
     if (haystack.includes(k)) s += 1;
@@ -57,8 +66,9 @@ export interface ObjectRetrievalResult {
 export async function retrieveObjectMemoryForQuery(
   query: string,
   limit = 5,
+  userId?: string,
 ): Promise<ObjectRetrievalResult> {
-  const graph = await readAppliedGraph();
+  const graph = await readAppliedGraph(userId ? { userId } : undefined);
   if (!graph) return { block: "", count: 0, ids: [] };
   const keys = keywords(query);
   if (keys.length === 0) return { block: "", count: 0, ids: [] };

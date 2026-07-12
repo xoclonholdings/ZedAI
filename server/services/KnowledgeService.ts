@@ -72,9 +72,10 @@ export class KnowledgeService {
       queryCollection("semantic", params.query, 4),
       retrieveFoundationMemoryWithTrace(params.query, {
         enabled: params.includeAdminFoundation === true,
+        userId: params.userId,
       }),
       retrievePersonalizationForQuery(params.userId, params.query, 3),
-      retrieveObjectMemoryForQuery(params.query, 5),
+      retrieveObjectMemoryForQuery(params.query, 5, params.userId),
     ]);
     const foundation = foundationResult.content;
     const foundationTrace = foundationResult.trace;

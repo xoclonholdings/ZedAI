@@ -3,7 +3,8 @@ import path from "path";
 import { createHash } from "crypto";
 
 import { KnowledgeIngestionService } from "../services/knowledge-ingestion/KnowledgeIngestionService";
-import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
+import { loadAdminSettings } from "../services/AdminSettingsStore";
+import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
 import type { IngestionReport, RawKnowledgeInput } from "../services/knowledge-ingestion/types";
 
 type FoundationMessage = {
@@ -62,13 +63,35 @@ type PromotionCandidate = {
   reason: string;
 };
 
-const FOUNDATION_CONVERSATIONS_PATH = path.join(
+const LEGACY_FOUNDATION_CONVERSATIONS_PATH = path.join(
   HUB_SHARED_MEMORY_DIR,
   "semantic/foundation/merged-conversations.json",
 );
-const OUTPUT_DIR = path.join(HUB_SHARED_MEMORY_DIR, "foundation-reparse");
-const BACKUP_DIR = path.join(OUTPUT_DIR, "backups");
-const GRAPH_PATH = path.join(HUB_SHARED_MEMORY_DIR, "knowledge-graph/knowledge-graph.json");
+
+function safeUserId(userId: string): string {
+  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+}
+
+function adminRoot(userId: string): string {
+  return path.join(HUB_USER_MEMORY_DIR, safeUserId(userId));
+}
+
+function foundationConversationsPath(userId: string): string {
+  return path.join(adminRoot(userId), "foundation/semantic/merged-conversations.json");
+}
+
+function foundationReparseDir(userId: string): string {
+  return path.join(adminRoot(userId), "foundation-reparse");
+}
+
+function knowledgeGraphPath(userId: string): string {
+  return path.join(adminRoot(userId), "knowledge-graph/knowledge-graph.json");
+}
+
+async function adminUserId(): Promise<string> {
+  const settings = await loadAdminSettings();
+  return settings.users.find((user) => user.isAdmin)?.id || settings.users[0]?.id || "user_admin";
+}
 
 function parseArgs(argv: string[]): CliOptions {
   const options: CliOptions = { apply: false, offset: 0 };
@@ -188,21 +211,26 @@ function toRawKnowledgeInput(conversation: FoundationConversation, options: CliO
   };
 }
 
-async function readConversations(): Promise<FoundationConversation[]> {
-  const raw = await fs.readFile(FOUNDATION_CONVERSATIONS_PATH, "utf8");
+async function readConversations(sourcePath: string): Promise<FoundationConversation[]> {
+  const raw = await fs.readFile(sourcePath, "utf8").catch(async (error) => {
+    if (sourcePath !== LEGACY_FOUNDATION_CONVERSATIONS_PATH) {
+      return fs.readFile(LEGACY_FOUNDATION_CONVERSATIONS_PATH, "utf8");
+    }
+    throw error;
+  });
   const parsed = JSON.parse(raw);
   if (!Array.isArray(parsed)) throw new Error("merged-conversations.json must be an array");
   return parsed;
 }
 
-async function snapshotGraphIfApplying(apply: boolean): Promise<string | null> {
+async function snapshotGraphIfApplying(apply: boolean, graphPath: string, backupDir: string): Promise<string | null> {
   if (!apply) return null;
-  await fs.mkdir(BACKUP_DIR, { recursive: true });
+  await fs.mkdir(backupDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const backupPath = path.join(BACKUP_DIR, `knowledge-graph.${timestamp}.json`);
+  const backupPath = path.join(backupDir, `knowledge-graph.${timestamp}.json`);
 
   try {
-    await fs.copyFile(GRAPH_PATH, backupPath);
+    await fs.copyFile(graphPath, backupPath);
   } catch {
     await fs.writeFile(
       backupPath,
@@ -267,13 +295,16 @@ async function writeOutputs(params: {
   options: CliOptions;
   startedAt: string;
   completedAt: string;
+  sourcePath: string;
+  outputDir: string;
+  graphPath: string;
   totalFound: number;
   selectedCount: number;
   backupPath: string | null;
   processed: ProcessedItem[];
   reports: IngestionReport[];
 }) {
-  await fs.mkdir(OUTPUT_DIR, { recursive: true });
+  await fs.mkdir(params.outputDir, { recursive: true });
 
   const allObjects = params.reports.flatMap((report) => report.extractedObjects);
   const allDecisions = params.reports.flatMap((report) => report.detectedDecisions);
@@ -291,13 +322,13 @@ async function writeOutputs(params: {
     query: params.options.query || null,
     limit: params.options.limit || null,
     offset: params.options.offset,
-    sourcePath: FOUNDATION_CONVERSATIONS_PATH,
-    outputDir: OUTPUT_DIR,
-    graphPath: GRAPH_PATH,
+    sourcePath: params.sourcePath,
+    outputDir: params.outputDir,
+    graphPath: params.graphPath,
     backupPath: params.backupPath,
     rollback:
       params.backupPath && params.options.apply
-        ? `Restore ${params.backupPath} over ${GRAPH_PATH} to roll back this apply run.`
+        ? `Restore ${params.backupPath} over ${params.graphPath} to roll back this apply run.`
         : "Dry-run created no graph mutation. No rollback needed.",
   };
 
@@ -324,13 +355,13 @@ async function writeOutputs(params: {
   const runReportName = params.options.apply ? "apply-report.json" : "dry-run-report.json";
 
   await Promise.all([
-    fs.writeFile(path.join(OUTPUT_DIR, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
-    fs.writeFile(path.join(OUTPUT_DIR, runReportName), `${JSON.stringify(summary, null, 2)}\n`, "utf8"),
-    fs.writeFile(path.join(OUTPUT_DIR, "latest-report.json"), `${JSON.stringify(summary, null, 2)}\n`, "utf8"),
-    fs.writeFile(path.join(OUTPUT_DIR, "promotion-candidates.json"), `${JSON.stringify(promotionCandidates, null, 2)}\n`, "utf8"),
-    fs.writeFile(path.join(OUTPUT_DIR, "conflicts.json"), `${JSON.stringify(allConflicts, null, 2)}\n`, "utf8"),
-    fs.writeFile(path.join(OUTPUT_DIR, "unresolved-questions.json"), `${JSON.stringify(allQuestions, null, 2)}\n`, "utf8"),
-    fs.appendFile(path.join(OUTPUT_DIR, "reparse-history.jsonl"), `${JSON.stringify(summary)}\n`, "utf8"),
+    fs.writeFile(path.join(params.outputDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
+    fs.writeFile(path.join(params.outputDir, runReportName), `${JSON.stringify(summary, null, 2)}\n`, "utf8"),
+    fs.writeFile(path.join(params.outputDir, "latest-report.json"), `${JSON.stringify(summary, null, 2)}\n`, "utf8"),
+    fs.writeFile(path.join(params.outputDir, "promotion-candidates.json"), `${JSON.stringify(promotionCandidates, null, 2)}\n`, "utf8"),
+    fs.writeFile(path.join(params.outputDir, "conflicts.json"), `${JSON.stringify(allConflicts, null, 2)}\n`, "utf8"),
+    fs.writeFile(path.join(params.outputDir, "unresolved-questions.json"), `${JSON.stringify(allQuestions, null, 2)}\n`, "utf8"),
+    fs.appendFile(path.join(params.outputDir, "reparse-history.jsonl"), `${JSON.stringify(summary)}\n`, "utf8"),
   ]);
 
   return summary;
@@ -339,7 +370,12 @@ async function writeOutputs(params: {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const startedAt = new Date().toISOString();
-  const conversations = await readConversations();
+  const userId = await adminUserId();
+  const sourcePath = foundationConversationsPath(userId);
+  const outputDir = foundationReparseDir(userId);
+  const graphPath = knowledgeGraphPath(userId);
+  const backupDir = path.join(outputDir, "backups");
+  const conversations = await readConversations(sourcePath);
   const matching = conversations.filter((conversation) => conversationMatches(conversation, options.query));
   const selected = matching.slice(options.offset, options.limit ? options.offset + options.limit : undefined);
   let backupPath: string | null = null;
@@ -358,7 +394,7 @@ async function main() {
         let metadataBackfilled = false;
         if (options.apply) {
           if (!backupPath) {
-            backupPath = await snapshotGraphIfApplying(true);
+            backupPath = await snapshotGraphIfApplying(true, graphPath, backupDir);
           }
           metadataBackfilled = await KnowledgeIngestionService.backfillImportMetadata(input);
         }
@@ -382,7 +418,7 @@ async function main() {
       }
 
       if (options.apply && !backupPath) {
-        backupPath = await snapshotGraphIfApplying(true);
+        backupPath = await snapshotGraphIfApplying(true, graphPath, backupDir);
       }
 
       const report = options.apply
@@ -425,6 +461,9 @@ async function main() {
     options,
     startedAt,
     completedAt: new Date().toISOString(),
+    sourcePath,
+    outputDir,
+    graphPath,
     totalFound: conversations.length,
     selectedCount: selected.length,
     backupPath,
@@ -433,7 +472,7 @@ async function main() {
   });
 
   console.log(JSON.stringify(summary.totals, null, 2));
-  console.log(`Report: ${path.join(OUTPUT_DIR, options.apply ? "apply-report.json" : "dry-run-report.json")}`);
+  console.log(`Report: ${path.join(outputDir, options.apply ? "apply-report.json" : "dry-run-report.json")}`);
   if (backupPath) console.log(`Backup: ${backupPath}`);
 }
 

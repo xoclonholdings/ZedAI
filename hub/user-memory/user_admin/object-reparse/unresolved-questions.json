@@ -1,0 +1,72 @@
+{
+  "version": "1",
+  "generatedAt": "2026-07-12T01:30:57.165Z",
+  "questions": [
+    {
+      "id": "obj_open_question_504d4e8c",
+      "type": "open_question",
+      "canonicalName": "The current EIN is filed under GRATIA DEI as a corporation, ",
+      "aliases": [],
+      "summary": "The current EIN is filed under GRATIA DEI as a corporation, but the final incorporated name is still undecided.\\nassistant: Got it.",
+      "properties": {
+        "question": "The current EIN is filed under GRATIA DEI as a corporation, but the final incorporated name is still undecided.\\nassistant: Got it."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "The current EIN is filed under GRATIA DEI as a corporation, but the final incorporated name is still undecided.\\nassistant: Got it.",
+          "extractedAt": "2026-07-12T01:30:53.326Z"
+        }
+      ],
+      "confidence": 0.6,
+      "createdAt": "2026-07-12T01:30:53.326Z",
+      "updatedAt": "2026-07-12T01:30:53.326Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_open_question_6ee1fd7b",
+      "type": "open_question",
+      "canonicalName": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What",
+      "aliases": [],
+      "summary": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashboard):\\n\\n- Move \\n- Play \\n- balance (temporary)\\n\\nNo friction.",
+      "properties": {
+        "question": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashboard):\\n\\n- Move \\n- Play \\n- balance (temporary)\\n\\nNo friction."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashbo",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.6,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_open_question_c023f2d3",
+      "type": "open_question",
+      "canonicalName": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it",
+      "aliases": [],
+      "summary": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it upfront—good instinct.\\n\\n### Trigger options (pick ONE, don’t mix):\\n\\nOption A (after Play):\\n> “You’re getting good at this.”\\n\\n↓ \\n> “Want to sharpen it?”\\n\\n👉 Learn appears\\n\\n---\\n\\nOption B (after hesitation / idle):\\n> “Not sure where to start?”\\n\\n↓ \\n> “Try this.”\\n\\n👉 Learn appears\\n\\n---\\n\\n## 3.",
+      "properties": {
+        "question": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it upfront—good instinct.\\n\\n### Trigger options (pick ONE, don’t mix):\\n\\nOption A (after Play):\\n> “You’re getting good at this.”\\n\\n↓ \\n> “Want to sharpen it?”\\n\\n👉 Learn appears\\n\\n---\\n\\nOption B (after hesitation / idle):\\n> “Not sure where to start?”\\n\\n↓ \\n> “Try this.”\\n\\n👉 Learn appears\\n\\n---\\n\\n## 3."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it upfront—good instinct.\\n\\n### Trigger options (pick ONE, don’t mix):\\n\\nOption A (after Play):\\n> “You’re getting good at this.”\\n\\n↓ \\n> “Want to sharpen it?”\\n\\n👉 Learn appears",
+          "extractedAt": "2026-07-12T01:30:56.942Z"
+        }
+      ],
+      "confidence": 0.6,
+      "createdAt": "2026-07-12T01:30:56.942Z",
+      "updatedAt": "2026-07-12T01:30:56.942Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    }
+  ]
+}

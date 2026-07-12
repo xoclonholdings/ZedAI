@@ -6,9 +6,11 @@
  *   tsx server/scripts/reparseBaseMemoryToObjects.ts [flags]
  *
  * Flags:
- *   --dry-run             Default. Writes to hub/shared-memory/object-reparse/.
- *   --apply               Also writes the applied graph and backs up
- *                         any prior applied graph.
+ *   --dry-run             Default. Writes scoped reparse artifacts.
+ *   --apply               Also writes the applied graph. By default this
+ *                         targets Admin memory, not System memory.
+ *   --user <id>           Apply into a specific user's object memory.
+ *   --system              Apply into true shared System memory.
  *   --source <path>       Add an explicit source file (repeatable).
  *   --limit <n>           Cap total objects extracted.
  *   --offset <n>          Skip the first n sentences per source.
@@ -28,6 +30,7 @@ import { fileURLToPath } from "url";
 
 import { extractObjectsFromSource } from "../services/object-memory/extractor";
 import { writeDryRunOutputs, writeAppliedGraph } from "../services/object-memory/store";
+import { loadAdminSettings } from "../services/AdminSettingsStore";
 import type { AnyMemoryObject, ObjectRelationship } from "../../shared/object-memory-types";
 
 const FILE_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -41,6 +44,8 @@ interface CliFlags {
   offset?: number;
   project?: string;
   type?: string;
+  userId?: string;
+  system: boolean;
   minConfidence?: number;
   includeConflicts: boolean;
   writeMarkdown: boolean;
@@ -51,6 +56,7 @@ function parseFlags(argv: string[]): CliFlags {
     dryRun: true,
     apply: false,
     sources: [],
+    system: false,
     includeConflicts: true,
     writeMarkdown: false,
   };
@@ -62,6 +68,12 @@ function parseFlags(argv: string[]): CliFlags {
         break;
       case "--apply":
         flags.apply = true;
+        break;
+      case "--user":
+        flags.userId = argv[++i];
+        break;
+      case "--system":
+        flags.system = true;
         break;
       case "--source":
         flags.sources.push(argv[++i]);
@@ -95,8 +107,22 @@ function parseFlags(argv: string[]): CliFlags {
   return flags;
 }
 
-async function defaultSources(): Promise<string[]> {
+async function applyUserId(flags: CliFlags): Promise<string | undefined> {
+  if (flags.system) return undefined;
+  if (flags.userId) return flags.userId;
+  const settings = await loadAdminSettings();
+  return settings.users.find((user) => user.isAdmin)?.id || settings.users[0]?.id || "user_admin";
+}
+
+async function defaultSources(userId?: string): Promise<string[]> {
+  const safeUserId = (userId || "").replace(/[^a-zA-Z0-9_-]/g, "_");
   const roots = [
+    ...(safeUserId
+      ? [
+          path.join(REPO_ROOT, "hub/user-memory", safeUserId, "foundation/semantic"),
+          path.join(REPO_ROOT, "hub/user-memory", safeUserId, "foundation/consensus"),
+        ]
+      : []),
     path.join(REPO_ROOT, "hub/shared-memory/semantic/foundation"),
     path.join(REPO_ROOT, "hub/shared-memory/consensus/foundation"),
   ];
@@ -131,15 +157,21 @@ async function readSourceText(file: string): Promise<string> {
 
 async function main() {
   const flags = parseFlags(process.argv.slice(2));
-  const sources = flags.sources.length ? flags.sources : await defaultSources();
+  const targetUserId = await applyUserId(flags);
+  const sources = flags.sources.length ? flags.sources : await defaultSources(targetUserId);
 
   if (sources.length === 0) {
     console.error("[reparse] No sources found. Point --source at a foundation file.");
     process.exit(1);
   }
 
+  const targetLabel = flags.system
+    ? "system memory"
+    : `${flags.userId ? "user" : "admin"} memory (${targetUserId})`;
+
   console.log(`[reparse] Sources: ${sources.length}`);
   console.log(`[reparse] Mode: ${flags.apply ? "apply" : "dry-run"}`);
+  console.log(`[reparse] Target: ${targetLabel}`);
 
   const objects: AnyMemoryObject[] = [];
   const relationships: ObjectRelationship[] = [];
@@ -187,13 +219,13 @@ async function main() {
     relationships,
     perSourceCoverage: perSource,
     writeMarkdown: flags.writeMarkdown,
-  });
+  }, targetUserId ? { userId: targetUserId } : undefined);
 
   console.log(`[reparse] Dry-run outputs:`);
   for (const out of outputs) console.log(`  - ${path.relative(REPO_ROOT, out)}`);
 
   if (flags.apply) {
-    const applied = await writeAppliedGraph(graph);
+    const applied = await writeAppliedGraph(graph, targetUserId ? { userId: targetUserId } : undefined);
     console.log(`[reparse] Applied graph: ${path.relative(REPO_ROOT, applied.graphPath)}`);
     if (applied.backupPath) {
       console.log(`[reparse] Prior graph backed up: ${path.relative(REPO_ROOT, applied.backupPath)}`);

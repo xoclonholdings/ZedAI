@@ -46,13 +46,38 @@ interface UploadResult {
   objectTitles: string[];
 }
 
+function userIdFrom(req: any): string {
+  return req.user?.claims?.sub || req.session?.userId || "user";
+}
+
+function memoryScopeFrom(req: any): "admin" | "user" {
+  return req.user?.claims?.isAdmin ? "admin" : "user";
+}
+
+function emptyGraph(): ObjectGraph {
+  return {
+    version: "1",
+    generatedAt: null as unknown as string,
+    sources: [],
+    objects: [],
+    relationships: [],
+    stats: {
+      totalObjects: 0,
+      byType: {} as ObjectGraph["stats"]["byType"],
+      totalRelationships: 0,
+      conflicts: 0,
+      openQuestions: 0,
+    },
+  };
+}
+
 export function registerMemoryUploadRoutes(app: Express): void {
   app.post(
     "/api/me/memory/merge-objects",
     isAuthenticated,
     async (req: any, res) => {
       try {
-        const userId = req.user?.claims?.sub || "user";
+        const userId = userIdFrom(req);
         const keepId = typeof req.body?.keepId === "string" ? req.body.keepId : "";
         const dropIds: string[] = Array.isArray(req.body?.dropIds)
           ? req.body.dropIds.filter((s: unknown): s is string => typeof s === "string")
@@ -62,7 +87,7 @@ export function registerMemoryUploadRoutes(app: Express): void {
             error: "Provide keepId and a non-empty dropIds array.",
           });
         }
-        const graph = await readAppliedGraph();
+        const graph = await readAppliedGraph({ userId });
         if (!graph) {
           return res.status(400).json({ error: "No applied graph to merge into." });
         }
@@ -123,7 +148,7 @@ export function registerMemoryUploadRoutes(app: Express): void {
           relationships: nextRelationships,
           stats: graphStats(nextObjects, nextRelationships),
         };
-        const applied = await writeAppliedGraph(nextGraph);
+        const applied = await writeAppliedGraph(nextGraph, { userId });
 
         void logRuntimeEvent({
           level: "info",
@@ -156,20 +181,14 @@ export function registerMemoryUploadRoutes(app: Express): void {
     },
   );
 
-  app.get("/api/me/memory/graph", isAuthenticated, async (_req: any, res) => {
+  app.get("/api/me/memory/graph", isAuthenticated, async (req: any, res) => {
     try {
-      const graph = await readAppliedGraph();
+      const userId = userIdFrom(req);
+      const graph = await readAppliedGraph({ userId });
       if (!graph) {
-        return res.json({
-          version: "1",
-          generatedAt: null,
-          sources: [],
-          objects: [],
-          relationships: [],
-          stats: { objectCount: 0, relationshipCount: 0 },
-        });
+        return res.json({ ...emptyGraph(), scope: memoryScopeFrom(req), userId });
       }
-      res.json(graph);
+      res.json({ ...graph, scope: memoryScopeFrom(req), userId });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to read memory graph" });
     }
@@ -181,13 +200,14 @@ export function registerMemoryUploadRoutes(app: Express): void {
     upload.array("files"),
     async (req: any, res) => {
       try {
-        const userId = req.user?.claims?.sub || "user";
+        const userId = userIdFrom(req);
+        const memoryScope = memoryScopeFrom(req);
         const now = new Date().toISOString();
 
-        // Optional workspace tag. Uploaded knowledge still merges into
-        // Zed's single core memory graph, but each object is stamped with
-        // the workspace it came from so a workspace can show its own
-        // library (a slice of core memory) without forking storage.
+        // Optional workspace tag. Uploaded knowledge merges into the
+        // current user's object-memory graph. For the admin user, this
+        // is Admin memory; this endpoint never promotes project data
+        // into System memory.
         const workspace =
           typeof req.body?.workspace === "string" ? req.body.workspace.trim() : "";
 
@@ -246,6 +266,9 @@ export function registerMemoryUploadRoutes(app: Express): void {
               (o.properties as Record<string, unknown>).workspace = workspace;
             }
           }
+          for (const o of objects) {
+            (o.properties as Record<string, unknown>).memoryScope = memoryScope;
+          }
           objectsAll = objectsAll.concat(objects);
           relationshipsAll = relationshipsAll.concat(relationships);
           perSource.push({
@@ -259,7 +282,7 @@ export function registerMemoryUploadRoutes(app: Express): void {
         // Merge into the applied graph. If none exists yet, this
         // creates it. If one does, we append and rewrite (the store
         // backs up the prior graph automatically).
-        const prior = await readAppliedGraph();
+        const prior = await readAppliedGraph({ userId });
         const mergedObjects = [...(prior?.objects || []), ...objectsAll];
         const mergedRelationships = [...(prior?.relationships || []), ...relationshipsAll];
         const merged: ObjectGraph = {
@@ -272,14 +295,18 @@ export function registerMemoryUploadRoutes(app: Express): void {
           relationships: mergedRelationships,
           stats: graphStats(mergedObjects, mergedRelationships),
         };
-        const applied = await writeAppliedGraph(merged);
+        const applied = await writeAppliedGraph(merged, { userId });
 
         void logRuntimeEvent({
           level: "info",
           source: "server",
           event: "memory.upload",
           detail: `${objectsAll.length} objects / ${relationshipsAll.length} relationships from ${inputs.length} source(s)`,
-          context: { userId, backup: applied.backupPath ? path.basename(applied.backupPath) : null },
+          context: {
+            userId,
+            memoryScope,
+            backup: applied.backupPath ? path.basename(applied.backupPath) : null,
+          },
         });
 
         res.json({

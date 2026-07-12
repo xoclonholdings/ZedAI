@@ -1,0 +1,2804 @@
+{
+  "version": "1",
+  "generatedAt": "2026-07-12T01:30:57.165Z",
+  "objects": [
+    {
+      "id": "obj_project_73050ed7",
+      "type": "project",
+      "canonicalName": "Zed",
+      "aliases": [],
+      "summary": "Project Zed referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Zed",
+          "extractedAt": "2026-07-12T01:30:53.249Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:53.273Z",
+      "updatedAt": "2026-07-12T01:30:53.273Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_0143a735",
+      "type": "project",
+      "canonicalName": "ZedAI",
+      "aliases": [],
+      "summary": "Project ZedAI referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "ZedAI",
+          "extractedAt": "2026-07-12T01:30:53.273Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:53.273Z",
+      "updatedAt": "2026-07-12T01:30:53.273Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_059894b0",
+      "type": "project",
+      "canonicalName": "Xoclon",
+      "aliases": [],
+      "summary": "Project Xoclon referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Xoclon",
+          "extractedAt": "2026-07-12T01:30:53.274Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:53.274Z",
+      "updatedAt": "2026-07-12T01:30:53.274Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_1ce63fc7",
+      "type": "project",
+      "canonicalName": "Fantasma",
+      "aliases": [],
+      "summary": "Project Fantasma referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Fantasma",
+          "extractedAt": "2026-07-12T01:30:53.275Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:53.275Z",
+      "updatedAt": "2026-07-12T01:30:53.275Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_019ff5aa",
+      "type": "project",
+      "canonicalName": "xoclonholdings",
+      "aliases": [],
+      "summary": "Project xoclonholdings referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "xoclonholdings",
+          "extractedAt": "2026-07-12T01:30:53.278Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:53.278Z",
+      "updatedAt": "2026-07-12T01:30:53.278Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_43c4dfbc",
+      "type": "integration",
+      "canonicalName": "GitHub",
+      "aliases": [],
+      "summary": "Integration GitHub.",
+      "properties": {
+        "provider": "GitHub"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "GitHub",
+          "extractedAt": "2026-07-12T01:30:53.286Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:53.287Z",
+      "updatedAt": "2026-07-12T01:30:53.287Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_ff0487a5",
+      "type": "integration",
+      "canonicalName": "Neon",
+      "aliases": [],
+      "summary": "Integration Neon.",
+      "properties": {
+        "provider": "Neon"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Neon",
+          "extractedAt": "2026-07-12T01:30:53.287Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:53.287Z",
+      "updatedAt": "2026-07-12T01:30:53.287Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_1ddf63d1",
+      "type": "integration",
+      "canonicalName": "Stripe",
+      "aliases": [],
+      "summary": "Integration Stripe.",
+      "properties": {
+        "provider": "Stripe"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Stripe",
+          "extractedAt": "2026-07-12T01:30:53.287Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:53.287Z",
+      "updatedAt": "2026-07-12T01:30:53.287Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_15821b14",
+      "type": "integration",
+      "canonicalName": "Gmail",
+      "aliases": [],
+      "summary": "Integration Gmail.",
+      "properties": {
+        "provider": "Gmail"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Gmail",
+          "extractedAt": "2026-07-12T01:30:53.287Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:53.287Z",
+      "updatedAt": "2026-07-12T01:30:53.287Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_rule_257f2cbb",
+      "type": "rule",
+      "canonicalName": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplemen",
+      "aliases": [],
+      "summary": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplement:\\n\\n1.",
+      "properties": {
+        "rule": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplement:\\n\\n1.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplement:\\n\\n1.",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_e0ea8fb6",
+      "type": "task",
+      "canonicalName": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage",
+      "aliases": [],
+      "summary": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage, the primary launch options are missing from the visible flow:\\n • Continue with Email\\n • Set Up Wallet\\n\\nRight now the page is showing the educational sections, but the actual entry cards are not appearing where they should.\\n\\n2.",
+      "properties": {
+        "task": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage, the primary launch options are missing from the visible flow:\\n • Continue with Email\\n • Set Up Wallet\\n\\nRight now the page is showing the educational sections, but the actual entry cards are not appearing where they should.\\n\\n2.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage, the primary launch options are missing from the visible flow:\\n • Continue with Email\\n • Set Up Wallet\\n\\nRight now the page is showing the educational sections, but the actual ",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_22d44ec9",
+      "type": "task",
+      "canonicalName": "Or should I just leave it as the first one? \\n\\nIf it's leav",
+      "aliases": [],
+      "summary": "Or should I just leave it as the first one? \\n\\nIf it's leave it...then can you recreate it with a transparent background?",
+      "properties": {
+        "task": "Or should I just leave it as the first one? \\n\\nIf it's leave it...then can you recreate it with a transparent background?",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Or should I just leave it as the first one? \\n\\nIf it's leave it...then can you recreate it with a transparent background?",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_event_a336456b",
+      "type": "event",
+      "canonicalName": "Coin is a real, on-chain cryptocurrency deployed on the Poly",
+      "aliases": [],
+      "summary": "Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens.",
+      "properties": {
+        "event": "Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens.",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_rule_23cf8e4b",
+      "type": "rule",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "aliases": [],
+      "summary": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+      "properties": {
+        "rule": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten ",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_1fa9c107",
+      "type": "task",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "aliases": [],
+      "summary": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+      "properties": {
+        "task": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten ",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_rule_b336b69e",
+      "type": "rule",
+      "canonicalName": "Do not jump ahead.",
+      "aliases": [],
+      "summary": "Do not jump ahead.",
+      "properties": {
+        "rule": "Do not jump ahead.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Do not jump ahead.",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_rule_ac95f91a",
+      "type": "rule",
+      "canonicalName": "Do not batch steps.",
+      "aliases": [],
+      "summary": "Do not batch steps.",
+      "properties": {
+        "rule": "Do not batch steps.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Do not batch steps.",
+          "extractedAt": "2026-07-12T01:30:53.323Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:53.323Z",
+      "updatedAt": "2026-07-12T01:30:53.323Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_event_cc32f667",
+      "type": "event",
+      "canonicalName": "The **USB connection failed**\\n2.",
+      "aliases": [],
+      "summary": "The **USB connection failed**\\n2.",
+      "properties": {
+        "event": "The **USB connection failed**\\n2."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "The **USB connection failed**\\n2.",
+          "extractedAt": "2026-07-12T01:30:53.324Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.324Z",
+      "updatedAt": "2026-07-12T01:30:53.324Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_event_7640d95c",
+      "type": "event",
+      "canonicalName": "The **drive hardware itself failed**\\n\\nWe’ll check them **i",
+      "aliases": [],
+      "summary": "The **drive hardware itself failed**\\n\\nWe’ll check them **in order**, starting with the fastest tests.\\n\\n---\\n\\n# 1.",
+      "properties": {
+        "event": "The **drive hardware itself failed**\\n\\nWe’ll check them **in order**, starting with the fastest tests.\\n\\n---\\n\\n# 1."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "The **drive hardware itself failed**\\n\\nWe’ll check them **in order**, starting with the fastest tests.\\n\\n---\\n\\n# 1.",
+          "extractedAt": "2026-07-12T01:30:53.324Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.324Z",
+      "updatedAt": "2026-07-12T01:30:53.324Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_319903cd",
+      "type": "task",
+      "canonicalName": "I do get royalties as an actor, dancer, and artist under my ",
+      "aliases": [],
+      "summary": "I do get royalties as an actor, dancer, and artist under my entertainment LLC (also incorporated) and my actual name...I have $100...I need to put up zwap which requires a duns number I have two but not for the trust or operating company which operates zwap.",
+      "properties": {
+        "task": "I do get royalties as an actor, dancer, and artist under my entertainment LLC (also incorporated) and my actual name...I have $100...I need to put up zwap which requires a duns number I have two but not for the trust or operating company which operates zwap.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "I do get royalties as an actor, dancer, and artist under my entertainment LLC (also incorporated) and my actual name...I have $100...I need to put up zwap which requires a duns number I have two but not for the trust or operating company wh",
+          "extractedAt": "2026-07-12T01:30:53.324Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.324Z",
+      "updatedAt": "2026-07-12T01:30:53.324Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_be470434",
+      "type": "preference",
+      "canonicalName": "It's a polygon coin and I already have some liquidity in tha",
+      "aliases": [],
+      "summary": "It's a polygon coin and I already have some liquidity in that but now I want to add in the Bitcoin I mined\\nassistant: Got it—so you want to add Bitcoin (BTC) to the liquidity pool for a Polygon-based token.",
+      "properties": {
+        "preference": "It's a polygon coin and I already have some liquidity in that but now I want to add in the Bitcoin I mined\\nassistant: Got it—so you want to add Bitcoin (BTC) to the liquidity pool for a Polygon-based token.",
+        "strength": "medium"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "It's a polygon coin and I already have some liquidity in that but now I want to add in the Bitcoin I mined\\nassistant: Got it—so you want to add Bitcoin (BTC) to the liquidity pool for a Polygon-based token.",
+          "extractedAt": "2026-07-12T01:30:53.324Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.324Z",
+      "updatedAt": "2026-07-12T01:30:53.324Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_935bee11",
+      "type": "task",
+      "canonicalName": "We’ll need to carefully break this down because BTC is on a ",
+      "aliases": [],
+      "summary": "We’ll need to carefully break this down because BTC is on a separate chain, while your token is on Polygon (Ethereum Virtual Machine compatible).",
+      "properties": {
+        "task": "We’ll need to carefully break this down because BTC is on a separate chain, while your token is on Polygon (Ethereum Virtual Machine compatible).",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "We’ll need to carefully break this down because BTC is on a separate chain, while your token is on Polygon (Ethereum Virtual Machine compatible).",
+          "extractedAt": "2026-07-12T01:30:53.324Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.324Z",
+      "updatedAt": "2026-07-12T01:30:53.324Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_8068418f",
+      "type": "task",
+      "canonicalName": "Act as if I am a 13 year old and give me the step by step, s",
+      "aliases": [],
+      "summary": "Act as if I am a 13 year old and give me the step by step, streamlined setup process, with links and necessary downloads I will need to make this possible.",
+      "properties": {
+        "task": "Act as if I am a 13 year old and give me the step by step, streamlined setup process, with links and necessary downloads I will need to make this possible.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Act as if I am a 13 year old and give me the step by step, streamlined setup process, with links and necessary downloads I will need to make this possible.",
+          "extractedAt": "2026-07-12T01:30:53.324Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.324Z",
+      "updatedAt": "2026-07-12T01:30:53.324Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_d72e94fc",
+      "type": "task",
+      "canonicalName": "Any information you may need to finish this list please ask ",
+      "aliases": [],
+      "summary": "Any information you may need to finish this list please ask prior to giving me the full setup list.",
+      "properties": {
+        "task": "Any information you may need to finish this list please ask prior to giving me the full setup list.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Any information you may need to finish this list please ask prior to giving me the full setup list.",
+          "extractedAt": "2026-07-12T01:30:53.324Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.324Z",
+      "updatedAt": "2026-07-12T01:30:53.324Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_rule_db558059",
+      "type": "rule",
+      "canonicalName": "Here's a breakdown of what's likely going on with this type ",
+      "aliases": [],
+      "summary": "Here's a breakdown of what's likely going on with this type of app:\\n\\n---\\n\\n### 🧠 What This App Is *Probably* Doing\\n\\nApps like the one in the image **do not mine real Bitcoin using your device**.",
+      "properties": {
+        "rule": "Here's a breakdown of what's likely going on with this type of app:\\n\\n---\\n\\n### 🧠 What This App Is *Probably* Doing\\n\\nApps like the one in the image **do not mine real Bitcoin using your device**.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Here's a breakdown of what's likely going on with this type of app:\\n\\n---\\n\\n### 🧠 What This App Is *Probably* Doing\\n\\nApps like the one in the image **do not mine real Bitcoin using your device**.",
+          "extractedAt": "2026-07-12T01:30:53.325Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:53.325Z",
+      "updatedAt": "2026-07-12T01:30:53.325Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_b880abdf",
+      "type": "task",
+      "canonicalName": "I only have 46 miles left and I need to get back home, which",
+      "aliases": [],
+      "summary": "I only have 46 miles left and I need to get back home, which is an hour and a half, I guess, away.",
+      "properties": {
+        "task": "I only have 46 miles left and I need to get back home, which is an hour and a half, I guess, away.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "I only have 46 miles left and I need to get back home, which is an hour and a half, I guess, away.",
+          "extractedAt": "2026-07-12T01:30:53.325Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.325Z",
+      "updatedAt": "2026-07-12T01:30:53.325Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_4f260b45",
+      "type": "task",
+      "canonicalName": "The coin should have a premium, futuristic look with a sleek",
+      "aliases": [],
+      "summary": "The coin should have a premium, futuristic look with a sleek gold and silver rim, glowing neon accents in pink and blue matching the logo’s color scheme, and engraved details around the edge reading 'ZWAP COIN'.",
+      "properties": {
+        "task": "The coin should have a premium, futuristic look with a sleek gold and silver rim, glowing neon accents in pink and blue matching the logo’s color scheme, and engraved details around the edge reading 'ZWAP COIN'.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "The coin should have a premium, futuristic look with a sleek gold and silver rim, glowing neon accents in pink and blue matching the logo’s color scheme, and engraved details around the edge reading 'ZWAP COIN'.",
+          "extractedAt": "2026-07-12T01:30:53.325Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.325Z",
+      "updatedAt": "2026-07-12T01:30:53.325Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_ab5efb0f",
+      "type": "task",
+      "canonicalName": "What items should be here? \\n\\nI know getting fitness gear w",
+      "aliases": [],
+      "summary": "What items should be here? \\n\\nI know getting fitness gear would be ideal especially for walk and dance.",
+      "properties": {
+        "task": "What items should be here? \\n\\nI know getting fitness gear would be ideal especially for walk and dance.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "What items should be here? \\n\\nI know getting fitness gear would be ideal especially for walk and dance.",
+          "extractedAt": "2026-07-12T01:30:53.325Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.325Z",
+      "updatedAt": "2026-07-12T01:30:53.325Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_2eb31f3e",
+      "type": "task",
+      "canonicalName": "To buy GoMining tokens I have to deposit them…which takes me",
+      "aliases": [],
+      "summary": "To buy GoMining tokens I have to deposit them…which takes me to a wallet connect page…which takes me to Uniswap…which then takes me to stripe to purchase.",
+      "properties": {
+        "task": "To buy GoMining tokens I have to deposit them…which takes me to a wallet connect page…which takes me to Uniswap…which then takes me to stripe to purchase.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "To buy GoMining tokens I have to deposit them…which takes me to a wallet connect page…which takes me to Uniswap…which then takes me to stripe to purchase.",
+          "extractedAt": "2026-07-12T01:30:53.325Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.325Z",
+      "updatedAt": "2026-07-12T01:30:53.325Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_d9e363ba",
+      "type": "task",
+      "canonicalName": "Dead giveaway.\\n\\nHere’s the real tea:\\n\\n### 🕷️ What You L",
+      "aliases": [],
+      "summary": "Dead giveaway.\\n\\nHere’s the real tea:\\n\\n### 🕷️ What You Lookin' At:\\n- Long body, tiny “waist”\\n- Black head + thorax\\n- Reddish or orange abdomen with a black tip\\n- Curved antennae\\n\\n### 🧠 Should You Be Worried?\\nNah, these wasps **ain’t aggressive** unless you start somethin’.",
+      "properties": {
+        "task": "Dead giveaway.\\n\\nHere’s the real tea:\\n\\n### 🕷️ What You Lookin' At:\\n- Long body, tiny “waist”\\n- Black head + thorax\\n- Reddish or orange abdomen with a black tip\\n- Curved antennae\\n\\n### 🧠 Should You Be Worried?\\nNah, these wasps **ain’t aggressive** unless you start somethin’.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Dead giveaway.\\n\\nHere’s the real tea:\\n\\n### 🕷️ What You Lookin' At:\\n- Long body, tiny “waist”\\n- Black head + thorax\\n- Reddish or orange abdomen with a black tip\\n- Curved antennae\\n\\n### 🧠 Should You Be Worried?\\nNah, these wasps **a",
+          "extractedAt": "2026-07-12T01:30:53.325Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.325Z",
+      "updatedAt": "2026-07-12T01:30:53.325Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_7d996872",
+      "type": "task",
+      "canonicalName": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already dep",
+      "aliases": [],
+      "summary": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already deployed).\\nYou should receive ~99 POL (at 1 XHI = 3 POL rate).\\n\\n⸻\\n\\n✅ 3.",
+      "properties": {
+        "task": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already deployed).\\nYou should receive ~99 POL (at 1 XHI = 3 POL rate).\\n\\n⸻\\n\\n✅ 3.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already deployed).\\nYou should receive ~99 POL (at 1 XHI = 3 POL rate).\\n\\n⸻\\n\\n✅ 3.",
+          "extractedAt": "2026-07-12T01:30:53.326Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.326Z",
+      "updatedAt": "2026-07-12T01:30:53.326Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_event_d2127f53",
+      "type": "event",
+      "canonicalName": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already dep",
+      "aliases": [],
+      "summary": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already deployed).\\nYou should receive ~99 POL (at 1 XHI = 3 POL rate).\\n\\n⸻\\n\\n✅ 3.",
+      "properties": {
+        "event": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already deployed).\\nYou should receive ~99 POL (at 1 XHI = 3 POL rate).\\n\\n⸻\\n\\n✅ 3."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Swap $XHI → POL\\n\\nUse your live QuickSwap pool (already deployed).\\nYou should receive ~99 POL (at 1 XHI = 3 POL rate).\\n\\n⸻\\n\\n✅ 3.",
+          "extractedAt": "2026-07-12T01:30:53.326Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.326Z",
+      "updatedAt": "2026-07-12T01:30:53.326Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_74e2f213",
+      "type": "task",
+      "canonicalName": "Prepare Allocation Wallets (per category)\\n\\nEach category i",
+      "aliases": [],
+      "summary": "Prepare Allocation Wallets (per category)\\n\\nEach category in the tokenomics table should be assigned its own dedicated wallet address to track movement and enforce transparency:\\n\\nCategory Wallet Needed?",
+      "properties": {
+        "task": "Prepare Allocation Wallets (per category)\\n\\nEach category in the tokenomics table should be assigned its own dedicated wallet address to track movement and enforce transparency:\\n\\nCategory Wallet Needed?",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Prepare Allocation Wallets (per category)\\n\\nEach category in the tokenomics table should be assigned its own dedicated wallet address to track movement and enforce transparency:\\n\\nCategory Wallet Needed?",
+          "extractedAt": "2026-07-12T01:30:53.326Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.326Z",
+      "updatedAt": "2026-07-12T01:30:53.326Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_cf653674",
+      "type": "preference",
+      "canonicalName": "I havent decided exactly which one I want to incorporate wit",
+      "aliases": [],
+      "summary": "I havent decided exactly which one I want to incorporate with the state just yet.",
+      "properties": {
+        "preference": "I havent decided exactly which one I want to incorporate with the state just yet.",
+        "strength": "medium"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "I havent decided exactly which one I want to incorporate with the state just yet.",
+          "extractedAt": "2026-07-12T01:30:53.326Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.326Z",
+      "updatedAt": "2026-07-12T01:30:53.326Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_open_question_504d4e8c",
+      "type": "open_question",
+      "canonicalName": "The current EIN is filed under GRATIA DEI as a corporation, ",
+      "aliases": [],
+      "summary": "The current EIN is filed under GRATIA DEI as a corporation, but the final incorporated name is still undecided.\\nassistant: Got it.",
+      "properties": {
+        "question": "The current EIN is filed under GRATIA DEI as a corporation, but the final incorporated name is still undecided.\\nassistant: Got it."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "The current EIN is filed under GRATIA DEI as a corporation, but the final incorporated name is still undecided.\\nassistant: Got it.",
+          "extractedAt": "2026-07-12T01:30:53.326Z"
+        }
+      ],
+      "confidence": 0.6,
+      "createdAt": "2026-07-12T01:30:53.326Z",
+      "updatedAt": "2026-07-12T01:30:53.326Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_6c153972",
+      "type": "preference",
+      "canonicalName": "Ready to dive back into the #TLDR ebook series?\\nuser: yes I",
+      "aliases": [],
+      "summary": "Ready to dive back into the #TLDR ebook series?\\nuser: yes I want to start with The Science of Mind and I have logos hold on while i get them.",
+      "properties": {
+        "preference": "Ready to dive back into the #TLDR ebook series?\\nuser: yes I want to start with The Science of Mind and I have logos hold on while i get them.",
+        "strength": "medium"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Ready to dive back into the #TLDR ebook series?\\nuser: yes I want to start with The Science of Mind and I have logos hold on while i get them.",
+          "extractedAt": "2026-07-12T01:30:53.327Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.327Z",
+      "updatedAt": "2026-07-12T01:30:53.327Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_preference_6a6f6267",
+      "type": "preference",
+      "canonicalName": "I can always add it in.",
+      "aliases": [],
+      "summary": "I can always add it in.",
+      "properties": {
+        "preference": "I can always add it in.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "I can always add it in.",
+          "extractedAt": "2026-07-12T01:30:53.327Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.327Z",
+      "updatedAt": "2026-07-12T01:30:53.327Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_7e5a8bad",
+      "type": "task",
+      "canonicalName": "I need to get this on the amazon kindle.",
+      "aliases": [],
+      "summary": "I need to get this on the amazon kindle.",
+      "properties": {
+        "task": "I need to get this on the amazon kindle.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "I need to get this on the amazon kindle.",
+          "extractedAt": "2026-07-12T01:30:53.327Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.327Z",
+      "updatedAt": "2026-07-12T01:30:53.327Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_d2dfd9fd",
+      "type": "preference",
+      "canonicalName": "Can we explore approval options based on what I’ve got?**\\n\\",
+      "aliases": [],
+      "summary": "Can we explore approval options based on what I’ve got?**\\n\\n---\\n\\nLet me know if you'd like to tweak the tone (more casual, more formal, etc.) or add details like your business name or income.\\nuser: thankkk u\\nassistant: Always got you 😎📲 — send that message and let’s see what they say.",
+      "properties": {
+        "preference": "Can we explore approval options based on what I’ve got?**\\n\\n---\\n\\nLet me know if you'd like to tweak the tone (more casual, more formal, etc.) or add details like your business name or income.\\nuser: thankkk u\\nassistant: Always got you 😎📲 — send that message and let’s see what they say.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Can we explore approval options based on what I’ve got?**\\n\\n---\\n\\nLet me know if you'd like to tweak the tone (more casual, more formal, etc.) or add details like your business name or income.\\nuser: thankkk u\\nassistant: Always got you \ud83d",
+          "extractedAt": "2026-07-12T01:30:53.327Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.327Z",
+      "updatedAt": "2026-07-12T01:30:53.327Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_preference_7624efc4",
+      "type": "preference",
+      "canonicalName": "He never responded to the email I sent him as a friend of Sa",
+      "aliases": [],
+      "summary": "He never responded to the email I sent him as a friend of Sara\\nassistant: Got it.",
+      "properties": {
+        "preference": "He never responded to the email I sent him as a friend of Sara\\nassistant: Got it.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "He never responded to the email I sent him as a friend of Sara\\nassistant: Got it.",
+          "extractedAt": "2026-07-12T01:30:53.328Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.328Z",
+      "updatedAt": "2026-07-12T01:30:53.328Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_ac687bcc",
+      "type": "task",
+      "canonicalName": "Lol I have to get the EIN from the IRS...I forgot I made thi",
+      "aliases": [],
+      "summary": "Lol I have to get the EIN from the IRS...I forgot I made this.",
+      "properties": {
+        "task": "Lol I have to get the EIN from the IRS...I forgot I made this.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Lol I have to get the EIN from the IRS...I forgot I made this.",
+          "extractedAt": "2026-07-12T01:30:53.328Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.328Z",
+      "updatedAt": "2026-07-12T01:30:53.328Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_638e2ecd",
+      "type": "preference",
+      "canonicalName": "Here’s Step 1 of your Vendor Deal Checklist — let’s start wi",
+      "aliases": [],
+      "summary": "Here’s Step 1 of your Vendor Deal Checklist — let’s start with the essentials you should always demand before agreeing to anything:\\n\\n⸻\\n\\n✅ VENDOR DEAL CHECKLIST (Part 1: Pre-Approval Basics)\\n\\n1.",
+      "properties": {
+        "preference": "Here’s Step 1 of your Vendor Deal Checklist — let’s start with the essentials you should always demand before agreeing to anything:\\n\\n⸻\\n\\n✅ VENDOR DEAL CHECKLIST (Part 1: Pre-Approval Basics)\\n\\n1.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Here’s Step 1 of your Vendor Deal Checklist — let’s start with the essentials you should always demand before agreeing to anything:\\n\\n⸻\\n\\n✅ VENDOR DEAL CHECKLIST (Part 1: Pre-Approval Basics)\\n\\n1.",
+          "extractedAt": "2026-07-12T01:30:53.328Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:53.328Z",
+      "updatedAt": "2026-07-12T01:30:53.328Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_dcb9dbdb",
+      "type": "task",
+      "canonicalName": "Here’s Step 1 of your Vendor Deal Checklist — let’s start wi",
+      "aliases": [],
+      "summary": "Here’s Step 1 of your Vendor Deal Checklist — let’s start with the essentials you should always demand before agreeing to anything:\\n\\n⸻\\n\\n✅ VENDOR DEAL CHECKLIST (Part 1: Pre-Approval Basics)\\n\\n1.",
+      "properties": {
+        "task": "Here’s Step 1 of your Vendor Deal Checklist — let’s start with the essentials you should always demand before agreeing to anything:\\n\\n⸻\\n\\n✅ VENDOR DEAL CHECKLIST (Part 1: Pre-Approval Basics)\\n\\n1.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Here’s Step 1 of your Vendor Deal Checklist — let’s start with the essentials you should always demand before agreeing to anything:\\n\\n⸻\\n\\n✅ VENDOR DEAL CHECKLIST (Part 1: Pre-Approval Basics)\\n\\n1.",
+          "extractedAt": "2026-07-12T01:30:53.328Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.328Z",
+      "updatedAt": "2026-07-12T01:30:53.328Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_dc8d7310",
+      "type": "task",
+      "canonicalName": "Its not autoconnecting and I need to send out these emails o",
+      "aliases": [],
+      "summary": "Its not autoconnecting and I need to send out these emails on the branded email like ASAP.\\nassistant: You're trying to verify your domain `xoclonholdings.property` via **Zoho Mail** and then use it to send/receive email through **Gmail**.",
+      "properties": {
+        "task": "Its not autoconnecting and I need to send out these emails on the branded email like ASAP.\\nassistant: You're trying to verify your domain `xoclonholdings.property` via **Zoho Mail** and then use it to send/receive email through **Gmail**.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Its not autoconnecting and I need to send out these emails on the branded email like ASAP.\\nassistant: You're trying to verify your domain `xoclonholdings.property` via **Zoho Mail** and then use it to send/receive email through **Gmail**.",
+          "extractedAt": "2026-07-12T01:30:53.328Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.328Z",
+      "updatedAt": "2026-07-12T01:30:53.328Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_818a00d1",
+      "type": "task",
+      "canonicalName": "The assigned EIN is **39-2284835**, as shown in the confirma",
+      "aliases": [],
+      "summary": "The assigned EIN is **39-2284835**, as shown in the confirmation screenshot.\\n\\n### Next Steps You Should Take:\\n1. **Download & Save the EIN Confirmation Letter:**\\n Click on the “CLICK HERE for Your EIN Confirmation Letter” link to save the official letter.",
+      "properties": {
+        "task": "The assigned EIN is **39-2284835**, as shown in the confirmation screenshot.\\n\\n### Next Steps You Should Take:\\n1. **Download & Save the EIN Confirmation Letter:**\\n Click on the “CLICK HERE for Your EIN Confirmation Letter” link to save the official letter.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "The assigned EIN is **39-2284835**, as shown in the confirmation screenshot.\\n\\n### Next Steps You Should Take:\\n1. **Download & Save the EIN Confirmation Letter:**\\n Click on the “CLICK HERE for Your EIN Confirmation Letter” link to save t",
+          "extractedAt": "2026-07-12T01:30:53.329Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.329Z",
+      "updatedAt": "2026-07-12T01:30:53.329Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_rule_36f045c7",
+      "type": "rule",
+      "canonicalName": "Identify 2-3 tasks and provide plenty of details to explain.",
+      "aliases": [],
+      "summary": "Identify 2-3 tasks and provide plenty of details to explain. (These tasks should not be the same as the ones that only assist you.)\\nassistant: **1.",
+      "properties": {
+        "rule": "Identify 2-3 tasks and provide plenty of details to explain. (These tasks should not be the same as the ones that only assist you.)\\nassistant: **1.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Identify 2-3 tasks and provide plenty of details to explain. (These tasks should not be the same as the ones that only assist you.)\\nassistant: **1.",
+          "extractedAt": "2026-07-12T01:30:53.329Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:53.329Z",
+      "updatedAt": "2026-07-12T01:30:53.329Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_3137c1cf",
+      "type": "task",
+      "canonicalName": "Identify 2-3 tasks and provide plenty of details to explain.",
+      "aliases": [],
+      "summary": "Identify 2-3 tasks and provide plenty of details to explain. (These tasks should not be the same as the ones that only assist you.)\\nassistant: **1.",
+      "properties": {
+        "task": "Identify 2-3 tasks and provide plenty of details to explain. (These tasks should not be the same as the ones that only assist you.)\\nassistant: **1.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Identify 2-3 tasks and provide plenty of details to explain. (These tasks should not be the same as the ones that only assist you.)\\nassistant: **1.",
+          "extractedAt": "2026-07-12T01:30:53.329Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.329Z",
+      "updatedAt": "2026-07-12T01:30:53.329Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_21f1d66a",
+      "type": "task",
+      "canonicalName": "Ask me 3 questions first on whatever you need to know.\\nassi",
+      "aliases": [],
+      "summary": "Ask me 3 questions first on whatever you need to know.\\nassistant: Bet, I got you.",
+      "properties": {
+        "task": "Ask me 3 questions first on whatever you need to know.\\nassistant: Bet, I got you.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+          "evidenceQuote": "Ask me 3 questions first on whatever you need to know.\\nassistant: Bet, I got you.",
+          "extractedAt": "2026-07-12T01:30:53.329Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:53.329Z",
+      "updatedAt": "2026-07-12T01:30:53.329Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_project_b3ecd5de",
+      "type": "project",
+      "canonicalName": "XOCLON",
+      "aliases": [],
+      "summary": "Project XOCLON referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "XOCLON",
+          "extractedAt": "2026-07-12T01:30:56.874Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:56.878Z",
+      "updatedAt": "2026-07-12T01:30:56.878Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_49601898",
+      "type": "integration",
+      "canonicalName": "Stripe",
+      "aliases": [],
+      "summary": "Integration Stripe.",
+      "properties": {
+        "provider": "Stripe"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Stripe",
+          "extractedAt": "2026-07-12T01:30:56.888Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:56.888Z",
+      "updatedAt": "2026-07-12T01:30:56.888Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_4f920a7e",
+      "type": "integration",
+      "canonicalName": "PayPal",
+      "aliases": [],
+      "summary": "Integration PayPal.",
+      "properties": {
+        "provider": "PayPal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "PayPal",
+          "extractedAt": "2026-07-12T01:30:56.892Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:56.892Z",
+      "updatedAt": "2026-07-12T01:30:56.892Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_task_87cf6154",
+      "type": "task",
+      "canonicalName": "No overwhelm.\"},{\"id\":\"4e060163-a35f-495d-981a-a7de6ebac91c\"",
+      "aliases": [],
+      "summary": "No overwhelm.\"},{\"id\":\"4e060163-a35f-495d-981a-a7de6ebac91c\",\"role\":\"user\",\"createTime\":\"2026-04-06T16:58:06.900Z\",\"text\":\"Thats the thing...I believe the first action should be to learn something.",
+      "properties": {
+        "task": "No overwhelm.\"},{\"id\":\"4e060163-a35f-495d-981a-a7de6ebac91c\",\"role\":\"user\",\"createTime\":\"2026-04-06T16:58:06.900Z\",\"text\":\"Thats the thing...I believe the first action should be to learn something.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "No overwhelm.\"},{\"id\":\"4e060163-a35f-495d-981a-a7de6ebac91c\",\"role\":\"user\",\"createTime\":\"2026-04-06T16:58:06.900Z\",\"text\":\"Thats the thing...I believe the first action should be to learn something.",
+          "extractedAt": "2026-07-12T01:30:56.935Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.935Z",
+      "updatedAt": "2026-07-12T01:30:56.935Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_4ed22d45",
+      "type": "preference",
+      "canonicalName": "I know most people dont think like that BUT Ive also never s",
+      "aliases": [],
+      "summary": "I know most people dont think like that BUT Ive also never seen an app like this at all.",
+      "properties": {
+        "preference": "I know most people dont think like that BUT Ive also never seen an app like this at all.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "I know most people dont think like that BUT Ive also never seen an app like this at all.",
+          "extractedAt": "2026-07-12T01:30:56.935Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.935Z",
+      "updatedAt": "2026-07-12T01:30:56.935Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_48192a48",
+      "type": "task",
+      "canonicalName": "Or define **what happens after each option is selected**\\n\\n",
+      "aliases": [],
+      "summary": "Or define **what happens after each option is selected**\\n\\nSay the word and we’ll lock it in clean.\"},{\"id\":\"438a1554-d775-4136-b722-94aeade396a1\",\"role\":\"user\",\"createTime\":\"2026-04-06T17:05:04.905Z\",\"text\":\"so first screen should be \\n\\nPick a lane...Move or Play....?\\n\\nNeither?",
+      "properties": {
+        "task": "Or define **what happens after each option is selected**\\n\\nSay the word and we’ll lock it in clean.\"},{\"id\":\"438a1554-d775-4136-b722-94aeade396a1\",\"role\":\"user\",\"createTime\":\"2026-04-06T17:05:04.905Z\",\"text\":\"so first screen should be \\n\\nPick a lane...Move or Play....?\\n\\nNeither?",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Or define **what happens after each option is selected**\\n\\nSay the word and we’ll lock it in clean.\"},{\"id\":\"438a1554-d775-4136-b722-94aeade396a1\",\"role\":\"user\",\"createTime\":\"2026-04-06T17:05:04.905Z\",\"text\":\"so first screen should be \\n\\n",
+          "extractedAt": "2026-07-12T01:30:56.935Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.935Z",
+      "updatedAt": "2026-07-12T01:30:56.935Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_da470126",
+      "type": "task",
+      "canonicalName": "That’s exactly what you should do right now.\\n\\nDon’t rush t",
+      "aliases": [],
+      "summary": "That’s exactly what you should do right now.\\n\\nDon’t rush this part.\\n\\n---\\n\\n# 🧠 What you’re doing (and why it matters)\\n\\nYou’re not just picking UI…\\n\\nYou’re deciding:\\n\\n> **How people *enter your entire system*** \\n\\nThat’s foundational.",
+      "properties": {
+        "task": "That’s exactly what you should do right now.\\n\\nDon’t rush this part.\\n\\n---\\n\\n# 🧠 What you’re doing (and why it matters)\\n\\nYou’re not just picking UI…\\n\\nYou’re deciding:\\n\\n> **How people *enter your entire system*** \\n\\nThat’s foundational.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "That’s exactly what you should do right now.\\n\\nDon’t rush this part.\\n\\n---\\n\\n# 🧠 What you’re doing (and why it matters)\\n\\nYou’re not just picking UI…\\n\\nYou’re deciding:\\n\\n> **How people *enter your entire system*** \\n\\nThat’s foundat",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_822cb473",
+      "type": "preference",
+      "canonicalName": "And in a way I want it to feel ginmicky honestly.",
+      "aliases": [],
+      "summary": "And in a way I want it to feel ginmicky honestly.",
+      "properties": {
+        "preference": "And in a way I want it to feel ginmicky honestly.",
+        "strength": "medium"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "And in a way I want it to feel ginmicky honestly.",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_3606d554",
+      "type": "task",
+      "canonicalName": "Don’t over-whisper\\nIt should feel:\\n- intentional \\n- confi",
+      "aliases": [],
+      "summary": "Don’t over-whisper\\nIt should feel:\\n- intentional \\n- confident \\nNot:\\n- eerie \\n- sleep aid \\n\\n---\\n\\n### 3.",
+      "properties": {
+        "task": "Don’t over-whisper\\nIt should feel:\\n- intentional \\n- confident \\nNot:\\n- eerie \\n- sleep aid \\n\\n---\\n\\n### 3.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Don’t over-whisper\\nIt should feel:\\n- intentional \\n- confident \\nNot:\\n- eerie \\n- sleep aid \\n\\n---\\n\\n### 3.",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_3743fa23",
+      "type": "task",
+      "canonicalName": "Thats it.\"},{\"id\":\"7bdebc97-0169-4d4c-bc64-5d28621fe055\",\"ro",
+      "aliases": [],
+      "summary": "Thats it.\"},{\"id\":\"7bdebc97-0169-4d4c-bc64-5d28621fe055\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T01:41:42.866Z\",\"text\":\"That’s a strong instinct… we just need to land it **precisely** so you don’t box yourself in.\\n\\n---\\n\\n# 🧠 What you’re proposing\\n\\n> **“Move or Play to earn.",
+      "properties": {
+        "task": "Thats it.\"},{\"id\":\"7bdebc97-0169-4d4c-bc64-5d28621fe055\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T01:41:42.866Z\",\"text\":\"That’s a strong instinct… we just need to land it **precisely** so you don’t box yourself in.\\n\\n---\\n\\n# 🧠 What you’re proposing\\n\\n> **“Move or Play to earn.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Thats it.\"},{\"id\":\"7bdebc97-0169-4d4c-bc64-5d28621fe055\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T01:41:42.866Z\",\"text\":\"That’s a strong instinct… we just need to land it **precisely** so you don’t box yourself in.\\n\\n---\\n\\n# 🧠 What yo",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_rule_a5cb97ac",
+      "type": "rule",
+      "canonicalName": "Subtle expansion (DO NOT dump features)\\n\\nNow give **ONE ne",
+      "aliases": [],
+      "summary": "Subtle expansion (DO NOT dump features)\\n\\nNow give **ONE next idea**:\\n\\n> “You can keep playing… \\nor try another way to earn.”\\n\\n---\\n\\n### Buttons:\\n\\n| Play Again | | Try Move |\\n\\n---\\n\\n# 🧠 That’s it.",
+      "properties": {
+        "rule": "Subtle expansion (DO NOT dump features)\\n\\nNow give **ONE next idea**:\\n\\n> “You can keep playing… \\nor try another way to earn.”\\n\\n---\\n\\n### Buttons:\\n\\n| Play Again | | Try Move |\\n\\n---\\n\\n# 🧠 That’s it.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Subtle expansion (DO NOT dump features)\\n\\nNow give **ONE next idea**:\\n\\n> “You can keep playing… \\nor try another way to earn.”\\n\\n---\\n\\n### Buttons:\\n\\n| Play Again | | Try Move |\\n\\n---\\n\\n# 🧠 That’s it.",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_preference_595f59e8",
+      "type": "preference",
+      "canonicalName": "Never block entry\\nPermissions should not feel like a wall.\\",
+      "aliases": [],
+      "summary": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+      "properties": {
+        "preference": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_rule_05de635c",
+      "type": "rule",
+      "canonicalName": "Never block entry\\nPermissions should not feel like a wall.\\",
+      "aliases": [],
+      "summary": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+      "properties": {
+        "rule": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+        "severity": "high"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_7655d568",
+      "type": "task",
+      "canonicalName": "Never block entry\\nPermissions should not feel like a wall.\\",
+      "aliases": [],
+      "summary": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+      "properties": {
+        "task": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Never block entry\\nPermissions should not feel like a wall.\\n\\n---\\n\\n### 2.",
+          "extractedAt": "2026-07-12T01:30:56.936Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.936Z",
+      "updatedAt": "2026-07-12T01:30:56.936Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_9d69bb23",
+      "type": "preference",
+      "canonicalName": "Never show a dead screen\\nEven at 0 steps, something should ",
+      "aliases": [],
+      "summary": "Never show a dead screen\\nEven at 0 steps, something should feel alive.\\n\\n---\\n\\n### 3.",
+      "properties": {
+        "preference": "Never show a dead screen\\nEven at 0 steps, something should feel alive.\\n\\n---\\n\\n### 3.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Never show a dead screen\\nEven at 0 steps, something should feel alive.\\n\\n---\\n\\n### 3.",
+          "extractedAt": "2026-07-12T01:30:56.937Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.937Z",
+      "updatedAt": "2026-07-12T01:30:56.937Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_5aca56b5",
+      "type": "task",
+      "canonicalName": "Never show a dead screen\\nEven at 0 steps, something should ",
+      "aliases": [],
+      "summary": "Never show a dead screen\\nEven at 0 steps, something should feel alive.\\n\\n---\\n\\n### 3.",
+      "properties": {
+        "task": "Never show a dead screen\\nEven at 0 steps, something should feel alive.\\n\\n---\\n\\n### 3.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Never show a dead screen\\nEven at 0 steps, something should feel alive.\\n\\n---\\n\\n### 3.",
+          "extractedAt": "2026-07-12T01:30:56.937Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.937Z",
+      "updatedAt": "2026-07-12T01:30:56.937Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_ad0032a3",
+      "type": "task",
+      "canonicalName": "The tone is almost there.\\n\\nWe just need to tighten two thi",
+      "aliases": [],
+      "summary": "The tone is almost there.\\n\\nWe just need to tighten two things:\\n- remove anything that feels slightly “marketing heavy”\\n- keep the confidence but make it feel effortless\\n\\n---\\n\\n# 🧠 Quick read on your version\\n\\n### Line 1:\\n> “This is where your steps REALLY count.”\\n\\n✅ Strong idea \\n⚠️ “REALLY” feels a bit pushy / ad-like\\n\\n---\\n\\n### Line 2:\\n> “We’ll count.",
+      "properties": {
+        "task": "The tone is almost there.\\n\\nWe just need to tighten two things:\\n- remove anything that feels slightly “marketing heavy”\\n- keep the confidence but make it feel effortless\\n\\n---\\n\\n# 🧠 Quick read on your version\\n\\n### Line 1:\\n> “This is where your steps REALLY count.”\\n\\n✅ Strong idea \\n⚠️ “REALLY” feels a bit pushy / ad-like\\n\\n---\\n\\n### Line 2:\\n> “We’ll count.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "The tone is almost there.\\n\\nWe just need to tighten two things:\\n- remove anything that feels slightly “marketing heavy”\\n- keep the confidence but make it feel effortless\\n\\n---\\n\\n# 🧠 Quick read on your version\\n\\n### Line 1:\\n> “This i",
+          "extractedAt": "2026-07-12T01:30:56.937Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.937Z",
+      "updatedAt": "2026-07-12T01:30:56.937Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_09efbbbf",
+      "type": "preference",
+      "canonicalName": "We're here.\"},{\"id\":\"8642d5cc-3eb6-48d4-86f6-69ed5f83be78\",\"",
+      "aliases": [],
+      "summary": "We're here.\"},{\"id\":\"8642d5cc-3eb6-48d4-86f6-69ed5f83be78\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T01:50:59.638Z\",\"text\":\"I like that line a lot.\\n\\nIt tells me exactly what tone you want:\\n\\n> not rushed \\n> not pushy \\n> not transactional \\n\\nMore like the app is saying:\\n\\n> **“I’m here with you.”**\\n\\nThat’s strong.",
+      "properties": {
+        "preference": "We're here.\"},{\"id\":\"8642d5cc-3eb6-48d4-86f6-69ed5f83be78\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T01:50:59.638Z\",\"text\":\"I like that line a lot.\\n\\nIt tells me exactly what tone you want:\\n\\n> not rushed \\n> not pushy \\n> not transactional \\n\\nMore like the app is saying:\\n\\n> **“I’m here with you.”**\\n\\nThat’s strong.",
+        "strength": "medium"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "We're here.\"},{\"id\":\"8642d5cc-3eb6-48d4-86f6-69ed5f83be78\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T01:50:59.638Z\",\"text\":\"I like that line a lot.\\n\\nIt tells me exactly what tone you want:\\n\\n> not rushed \\n> not pushy \\n> not transacti",
+          "extractedAt": "2026-07-12T01:30:56.937Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.937Z",
+      "updatedAt": "2026-07-12T01:30:56.937Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_2d93f215",
+      "type": "task",
+      "canonicalName": "We’re here.”**\\n\\n- removes urgency \\n- builds comfort \\n- f",
+      "aliases": [],
+      "summary": "We’re here.”**\\n\\n- removes urgency \\n- builds comfort \\n- feels human \\n\\n---\\n\\n# 🎯 Together, they say:\\n\\n> “You don’t have to perform… \\nbut this is still working for you.”\\n\\nThat’s rare.",
+      "properties": {
+        "task": "We’re here.”**\\n\\n- removes urgency \\n- builds comfort \\n- feels human \\n\\n---\\n\\n# 🎯 Together, they say:\\n\\n> “You don’t have to perform… \\nbut this is still working for you.”\\n\\nThat’s rare.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "We’re here.”**\\n\\n- removes urgency \\n- builds comfort \\n- feels human \\n\\n---\\n\\n# 🎯 Together, they say:\\n\\n> “You don’t have to perform… \\nbut this is still working for you.”\\n\\nThat’s rare.",
+          "extractedAt": "2026-07-12T01:30:56.937Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.937Z",
+      "updatedAt": "2026-07-12T01:30:56.937Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_ba96af48",
+      "type": "task",
+      "canonicalName": "This is the **calibration moment**.\\n\\nIf you get this wrong",
+      "aliases": [],
+      "summary": "This is the **calibration moment**.\\n\\nIf you get this wrong:\\n- too slow → feels pointless \\n- too fast → feels fake \\n\\nWe need:\\n\\n> **early feedback + believable progression**\\n\\n---\\n\\n# 🎯 Objective\\n\\nUser should feel:\\n\\n> “I’m earning already… and it builds.”\\n\\n---\\n\\n# 🧠 Two different reward moments (don’t mix them)\\n\\n### 1.",
+      "properties": {
+        "task": "This is the **calibration moment**.\\n\\nIf you get this wrong:\\n- too slow → feels pointless \\n- too fast → feels fake \\n\\nWe need:\\n\\n> **early feedback + believable progression**\\n\\n---\\n\\n# 🎯 Objective\\n\\nUser should feel:\\n\\n> “I’m earning already… and it builds.”\\n\\n---\\n\\n# 🧠 Two different reward moments (don’t mix them)\\n\\n### 1.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "This is the **calibration moment**.\\n\\nIf you get this wrong:\\n- too slow → feels pointless \\n- too fast → feels fake \\n\\nWe need:\\n\\n> **early feedback + believable progression**\\n\\n---\\n\\n# 🎯 Objective\\n\\nUser should feel:\\n\\n> “I’m earn",
+          "extractedAt": "2026-07-12T01:30:56.937Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.937Z",
+      "updatedAt": "2026-07-12T01:30:56.937Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_e72a18ba",
+      "type": "task",
+      "canonicalName": "We just need to make the transitions feel natural.\\n\\n# Clea",
+      "aliases": [],
+      "summary": "We just need to make the transitions feel natural.\\n\\n# Clean progression\\n\\n## 1.",
+      "properties": {
+        "task": "We just need to make the transitions feel natural.\\n\\n# Clean progression\\n\\n## 1.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "We just need to make the transitions feel natural.\\n\\n# Clean progression\\n\\n## 1.",
+          "extractedAt": "2026-07-12T01:30:56.937Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.937Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_5048587e",
+      "type": "task",
+      "canonicalName": "Let me in.”\\n\\nThat should exist.\\n\\n# The rule\\n\\nAfter the",
+      "aliases": [],
+      "summary": "Let me in.”\\n\\nThat should exist.\\n\\n# The rule\\n\\nAfter they:\\n\\n- Move\\n- or Play\\n- or Move then Play\\n- or Learn then choose\\n\\n…they need a clean **entry into the real app**.\\n\\nNot another lesson.",
+      "properties": {
+        "task": "Let me in.”\\n\\nThat should exist.\\n\\n# The rule\\n\\nAfter they:\\n\\n- Move\\n- or Play\\n- or Move then Play\\n- or Learn then choose\\n\\n…they need a clean **entry into the real app**.\\n\\nNot another lesson.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Let me in.”\\n\\nThat should exist.\\n\\n# The rule\\n\\nAfter they:\\n\\n- Move\\n- or Play\\n- or Move then Play\\n- or Learn then choose\\n\\n…they need a clean **entry into the real app**.\\n\\nNot another lesson.",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_bbd4784a",
+      "type": "task",
+      "canonicalName": "I’m going inside now.”\\n\\n# Final answer\\n\\nYes, they absolu",
+      "aliases": [],
+      "summary": "I’m going inside now.”\\n\\n# Final answer\\n\\nYes, they absolutely need an out.\\n\\nAnd that out should be:\\n\\n> **Enter ZWAP**\\n\\nUse it after the first successful reward moment, not before.",
+      "properties": {
+        "task": "I’m going inside now.”\\n\\n# Final answer\\n\\nYes, they absolutely need an out.\\n\\nAnd that out should be:\\n\\n> **Enter ZWAP**\\n\\nUse it after the first successful reward moment, not before.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "I’m going inside now.”\\n\\n# Final answer\\n\\nYes, they absolutely need an out.\\n\\nAnd that out should be:\\n\\n> **Enter ZWAP**\\n\\nUse it after the first successful reward moment, not before.",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_1a3a168d",
+      "type": "task",
+      "canonicalName": "We just need to do it without breaking the loop.\\n\\n---\\n\\n#",
+      "aliases": [],
+      "summary": "We just need to do it without breaking the loop.\\n\\n---\\n\\n# 🧠 Two ways to handle “Keep Playing”\\n\\n## Option A — Same game (default, safest)\\n- instant restart \\n- zero thinking \\n- pure loop \\n\\n---\\n\\n## Option B — Auto-rotate to a new game (your idea)\\n\\n> same flow… different game drops in\\n\\nNo screen.",
+      "properties": {
+        "task": "We just need to do it without breaking the loop.\\n\\n---\\n\\n# 🧠 Two ways to handle “Keep Playing”\\n\\n## Option A — Same game (default, safest)\\n- instant restart \\n- zero thinking \\n- pure loop \\n\\n---\\n\\n## Option B — Auto-rotate to a new game (your idea)\\n\\n> same flow… different game drops in\\n\\nNo screen.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "We just need to do it without breaking the loop.\\n\\n---\\n\\n# 🧠 Two ways to handle “Keep Playing”\\n\\n## Option A — Same game (default, safest)\\n- instant restart \\n- zero thinking \\n- pure loop \\n\\n---\\n\\n## Option B — Auto-rotate to a new ",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_3c11eda7",
+      "type": "task",
+      "canonicalName": "They dont need to learn the game\"},{\"id\":\"eb2acb0c-95aa-48f8",
+      "aliases": [],
+      "summary": "They dont need to learn the game\"},{\"id\":\"eb2acb0c-95aa-48f8-bcc2-fba70354de2e\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T02:02:16.104Z\",\"text\":\"Good.",
+      "properties": {
+        "task": "They dont need to learn the game\"},{\"id\":\"eb2acb0c-95aa-48f8-bcc2-fba70354de2e\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T02:02:16.104Z\",\"text\":\"Good.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "They dont need to learn the game\"},{\"id\":\"eb2acb0c-95aa-48f8-bcc2-fba70354de2e\",\"role\":\"assistant\",\"createTime\":\"2026-04-07T02:02:16.104Z\",\"text\":\"Good.",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_3d894f78",
+      "type": "task",
+      "canonicalName": "Show only what they already understand\\n\\nBecause they came ",
+      "aliases": [],
+      "summary": "Show only what they already understand\\n\\nBecause they came from:\\n\\n- Play → they understand earning \\n- Move → they understand earning \\n\\nSo first screen should show:\\n\\n### Core only:\\n- **balance (zPts / ZWAP)**\\n- **Move card**\\n- **Play card**\\n\\nThat’s it.\\n\\n---\\n\\n# 🧠 No Shop yet.",
+      "properties": {
+        "task": "Show only what they already understand\\n\\nBecause they came from:\\n\\n- Play → they understand earning \\n- Move → they understand earning \\n\\nSo first screen should show:\\n\\n### Core only:\\n- **balance (zPts / ZWAP)**\\n- **Move card**\\n- **Play card**\\n\\nThat’s it.\\n\\n---\\n\\n# 🧠 No Shop yet.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Show only what they already understand\\n\\nBecause they came from:\\n\\n- Play → they understand earning \\n- Move → they understand earning \\n\\nSo first screen should show:\\n\\n### Core only:\\n- **balance (zPts / ZWAP)**\\n- **Move card**\\n- **P",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_open_question_6ee1fd7b",
+      "type": "open_question",
+      "canonicalName": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What",
+      "aliases": [],
+      "summary": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashboard):\\n\\n- Move \\n- Play \\n- balance (temporary)\\n\\nNo friction.",
+      "properties": {
+        "question": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashboard):\\n\\n- Move \\n- Play \\n- balance (temporary)\\n\\nNo friction."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashbo",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.6,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_e8e68985",
+      "type": "task",
+      "canonicalName": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What",
+      "aliases": [],
+      "summary": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashboard):\\n\\n- Move \\n- Play \\n- balance (temporary)\\n\\nNo friction.",
+      "properties": {
+        "task": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashboard):\\n\\n- Move \\n- Play \\n- balance (temporary)\\n\\nNo friction.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "You **honor it and keep the door open**.\\n\\n---\\n\\n# 🎯 What should happen\\n\\n## If they tap **Not now**\\n\\n👉 You let them in anyway.\\n\\nBut as a **guest**.\\n\\n---\\n\\n# 🔥 Immediate result\\n\\nThey go straight into the app (your soft dashbo",
+          "extractedAt": "2026-07-12T01:30:56.938Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.938Z",
+      "updatedAt": "2026-07-12T01:30:56.938Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_constraint_b7462ffd",
+      "type": "constraint",
+      "canonicalName": "Buying behavior\\n\\nPick ONE (don’t mix):\\n\\n### Option A (cl",
+      "aliases": [],
+      "summary": "Buying behavior\\n\\nPick ONE (don’t mix):\\n\\n### Option A (cleanest)\\n> Cannot buy if boost is active\\n\\n### Option B (more flexible)\\n> Buying replaces current boost\\n\\n---\\n\\n👉 Use **Option A for now** (less bugs)\\n\\n---\\n\\n## 3.",
+      "properties": {
+        "constraint": "Buying behavior\\n\\nPick ONE (don’t mix):\\n\\n### Option A (cleanest)\\n> Cannot buy if boost is active\\n\\n### Option B (more flexible)\\n> Buying replaces current boost\\n\\n---\\n\\n👉 Use **Option A for now** (less bugs)\\n\\n---\\n\\n## 3.",
+        "permanence": "long_term"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Buying behavior\\n\\nPick ONE (don’t mix):\\n\\n### Option A (cleanest)\\n> Cannot buy if boost is active\\n\\n### Option B (more flexible)\\n> Buying replaces current boost\\n\\n---\\n\\n👉 Use **Option A for now** (less bugs)\\n\\n---\\n\\n## 3.",
+          "extractedAt": "2026-07-12T01:30:56.939Z"
+        }
+      ],
+      "confidence": 0.65,
+      "createdAt": "2026-07-12T01:30:56.939Z",
+      "updatedAt": "2026-07-12T01:30:56.939Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_task_d6ec748e",
+      "type": "task",
+      "canonicalName": "You got all this right? \\n\\nI really need to build a Onboard",
+      "aliases": [],
+      "summary": "You got all this right? \\n\\nI really need to build a Onboarding UI.",
+      "properties": {
+        "task": "You got all this right? \\n\\nI really need to build a Onboarding UI.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "You got all this right? \\n\\nI really need to build a Onboarding UI.",
+          "extractedAt": "2026-07-12T01:30:56.939Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.939Z",
+      "updatedAt": "2026-07-12T01:30:56.939Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_8a8203c9",
+      "type": "preference",
+      "canonicalName": "We’re here.\\n\\n### Moving:\\n> We’re still counting.\\n\\n### A",
+      "aliases": [],
+      "summary": "We’re here.\\n\\n### Moving:\\n> We’re still counting.\\n\\n### After reward:\\n> You earned 10 zPts.\\n\\n### After 50 zPts:\\n> Shop unlocked.\\n\\n---\\n\\n## Rule 3\\n> Messages never block interaction\\n\\nThey sit there.",
+      "properties": {
+        "preference": "We’re here.\\n\\n### Moving:\\n> We’re still counting.\\n\\n### After reward:\\n> You earned 10 zPts.\\n\\n### After 50 zPts:\\n> Shop unlocked.\\n\\n---\\n\\n## Rule 3\\n> Messages never block interaction\\n\\nThey sit there.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "We’re here.\\n\\n### Moving:\\n> We’re still counting.\\n\\n### After reward:\\n> You earned 10 zPts.\\n\\n### After 50 zPts:\\n> Shop unlocked.\\n\\n---\\n\\n## Rule 3\\n> Messages never block interaction\\n\\nThey sit there.",
+          "extractedAt": "2026-07-12T01:30:56.939Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.939Z",
+      "updatedAt": "2026-07-12T01:30:56.939Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_7ddbfb3d",
+      "type": "task",
+      "canonicalName": "Move / Play = PRIMARY\\n\\nThese should dominate visually.\\n\\n",
+      "aliases": [],
+      "summary": "Move / Play = PRIMARY\\n\\nThese should dominate visually.\\n\\nRight now they’re good, but they should feel like:\\n\\n> “This is what I’m supposed to do”\\n\\n✔ Keep them large \\n✔ Keep them bold \\n✔ Keep them central \\n\\n---\\n\\n## 2.",
+      "properties": {
+        "task": "Move / Play = PRIMARY\\n\\nThese should dominate visually.\\n\\nRight now they’re good, but they should feel like:\\n\\n> “This is what I’m supposed to do”\\n\\n✔ Keep them large \\n✔ Keep them bold \\n✔ Keep them central \\n\\n---\\n\\n## 2.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Move / Play = PRIMARY\\n\\nThese should dominate visually.\\n\\nRight now they’re good, but they should feel like:\\n\\n> “This is what I’m supposed to do”\\n\\n✔ Keep them large \\n✔ Keep them bold \\n✔ Keep them central \\n\\n---\\n\\n## 2.",
+          "extractedAt": "2026-07-12T01:30:56.939Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.939Z",
+      "updatedAt": "2026-07-12T01:30:56.939Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_825f9c7a",
+      "type": "task",
+      "canonicalName": "Account Drawer (circle)\\n\\nGood placement.\\n\\nBut:\\n\\n> it s",
+      "aliases": [],
+      "summary": "Account Drawer (circle)\\n\\nGood placement.\\n\\nBut:\\n\\n> it should feel like utility, not a feature\\n\\nSo:\\n- keep it smaller \\n- less dominant color than your mock \\n\\n---\\n\\n## 5.",
+      "properties": {
+        "task": "Account Drawer (circle)\\n\\nGood placement.\\n\\nBut:\\n\\n> it should feel like utility, not a feature\\n\\nSo:\\n- keep it smaller \\n- less dominant color than your mock \\n\\n---\\n\\n## 5.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Account Drawer (circle)\\n\\nGood placement.\\n\\nBut:\\n\\n> it should feel like utility, not a feature\\n\\nSo:\\n- keep it smaller \\n- less dominant color than your mock \\n\\n---\\n\\n## 5.",
+          "extractedAt": "2026-07-12T01:30:56.940Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.940Z",
+      "updatedAt": "2026-07-12T01:30:56.940Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_ec04e22b",
+      "type": "task",
+      "canonicalName": "No reset.\\n\\n---\\n\\n# 🧠 This is very important\\n\\nMost apps",
+      "aliases": [],
+      "summary": "No reset.\\n\\n---\\n\\n# 🧠 This is very important\\n\\nMost apps:\\n- onboarding = one style \\n- app = completely different \\n\\nYou’re doing:\\n\\n> **continuity**\\n\\nThat’s what makes it feel alive.\\n\\n---\\n\\n# 🔥 How it should behave (exact)\\n\\n## Same animation style\\n- phase in \\n- slight delay \\n- readable pacing \\n- fade or replace \\n\\nExactly like onboarding.\\n\\n---\\n\\n## Same tone\\nShort.",
+      "properties": {
+        "task": "No reset.\\n\\n---\\n\\n# 🧠 This is very important\\n\\nMost apps:\\n- onboarding = one style \\n- app = completely different \\n\\nYou’re doing:\\n\\n> **continuity**\\n\\nThat’s what makes it feel alive.\\n\\n---\\n\\n# 🔥 How it should behave (exact)\\n\\n## Same animation style\\n- phase in \\n- slight delay \\n- readable pacing \\n- fade or replace \\n\\nExactly like onboarding.\\n\\n---\\n\\n## Same tone\\nShort.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "No reset.\\n\\n---\\n\\n# 🧠 This is very important\\n\\nMost apps:\\n- onboarding = one style \\n- app = completely different \\n\\nYou’re doing:\\n\\n> **continuity**\\n\\nThat’s what makes it feel alive.\\n\\n---\\n\\n# 🔥 How it should behave (exact)\\n\\n",
+          "extractedAt": "2026-07-12T01:30:56.940Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.940Z",
+      "updatedAt": "2026-07-12T01:30:56.940Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_aab15f42",
+      "type": "task",
+      "canonicalName": "Onboarding flow\\nThis is its own world.\\n\\nIt should control",
+      "aliases": [],
+      "summary": "Onboarding flow\\nThis is its own world.\\n\\nIt should control:\\n- intro sequence\\n- Move / Play / Learn choice\\n- first rounds\\n- reward prompts\\n- Enter ZWAP / Not now\\n\\nIt should **not** own:\\n- main dashboard\\n- account drawer\\n- shop\\n- permanent app navigation\\n\\n---\\n\\n## 2.",
+      "properties": {
+        "task": "Onboarding flow\\nThis is its own world.\\n\\nIt should control:\\n- intro sequence\\n- Move / Play / Learn choice\\n- first rounds\\n- reward prompts\\n- Enter ZWAP / Not now\\n\\nIt should **not** own:\\n- main dashboard\\n- account drawer\\n- shop\\n- permanent app navigation\\n\\n---\\n\\n## 2.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Onboarding flow\\nThis is its own world.\\n\\nIt should control:\\n- intro sequence\\n- Move / Play / Learn choice\\n- first rounds\\n- reward prompts\\n- Enter ZWAP / Not now\\n\\nIt should **not** own:\\n- main dashboard\\n- account drawer\\n- shop\\n-",
+          "extractedAt": "2026-07-12T01:30:56.941Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.941Z",
+      "updatedAt": "2026-07-12T01:30:56.941Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_3f0e48aa",
+      "type": "task",
+      "canonicalName": "Main entry surface\\nThis is the pared-down post-auth app.\\n\\",
+      "aliases": [],
+      "summary": "Main entry surface\\nThis is the pared-down post-auth app.\\n\\nIt should control:\\n- balance\\n- Move tile\\n- Play tile\\n- Shop tile\\n- tutor/voice box\\n- account drawer trigger\\n\\nIt should **not** contain:\\n- onboarding step logic\\n- auth flow details\\n- game round sequencing\\n\\n---\\n\\n## 3.",
+      "properties": {
+        "task": "Main entry surface\\nThis is the pared-down post-auth app.\\n\\nIt should control:\\n- balance\\n- Move tile\\n- Play tile\\n- Shop tile\\n- tutor/voice box\\n- account drawer trigger\\n\\nIt should **not** contain:\\n- onboarding step logic\\n- auth flow details\\n- game round sequencing\\n\\n---\\n\\n## 3.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Main entry surface\\nThis is the pared-down post-auth app.\\n\\nIt should control:\\n- balance\\n- Move tile\\n- Play tile\\n- Shop tile\\n- tutor/voice box\\n- account drawer trigger\\n\\nIt should **not** contain:\\n- onboarding step logic\\n- auth fl",
+          "extractedAt": "2026-07-12T01:30:56.941Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.941Z",
+      "updatedAt": "2026-07-12T01:30:56.941Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_484d3cfd",
+      "type": "task",
+      "canonicalName": "System voice engine\\nThis must be separate.\\n\\nIt should con",
+      "aliases": [],
+      "summary": "System voice engine\\nThis must be separate.\\n\\nIt should control:\\n- current message\\n- animation timing\\n- message priority\\n- state-to-message mapping\\n\\nIt should **not** live inside:\\n- Move component\\n- Play component\\n- AccountDrawer\\n- Shop card\\n\\nThis is the part most people accidentally smear across files.\\n\\n---\\n\\n## 4.",
+      "properties": {
+        "task": "System voice engine\\nThis must be separate.\\n\\nIt should control:\\n- current message\\n- animation timing\\n- message priority\\n- state-to-message mapping\\n\\nIt should **not** live inside:\\n- Move component\\n- Play component\\n- AccountDrawer\\n- Shop card\\n\\nThis is the part most people accidentally smear across files.\\n\\n---\\n\\n## 4.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "System voice engine\\nThis must be separate.\\n\\nIt should control:\\n- current message\\n- animation timing\\n- message priority\\n- state-to-message mapping\\n\\nIt should **not** live inside:\\n- Move component\\n- Play component\\n- AccountDrawer\\",
+          "extractedAt": "2026-07-12T01:30:56.941Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.941Z",
+      "updatedAt": "2026-07-12T01:30:56.941Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_32bfcd37",
+      "type": "preference",
+      "canonicalName": "Caption → secondary (most users never open it)\\n4.",
+      "aliases": [],
+      "summary": "Caption → secondary (most users never open it)\\n4.",
+      "properties": {
+        "preference": "Caption → secondary (most users never open it)\\n4.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Caption → secondary (most users never open it)\\n4.",
+          "extractedAt": "2026-07-12T01:30:56.941Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.941Z",
+      "updatedAt": "2026-07-12T01:30:56.941Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_rule_f9b41e49",
+      "type": "rule",
+      "canonicalName": "No deviation.\\n\\n---\\n\\n# ⚙️ GLOBAL RULES (do not break thes",
+      "aliases": [],
+      "summary": "No deviation.\\n\\n---\\n\\n# ⚙️ GLOBAL RULES (do not break these)\\n\\n### 1.",
+      "properties": {
+        "rule": "No deviation.\\n\\n---\\n\\n# ⚙️ GLOBAL RULES (do not break these)\\n\\n### 1.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "No deviation.\\n\\n---\\n\\n# ⚙️ GLOBAL RULES (do not break these)\\n\\n### 1.",
+          "extractedAt": "2026-07-12T01:30:56.941Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:56.941Z",
+      "updatedAt": "2026-07-12T01:30:56.941Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_open_question_c023f2d3",
+      "type": "open_question",
+      "canonicalName": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it",
+      "aliases": [],
+      "summary": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it upfront—good instinct.\\n\\n### Trigger options (pick ONE, don’t mix):\\n\\nOption A (after Play):\\n> “You’re getting good at this.”\\n\\n↓ \\n> “Want to sharpen it?”\\n\\n👉 Learn appears\\n\\n---\\n\\nOption B (after hesitation / idle):\\n> “Not sure where to start?”\\n\\n↓ \\n> “Try this.”\\n\\n👉 Learn appears\\n\\n---\\n\\n## 3.",
+      "properties": {
+        "question": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it upfront—good instinct.\\n\\n### Trigger options (pick ONE, don’t mix):\\n\\nOption A (after Play):\\n> “You’re getting good at this.”\\n\\n↓ \\n> “Want to sharpen it?”\\n\\n👉 Learn appears\\n\\n---\\n\\nOption B (after hesitation / idle):\\n> “Not sure where to start?”\\n\\n↓ \\n> “Try this.”\\n\\n👉 Learn appears\\n\\n---\\n\\n## 3."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "LEARN (repositioned correctly)\\n\\nYou said you don’t like it upfront—good instinct.\\n\\n### Trigger options (pick ONE, don’t mix):\\n\\nOption A (after Play):\\n> “You’re getting good at this.”\\n\\n↓ \\n> “Want to sharpen it?”\\n\\n👉 Learn appears",
+          "extractedAt": "2026-07-12T01:30:56.942Z"
+        }
+      ],
+      "confidence": 0.6,
+      "createdAt": "2026-07-12T01:30:56.942Z",
+      "updatedAt": "2026-07-12T01:30:56.942Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_011b7cc5",
+      "type": "preference",
+      "canonicalName": "SWAP (advanced — never early)\\n\\n### Trigger:\\nUser accumula",
+      "aliases": [],
+      "summary": "SWAP (advanced — never early)\\n\\n### Trigger:\\nUser accumulates meaningful value OR opens Shop curiosity loop\\n\\n> “Want to take this further?”\\n\\n↓\\n\\n**Swap**\\n\\n👉 No explanation yet.",
+      "properties": {
+        "preference": "SWAP (advanced — never early)\\n\\n### Trigger:\\nUser accumulates meaningful value OR opens Shop curiosity loop\\n\\n> “Want to take this further?”\\n\\n↓\\n\\n**Swap**\\n\\n👉 No explanation yet.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "SWAP (advanced — never early)\\n\\n### Trigger:\\nUser accumulates meaningful value OR opens Shop curiosity loop\\n\\n> “Want to take this further?”\\n\\n↓\\n\\n**Swap**\\n\\n👉 No explanation yet.",
+          "extractedAt": "2026-07-12T01:30:56.942Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.942Z",
+      "updatedAt": "2026-07-12T01:30:56.942Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_faa8929e",
+      "type": "task",
+      "canonicalName": "I also think its should be that 4 box.",
+      "aliases": [],
+      "summary": "I also think its should be that 4 box.",
+      "properties": {
+        "task": "I also think its should be that 4 box.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "I also think its should be that 4 box.",
+          "extractedAt": "2026-07-12T01:30:56.942Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.942Z",
+      "updatedAt": "2026-07-12T01:30:56.942Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_d40645d8",
+      "type": "task",
+      "canonicalName": "It answers “why should I open this app?”\\n> “Because I’m alr",
+      "aliases": [],
+      "summary": "It answers “why should I open this app?”\\n> “Because I’m already moving”\\n\\n---\\n\\n## 2.",
+      "properties": {
+        "task": "It answers “why should I open this app?”\\n> “Because I’m already moving”\\n\\n---\\n\\n## 2.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "It answers “why should I open this app?”\\n> “Because I’m already moving”\\n\\n---\\n\\n## 2.",
+          "extractedAt": "2026-07-12T01:30:56.942Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.942Z",
+      "updatedAt": "2026-07-12T01:30:56.942Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_74b06526",
+      "type": "preference",
+      "canonicalName": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\",
+      "aliases": [],
+      "summary": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\nIt should feel like it comes from:\\n\\n- bottom edge \\n- subtle panel \\n- inline expansion \\n\\n👉 Always same origin\\n\\n---\\n\\n## 3.",
+      "properties": {
+        "preference": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\nIt should feel like it comes from:\\n\\n- bottom edge \\n- subtle panel \\n- inline expansion \\n\\n👉 Always same origin\\n\\n---\\n\\n## 3.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\nIt should feel like it comes from:\\n\\n- bottom edge \\n- subtle panel \\n- inline expansion \\n\\n👉 Always same origin\\n\\n---\\n\\n## 3.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_e7584b6f",
+      "type": "task",
+      "canonicalName": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\",
+      "aliases": [],
+      "summary": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\nIt should feel like it comes from:\\n\\n- bottom edge \\n- subtle panel \\n- inline expansion \\n\\n👉 Always same origin\\n\\n---\\n\\n## 3.",
+      "properties": {
+        "task": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\nIt should feel like it comes from:\\n\\n- bottom edge \\n- subtle panel \\n- inline expansion \\n\\n👉 Always same origin\\n\\n---\\n\\n## 3.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "It is **anchored, not floating**\\n\\nNever random pop-ups.\\n\\nIt should feel like it comes from:\\n\\n- bottom edge \\n- subtle panel \\n- inline expansion \\n\\n👉 Always same origin\\n\\n---\\n\\n## 3.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_7e1770a6",
+      "type": "preference",
+      "canonicalName": "It never blocks the user\\n\\nNo:\\n- full modals ❌ \\n- forced ",
+      "aliases": [],
+      "summary": "It never blocks the user\\n\\nNo:\\n- full modals ❌ \\n- forced interruptions ❌ \\n\\nAlways:\\n- skippable \\n- fades naturally \\n\\n---\\n\\n## 4.",
+      "properties": {
+        "preference": "It never blocks the user\\n\\nNo:\\n- full modals ❌ \\n- forced interruptions ❌ \\n\\nAlways:\\n- skippable \\n- fades naturally \\n\\n---\\n\\n## 4.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "It never blocks the user\\n\\nNo:\\n- full modals ❌ \\n- forced interruptions ❌ \\n\\nAlways:\\n- skippable \\n- fades naturally \\n\\n---\\n\\n## 4.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_preference_349d7b7c",
+      "type": "preference",
+      "canonicalName": "I just have never had a thing that is literally scalable inf",
+      "aliases": [],
+      "summary": "I just have never had a thing that is literally scalable infinitely.",
+      "properties": {
+        "preference": "I just have never had a thing that is literally scalable infinitely.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "I just have never had a thing that is literally scalable infinitely.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_preference_15409f94",
+      "type": "preference",
+      "canonicalName": "No simultaneous complexity\\nUser should NEVER see:\\n- Move +",
+      "aliases": [],
+      "summary": "No simultaneous complexity\\nUser should NEVER see:\\n- Move + Play + Shop + Learn + Swap all competing\\n\\n---\\n\\n### 3.",
+      "properties": {
+        "preference": "No simultaneous complexity\\nUser should NEVER see:\\n- Move + Play + Shop + Learn + Swap all competing\\n\\n---\\n\\n### 3.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "No simultaneous complexity\\nUser should NEVER see:\\n- Move + Play + Shop + Learn + Swap all competing\\n\\n---\\n\\n### 3.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_95cef4c3",
+      "type": "task",
+      "canonicalName": "No simultaneous complexity\\nUser should NEVER see:\\n- Move +",
+      "aliases": [],
+      "summary": "No simultaneous complexity\\nUser should NEVER see:\\n- Move + Play + Shop + Learn + Swap all competing\\n\\n---\\n\\n### 3.",
+      "properties": {
+        "task": "No simultaneous complexity\\nUser should NEVER see:\\n- Move + Play + Shop + Learn + Swap all competing\\n\\n---\\n\\n### 3.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "No simultaneous complexity\\nUser should NEVER see:\\n- Move + Play + Shop + Learn + Swap all competing\\n\\n---\\n\\n### 3.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_preference_71771b03",
+      "type": "preference",
+      "canonicalName": "No infinite loop\\nYou avoid:\\n- distraction \\n- fatigue \\n- ",
+      "aliases": [],
+      "summary": "No infinite loop\\nYou avoid:\\n- distraction \\n- fatigue \\n- delaying signup \\n\\n---\\n\\n## 3.",
+      "properties": {
+        "preference": "No infinite loop\\nYou avoid:\\n- distraction \\n- fatigue \\n- delaying signup \\n\\n---\\n\\n## 3.",
+        "strength": "medium"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "No infinite loop\\nYou avoid:\\n- distraction \\n- fatigue \\n- delaying signup \\n\\n---\\n\\n## 3.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_preference_1d29a52f",
+      "type": "preference",
+      "canonicalName": "I want them to try both first\"},{\"id\":\"4d9992da-4f31-4a60-95",
+      "aliases": [],
+      "summary": "I want them to try both first\"},{\"id\":\"4d9992da-4f31-4a60-9503-4afe3f67fdf5\",\"role\":\"assistant\",\"createTime\":\"2026-04-08T09:24:01.080Z\",\"text\":\"Good.",
+      "properties": {
+        "preference": "I want them to try both first\"},{\"id\":\"4d9992da-4f31-4a60-9503-4afe3f67fdf5\",\"role\":\"assistant\",\"createTime\":\"2026-04-08T09:24:01.080Z\",\"text\":\"Good.",
+        "strength": "medium"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "I want them to try both first\"},{\"id\":\"4d9992da-4f31-4a60-9503-4afe3f67fdf5\",\"role\":\"assistant\",\"createTime\":\"2026-04-08T09:24:01.080Z\",\"text\":\"Good.",
+          "extractedAt": "2026-07-12T01:30:56.943Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.943Z",
+      "updatedAt": "2026-07-12T01:30:56.943Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_preference_c49402e5",
+      "type": "preference",
+      "canonicalName": "That’s the clean rule. \\nLet’s lock it so it’s **unambiguous",
+      "aliases": [],
+      "summary": "That’s the clean rule. \\nLet’s lock it so it’s **unambiguous for build** and never breaks.\\n\\n---\\n\\n# 🎯 FINAL ONBOARDING RULE (LOCK THIS)\\n\\n> **User must experience BOTH Move and Play before the gate.** \\n> **Max total actions before gate = 3 (only if needed).**\\n\\n---\\n\\n# 🧠 HOW IT PLAYS OUT\\n\\n## 🟢 Case A — Ideal path (user explores naturally)\\n\\n1.",
+      "properties": {
+        "preference": "That’s the clean rule. \\nLet’s lock it so it’s **unambiguous for build** and never breaks.\\n\\n---\\n\\n# 🎯 FINAL ONBOARDING RULE (LOCK THIS)\\n\\n> **User must experience BOTH Move and Play before the gate.** \\n> **Max total actions before gate = 3 (only if needed).**\\n\\n---\\n\\n# 🧠 HOW IT PLAYS OUT\\n\\n## 🟢 Case A — Ideal path (user explores naturally)\\n\\n1.",
+        "strength": "strong"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "That’s the clean rule. \\nLet’s lock it so it’s **unambiguous for build** and never breaks.\\n\\n---\\n\\n# 🎯 FINAL ONBOARDING RULE (LOCK THIS)\\n\\n> **User must experience BOTH Move and Play before the gate.** \\n> **Max total actions before gat",
+          "extractedAt": "2026-07-12T01:30:56.944Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:56.944Z",
+      "updatedAt": "2026-07-12T01:30:56.944Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_20ba23c1",
+      "type": "task",
+      "canonicalName": "Get Your Wallet\\\",\\n desc: \\\"When you’re ready, create a wal",
+      "aliases": [],
+      "summary": "Get Your Wallet\\\",\\n desc: \\\"When you’re ready, create a wallet in-app or connect one you already have to begin earning and saving progress.\\\",\\n },\\n {\\n title: \\\"3.",
+      "properties": {
+        "task": "Get Your Wallet\\\",\\n desc: \\\"When you’re ready, create a wallet in-app or connect one you already have to begin earning and saving progress.\\\",\\n },\\n {\\n title: \\\"3.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "Get Your Wallet\\\",\\n desc: \\\"When you’re ready, create a wallet in-app or connect one you already have to begin earning and saving progress.\\\",\\n },\\n {\\n title: \\\"3.",
+          "extractedAt": "2026-07-12T01:30:56.944Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.944Z",
+      "updatedAt": "2026-07-12T01:30:56.944Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_26c77d0d",
+      "type": "task",
+      "canonicalName": "It explains too much, too early\\nYou’ve got:\\n- Move\\n- Play",
+      "aliases": [],
+      "summary": "It explains too much, too early\\nYou’ve got:\\n- Move\\n- Play\\n- Swap\\n- Shop\\n- dual currency\\n- how it works\\n- wallet setup\\n- future\\n- company structure\\n\\nThat’s a lot of weight for a page that should just support **Learn More**.\\n\\n## 2.",
+      "properties": {
+        "task": "It explains too much, too early\\nYou’ve got:\\n- Move\\n- Play\\n- Swap\\n- Shop\\n- dual currency\\n- how it works\\n- wallet setup\\n- future\\n- company structure\\n\\nThat’s a lot of weight for a page that should just support **Learn More**.\\n\\n## 2.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "It explains too much, too early\\nYou’ve got:\\n- Move\\n- Play\\n- Swap\\n- Shop\\n- dual currency\\n- how it works\\n- wallet setup\\n- future\\n- company structure\\n\\nThat’s a lot of weight for a page that should just support **Learn More**.\\n\\n##",
+          "extractedAt": "2026-07-12T01:30:56.944Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.945Z",
+      "updatedAt": "2026-07-12T01:30:56.945Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_7ab627d3",
+      "type": "task",
+      "canonicalName": "It exposes features that should now be staged\\nRight now thi",
+      "aliases": [],
+      "summary": "It exposes features that should now be staged\\nRight now this page teaches:\\n- Swap\\n- Shop\\n- wallet\\n- token structure\\n\\nBut your new system says those should be **revealed later**.\\n\\n## 4.",
+      "properties": {
+        "task": "It exposes features that should now be staged\\nRight now this page teaches:\\n- Swap\\n- Shop\\n- wallet\\n- token structure\\n\\nBut your new system says those should be **revealed later**.\\n\\n## 4.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "It exposes features that should now be staged\\nRight now this page teaches:\\n- Swap\\n- Shop\\n- wallet\\n- token structure\\n\\nBut your new system says those should be **revealed later**.\\n\\n## 4.",
+          "extractedAt": "2026-07-12T01:30:56.947Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.947Z",
+      "updatedAt": "2026-07-12T01:30:56.947Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_ea405fc5",
+      "type": "task",
+      "canonicalName": "It’s still “about the app”\\nYour new version should be:\\n\\n>",
+      "aliases": [],
+      "summary": "It’s still “about the app”\\nYour new version should be:\\n\\n> **about the experience**\\n\\nNot:\\n> “here are the product sections”\\n\\n# What the new About page should do\\n\\nOnly 3 jobs:\\n\\n## 1.",
+      "properties": {
+        "task": "It’s still “about the app”\\nYour new version should be:\\n\\n> **about the experience**\\n\\nNot:\\n> “here are the product sections”\\n\\n# What the new About page should do\\n\\nOnly 3 jobs:\\n\\n## 1.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+          "evidenceQuote": "It’s still “about the app”\\nYour new version should be:\\n\\n> **about the experience**\\n\\nNot:\\n> “here are the product sections”\\n\\n# What the new About page should do\\n\\nOnly 3 jobs:\\n\\n## 1.",
+          "extractedAt": "2026-07-12T01:30:56.947Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:56.947Z",
+      "updatedAt": "2026-07-12T01:30:56.947Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_project_aa140484",
+      "type": "project",
+      "canonicalName": "zed",
+      "aliases": [],
+      "summary": "Project zed referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-summary.json",
+          "evidenceQuote": "zed",
+          "extractedAt": "2026-07-12T01:30:57.050Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:57.050Z",
+      "updatedAt": "2026-07-12T01:30:57.050Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_50d781ad",
+      "type": "project",
+      "canonicalName": "Zed",
+      "aliases": [],
+      "summary": "Project Zed referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Zed",
+          "extractedAt": "2026-07-12T01:30:57.082Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:57.082Z",
+      "updatedAt": "2026-07-12T01:30:57.082Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_f77fb19c",
+      "type": "project",
+      "canonicalName": "ZedAI",
+      "aliases": [],
+      "summary": "Project ZedAI referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "ZedAI",
+          "extractedAt": "2026-07-12T01:30:57.082Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:57.082Z",
+      "updatedAt": "2026-07-12T01:30:57.082Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_dee51b31",
+      "type": "project",
+      "canonicalName": "Xoclon",
+      "aliases": [],
+      "summary": "Project Xoclon referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Xoclon",
+          "extractedAt": "2026-07-12T01:30:57.082Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:57.082Z",
+      "updatedAt": "2026-07-12T01:30:57.082Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_c11771cd",
+      "type": "integration",
+      "canonicalName": "GitHub",
+      "aliases": [],
+      "summary": "Integration GitHub.",
+      "properties": {
+        "provider": "GitHub"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "GitHub",
+          "extractedAt": "2026-07-12T01:30:57.086Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:57.086Z",
+      "updatedAt": "2026-07-12T01:30:57.086Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_bd615869",
+      "type": "integration",
+      "canonicalName": "Neon",
+      "aliases": [],
+      "summary": "Integration Neon.",
+      "properties": {
+        "provider": "Neon"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Neon",
+          "extractedAt": "2026-07-12T01:30:57.087Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:57.087Z",
+      "updatedAt": "2026-07-12T01:30:57.087Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_16ea71d4",
+      "type": "integration",
+      "canonicalName": "Stripe",
+      "aliases": [],
+      "summary": "Integration Stripe.",
+      "properties": {
+        "provider": "Stripe"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Stripe",
+          "extractedAt": "2026-07-12T01:30:57.088Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:57.088Z",
+      "updatedAt": "2026-07-12T01:30:57.088Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_rule_4c29887a",
+      "type": "rule",
+      "canonicalName": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplemen",
+      "aliases": [],
+      "summary": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplement:\\n\\n1.",
+      "properties": {
+        "rule": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplement:\\n\\n1.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Do not rename anything.\\n\\n---\\n\\n# 🎯 OBJECTIVE\\n\\nImplement:\\n\\n1.",
+          "extractedAt": "2026-07-12T01:30:57.099Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:57.099Z",
+      "updatedAt": "2026-07-12T01:30:57.099Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_4df3551b",
+      "type": "task",
+      "canonicalName": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage",
+      "aliases": [],
+      "summary": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage, the primary launch options are missing from the visible flow:\\n • Continue with Email\\n • Set Up Wallet\\n\\nRight now the page is showing the educational sections, but the actual entry cards are not appearing where they should.\\n\\n2.",
+      "properties": {
+        "task": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage, the primary launch options are missing from the visible flow:\\n • Continue with Email\\n • Set Up Wallet\\n\\nRight now the page is showing the educational sections, but the actual entry cards are not appearing where they should.\\n\\n2.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Restore the missing top action cards\\n\\nOn FirstTimeUserPage, the primary launch options are missing from the visible flow:\\n • Continue with Email\\n • Set Up Wallet\\n\\nRight now the page is showing the educational sections, but the actual ",
+          "extractedAt": "2026-07-12T01:30:57.099Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:57.099Z",
+      "updatedAt": "2026-07-12T01:30:57.099Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_task_3d1ef18c",
+      "type": "task",
+      "canonicalName": "Or should I just leave it as the first one? \\n\\nIf it's leav",
+      "aliases": [],
+      "summary": "Or should I just leave it as the first one? \\n\\nIf it's leave it...then can you recreate it with a transparent background?",
+      "properties": {
+        "task": "Or should I just leave it as the first one? \\n\\nIf it's leave it...then can you recreate it with a transparent background?",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Or should I just leave it as the first one? \\n\\nIf it's leave it...then can you recreate it with a transparent background?",
+          "extractedAt": "2026-07-12T01:30:57.100Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:57.100Z",
+      "updatedAt": "2026-07-12T01:30:57.100Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_event_7575ff8e",
+      "type": "event",
+      "canonicalName": "Coin is a real, on-chain cryptocurrency deployed on the Poly",
+      "aliases": [],
+      "summary": "Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens.",
+      "properties": {
+        "event": "Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens."
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Coin is a real, on-chain cryptocurrency deployed on the Polygon network, with a total supply of 30,000,000,000 ZWAP tokens.",
+          "extractedAt": "2026-07-12T01:30:57.100Z"
+        }
+      ],
+      "confidence": 0.7,
+      "createdAt": "2026-07-12T01:30:57.100Z",
+      "updatedAt": "2026-07-12T01:30:57.100Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_rule_675b0f77",
+      "type": "rule",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "aliases": [],
+      "summary": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+      "properties": {
+        "rule": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten ",
+          "extractedAt": "2026-07-12T01:30:57.100Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:57.100Z",
+      "updatedAt": "2026-07-12T01:30:57.100Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_task_f7e8d728",
+      "type": "task",
+      "canonicalName": "Do not make me double back.\\nBefore rewriting any main conta",
+      "aliases": [],
+      "summary": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+      "properties": {
+        "task": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten once.\\n\\n4.",
+        "taskStatus": "pending"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Do not make me double back.\\nBefore rewriting any main container/orchestrator file, first identify and extract every sub-file it should delegate to.\\nOnly after file distribution is complete should the parent/orchestrator file be rewritten ",
+          "extractedAt": "2026-07-12T01:30:57.100Z"
+        }
+      ],
+      "confidence": 0.55,
+      "createdAt": "2026-07-12T01:30:57.100Z",
+      "updatedAt": "2026-07-12T01:30:57.100Z",
+      "status": "active",
+      "promotionTier": "working_memory_candidate"
+    },
+    {
+      "id": "obj_rule_78cc6772",
+      "type": "rule",
+      "canonicalName": "Do not jump ahead.",
+      "aliases": [],
+      "summary": "Do not jump ahead.",
+      "properties": {
+        "rule": "Do not jump ahead.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Do not jump ahead.",
+          "extractedAt": "2026-07-12T01:30:57.100Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:57.100Z",
+      "updatedAt": "2026-07-12T01:30:57.100Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_rule_fbdc3f79",
+      "type": "rule",
+      "canonicalName": "Do not batch steps.",
+      "aliases": [],
+      "summary": "Do not batch steps.",
+      "properties": {
+        "rule": "Do not batch steps.",
+        "severity": "normal"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+          "evidenceQuote": "Do not batch steps.",
+          "extractedAt": "2026-07-12T01:30:57.100Z"
+        }
+      ],
+      "confidence": 0.75,
+      "createdAt": "2026-07-12T01:30:57.100Z",
+      "updatedAt": "2026-07-12T01:30:57.100Z",
+      "status": "active",
+      "promotionTier": "core_memory_candidate"
+    },
+    {
+      "id": "obj_project_0aff9be4",
+      "type": "project",
+      "canonicalName": "Zed",
+      "aliases": [],
+      "summary": "Project Zed referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\source-manifest.json",
+          "evidenceQuote": "Zed",
+          "extractedAt": "2026-07-12T01:30:57.106Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:57.106Z",
+      "updatedAt": "2026-07-12T01:30:57.106Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_87b0d031",
+      "type": "project",
+      "canonicalName": "ZedAI",
+      "aliases": [],
+      "summary": "Project ZedAI referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\semantic\\source-manifest.json",
+          "evidenceQuote": "ZedAI",
+          "extractedAt": "2026-07-12T01:30:57.106Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:57.106Z",
+      "updatedAt": "2026-07-12T01:30:57.106Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_project_ca16bf97",
+      "type": "project",
+      "canonicalName": "zed",
+      "aliases": [],
+      "summary": "Project zed referenced in foundation memory.",
+      "properties": {
+        "domain": "software"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\consensus\\foundation-overview.md",
+          "evidenceQuote": "zed",
+          "extractedAt": "2026-07-12T01:30:57.141Z"
+        }
+      ],
+      "confidence": 0.85,
+      "createdAt": "2026-07-12T01:30:57.141Z",
+      "updatedAt": "2026-07-12T01:30:57.141Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    },
+    {
+      "id": "obj_integration_781d573b",
+      "type": "integration",
+      "canonicalName": "GitHub",
+      "aliases": [],
+      "summary": "Integration GitHub.",
+      "properties": {
+        "provider": "GitHub"
+      },
+      "sourceRefs": [
+        {
+          "sourceFile": "hub\\user-memory\\user_admin\\foundation\\consensus\\foundation-overview.md",
+          "evidenceQuote": "GitHub",
+          "extractedAt": "2026-07-12T01:30:57.141Z"
+        }
+      ],
+      "confidence": 0.8,
+      "createdAt": "2026-07-12T01:30:57.141Z",
+      "updatedAt": "2026-07-12T01:30:57.141Z",
+      "status": "active",
+      "promotionTier": "project_memory_candidate"
+    }
+  ]
+}

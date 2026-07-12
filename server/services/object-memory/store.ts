@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 
-import { HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
+import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../../utils/repoPaths";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -12,7 +12,9 @@ import type {
 /**
  * Persistence for the object-memory reparse.
  *
- * Dry-run writes land under hub/shared-memory/object-reparse/.
+ * Unscoped dry-run/apply writes remain in hub/shared-memory for system
+ * memory. User-scoped writes land under hub/user-memory/<userId>/ so
+ * admin/project data does not become system memory by accident.
  * Apply mode is implemented by writeAppliedGraph — it backs up any
  * existing graph, writes the new one alongside a reparse-history
  * entry, and never destroys prior data.
@@ -21,15 +23,28 @@ import type {
 const REPARSE_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "object-reparse");
 const APPLIED_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "object-memory");
 
-const DRY_RUN_JSON = path.join(REPARSE_DIR, "object-memory-dry-run.json");
-const DRY_RUN_MD = path.join(REPARSE_DIR, "object-memory-dry-run.md");
-const GRAPH_JSON = path.join(REPARSE_DIR, "object-graph.json");
-const RELATIONSHIPS_JSON = path.join(REPARSE_DIR, "object-relationships.json");
-const PROMOTION_JSON = path.join(REPARSE_DIR, "promotion-candidates.json");
-const CONFLICTS_JSON = path.join(REPARSE_DIR, "memory-conflicts.json");
-const UNRESOLVED_JSON = path.join(REPARSE_DIR, "unresolved-questions.json");
-const MANIFEST_JSON = path.join(REPARSE_DIR, "extraction-manifest.json");
-const COVERAGE_JSON = path.join(REPARSE_DIR, "source-coverage-report.json");
+export interface ObjectMemoryScope {
+  userId?: string;
+}
+
+function safeUserId(userId: string): string {
+  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+}
+
+function appliedDir(scope?: ObjectMemoryScope): string {
+  if (scope?.userId) {
+    return path.resolve(HUB_USER_MEMORY_DIR, safeUserId(scope.userId), "object-memory");
+  }
+  return APPLIED_DIR;
+}
+
+function graphPathFor(scope?: ObjectMemoryScope): string {
+  return path.join(appliedDir(scope), "graph.json");
+}
+
+function historyPathFor(scope?: ObjectMemoryScope): string {
+  return path.join(appliedDir(scope), "reparse-history.jsonl");
+}
 
 async function ensureDir(dir: string): Promise<void> {
   await fs.mkdir(dir, { recursive: true });
@@ -65,11 +80,24 @@ export interface WriteDryRunInput {
   writeMarkdown?: boolean;
 }
 
-export async function writeDryRunOutputs(input: WriteDryRunInput): Promise<{
+export async function writeDryRunOutputs(input: WriteDryRunInput, scope?: ObjectMemoryScope): Promise<{
   outputs: string[];
   graph: ObjectGraph;
 }> {
-  await ensureDir(REPARSE_DIR);
+  const reparseDir = scope?.userId
+    ? path.resolve(HUB_USER_MEMORY_DIR, safeUserId(scope.userId), "object-reparse")
+    : REPARSE_DIR;
+  const dryRunJson = path.join(reparseDir, "object-memory-dry-run.json");
+  const dryRunMd = path.join(reparseDir, "object-memory-dry-run.md");
+  const graphJson = path.join(reparseDir, "object-graph.json");
+  const relationshipsJson = path.join(reparseDir, "object-relationships.json");
+  const promotionJson = path.join(reparseDir, "promotion-candidates.json");
+  const conflictsJson = path.join(reparseDir, "memory-conflicts.json");
+  const unresolvedJson = path.join(reparseDir, "unresolved-questions.json");
+  const manifestJson = path.join(reparseDir, "extraction-manifest.json");
+  const coverageJson = path.join(reparseDir, "source-coverage-report.json");
+
+  await ensureDir(reparseDir);
   const graph: ObjectGraph = {
     version: "1",
     generatedAt: new Date().toISOString(),
@@ -79,18 +107,18 @@ export async function writeDryRunOutputs(input: WriteDryRunInput): Promise<{
     stats: graphStats(input.objects, input.relationships),
   };
 
-  await writeJson(DRY_RUN_JSON, graph);
-  await writeJson(GRAPH_JSON, {
+  await writeJson(dryRunJson, graph);
+  await writeJson(graphJson, {
     version: graph.version,
     generatedAt: graph.generatedAt,
     objects: graph.objects,
   });
-  await writeJson(RELATIONSHIPS_JSON, {
+  await writeJson(relationshipsJson, {
     version: graph.version,
     generatedAt: graph.generatedAt,
     relationships: graph.relationships,
   });
-  await writeJson(PROMOTION_JSON, {
+  await writeJson(promotionJson, {
     version: graph.version,
     generatedAt: graph.generatedAt,
     candidates: input.objects.map((o) => ({
@@ -101,43 +129,45 @@ export async function writeDryRunOutputs(input: WriteDryRunInput): Promise<{
       confidence: o.confidence,
     })),
   });
-  await writeJson(CONFLICTS_JSON, {
+  await writeJson(conflictsJson, {
     version: graph.version,
     generatedAt: graph.generatedAt,
     conflicts: input.objects.filter((o) => o.type === "memory_conflict"),
   });
-  await writeJson(UNRESOLVED_JSON, {
+  await writeJson(unresolvedJson, {
     version: graph.version,
     generatedAt: graph.generatedAt,
     questions: input.objects.filter((o) => o.type === "open_question"),
   });
-  await writeJson(MANIFEST_JSON, {
+  await writeJson(manifestJson, {
     version: graph.version,
     generatedAt: graph.generatedAt,
     sources: input.sources,
     stats: graph.stats,
+    scope: scope?.userId ? "user" : "system",
+    userId: scope?.userId || null,
   });
-  await writeJson(COVERAGE_JSON, {
+  await writeJson(coverageJson, {
     version: graph.version,
     generatedAt: graph.generatedAt,
     perSource: input.perSourceCoverage,
   });
 
   if (input.writeMarkdown) {
-    await fs.writeFile(DRY_RUN_MD, renderMarkdown(graph), "utf-8");
+    await fs.writeFile(dryRunMd, renderMarkdown(graph), "utf-8");
   }
 
   return {
     outputs: [
-      DRY_RUN_JSON,
-      GRAPH_JSON,
-      RELATIONSHIPS_JSON,
-      PROMOTION_JSON,
-      CONFLICTS_JSON,
-      UNRESOLVED_JSON,
-      MANIFEST_JSON,
-      COVERAGE_JSON,
-      ...(input.writeMarkdown ? [DRY_RUN_MD] : []),
+      dryRunJson,
+      graphJson,
+      relationshipsJson,
+      promotionJson,
+      conflictsJson,
+      unresolvedJson,
+      manifestJson,
+      coverageJson,
+      ...(input.writeMarkdown ? [dryRunMd] : []),
     ],
     graph,
   };
@@ -145,23 +175,24 @@ export async function writeDryRunOutputs(input: WriteDryRunInput): Promise<{
 
 /**
  * Apply mode: back up existing applied graph (if any), then write
- * the new one to hub/shared-memory/object-memory/graph.json.
+ * the new one to the selected system or user-scoped graph.
  * Callers must be explicit — this only runs from the CLI --apply
  * path, never by default.
  */
-export async function writeAppliedGraph(graph: ObjectGraph): Promise<{
+export async function writeAppliedGraph(graph: ObjectGraph, scope?: ObjectMemoryScope): Promise<{
   graphPath: string;
   backupPath?: string;
   historyPath: string;
 }> {
-  await ensureDir(APPLIED_DIR);
-  const graphPath = path.join(APPLIED_DIR, "graph.json");
-  const historyPath = path.join(APPLIED_DIR, "reparse-history.jsonl");
+  const dir = appliedDir(scope);
+  await ensureDir(dir);
+  const graphPath = graphPathFor(scope);
+  const historyPath = historyPathFor(scope);
   let backupPath: string | undefined;
 
   try {
     await fs.access(graphPath);
-    backupPath = path.join(APPLIED_DIR, `graph.backup.${Date.now()}.json`);
+    backupPath = path.join(dir, `graph.backup.${Date.now()}.json`);
     await fs.copyFile(graphPath, backupPath);
   } catch {
     /* no existing graph — first apply */
@@ -175,6 +206,8 @@ export async function writeAppliedGraph(graph: ObjectGraph): Promise<{
       sources: graph.sources,
       stats: graph.stats,
       backup: backupPath ? path.basename(backupPath) : null,
+      scope: scope?.userId ? "user" : "system",
+      userId: scope?.userId || null,
     }) + "\n",
     "utf-8",
   );
@@ -182,9 +215,9 @@ export async function writeAppliedGraph(graph: ObjectGraph): Promise<{
   return { graphPath, backupPath, historyPath };
 }
 
-export async function readAppliedGraph(): Promise<ObjectGraph | null> {
+export async function readAppliedGraph(scope?: ObjectMemoryScope): Promise<ObjectGraph | null> {
   try {
-    const raw = await fs.readFile(path.join(APPLIED_DIR, "graph.json"), "utf-8");
+    const raw = await fs.readFile(graphPathFor(scope), "utf-8");
     return JSON.parse(raw) as ObjectGraph;
   } catch {
     return null;

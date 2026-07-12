@@ -437,6 +437,7 @@ export class ChatExecutionService {
         ? await hooks.injectedMemory()
         : await injectMemory("ManagerAgent", {
             includeFoundation: Boolean(input.isAdmin),
+            userId: input.userId,
           }).catch(() => ({ formatted: "" }));
       if (injectedMemory.formatted) trace.memorySources.push("MemoryInjector");
 

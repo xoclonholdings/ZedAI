@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
+import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
 
 const WORKING_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 const EPISODIC_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/email-decisions.json");
@@ -23,7 +23,12 @@ export interface InjectedMemory {
 
 type InjectMemoryOptions = {
   includeFoundation?: boolean;
+  userId?: string;
 };
+
+function safeUserId(userId: string): string {
+  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+}
 
 async function loadWorking(): Promise<string> {
   try {
@@ -75,14 +80,25 @@ async function loadConsensus(): Promise<string> {
   }
 }
 
-async function loadFoundation(): Promise<string> {
-  try {
-    const raw = await fs.readFile(FOUNDATION_OVERVIEW, "utf-8");
-    const trimmed = raw.trim();
-    return trimmed ? trimmed.slice(0, MAX_FOUNDATION_CHARS) : "No imported foundation memory summary yet.";
-  } catch {
-    return "No imported foundation memory summary yet.";
+async function loadFoundation(userId?: string): Promise<string> {
+  const candidates = [
+    ...(userId
+      ? [path.resolve(HUB_USER_MEMORY_DIR, safeUserId(userId), "foundation/consensus/foundation-overview.md")]
+      : []),
+    FOUNDATION_OVERVIEW,
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      const raw = await fs.readFile(candidate, "utf-8");
+      const trimmed = raw.trim();
+      if (trimmed) return trimmed.slice(0, MAX_FOUNDATION_CHARS);
+    } catch {
+      /* try the next scoped/legacy path */
+    }
   }
+
+  return "No imported foundation memory summary yet.";
 }
 
 export async function injectMemory(agentName: string, options?: InjectMemoryOptions): Promise<InjectedMemory> {
@@ -91,7 +107,7 @@ export async function injectMemory(agentName: string, options?: InjectMemoryOpti
     loadWorking(),
     loadEpisodic(),
     loadConsensus(),
-    includeFoundation ? loadFoundation() : Promise.resolve("Admin-only foundation memory is not included in this context."),
+    includeFoundation ? loadFoundation(options?.userId) : Promise.resolve("Admin-only foundation memory is not included in this context."),
   ]);
 
   const formatted = `## ZED Hub Memory Context

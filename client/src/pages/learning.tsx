@@ -117,6 +117,7 @@ export default function LearningPage() {
   const orderedTypes = useMemo(() => Object.keys(groups).sort(), [groups]);
   const objectCount = graph?.objects?.length ?? 0;
   const relCount = graph?.relationships?.length ?? 0;
+  const scopeLabel = (graph as any)?.scope === "admin" ? "Admin memory" : "User memory";
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -165,6 +166,9 @@ export default function LearningPage() {
             </Badge>
             <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
               {relCount} link{relCount === 1 ? "" : "s"}
+            </Badge>
+            <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
+              {scopeLabel}
             </Badge>
           </div>
         </section>

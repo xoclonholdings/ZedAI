@@ -20,11 +20,11 @@
   ],
   "compactedAt": "2026-04-12T08:24:51.305Z",
   "lightweightFiles": {
-    "index": "hub/shared-memory/semantic/foundation/conversation-index.json",
-    "recent": "hub/shared-memory/semantic/foundation/recent-conversations.json",
-    "shardsByYear": "hub/shared-memory/semantic/foundation/shards/by-year/",
-    "shardsBySource": "hub/shared-memory/semantic/foundation/shards/by-source/",
-    "fullArchive": "hub/shared-memory/semantic/foundation/merged-conversations.json"
+    "index": "hub/user-memory/user_admin/foundation/semantic/conversation-index.json",
+    "recent": "hub/user-memory/user_admin/foundation/semantic/recent-conversations.json",
+    "shardsByYear": "hub/user-memory/user_admin/foundation/semantic/shards/by-year/",
+    "shardsBySource": "hub/user-memory/user_admin/foundation/semantic/shards/by-source/",
+    "fullArchive": "hub/user-memory/user_admin/foundation/semantic/merged-conversations.json"
   },
   "shardCounts": {
     "years": 2,

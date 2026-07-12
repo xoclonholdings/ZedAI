@@ -1,11 +1,20 @@
 import fs from "fs/promises";
 import path from "path";
-import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
+import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
 
-const FOUNDATION_OVERVIEW = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/foundation-overview.md");
-const FOUNDATION_DOCS_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/imported-docs");
-const FOUNDATION_SUMMARY = path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/merged-summary.json");
-const FOUNDATION_SOURCE_SHARDS_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/shards/by-source");
+type FoundationPaths = {
+  overview: string;
+  docsDir: string;
+  summary: string;
+  sourceShardsDir: string;
+};
+
+const LEGACY_FOUNDATION_PATHS: FoundationPaths = {
+  overview: path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/foundation-overview.md"),
+  docsDir: path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/imported-docs"),
+  summary: path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/merged-summary.json"),
+  sourceShardsDir: path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/shards/by-source"),
+};
 
 type MemoryBlock = {
   title: string;
@@ -49,6 +58,37 @@ const STOP_WORDS = new Set([
   "would",
   "your",
 ]);
+
+function safeUserId(userId: string): string {
+  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+}
+
+function adminFoundationPaths(userId: string): FoundationPaths {
+  const root = path.resolve(HUB_USER_MEMORY_DIR, safeUserId(userId), "foundation");
+  return {
+    overview: path.join(root, "consensus/foundation-overview.md"),
+    docsDir: path.join(root, "consensus/imported-docs"),
+    summary: path.join(root, "semantic/merged-summary.json"),
+    sourceShardsDir: path.join(root, "semantic/shards/by-source"),
+  };
+}
+
+function foundationPathCandidates(userId?: string): FoundationPaths[] {
+  return userId
+    ? [adminFoundationPaths(userId), LEGACY_FOUNDATION_PATHS]
+    : [LEGACY_FOUNDATION_PATHS];
+}
+
+async function firstNonEmpty(
+  candidates: FoundationPaths[],
+  load: (paths: FoundationPaths) => Promise<MemoryBlock[]>,
+): Promise<MemoryBlock[]> {
+  for (const candidate of candidates) {
+    const blocks = await load(candidate);
+    if (blocks.length > 0) return blocks;
+  }
+  return [];
+}
 
 function normalize(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").replace(/\s+/g, " ").trim();
@@ -106,9 +146,9 @@ function rankBlocks(blocks: MemoryBlock[], keywords: string[], limit: number): R
     .slice(0, limit);
 }
 
-async function loadOverviewBlocks(): Promise<MemoryBlock[]> {
+async function loadOverviewBlocksFrom(paths: FoundationPaths): Promise<MemoryBlock[]> {
   try {
-    const content = await fs.readFile(FOUNDATION_OVERVIEW, "utf-8");
+    const content = await fs.readFile(paths.overview, "utf-8");
     return splitMarkdownSections(content).map((section, index) => ({
       title: index === 0 ? "Foundation Overview" : `Foundation Overview ${index + 1}`,
       content: section,
@@ -119,13 +159,13 @@ async function loadOverviewBlocks(): Promise<MemoryBlock[]> {
   }
 }
 
-async function loadImportedDocBlocks(): Promise<MemoryBlock[]> {
+async function loadImportedDocBlocksFrom(paths: FoundationPaths): Promise<MemoryBlock[]> {
   try {
-    const files = (await fs.readdir(FOUNDATION_DOCS_DIR)).filter((name) => name.endsWith(".md") || name.endsWith(".txt"));
+    const files = (await fs.readdir(paths.docsDir)).filter((name) => name.endsWith(".md") || name.endsWith(".txt"));
     const output: MemoryBlock[] = [];
 
     for (const file of files) {
-      const content = await fs.readFile(path.join(FOUNDATION_DOCS_DIR, file), "utf-8");
+      const content = await fs.readFile(path.join(paths.docsDir, file), "utf-8");
       const sections = splitMarkdownSections(content).slice(0, 10);
       for (const section of sections) {
         output.push({
@@ -142,9 +182,9 @@ async function loadImportedDocBlocks(): Promise<MemoryBlock[]> {
   }
 }
 
-async function loadSummaryBlocks(): Promise<MemoryBlock[]> {
+async function loadSummaryBlocksFrom(paths: FoundationPaths): Promise<MemoryBlock[]> {
   try {
-    const raw = await fs.readFile(FOUNDATION_SUMMARY, "utf-8");
+    const raw = await fs.readFile(paths.summary, "utf-8");
     const parsed = JSON.parse(raw);
     const collections = [
       ...(Array.isArray(parsed?.mostRecentConversations) ? parsed.mostRecentConversations : []),
@@ -164,13 +204,13 @@ async function loadSummaryBlocks(): Promise<MemoryBlock[]> {
   }
 }
 
-async function loadSourceShardBlocks(): Promise<MemoryBlock[]> {
+async function loadSourceShardBlocksFrom(paths: FoundationPaths): Promise<MemoryBlock[]> {
   try {
-    const files = (await fs.readdir(FOUNDATION_SOURCE_SHARDS_DIR)).filter((name) => name.endsWith(".json"));
+    const files = (await fs.readdir(paths.sourceShardsDir)).filter((name) => name.endsWith(".json"));
     const output: MemoryBlock[] = [];
 
     for (const file of files) {
-      const raw = await fs.readFile(path.join(FOUNDATION_SOURCE_SHARDS_DIR, file), "utf-8");
+      const raw = await fs.readFile(path.join(paths.sourceShardsDir, file), "utf-8");
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) continue;
 
@@ -199,18 +239,19 @@ function formatBlocks(blocks: RankedBlock[]): string {
 
 export async function retrieveFoundationMemoryWithTrace(
   query: string,
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean; userId?: string },
 ): Promise<{ content: string; trace: FoundationTraceItem[] }> {
   if (options?.enabled === false) return { content: "", trace: [] };
 
   const keywords = extractKeywords(query);
   if (keywords.length === 0) return { content: "", trace: [] };
 
+  const candidates = foundationPathCandidates(options?.userId);
   const [overviewBlocks, importedDocBlocks, summaryBlocks, sourceShardBlocks] = await Promise.all([
-    loadOverviewBlocks(),
-    loadImportedDocBlocks(),
-    loadSummaryBlocks(),
-    loadSourceShardBlocks(),
+    firstNonEmpty(candidates, loadOverviewBlocksFrom),
+    firstNonEmpty(candidates, loadImportedDocBlocksFrom),
+    firstNonEmpty(candidates, loadSummaryBlocksFrom),
+    firstNonEmpty(candidates, loadSourceShardBlocksFrom),
   ]);
 
   const rankedOverview = rankBlocks(overviewBlocks, keywords, 2);
@@ -240,7 +281,10 @@ export async function retrieveFoundationMemoryWithTrace(
   };
 }
 
-export async function retrieveFoundationMemory(query: string, options?: { enabled?: boolean }): Promise<string> {
+export async function retrieveFoundationMemory(
+  query: string,
+  options?: { enabled?: boolean; userId?: string },
+): Promise<string> {
   const result = await retrieveFoundationMemoryWithTrace(query, options);
   return result.content;
 }

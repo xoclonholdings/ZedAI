@@ -183,6 +183,7 @@ function shouldSkipDirectory(name: string, absolutePath: string): boolean {
   const rel = relativeFromRepo(absolutePath);
   return (
     rel.startsWith("zed-memory/storage/") ||
+    rel.startsWith("hub/user-memory/") ||
     rel.startsWith("hub/shared-memory/semantic/foundation/")
   );
 }

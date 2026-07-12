@@ -75,7 +75,10 @@ export function registerKnowledgeRoutes(app: Express): void {
       const query = String(req.query.q || "").trim();
       if (!query) return res.status(400).json({ error: "Query required" });
 
-      const hubMemory = await injectMemory("KnowledgeContext", { includeFoundation: isAdminUser }).catch(
+      const hubMemory = await injectMemory("KnowledgeContext", {
+        includeFoundation: isAdminUser,
+        userId,
+      }).catch(
         () => ({ formatted: "" }),
       );
       const knowledge = await KnowledgeService.buildContext({

@@ -1,0 +1,31 @@
+{
+  "version": "1",
+  "generatedAt": "2026-07-12T01:30:57.165Z",
+  "sources": [
+    "hub\\user-memory\\user_admin\\foundation\\semantic\\conversation-index.json",
+    "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-conversations.json",
+    "hub\\user-memory\\user_admin\\foundation\\semantic\\merged-summary.json",
+    "hub\\user-memory\\user_admin\\foundation\\semantic\\recent-conversations.json",
+    "hub\\user-memory\\user_admin\\foundation\\semantic\\source-manifest.json",
+    "hub\\user-memory\\user_admin\\foundation\\consensus\\foundation-overview.md",
+    "hub\\user-memory\\user_admin\\foundation\\consensus\\lightweight-access.md"
+  ],
+  "stats": {
+    "totalObjects": 123,
+    "byType": {
+      "project": 13,
+      "integration": 10,
+      "rule": 13,
+      "task": 56,
+      "event": 5,
+      "preference": 22,
+      "open_question": 3,
+      "constraint": 1
+    },
+    "totalRelationships": 0,
+    "conflicts": 0,
+    "openQuestions": 3
+  },
+  "scope": "user",
+  "userId": "user_admin"
+}

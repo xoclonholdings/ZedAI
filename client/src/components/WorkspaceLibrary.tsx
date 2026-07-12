@@ -6,8 +6,9 @@ import type { BaseObject, ObjectGraph } from "@shared/object-memory-types";
 /**
  * A workspace's own knowledge library. Everything added here is tagged
  * with the workspace, so each workspace shows its own slice — but it all
- * merges into Zed's single core memory graph (/api/me/memory/upload), so
- * nothing is siloed away from Zed's overall knowledge.
+ * merges into the current user's object-memory graph
+ * (/api/me/memory/upload). For the admin user, this is Admin memory;
+ * it is not System memory.
  *
  * Reused across every workspace surface so "add knowledge" is consistent.
  */
@@ -92,8 +93,8 @@ export default function WorkspaceLibrary({
       const added = body?.totals?.newObjects ?? 0;
       setNotice(
         added > 0
-          ? `Zed learned ${added} thing${added === 1 ? "" : "s"} into ${friendlyType(workspace)} and its core memory.`
-          : "Saved into Zed's memory.",
+          ? `Zed learned ${added} thing${added === 1 ? "" : "s"} into ${friendlyType(workspace)} memory.`
+          : "Saved into this memory scope.",
       );
       setTitle("");
       setContent("");
@@ -129,8 +130,8 @@ export default function WorkspaceLibrary({
         )}
       </button>
       <p className="mt-1 text-[11.5px] text-white/40 leading-snug">
-        Teach Zed about {friendlyType(workspace)}. It's kept as this workspace's library and folded
-        into Zed's core memory.
+        Teach Zed about {friendlyType(workspace)}. It's kept in this user's memory scope and shown
+        here when tagged to the workspace.
       </p>
 
       {open && (
