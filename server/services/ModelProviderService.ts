@@ -42,10 +42,7 @@ export async function generateFromProvider(
   options?: ProviderExecutionOptions,
 ): Promise<string> {
   try {
-    return await executeProviderPrompt(prompt, {
-      ...options,
-      model: options?.model || runtimeConfig.activeModel,
-    });
+    return await executeProviderPrompt(prompt, options);
   } catch (err) {
     console.error("[ModelProviderService] generateFromProvider failed:", err);
     throw err;
@@ -60,7 +57,6 @@ export async function generateChatFromProvider(
   try {
     return await executeProviderChat(messages, {
       ...options,
-      model: options?.model || runtimeConfig.activeModel,
       systemPrompt: options?.systemPrompt || systemPrompt,
     });
   } catch (err) {
@@ -81,7 +77,6 @@ export async function streamChatFromProvider(
     messages,
     {
       ...options,
-      model: options?.model || runtimeConfig.activeModel,
       systemPrompt: options?.systemPrompt || systemPrompt,
     },
     onToken,
@@ -119,7 +114,6 @@ export async function generateBufferedStreamFromProvider(
       messages,
       {
         ...options,
-        model: options?.model || runtimeConfig.activeModel,
         systemPrompt: options?.systemPrompt || systemPrompt,
       },
       (token) => {
