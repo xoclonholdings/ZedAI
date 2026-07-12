@@ -13,6 +13,7 @@ import { ZedPrincipleEngine } from "./ZedPrincipleEngine";
 import { ZedStrategicReasoningEngine } from "./ZedStrategicReasoningEngine";
 import { ZedReflectionEngine } from "./ZedReflectionEngine";
 import { injectMemory } from "./MemoryInjector";
+import { buildWorkspaceMemoryContext } from "./WorkspaceMemoryService";
 import { buildZedAdminContext } from "./ZedContextBuilder";
 import { getZedResponsePolicy } from "./ZedResponsePolicy";
 import {
@@ -434,6 +435,17 @@ export class ChatExecutionService {
           }).catch(() => ({ formatted: "" }));
       if (injectedMemory.formatted) trace.memorySources.push("MemoryInjector");
 
+      // Workspace memory FIRST: whenever a request comes from a workspace,
+      // Zed grounds in that workspace's own knowledge before any other work.
+      const workspaceSlug = String(
+        input.workspaceId || input.context?.workspaceId || "",
+      ).trim();
+      const workspaceMemory = await buildWorkspaceMemoryContext(
+        workspaceSlug,
+        effectiveMessage,
+      ).catch(() => ({ prompt: "", count: 0, used: false }));
+      if (workspaceMemory.used) trace.memorySources.push("WorkspaceMemory");
+
       trace.servicesInvoked.push("KnowledgeService.buildContext");
       const knowledge = hooks.knowledgeContext
         ? await hooks.knowledgeContext()
@@ -557,6 +569,9 @@ export class ChatExecutionService {
       const cognitiveKnowledgePrompt = [
         governancePrompt,
         contextInquiryPrompt,
+        // Workspace memory sits ahead of general knowledge so Zed always
+        // works from the workspace's own library first.
+        workspaceMemory.prompt,
         principlePrompt,
         strategicReasoning.prompt,
         intelligence.reasoningPrompt,
