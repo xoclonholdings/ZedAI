@@ -1,3 +1,4 @@
+import { executeProviderChat } from "../../core/providers/provider-executor";
 import type {
   TradeDirection,
   TradingAssetClass,
@@ -5,23 +6,6 @@ import type {
 
 import { buildTradingCurriculumContext } from "./TradingCurriculum";
 import { TradingStore } from "./TradingStore";
-
-/**
- * Autonomous "Generate Strategy" engine.
- *
- * Produces a *draft* trade plan for the New Strategy form using Zed's
- * learned trading framework — the "Trades By Sci" style captured in the
- * curriculum and any imported knowledge (market structure, liquidity
- * sweeps / draw on liquidity, entry confirmation, stop invalidation,
- * target / liquidity objective, and risk/reward discipline).
- *
- * This is generation only. There is no broker connection, no live price
- * feed, and no order transmission. Because there is no live market data
- * source wired in, the generator NEVER fabricates prices — it uses
- * structural language ("below the sweep low") instead of invented
- * numbers, and it clearly frames the output as a draft built from stored
- * rules and the provided symbol/context.
- */
 
 export type DirectionPreference = "long" | "short" | "auto";
 
@@ -40,217 +24,198 @@ export interface GeneratedStrategy {
   symbol: string;
   direction: TradeDirection;
   timeframe: string;
+  setupName: string;
+  entry: number;
+  stop: number;
+  target: number;
+  size: number;
+  riskAmount: number;
   riskReward: number;
   confidence: number;
   thesis: string;
   marketStructure: string;
   liquidityAnalysis: string;
+  timeframeAlignment: Record<string, string>;
   entryPlan: string;
   stopPlan: string;
   targetPlan: string;
   invalidation: string;
-  /** True when built purely from stored rules (no live data source). */
   draft: boolean;
-  /** Short note explaining the generation basis, surfaced to the user. */
   basis: string;
 }
 
 const DEFAULT_TIMEFRAME = "Daily / 4H / 1H";
+const MAX_PAPER_RISK = 100;
 
-function clampConfidence(value: number): number {
-  if (!Number.isFinite(value)) return 60;
-  return Math.max(0, Math.min(100, Math.round(value)));
+function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, value));
 }
 
-function roundRR(value: number): number {
-  const clamped = Math.max(2, Math.min(4, value));
-  return Math.round(clamped * 10) / 10;
+function toNumber(value: unknown): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : NaN;
 }
 
-/**
- * Resolve "auto" into a concrete direction. With no live data feed we
- * cannot read live momentum, so we lean on any stored knowledge tone and
- * otherwise default to the higher-timeframe continuation (long) framing
- * the curriculum teaches. This is deliberately conservative and fully
- * editable by the user afterward.
- */
-function resolveDirection(
-  preference: DirectionPreference | undefined,
-  knowledgeText: string,
-): { direction: TradeDirection; auto: boolean } {
-  if (preference === "long" || preference === "short") {
-    return { direction: preference, auto: false };
+function roundPrice(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+function roundRiskReward(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+function extractJsonObject(value: string): Record<string, unknown> {
+  const withoutFence = value.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+  const start = withoutFence.indexOf("{");
+  const end = withoutFence.lastIndexOf("}");
+  if (start < 0 || end <= start) throw new Error("Lightning did not return a structured trade proposal.");
+  return JSON.parse(withoutFence.slice(start, end + 1));
+}
+
+function requireText(obj: Record<string, unknown>, key: string): string {
+  const value = obj[key];
+  if (typeof value !== "string" || !value.trim()) throw new Error(`Trade proposal missing ${key}.`);
+  return value.trim();
+}
+
+function requireNumber(obj: Record<string, unknown>, key: string): number {
+  const value = toNumber(obj[key]);
+  if (!Number.isFinite(value)) throw new Error(`Trade proposal missing numeric ${key}.`);
+  return value;
+}
+
+function directionFrom(value: unknown, preference?: DirectionPreference): TradeDirection {
+  if (preference === "long" || preference === "short") return preference;
+  return String(value).toLowerCase() === "short" ? "short" : "long";
+}
+
+function riskRewardFrom(direction: TradeDirection, entry: number, stop: number, target: number): number {
+  const risk = direction === "long" ? entry - stop : stop - entry;
+  const reward = direction === "long" ? target - entry : entry - target;
+  if (risk <= 0 || reward <= 0) throw new Error("Trade proposal has invalid entry, stop, or target geometry.");
+  return roundRiskReward(reward / risk);
+}
+
+function normalizeTimeframeAlignment(value: unknown, timeframe: string): Record<string, string> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => typeof v === "string" && v.trim())
+      .map(([k, v]) => [k, String(v).trim()]);
+    if (entries.length) return Object.fromEntries(entries);
   }
-  const lower = knowledgeText.toLowerCase();
-  const bearish =
-    (lower.match(/bearish|lower high|lower low|breakdown|short/g) || []).length;
-  const bullish =
-    (lower.match(/bullish|higher high|higher low|breakout|continuation|long/g) || [])
-      .length;
-  const direction: TradeDirection = bearish > bullish ? "short" : "long";
-  return { direction, auto: true };
+  return { primary: timeframe, confirmation: "Zed proposal generated for paper-trade validation." };
 }
 
-function biasWord(direction: TradeDirection): string {
-  return direction === "long" ? "bullish" : "bearish";
-}
-
-function sweepSide(direction: TradeDirection): string {
-  return direction === "long" ? "sell-side" : "buy-side";
-}
-
-function drawSide(direction: TradeDirection): string {
-  return direction === "long" ? "buy-side" : "sell-side";
-}
-
-function sweepLevel(direction: TradeDirection): string {
-  return direction === "long" ? "the prior session / swing low" : "the prior session / swing high";
-}
-
-function drawLevel(direction: TradeDirection): string {
-  return direction === "long" ? "the previous swing high" : "the previous swing low";
-}
-
-function buildThesis(direction: TradeDirection, timeframe: string): string {
-  const bias = biasWord(direction);
-  const swept = sweepSide(direction);
-  const draw = drawSide(direction);
-  const dir = direction === "long" ? "reclaimed support" : "rejected resistance";
+function buildPrompt(input: GenerateStrategyInput, context: string): string {
   return [
-    `Higher-timeframe trend remains ${bias} across ${timeframe}.`,
-    `Price swept ${swept} liquidity beyond ${sweepLevel(direction)} and ${dir}.`,
-    `Looking for continuation toward ${draw} liquidity resting at ${drawLevel(direction)}.`,
-  ].join(" ");
-}
-
-function buildMarketStructure(direction: TradeDirection, timeframe: string): string {
-  const bias = biasWord(direction);
-  const swings = direction === "long" ? "higher highs and higher lows" : "lower highs and lower lows";
-  const bos = direction === "long" ? "bullish break of structure" : "bearish break of structure";
-  return [
-    `Daily and 4H structure remain ${bias} with ${swings}.`,
-    `1H shows a ${bos} after the sweep, confirming intent in the direction of the higher-timeframe bias (${timeframe}).`,
-  ].join(" ");
-}
-
-function buildLiquidityAnalysis(direction: TradeDirection): string {
-  const swept = sweepSide(direction);
-  const draw = drawSide(direction);
-  return [
-    `${swept.charAt(0).toUpperCase() + swept.slice(1)} liquidity beyond ${sweepLevel(direction)} has already been taken (stop hunt / sweep).`,
-    `${draw.charAt(0).toUpperCase() + draw.slice(1)} liquidity above/below ${drawLevel(direction)} remains the likely draw on price.`,
-  ].join(" ");
-}
-
-function buildEntryPlan(direction: TradeDirection): string {
-  const zone = direction === "long" ? "reclaimed support" : "rejected resistance";
-  const side = direction === "long" ? "above" : "below";
-  return [
-    `Wait for a 15m confirmation candle ${side} ${zone}.`,
-    `Enter on the retrace back into the confirmation zone with predefined risk — no chasing, confirmation before commitment.`,
-  ].join(" ");
-}
-
-function buildStopPlan(direction: TradeDirection): string {
-  const beyond = direction === "long" ? "below the sweep low" : "above the sweep high";
-  const fail = direction === "long"
-    ? "closes back below reclaimed support"
-    : "closes back above rejected resistance";
-  return [
-    `Stop sits ${beyond} — the point that invalidates the setup structurally.`,
-    `Exit early if price ${fail} or market structure fails in the trade direction.`,
-  ].join(" ");
-}
-
-function buildTargetPlan(direction: TradeDirection): string {
-  const trail = direction === "long" ? "higher lows" : "lower highs";
-  return [
-    `TP1 at ${drawLevel(direction)} (prior swing objective).`,
-    `TP2 at the ${drawSide(direction)} liquidity pool.`,
-    `Trail the remaining position using ${trail} once TP1 is banked.`,
-  ].join(" ");
-}
-
-function buildInvalidation(direction: TradeDirection): string[] {
-  const structuralClose = direction === "long"
-    ? "1H close below the sweep low"
-    : "1H close above the sweep high";
-  const flip = direction === "long"
-    ? "Daily structure flips bearish"
-    : "Daily structure flips bullish";
-  return [
-    structuralClose,
-    flip,
-    "High-impact news invalidates the setup",
-    "Gap against the position beyond planned risk",
-  ];
-}
-
-/**
- * Confidence is a structural score (0-100), not a probability or a
- * promise. It reflects how much of the learned framework the draft is
- * grounded in — never certainty.
- */
-function scoreConfidence(knowledgeMatches: number, auto: boolean): number {
-  let score = 62; // baseline for a clean structural draft
-  score += Math.min(16, knowledgeMatches * 4); // grounded in stored rules
-  if (!auto) score += 6; // user-specified direction adds conviction
-  return clampConfidence(score);
+    "Create one complete paper-trade proposal for ZED Trading Sandbox.",
+    "This is paper trading only. Do not discuss live execution or broker orders.",
+    "Fill every field. Do not ask the user to provide entry, stop, target, thesis, setup, or risk.",
+    "Use the symbol, asset class, market, stored trading framework, and recent performance context to create a proposal that differs by symbol and setup.",
+    "Return JSON only. No markdown. No template language. No placeholders.",
+    "Required JSON keys: direction, timeframe, setupName, entry, stop, target, size, riskAmount, confidence, thesis, marketStructure, liquidityAnalysis, timeframeAlignment, entryPlan, stopPlan, targetPlan, invalidation, basis.",
+    "Rules: direction must be long or short. riskAmount must be <= 100. riskReward must be at least 2.0. For long trades stop < entry < target. For short trades target < entry < stop.",
+    "If current price is unknown, choose internally consistent paper-trade levels suitable for strategy validation and explain that basis in the basis field.",
+    "",
+    `Symbol: ${input.symbol}`,
+    `Asset class: ${input.asset}`,
+    `Market: ${input.market}`,
+    `Direction preference: ${input.directionPreference || "auto"}`,
+    `Preferred timeframe: ${input.timeframe || DEFAULT_TIMEFRAME}`,
+    "",
+    "Trading context:",
+    context,
+  ].join("\n");
 }
 
 export async function generateTradeStrategy(
   input: GenerateStrategyInput,
 ): Promise<GeneratedStrategy> {
   const symbol = String(input.symbol || "").trim().toUpperCase();
+  if (!symbol) throw new Error("Symbol is required for a trade proposal.");
   const timeframe = String(input.timeframe || "").trim() || DEFAULT_TIMEFRAME;
 
-  // Wire into the existing learned framework: stored knowledge + curriculum.
   const knowledgeEntries = await TradingStore.searchKnowledge(
     `${symbol} ${input.asset} ${input.market} market structure liquidity sweep entry stop target`,
-    6,
+    8,
   );
-  const knowledgeText = [
+  const performance = input.userId ? await TradingStore.getPerformance(input.userId) : null;
+  const recentTrades = input.userId ? (await TradingStore.listPaperTrades(input.userId)).slice(0, 8) : [];
+
+  const context = [
     buildTradingCurriculumContext(),
-    ...knowledgeEntries.flatMap((entry) => [
-      ...entry.rules,
-      ...entry.patterns,
-      ...entry.entryCriteria,
-      ...entry.riskRules,
-    ]),
-  ].join("\n");
+    knowledgeEntries.length
+      ? `Stored knowledge matches:\n${knowledgeEntries.map((entry) => [
+          `Title: ${entry.title}`,
+          ...entry.rules.map((rule) => `Rule: ${rule}`),
+          ...entry.patterns.map((pattern) => `Pattern: ${pattern}`),
+          ...entry.entryCriteria.map((criterion) => `Entry: ${criterion}`),
+          ...entry.riskRules.map((rule) => `Risk: ${rule}`),
+        ].join("\n")).join("\n\n")}`
+      : "Stored knowledge matches: none for this symbol yet.",
+    performance
+      ? `Performance: ${performance.closedTrades} closed trades, win rate ${Math.round(performance.winRate * 100)}%, expectancy ${performance.expectancy}, max drawdown ${performance.maximumDrawdown}.`
+      : "Performance: unavailable.",
+    recentTrades.length
+      ? `Recent paper trades:\n${recentTrades.map((trade) => `${trade.symbol} ${trade.direction} ${trade.setupName || "setup"} outcome ${trade.outcome || trade.status}`).join("\n")}`
+      : "Recent paper trades: none.",
+  ].join("\n\n");
 
-  const { direction, auto } = resolveDirection(input.directionPreference, knowledgeText);
+  const reply = await executeProviderChat(
+    [{ role: "user", content: buildPrompt({ ...input, symbol, timeframe }, context) }],
+    {
+      lane: "finance",
+      reasoningEffort: "high",
+      temperature: 0.35,
+      maxTokens: 1400,
+      systemPrompt: "You are ZED's Trading Intelligence Agent. Produce complete, symbol-specific paper-trade proposals as strict JSON. Never return templates, placeholders, or generic repeated setup text.",
+    },
+  );
 
-  const riskReward = roundRR(3.0);
-  const confidence = scoreConfidence(knowledgeEntries.length, auto);
+  const raw = extractJsonObject(reply);
+  const direction = directionFrom(raw.direction, input.directionPreference);
+  const entry = roundPrice(requireNumber(raw, "entry"));
+  const stop = roundPrice(requireNumber(raw, "stop"));
+  const target = roundPrice(requireNumber(raw, "target"));
+  const riskReward = riskRewardFrom(direction, entry, stop, target);
+  if (riskReward < 2) throw new Error("Trade proposal failed minimum 2:1 risk/reward validation.");
 
-  const draft = true; // no live market data source is wired in
-  const basis = knowledgeEntries.length
-    ? `Zed drafted this strategy from ${knowledgeEntries.length} stored knowledge match(es) and its learned Trades By Sci framework. No live market data — price levels are structural, not fixed numbers. Review and edit before saving.`
-    : "Zed drafted this strategy from its learned Trades By Sci framework (no stored knowledge matched yet). No live market data — price levels are structural, not fixed numbers. Review and edit before saving.";
+  const requestedSize = Math.max(1, Math.floor(requireNumber(raw, "size")));
+  const perUnitRisk = Math.abs(entry - stop);
+  const maxRiskSize = perUnitRisk > 0 ? Math.max(1, Math.floor(MAX_PAPER_RISK / perUnitRisk)) : requestedSize;
+  const size = Math.max(1, Math.min(requestedSize, maxRiskSize));
+  const riskAmount = roundPrice(Math.min(MAX_PAPER_RISK, perUnitRisk * size));
 
   const strategy: GeneratedStrategy = {
     market: input.market,
     asset: input.asset,
     symbol,
     direction,
-    timeframe,
+    timeframe: requireText(raw, "timeframe") || timeframe,
+    setupName: requireText(raw, "setupName"),
+    entry,
+    stop,
+    target,
+    size,
+    riskAmount,
     riskReward,
-    confidence,
-    thesis: buildThesis(direction, timeframe),
-    marketStructure: buildMarketStructure(direction, timeframe),
-    liquidityAnalysis: buildLiquidityAnalysis(direction),
-    entryPlan: buildEntryPlan(direction),
-    stopPlan: buildStopPlan(direction),
-    targetPlan: buildTargetPlan(direction),
-    invalidation: buildInvalidation(direction).join("\n"),
-    draft,
-    basis,
+    confidence: clamp(Math.round(requireNumber(raw, "confidence")), 1, 100),
+    thesis: requireText(raw, "thesis"),
+    marketStructure: requireText(raw, "marketStructure"),
+    liquidityAnalysis: requireText(raw, "liquidityAnalysis"),
+    timeframeAlignment: normalizeTimeframeAlignment(raw.timeframeAlignment, timeframe),
+    entryPlan: requireText(raw, "entryPlan"),
+    stopPlan: requireText(raw, "stopPlan"),
+    targetPlan: requireText(raw, "targetPlan"),
+    invalidation: requireText(raw, "invalidation"),
+    draft: true,
+    basis: requireText(raw, "basis"),
   };
 
   if (input.userId) {
     await TradingStore.appendMemory(
-      `Strategy generated (draft): ${symbol || "?"} ${direction} on ${timeframe} — R:R ${riskReward}, confidence ${confidence}.`,
+      `Lightning paper proposal generated: ${strategy.symbol} ${strategy.direction} ${strategy.setupName}; entry ${strategy.entry}, stop ${strategy.stop}, target ${strategy.target}, R:R ${strategy.riskReward}.`,
     );
   }
 
