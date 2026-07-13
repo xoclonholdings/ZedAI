@@ -37,6 +37,21 @@ export interface StageAssessmentResult {
  * Stages 5-7: Evaluation, Qualification, Live.
  * -------------------------------------------------------------------- */
 
+export interface IndicatorVote {
+  name: string;
+  verdict: "bullish" | "bearish" | "neutral";
+  detail: string;
+}
+
+export interface TradingSignal {
+  signal: "buy" | "sell" | "neutral";
+  strength: number; // 0-100 conviction
+  bullish: number; // count of bullish votes
+  bearish: number; // count of bearish votes
+  votes: IndicatorVote[];
+  summary: string;
+}
+
 export interface ExternalPaperReport {
   providerConnected: boolean;
   providerLabel: string;

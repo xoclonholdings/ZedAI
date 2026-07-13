@@ -255,6 +255,12 @@ export function registerTradingRoutes(app: Express): void {
       const quote = await getMarketQuote(symbol, asset);
       const referencePrice = overridePrice ?? quote?.price;
 
+      // Let the technical buy/sell signal decide direction when the caller
+      // didn't force one and the indicators agree.
+      if (directionPreference === "auto" && quote?.signal && quote.signal.signal !== "neutral") {
+        directionPreference = quote.signal.signal === "buy" ? "long" : "short";
+      }
+
       const strategy = await generateTradeStrategy({
         userId,
         symbol,
@@ -295,6 +301,7 @@ export function registerTradingRoutes(app: Express): void {
         thesisId: thesis.id,
         session: strategy.session,
         marketData,
+        signal: quote?.signal ?? null,
         recommendedSymbol: recommendation
           ? { symbol: recommendation.symbol, reason: recommendation.reason }
           : null,
@@ -361,6 +368,24 @@ export function registerTradingRoutes(app: Express): void {
     await clearMarketDataKey(vendor);
     const keys = await marketDataKeyStatus();
     res.json({ keys });
+  });
+
+  /** Technical buy/sell signal for a symbol from live indicators. */
+  app.get("/api/trading/market-data/signal", isAuthenticated, async (req: any, res) => {
+    const symbol = String(req.query.symbol || "").trim();
+    if (!symbol) return res.status(400).json({ error: "symbol is required" });
+    const asset = (req.query.asset ? String(req.query.asset) : "stock") as any;
+    const quote = await getMarketQuote(symbol, asset);
+    if (!quote) {
+      return res.json({ live: false, signal: null, note: "No live market-data source is reachable." });
+    }
+    res.json({
+      live: true,
+      price: quote.price,
+      source: quote.source,
+      asOf: quote.asOf,
+      signal: quote.signal ?? null,
+    });
   });
 
   /** Live quote lookup Zed and the UI use to show real prices. */

@@ -1,5 +1,7 @@
 import type { TradingAssetClass } from "../../../shared/trading-types";
+import type { TradingSignal } from "../../../shared/trading-training-types";
 import { resolveMarketDataKey, marketDataKeyStatus } from "./MarketDataKeysStore";
+import { computeSignal } from "./TechnicalIndicators";
 
 /**
  * Real market-data access for Zed.
@@ -40,6 +42,8 @@ export interface MarketQuote {
   atr?: number;
   /** Recent daily bars (oldest→newest), when the source provides history. */
   bars?: MarketBar[];
+  /** Composite buy/sell/neutral signal from technical indicators, if computable. */
+  signal?: TradingSignal;
 }
 
 const TIMEOUT_MS = 7000;
@@ -150,14 +154,16 @@ export function parseYahooChart(json: any, fallbackSymbol: string): MarketQuote 
     asOf: positive(asOfSeconds) ? new Date(asOfSeconds * 1000).toISOString() : new Date().toISOString(),
     source: "Yahoo Finance",
     atr: averageTrueRange(bars),
-    bars: bars.slice(-30),
+    bars: bars.slice(-60),
+    signal: computeSignal(bars) ?? undefined,
   };
 }
 
 async function fromYahoo(symbol: string, asset: TradingAssetClass): Promise<MarketQuote | null> {
   const ticker = encodeURIComponent(toYahooSymbol(symbol, asset));
+  // 6 months of daily bars — enough history for SMA50 / RSI / MACD.
   const json = await fetchJson(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1mo`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=6mo`,
   );
   return json ? parseYahooChart(json, symbol.toUpperCase()) : null;
 }

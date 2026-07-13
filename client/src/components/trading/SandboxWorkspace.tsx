@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCw, X } from "lucide-react";
 
 import type { PaperTrade, TradingPerformanceReport } from "@shared/trading-types";
+import type { TradingSignal } from "@shared/trading-training-types";
 
 /**
  * The Sandbox stage workspace — the paper-trading workflow.
@@ -78,6 +79,7 @@ export default function SandboxWorkspace() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [suggesting, setSuggesting] = useState<boolean>(false);
   const [resolving, setResolving] = useState<boolean>(false);
+  const [signal, setSignal] = useState<TradingSignal | null>(null);
   const [dataStatus, setDataStatus] = useState<{
     live: boolean;
     source: string | null;
@@ -271,6 +273,7 @@ export default function SandboxWorkspace() {
         thesisId: s.thesisId || "",
         session: s.session || "",
       }));
+      setSignal(s.signal || null);
       const picked = s.recommendedSymbol
         ? `Zed picked ${s.recommendedSymbol.symbol}. `
         : "";
@@ -449,6 +452,7 @@ export default function SandboxWorkspace() {
           submitting={submitting}
           onSuggest={suggest}
           suggesting={suggesting}
+          signal={signal}
           onCancel={() => setPanel("list")}
         />
       )}
@@ -611,6 +615,7 @@ function LogTradeForm({
   submitting,
   onSuggest,
   suggesting,
+  signal,
   onCancel,
 }: {
   form: typeof EMPTY_LOG_FORM;
@@ -619,6 +624,7 @@ function LogTradeForm({
   submitting: boolean;
   onSuggest: () => void | Promise<void>;
   suggesting: boolean;
+  signal: TradingSignal | null;
   onCancel: () => void;
 }) {
   const set =
@@ -675,6 +681,8 @@ function LogTradeForm({
           />
         </label>
       </div>
+
+      {signal && <SignalPanel signal={signal} />}
 
       <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
         <FormField label="Symbol">
@@ -899,6 +907,38 @@ function CloseDialog({
             {submitting ? "Closing…" : "Close trade"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SignalPanel({ signal }: { signal: TradingSignal }) {
+  const tone =
+    signal.signal === "buy"
+      ? "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-200"
+      : signal.signal === "sell"
+        ? "border-red-400/30 bg-red-400/[0.06] text-red-200"
+        : "border-white/10 bg-white/[0.03] text-white/70";
+  const voteTone = (v: string) =>
+    v === "bullish" ? "text-emerald-300" : v === "bearish" ? "text-red-300" : "text-white/40";
+  return (
+    <div className={`mb-4 rounded-lg border p-3 ${tone}`}>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.06em]">
+          Signal: {signal.signal} · {signal.strength}%
+        </div>
+        <div className="text-[11px] opacity-80">
+          {signal.bullish} bullish / {signal.bearish} bearish
+        </div>
+      </div>
+      <p className="mt-1 text-[11.5px] leading-snug opacity-90">{signal.summary}</p>
+      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+        {signal.votes.map((v) => (
+          <div key={v.name} className="flex items-center justify-between gap-2 text-[11px]">
+            <span className="text-white/70">{v.name}</span>
+            <span className={`font-medium ${voteTone(v.verdict)}`}>{v.verdict}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
