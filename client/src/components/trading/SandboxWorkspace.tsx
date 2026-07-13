@@ -77,6 +77,7 @@ export default function SandboxWorkspace() {
   const [closeTarget, setCloseTarget] = useState<CloseTarget | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [suggesting, setSuggesting] = useState<boolean>(false);
+  const [resolving, setResolving] = useState<boolean>(false);
   const [dataStatus, setDataStatus] = useState<{
     live: boolean;
     source: string | null;
@@ -126,6 +127,28 @@ export default function SandboxWorkspace() {
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  // Check open trades against live prices; Zed closes any that hit their
+  // target (win) or stop (loss). This is what proves the proposals.
+  const resolveVsLive = useCallback(async () => {
+    setError(null);
+    setNotice(null);
+    setResolving(true);
+    try {
+      const res = await fetch("/api/trading/paper-trades/resolve", {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      setNotice(body.note || "Checked open trades against live prices.");
+      await refresh();
+    } catch (err: any) {
+      setError(err?.message || "Could not check live prices.");
+    } finally {
+      setResolving(false);
+    }
   }, [refresh]);
 
   const openTrades = useMemo(() => trades.filter((t) => t.status === "open"), [trades]);
@@ -339,6 +362,16 @@ export default function SandboxWorkspace() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void resolveVsLive()}
+            disabled={resolving || loading}
+            title="Check open trades against live prices and close any that hit target or stop"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-400/[0.06] px-3 py-1.5 text-[12.5px] text-emerald-200 hover:bg-emerald-400/[0.12] disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw size={12} className={resolving ? "animate-spin" : ""} />
+            {resolving ? "Checking…" : "Check live prices"}
+          </button>
           <button
             type="button"
             onClick={() => void refresh()}

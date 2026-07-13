@@ -19,6 +19,7 @@ import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
 import { TradingStore } from "../zcos/trading/TradingStore";
 import { importTradingViewSnapshot } from "../zcos/trading/TradingViewBridge";
 import { getMarketQuote, getMarketDataStatus } from "../zcos/trading/MarketDataService";
+import { resolveOpenPaperTrades } from "../zcos/trading/TradeAutoResolver";
 import {
   marketDataKeyStatus,
   saveMarketDataKeys,
@@ -495,6 +496,16 @@ export function registerTradingRoutes(app: Express): void {
       authorizationDecision: authorization.decision.decision as AuthorizationDecision,
     });
     res.json({ trade, authorization: authorization.decision });
+  });
+
+  /**
+   * Check open paper trades against live prices and auto-close any that
+   * have hit their target (win) or stop (loss). This is how Zed's proposals
+   * are proven objectively over the validation sample.
+   */
+  app.post("/api/trading/paper-trades/resolve", isAuthenticated, async (req: any, res) => {
+    const result = await resolveOpenPaperTrades(userIdFrom(req));
+    res.json(result);
   });
 
   app.post("/api/trading/paper-trades/:id/close", isAuthenticated, async (req: any, res) => {
