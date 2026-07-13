@@ -19,6 +19,12 @@ import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
 import { TradingStore } from "../zcos/trading/TradingStore";
 import { importTradingViewSnapshot } from "../zcos/trading/TradingViewBridge";
 import { getMarketQuote, getMarketDataStatus } from "../zcos/trading/MarketDataService";
+import {
+  marketDataKeyStatus,
+  saveMarketDataKeys,
+  clearMarketDataKey,
+  type MarketDataVendor,
+} from "../zcos/trading/MarketDataKeysStore";
 
 function userIdFrom(req: any): string {
   return req.user?.claims?.sub || "unknown";
@@ -270,6 +276,35 @@ export function registerTradingRoutes(app: Express): void {
   app.get("/api/trading/market-data/status", isAuthenticated, async (_req, res) => {
     const status = await getMarketDataStatus();
     res.json(status);
+  });
+
+  /** Which data-vendor API keys are configured (never returns the key). */
+  app.get("/api/trading/market-data/keys", isAuthenticated, async (_req, res) => {
+    const keys = await marketDataKeyStatus();
+    res.json({ keys });
+  });
+
+  /** Save data-vendor API keys the user enters in the app. */
+  app.post("/api/trading/market-data/keys", isAuthenticated, async (req: any, res) => {
+    const body = req.body || {};
+    await saveMarketDataKeys({
+      finnhub: body.finnhub ? String(body.finnhub) : undefined,
+      alphavantage: body.alphavantage ? String(body.alphavantage) : undefined,
+      twelvedata: body.twelvedata ? String(body.twelvedata) : undefined,
+    });
+    const keys = await marketDataKeyStatus();
+    res.json({ keys });
+  });
+
+  /** Remove one saved key (falls back to env after this). */
+  app.delete("/api/trading/market-data/keys/:vendor", isAuthenticated, async (req: any, res) => {
+    const vendor = String(req.params.vendor) as MarketDataVendor;
+    if (!["finnhub", "alphavantage", "twelvedata"].includes(vendor)) {
+      return res.status(400).json({ error: "Unknown vendor" });
+    }
+    await clearMarketDataKey(vendor);
+    const keys = await marketDataKeyStatus();
+    res.json({ keys });
   });
 
   /** Live quote lookup Zed and the UI use to show real prices. */

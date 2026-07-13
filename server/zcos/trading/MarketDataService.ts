@@ -1,4 +1,5 @@
 import type { TradingAssetClass } from "../../../shared/trading-types";
+import { resolveMarketDataKey, marketDataKeyStatus } from "./MarketDataKeysStore";
 
 /**
  * Real market-data access for Zed.
@@ -197,7 +198,7 @@ async function fromStooq(symbol: string, asset: TradingAssetClass): Promise<Mark
 }
 
 async function fromAlphaVantage(symbol: string): Promise<MarketQuote | null> {
-  const key = process.env.ALPHAVANTAGE_API_KEY;
+  const key = await resolveMarketDataKey("alphavantage");
   if (!key) return null;
   const json = await fetchJson(
     `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${encodeURIComponent(symbol)}&apikey=${key}`,
@@ -214,7 +215,7 @@ async function fromAlphaVantage(symbol: string): Promise<MarketQuote | null> {
 }
 
 async function fromTwelveData(symbol: string): Promise<MarketQuote | null> {
-  const key = process.env.TWELVEDATA_API_KEY;
+  const key = await resolveMarketDataKey("twelvedata");
   if (!key) return null;
   const json = await fetchJson(
     `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${key}`,
@@ -232,7 +233,7 @@ async function fromTwelveData(symbol: string): Promise<MarketQuote | null> {
 }
 
 async function fromFinnhub(symbol: string): Promise<MarketQuote | null> {
-  const key = process.env.FINNHUB_API_KEY;
+  const key = await resolveMarketDataKey("finnhub");
   if (!key) return null;
   const json = await fetchJson(
     `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(symbol)}&token=${key}`,
@@ -278,22 +279,10 @@ export async function getMarketQuote(
   return null;
 }
 
-/** True when at least one keyed vendor is configured. */
-export function hasKeyedMarketDataProvider(): boolean {
-  return Boolean(
-    process.env.ALPHAVANTAGE_API_KEY ||
-      process.env.TWELVEDATA_API_KEY ||
-      process.env.FINNHUB_API_KEY,
-  );
-}
-
-/** Names of the keyed vendors currently configured via env. */
-export function configuredKeyedProviders(): string[] {
-  const list: string[] = [];
-  if (process.env.ALPHAVANTAGE_API_KEY) list.push("Alpha Vantage");
-  if (process.env.TWELVEDATA_API_KEY) list.push("Twelve Data");
-  if (process.env.FINNHUB_API_KEY) list.push("Finnhub");
-  return list;
+/** Names of the keyed vendors currently configured (saved in-app or env). */
+export async function configuredKeyedProviders(): Promise<string[]> {
+  const status = await marketDataKeyStatus();
+  return status.filter((s) => s.configured).map((s) => s.label);
 }
 
 export interface MarketDataStatus {
@@ -317,7 +306,7 @@ export async function getMarketDataStatus(probeSymbol = "SPY"): Promise<MarketDa
   const startedAt = Date.now();
   const quote = await getMarketQuote(probeSymbol, "etf");
   const latencyMs = Date.now() - startedAt;
-  const keyedProviders = configuredKeyedProviders();
+  const keyedProviders = await configuredKeyedProviders();
   if (quote) {
     return {
       live: true,

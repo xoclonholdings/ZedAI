@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link2, Plug, Upload, X } from "lucide-react";
+import { KeyRound, Link2, Plug, Upload, X } from "lucide-react";
 
 import type {
   IntegrationProviderInfo,
@@ -223,7 +223,146 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
           </>
         )}
       </div>
+
+      <MarketDataKeysPanel />
     </StageShell>
+  );
+}
+
+interface KeyStatus {
+  vendor: "finnhub" | "alphavantage" | "twelvedata";
+  label: string;
+  configured: boolean;
+  source: "saved" | "env" | null;
+}
+
+const VENDOR_HINTS: Record<string, string> = {
+  finnhub: "finnhub.io/register — free key",
+  alphavantage: "alphavantage.co/support/#api-key — free key",
+  twelvedata: "twelvedata.com — free key",
+};
+
+/**
+ * Lets the user paste a data-vendor API key so Zed's live feed is more
+ * reliable, without touching Render env vars. Keys are stored server-side
+ * and never returned — the UI only shows whether each is configured.
+ */
+function MarketDataKeysPanel() {
+  const [keys, setKeys] = useState<KeyStatus[]>([]);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [live, setLive] = useState<{ live: boolean; source: string | null; note: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [keysRes, statusRes] = await Promise.all([
+        fetch("/api/trading/market-data/keys", { credentials: "include" }),
+        fetch("/api/trading/market-data/status", { credentials: "include" }),
+      ]);
+      if (keysRes.ok) setKeys((await keysRes.json()).keys || []);
+      if (statusRes.ok) {
+        const s = await statusRes.json();
+        setLive({ live: !!s.live, source: s.source, note: s.note });
+      }
+    } catch {
+      /* silent */
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    setSaved(null);
+    try {
+      const res = await fetch("/api/trading/market-data/keys", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setValues({});
+      setSaved("Saved. Zed will use it on the next proposal.");
+      await load();
+    } catch (err: any) {
+      setError(err?.message || "Could not save keys");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-5">
+      <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
+        <KeyRound size={13} className="text-cyan-300" />
+        Market data API keys
+      </div>
+      <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
+        Optional. Zed reads live prices from a free public feed already; adding a vendor
+        key makes it more reliable. Keys are stored securely and never shown again.
+      </p>
+
+      {live && (
+        <div
+          title={live.note}
+          className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+            live.live ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-300"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${live.live ? "bg-emerald-400" : "bg-amber-400"}`} />
+          {live.live ? `Live feed reachable · ${live.source}` : "No live feed reachable"}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {keys.map((k) => (
+          <div key={k.vendor} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <span className="text-[13px] font-semibold text-white">{k.label}</span>
+              <span
+                className={`text-[9.5px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${
+                  k.configured ? "bg-emerald-400/15 text-emerald-300" : "bg-white/10 text-white/40"
+                }`}
+              >
+                {k.configured ? (k.source === "env" ? "set (env)" : "saved") : "not set"}
+              </span>
+            </div>
+            <input
+              type="password"
+              value={values[k.vendor] || ""}
+              onChange={(e) => setValues((v) => ({ ...v, [k.vendor]: e.target.value }))}
+              placeholder={k.configured ? "•••• saved — leave blank to keep" : "paste API key"}
+              className={inputClass}
+            />
+            <div className="mt-1 text-[10.5px] text-white/35">{VENDOR_HINTS[k.vendor]}</div>
+          </div>
+        ))}
+      </div>
+
+      {error && <div className="mt-2 text-[11.5px] text-red-300">{error}</div>}
+      {saved && <div className="mt-2 text-[11.5px] text-emerald-300">{saved}</div>}
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="text-[10.5px] text-white/35 leading-snug max-w-[46ch]">
+          Tradovate futures data &amp; order routing is a separate bridge — connect the
+          Tradovate login in the account dropdown above; the live futures feed is the next build.
+        </p>
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={busy || Object.values(values).every((v) => !v.trim())}
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-40 transition-colors"
+        >
+          {busy ? "Saving…" : "Save keys"}
+        </button>
+      </div>
+    </div>
   );
 }
 
