@@ -18,6 +18,9 @@ import SandboxWorkspace from "@/components/trading/SandboxWorkspace";
 import LearnStage from "@/components/trading/LearnStage";
 import StrategyStage from "@/components/trading/StrategyStage";
 import ValidationStage from "@/components/trading/ValidationStage";
+import EvaluationStage from "@/components/trading/EvaluationStage";
+import QualificationStage from "@/components/trading/QualificationStage";
+import LiveStage from "@/components/trading/LiveStage";
 import type { TradingStageId } from "@shared/trading-progression";
 import type {
   TradingGovernanceDecision,
@@ -25,7 +28,15 @@ import type {
   TradingViewRecord,
 } from "@shared/trading-types";
 
-const FUNCTIONAL_STAGES: TradingStageId[] = ["learn", "strategy", "validation", "sandbox"];
+const FUNCTIONAL_STAGES: TradingStageId[] = [
+  "learn",
+  "strategy",
+  "validation",
+  "sandbox",
+  "evaluation",
+  "qualification",
+  "live",
+];
 
 /**
  * The guided training stages (banner + stage tools) are the primary
@@ -279,6 +290,9 @@ export default function TradingPage() {
             {currentStage === "strategy" && <StrategyStage />}
             {currentStage === "validation" && <ValidationStage />}
             {currentStage === "sandbox" && <SandboxWorkspace />}
+            {currentStage === "evaluation" && <EvaluationStage />}
+            {currentStage === "qualification" && <QualificationStage />}
+            {currentStage === "live" && <LiveStage />}
           </div>
         )}
 

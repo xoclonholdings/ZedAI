@@ -157,10 +157,10 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
       "The evaluation objective is met without breaking rules.",
     ],
     assessment: {
-      kind: "locked",
+      kind: "data_check",
       passThreshold: 100,
       blurb:
-        "Locked until an evaluation provider (Lucid / Tradovate / TradingView) is connected — Zed won't fake an evaluation result.",
+        "Zed must meet the evaluation profit objective across the minimum trading days without breaching the daily-loss or drawdown limits. Runs on Zed's own engine until a provider bridge is connected.",
     },
     nextUnlocks: "qualification",
   },
@@ -179,9 +179,10 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
       "Zed marks qualification readiness as ready.",
     ],
     assessment: {
-      kind: "locked",
-      passThreshold: 100,
-      blurb: "Locked until evaluation data exists to score qualification against.",
+      kind: "data_check",
+      passThreshold: 70,
+      blurb:
+        "Zed must score at target on every discipline in the readiness scorecard — rule compliance, edge, drawdown control, consistency, and a proven sample.",
     },
     nextUnlocks: "live",
   },
@@ -200,9 +201,10 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
       "Kill switch and drawdown controls stay armed.",
     ],
     assessment: {
-      kind: "locked",
+      kind: "data_check",
       passThreshold: 100,
-      blurb: "Locked until a broker integration is connected and qualification is passed.",
+      blurb:
+        "Unlocks when qualification is passed and a broker is connected. Zed operates the full risk framework and kill switch; live order routing runs through the broker bridge once enabled.",
     },
   },
 ];
@@ -236,10 +238,13 @@ export interface TradingProgression {
  * tested through them. Locking Sandbox behind them would make the one
  * fully functional part of Trading unreachable.
  *
- * The final three stages (Evaluation / Qualification / Live) stay
- * locked because their integrations (Lucid / Tradovate / broker
- * connectivity) genuinely aren't wired yet — and Zed will not fake a
- * pass for a stage it cannot actually assess.
+ * The final three stages (Evaluation / Qualification / Live) are now
+ * wired to real engines: Evaluation runs a funded-account objective on
+ * Zed's own trade engine, Qualification scores a readiness card from that
+ * performance, and Live wires the full risk framework + kill switch and
+ * unlocks when qualified with a broker connected. Live *order routing*
+ * still requires a broker bridge (Tradovate) — Zed reports "ready,
+ * pending broker" rather than faking execution.
  */
 export const DEFAULT_PROGRESSION: TradingProgression = {
   currentStage: "learn",

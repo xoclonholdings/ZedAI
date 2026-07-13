@@ -33,6 +33,74 @@ export interface StageAssessmentResult {
   unlockedStage?: TradingStageId;
 }
 
+/* ----------------------------------------------------------------------
+ * Stages 5-7: Evaluation, Qualification, Live.
+ * -------------------------------------------------------------------- */
+
+export interface EvaluationConfig {
+  provider: string;
+  startingBalance: number;
+  profitTarget: number;
+  maxDailyLoss: number;
+  maxTotalDrawdown: number;
+  minTradingDays: number;
+}
+
+export interface EvaluationReport {
+  config: EvaluationConfig;
+  startedAt: string | null;
+  status: "not_started" | "active" | "passed" | "failed";
+  providerConnected: boolean;
+  providerLabel: string;
+  netProfit: number;
+  profitTargetProgressPct: number;
+  tradingDays: number;
+  worstDayPnl: number;
+  currentDrawdown: number;
+  maxDrawdownSeen: number;
+  breaches: string[];
+  closedTradesCounted: number;
+  summary: string;
+}
+
+export interface QualificationScore {
+  key: string;
+  label: string;
+  score: number;
+  target: number;
+  detail: string;
+}
+
+export interface QualificationReport {
+  ready: boolean;
+  overallScore: number;
+  target: number;
+  scores: QualificationScore[];
+  strengths: string[];
+  weaknesses: string[];
+  requiredImprovements: string[];
+  summary: string;
+  generatedAt: string;
+}
+
+export interface LiveTradingConfig {
+  maxRiskPerTrade: number;
+  maxDailyLoss: number;
+  maxTotalDrawdown: number;
+  killSwitchArmed: boolean;
+}
+
+export interface LiveTradingState {
+  config: LiveTradingConfig;
+  brokerConnected: boolean;
+  brokerLabel: string;
+  qualificationPassed: boolean;
+  canExecute: boolean;
+  status: "blocked" | "ready_pending_broker" | "armed";
+  blockers: string[];
+  summary: string;
+}
+
 /**
  * A single Learn-stage knowledge section. There is one per required
  * curriculum area (market structure, liquidity, …). The user feeds
