@@ -18,6 +18,7 @@ import SandboxWorkspace from "@/components/trading/SandboxWorkspace";
 import LearnStage from "@/components/trading/LearnStage";
 import StrategyStage from "@/components/trading/StrategyStage";
 import ValidationStage from "@/components/trading/ValidationStage";
+import ExternalPaperStage from "@/components/trading/ExternalPaperStage";
 import EvaluationStage from "@/components/trading/EvaluationStage";
 import QualificationStage from "@/components/trading/QualificationStage";
 import LiveStage from "@/components/trading/LiveStage";
@@ -33,6 +34,7 @@ const FUNCTIONAL_STAGES: TradingStageId[] = [
   "strategy",
   "validation",
   "sandbox",
+  "external_paper",
   "evaluation",
   "qualification",
   "live",
@@ -290,6 +292,7 @@ export default function TradingPage() {
             {currentStage === "strategy" && <StrategyStage />}
             {currentStage === "validation" && <ValidationStage />}
             {currentStage === "sandbox" && <SandboxWorkspace />}
+            {currentStage === "external_paper" && <ExternalPaperStage />}
             {currentStage === "evaluation" && <EvaluationStage />}
             {currentStage === "qualification" && <QualificationStage />}
             {currentStage === "live" && <LiveStage />}

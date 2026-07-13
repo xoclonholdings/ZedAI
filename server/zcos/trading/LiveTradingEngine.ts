@@ -72,7 +72,7 @@ export async function getLiveState(userId: string): Promise<LiveTradingState> {
     (await getQualificationReport(userId).then((r) => r.ready).catch(() => false));
 
   const blockers: string[] = [];
-  if (!qualPassed) blockers.push("Qualification (stage 6) is not passed yet.");
+  if (!qualPassed) blockers.push("Qualification is not passed yet.");
   if (!brokerInfo.connected) blockers.push("No broker is connected for order routing (connect Tradovate).");
   if (!config.killSwitchArmed) blockers.push("Kill switch is not armed.");
 

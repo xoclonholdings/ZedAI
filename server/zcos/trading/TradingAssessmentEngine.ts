@@ -1,6 +1,7 @@
 import { generateChatFromProvider } from "../../services/ModelProviderService";
 import { buildTradingKnowledgeContext } from "./TradingKnowledgeBase";
 import { TradingStore } from "./TradingStore";
+import { getExternalPaperReport } from "./ExternalPaperEngine";
 import { getEvaluationReport } from "./EvaluationEngine";
 import { getQualificationReport } from "./QualificationEngine";
 import { getLiveState } from "./LiveTradingEngine";
@@ -475,6 +476,8 @@ export async function assessStage(userId: string, stageId: TradingStageId): Prom
       return assessValidation(userId);
     case "sandbox":
       return assessSandbox(userId);
+    case "external_paper":
+      return assessExternalPaper(userId);
     case "evaluation":
       return assessEvaluation(userId);
     case "qualification":
@@ -484,6 +487,42 @@ export async function assessStage(userId: string, stageId: TradingStageId): Prom
     default:
       return lockedResult(stageId);
   }
+}
+
+async function assessExternalPaper(userId: string): Promise<StageAssessmentResult> {
+  const def = stageDefinition("external_paper");
+  const report = await getExternalPaperReport(userId);
+  const sampleScore = Math.min(100, Math.round((report.closedTrades / report.requiredTrades) * 100));
+  return {
+    stageId: "external_paper",
+    kind: "data_check",
+    score: report.passed ? 100 : report.providerConnected ? sampleScore : 0,
+    threshold: def.assessment.passThreshold,
+    passed: report.passed,
+    summary: report.summary,
+    breakdown: [
+      {
+        label: "Paper provider connected",
+        detail: report.providerConnected ? `Connected: ${report.providerLabel}.` : "No paper/demo provider connected.",
+        points: report.providerConnected ? 100 : 0,
+        max: 100,
+      },
+      {
+        label: "External sample",
+        detail: `${report.closedTrades} of ${report.requiredTrades} external paper trades.`,
+        points: sampleScore,
+        max: 100,
+      },
+      {
+        label: "Edge & compliance",
+        detail: `Expectancy ${report.expectancy}, ${report.ruleViolations} rule-violation type(s).`,
+        points: report.expectancy > 0 && report.ruleViolations === 0 ? 100 : 0,
+        max: 100,
+      },
+    ],
+    quiz: [],
+    assessedAt: now(),
+  };
 }
 
 async function assessEvaluation(userId: string): Promise<StageAssessmentResult> {

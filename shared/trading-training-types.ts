@@ -37,6 +37,17 @@ export interface StageAssessmentResult {
  * Stages 5-7: Evaluation, Qualification, Live.
  * -------------------------------------------------------------------- */
 
+export interface ExternalPaperReport {
+  providerConnected: boolean;
+  providerLabel: string;
+  closedTrades: number;
+  requiredTrades: number;
+  expectancy: number;
+  ruleViolations: number;
+  passed: boolean;
+  summary: string;
+}
+
 export interface EvaluationConfig {
   provider: string;
   startingBalance: number;

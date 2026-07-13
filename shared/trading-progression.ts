@@ -19,6 +19,7 @@ export type TradingStageId =
   | "strategy"
   | "validation"
   | "sandbox"
+  | "external_paper"
   | "evaluation"
   | "qualification"
   | "live";
@@ -123,50 +124,73 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
   {
     id: "sandbox",
     order: 4,
-    label: "Sandbox trading",
-    shortLabel: "Sandbox",
-    purpose: "Zed proves the strategy in its simulator before any external evaluation.",
+    label: "Internal paper trading",
+    shortLabel: "Internal",
+    purpose: "Zed proves the strategy in its own simulator before touching an external platform.",
     yourMove:
       "Hand Zed setups to paper-trade — each with a thesis it authorizes, simulates, and journals.",
     whatZedDoes:
       "Authorizes each trade through the governance layer, simulates the outcome, compares expected vs actual, flags rule violations, and tracks performance against the exact strategy version used.",
     readyWhen: [
-      "Enough closed sandbox trades to be meaningful (20+).",
+      "Enough closed internal paper trades to be meaningful (20+).",
       "Positive expectancy and no rule violations across the recent sample.",
     ],
     assessment: {
       kind: "data_check",
       passThreshold: 100,
       blurb:
-        "Zed must show 20+ closed paper trades with positive expectancy before external evaluation unlocks.",
+        "Zed must show 20+ closed internal paper trades with positive expectancy before external paper trading unlocks.",
     },
-    nextUnlocks: "evaluation",
+    nextUnlocks: "external_paper",
   },
   {
-    id: "evaluation",
+    id: "external_paper",
     order: 5,
-    label: "External evaluation",
-    shortLabel: "Evaluation",
-    purpose: "Zed's process is validated inside professional evaluation environments.",
+    label: "External paper trading",
+    shortLabel: "External",
+    purpose:
+      "Zed proves the same strategy on a real broker's paper/demo account — real platform mechanics and live data, no money — before any funded risk.",
     yourMove:
-      "Connect an evaluation provider (Lucid, Tradovate Paper, or TradingView) so Zed can run the process under real evaluation rules.",
+      "Connect a paper/demo provider (Tradovate demo, TradingView paper, or Lucid) so Zed trades on real platform rails.",
     whatZedDoes:
-      "Tracks evaluation progress, imports trades when a provider bridge is live or preserves a structured manual workflow when it isn't, and reports how far you are from the objective.",
+      "Runs the governed strategy on the connected paper account against live data, tracks the external sample, and compares it to the internal results to confirm the edge holds off Zed's own simulator.",
     readyWhen: [
-      "A provider connection is healthy (or manual sync is current).",
-      "The evaluation objective is met without breaking rules.",
+      "A paper/demo provider is connected.",
+      "A solid external paper sample (30+) with positive expectancy and no rule violations.",
     ],
     assessment: {
       kind: "data_check",
       passThreshold: 100,
       blurb:
-        "Zed must meet the evaluation profit objective across the minimum trading days without breaching the daily-loss or drawdown limits. Runs on Zed's own engine until a provider bridge is connected.",
+        "Zed must have a paper/demo provider connected and show 30+ closed external paper trades with positive expectancy before a funded account unlocks.",
+    },
+    nextUnlocks: "evaluation",
+  },
+  {
+    id: "evaluation",
+    order: 6,
+    label: "Funded account",
+    shortLabel: "Funded",
+    purpose: "Zed runs a funded-account evaluation — the challenge with real payout stakes.",
+    yourMove:
+      "Connect a funded-account provider (Lucid, TopStep, or Tradovate) so Zed can run the challenge under real evaluation rules.",
+    whatZedDoes:
+      "Tracks the funded objective (profit target, daily-loss and drawdown limits, minimum trading days), imports trades when a provider bridge is live or runs on its own engine when it isn't, and reports how far you are from passing.",
+    readyWhen: [
+      "A provider connection is healthy (or manual sync is current).",
+      "The funded objective is met without breaking rules.",
+    ],
+    assessment: {
+      kind: "data_check",
+      passThreshold: 100,
+      blurb:
+        "Zed must meet the funded profit objective across the minimum trading days without breaching the daily-loss or drawdown limits. Runs on Zed's own engine until a provider bridge is connected.",
     },
     nextUnlocks: "qualification",
   },
   {
     id: "qualification",
-    order: 6,
+    order: 7,
     label: "Qualification",
     shortLabel: "Qualification",
     purpose: "Zed confirms it consistently satisfies professional evaluation requirements.",
@@ -188,14 +212,14 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
   },
   {
     id: "live",
-    order: 7,
+    order: 8,
     label: "Live trading",
     shortLabel: "Live",
     purpose: "Zed operates a professionally governed live trading environment.",
     yourMove:
       "Authorize Zed to execute within the risk framework it proved out through the earlier stages.",
     whatZedDoes:
-      "Runs broker connectivity, portfolio and execution engines, the risk engine, position/order monitoring, trade authorization, analytics, a kill switch, and drawdown controls — all inside the discipline built in stages 1–6.",
+      "Runs broker connectivity, portfolio and execution engines, the risk engine, position/order monitoring, trade authorization, analytics, a kill switch, and drawdown controls — all inside the discipline built in the earlier stages.",
     readyWhen: [
       "Continuous readiness reviews keep the system qualified.",
       "Kill switch and drawdown controls stay armed.",
@@ -238,9 +262,10 @@ export interface TradingProgression {
  * tested through them. Locking Sandbox behind them would make the one
  * fully functional part of Trading unreachable.
  *
- * The final three stages (Evaluation / Qualification / Live) are now
- * wired to real engines: Evaluation runs a funded-account objective on
- * Zed's own trade engine, Qualification scores a readiness card from that
+ * The later stages are wired to real engines: External paper trading
+ * gates on a paper/demo provider connection, the Funded account runs a
+ * funded-account objective on Zed's own trade engine until a provider
+ * bridge exists, Qualification scores a readiness card from that
  * performance, and Live wires the full risk framework + kill switch and
  * unlocks when qualified with a broker connected. Live *order routing*
  * still requires a broker bridge (Tradovate) — Zed reports "ready,

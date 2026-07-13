@@ -7,6 +7,7 @@ import {
   Layers,
   Lock,
   Radar,
+  Repeat,
   Target,
   TrendingUp,
   Zap,
@@ -22,7 +23,7 @@ import {
 import type { StageAssessmentResult } from "@shared/trading-training-types";
 
 /**
- * Zed's training path — the 7 stages along which ZED becomes a
+ * Zed's training path — the staged pipeline along which ZED becomes a
  * capable trading intelligence. This is not a course the user climbs:
  * the user feeds Zed and makes decisions; Zed learns and is TESTED
  * before it may advance.
@@ -37,6 +38,7 @@ const STAGE_ICON: Record<TradingStageId, typeof BookOpen> = {
   strategy: Layers,
   validation: Radar,
   sandbox: Zap,
+  external_paper: Repeat,
   evaluation: Target,
   qualification: Compass,
   live: TrendingUp,

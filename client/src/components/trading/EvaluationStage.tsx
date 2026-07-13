@@ -67,9 +67,9 @@ export default function EvaluationStage() {
 
   return (
     <StageShell
-      eyebrow="Evaluation"
-      title="External evaluation"
-      description="Zed runs its proven strategy toward a funded-account objective — hit the profit target without breaching the daily-loss or drawdown limits, over the minimum trading days."
+      eyebrow="Funded account"
+      title="Funded-account evaluation"
+      description="After external paper trading, Zed runs the funded-account challenge — hit the profit target without breaching the daily-loss or drawdown limits, over the minimum trading days. Real payout stakes."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >

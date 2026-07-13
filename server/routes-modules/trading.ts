@@ -28,6 +28,7 @@ import {
   startEvaluation,
   resetEvaluation,
 } from "../zcos/trading/EvaluationEngine";
+import { getExternalPaperReport } from "../zcos/trading/ExternalPaperEngine";
 import { getQualificationReport } from "../zcos/trading/QualificationEngine";
 import { getLiveState, saveLiveConfig, setKillSwitch } from "../zcos/trading/LiveTradingEngine";
 import {
@@ -598,7 +599,12 @@ export function registerTradingRoutes(app: Express): void {
     res.json({ incidents });
   });
 
-  /* ---- Stage 5: External evaluation ---- */
+  /* ---- Stage 5: External paper trading ---- */
+  app.get("/api/trading/external-paper", isAuthenticated, async (req: any, res) => {
+    res.json({ report: await getExternalPaperReport(userIdFrom(req)) });
+  });
+
+  /* ---- Stage 6: Funded account (evaluation) ---- */
   app.get("/api/trading/evaluation", isAuthenticated, async (req: any, res) => {
     res.json({ report: await getEvaluationReport(userIdFrom(req)) });
   });
