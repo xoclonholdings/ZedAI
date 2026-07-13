@@ -30,6 +30,8 @@ export interface SymbolRecommendation {
   price: number;
   source: string;
   momentumPct: number;
+  signal: "buy" | "sell" | "neutral" | null;
+  signalStrength: number;
   reason: string;
 }
 
@@ -80,19 +82,38 @@ export async function recommendSymbol(
     price: number;
     source: string;
     momentumPct: number;
+    signal: "buy" | "sell" | "neutral" | null;
+    signalStrength: number;
   }> = [];
   for (const symbol of universe) {
     const quote = await getMarketQuote(symbol, asset);
     if (!quote) continue;
-    const s = scoreSymbol(quote.bars);
-    if (!s) continue;
+    const mom = scoreSymbol(quote.bars);
+    const sig = quote.signal || null;
+
+    // Rank primarily by the technical signal's conviction; fall back to
+    // raw momentum when a symbol has no computable signal.
+    let score: number;
+    let direction: TradeDirection;
+    if (sig && sig.signal !== "neutral") {
+      direction = sig.signal === "buy" ? "long" : "short";
+      score = 100 + sig.strength; // signal-backed picks outrank momentum-only
+    } else if (mom) {
+      direction = mom.direction;
+      score = mom.score;
+    } else {
+      continue;
+    }
+
     scored.push({
-      score: s.score,
+      score,
       symbol: quote.symbol || symbol,
-      direction: s.direction,
+      direction,
       price: quote.price,
       source: quote.source,
-      momentumPct: s.momentumPct,
+      momentumPct: mom?.momentumPct ?? 0,
+      signal: sig?.signal ?? null,
+      signalStrength: sig?.strength ?? 0,
     });
   }
 
@@ -100,13 +121,18 @@ export async function recommendSymbol(
   scored.sort((a, b) => b.score - a.score);
   const top = scored[0];
   const bias = top.direction === "long" ? "bullish" : "bearish";
-  const move = top.direction === "long" ? "up" : "down";
+  const reason = top.signal && top.signal !== "neutral"
+    ? `Zed scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${top.signal.toUpperCase()} signal (${top.signalStrength}% indicator conviction, ${top.momentumPct}% momentum).`
+    : `Zed scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${bias} momentum (${top.momentumPct}% over ~10 sessions).`;
+
   return {
     symbol: top.symbol,
     direction: top.direction,
     price: top.price,
     source: top.source,
     momentumPct: top.momentumPct,
-    reason: `Zed scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${bias} momentum (${top.momentumPct}% over ~10 sessions, trending ${move}).`,
+    signal: top.signal,
+    signalStrength: top.signalStrength,
+    reason,
   };
 }

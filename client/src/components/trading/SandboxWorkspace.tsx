@@ -80,6 +80,34 @@ export default function SandboxWorkspace() {
   const [suggesting, setSuggesting] = useState<boolean>(false);
   const [resolving, setResolving] = useState<boolean>(false);
   const [signal, setSignal] = useState<TradingSignal | null>(null);
+  const [lookupSymbol, setLookupSymbol] = useState<string>("");
+  const [lookupResult, setLookupResult] = useState<
+    { symbol: string; price: number; source: string; signal: TradingSignal | null } | null
+  >(null);
+  const [lookingUp, setLookingUp] = useState<boolean>(false);
+
+  const checkSignal = useCallback(async () => {
+    const sym = lookupSymbol.trim().toUpperCase();
+    if (!sym) return;
+    setLookingUp(true);
+    setLookupResult(null);
+    try {
+      const res = await fetch(
+        `/api/trading/market-data/signal?symbol=${encodeURIComponent(sym)}`,
+        { credentials: "include" },
+      );
+      const body = await res.json().catch(() => ({}));
+      if (body.live) {
+        setLookupResult({ symbol: sym, price: body.price, source: body.source, signal: body.signal });
+      } else {
+        setLookupResult({ symbol: sym, price: 0, source: "", signal: null });
+      }
+    } catch {
+      setLookupResult({ symbol: sym, price: 0, source: "", signal: null });
+    } finally {
+      setLookingUp(false);
+    }
+  }, [lookupSymbol]);
   const [dataStatus, setDataStatus] = useState<{
     live: boolean;
     source: string | null;
@@ -434,6 +462,41 @@ export default function SandboxWorkspace() {
           {error}
         </div>
       )}
+
+      {/* Standalone signal read — check any symbol's buy/sell indicators. */}
+      <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+        <div className="text-[11px] uppercase tracking-[0.08em] text-white/40 mb-1.5">
+          Check a symbol's signal
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={lookupSymbol}
+            onChange={(e) => setLookupSymbol(e.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void checkSignal();
+            }}
+            placeholder="AAPL"
+            className="w-28 text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 uppercase"
+          />
+          <button
+            type="button"
+            onClick={() => void checkSignal()}
+            disabled={lookingUp || !lookupSymbol.trim()}
+            className="rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50"
+          >
+            {lookingUp ? "Reading…" : "Read signal"}
+          </button>
+          {lookupResult && (
+            <span className="text-[11.5px] text-white/50 truncate">
+              {lookupResult.signal
+                ? `${lookupResult.symbol} $${lookupResult.price} · ${lookupResult.source}`
+                : `No live signal for ${lookupResult.symbol}`}
+            </span>
+          )}
+        </div>
+        {lookupResult?.signal && <div className="mt-3"><SignalPanel signal={lookupResult.signal} /></div>}
+      </div>
 
       {performance && (
         <div className="mb-5 grid grid-cols-2 sm:grid-cols-4 gap-2">
