@@ -83,15 +83,23 @@ export default function SandboxWorkspace() {
     source: string | null;
     note: string;
   } | null>(null);
+  const [storage, setStorage] = useState<{ durable: boolean; note: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/trading/market-data/status", { credentials: "include" });
-        if (res.ok && !cancelled) {
-          const s = await res.json();
+        const [dataRes, storageRes] = await Promise.all([
+          fetch("/api/trading/market-data/status", { credentials: "include" }),
+          fetch("/api/trading/storage-status", { credentials: "include" }),
+        ]);
+        if (dataRes.ok && !cancelled) {
+          const s = await dataRes.json();
           setDataStatus({ live: !!s.live, source: s.source, note: s.note });
+        }
+        if (storageRes.ok && !cancelled) {
+          const s = await storageRes.json();
+          setStorage({ durable: !!s.durable, note: s.note });
         }
       } catch {
         /* leave unknown */
@@ -220,18 +228,16 @@ export default function SandboxWorkspace() {
   const suggest = useCallback(async () => {
     setError(null);
     setNotice(null);
-    if (!logForm.symbol.trim()) {
-      setError("Enter a symbol first — Zed will build the whole trade for it.");
-      return;
-    }
     setSuggesting(true);
     try {
+      // Symbol is optional — leave it blank and Zed scans live data to
+      // pick one itself.
       const res = await fetch("/api/trading/strategies/propose", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          symbol: logForm.symbol.trim().toUpperCase(),
+          symbol: logForm.symbol.trim().toUpperCase() || undefined,
           asset: logForm.assetClass,
           market: logForm.market,
           timeframe: logForm.timeframe.trim() || undefined,
@@ -252,6 +258,7 @@ export default function SandboxWorkspace() {
         .join("\n");
       setLogForm((f) => ({
         ...f,
+        symbol: s.symbol || f.symbol,
         direction: s.direction === "short" ? "short" : "long",
         timeframe: s.timeframe || f.timeframe,
         setupName: "Zed proposal",
@@ -264,17 +271,20 @@ export default function SandboxWorkspace() {
         thesisId: s.thesisId || "",
         session: s.session || "",
       }));
+      const picked = s.recommendedSymbol
+        ? `Zed picked ${s.recommendedSymbol.symbol}. `
+        : "";
       const md = s.marketData;
       if (md?.live) {
         const when = md.asOf ? new Date(md.asOf).toLocaleString() : "just now";
         setNotice(
-          `Zed built the full trade on LIVE data — ${md.source} $${md.price} (as of ${when}). Review and tap Approve & log.`,
+          `${picked}Built on LIVE data — ${md.source} $${md.price} (as of ${when}). Review and tap Approve & log.`,
         );
       } else if (s.pricedFromReference) {
-        setNotice("Zed built the full trade at your reference price. Review and tap Approve & log.");
+        setNotice(`${picked}Built at your reference price. Review and tap Approve & log.`);
       } else {
         setNotice(
-          "No live feed was reachable, so Zed used a paper reference price. Enter a reference price above for real levels, or tap Approve & log.",
+          `${picked}No live feed was reachable, so Zed used a paper reference price. Enter a reference price above for real levels, or tap Approve & log.`,
         );
       }
     } catch (err: any) {
@@ -341,25 +351,44 @@ export default function SandboxWorkspace() {
             and the entry / stop / target / size / risk, sized to pass governance. You just
             approve. Nothing here is real money — Zed is proving the strategy.
           </p>
-          {dataStatus && (
-            <div
-              title={dataStatus.note}
-              className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                dataStatus.live
-                  ? "bg-emerald-400/15 text-emerald-300"
-                  : "bg-amber-400/15 text-amber-300"
-              }`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  dataStatus.live ? "bg-emerald-400" : "bg-amber-400"
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            {dataStatus && (
+              <div
+                title={dataStatus.note}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  dataStatus.live
+                    ? "bg-emerald-400/15 text-emerald-300"
+                    : "bg-amber-400/15 text-amber-300"
                 }`}
-              />
-              {dataStatus.live
-                ? `Live market data · ${dataStatus.source}`
-                : "No live feed — using paper reference"}
-            </div>
-          )}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    dataStatus.live ? "bg-emerald-400" : "bg-amber-400"
+                  }`}
+                />
+                {dataStatus.live
+                  ? `Live market data · ${dataStatus.source}`
+                  : "No live feed — using paper reference"}
+              </div>
+            )}
+            {storage && (
+              <div
+                title={storage.note}
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  storage.durable
+                    ? "bg-emerald-400/15 text-emerald-300"
+                    : "bg-red-400/15 text-red-300"
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    storage.durable ? "bg-emerald-400" : "bg-red-400"
+                  }`}
+                />
+                {storage.durable ? "Saved to your account" : "Not saving — no database"}
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -615,8 +644,9 @@ function LogTradeForm({
       <div className="mb-4 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] px-3 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-[12px] text-cyan-100/90 max-w-[46ch] leading-snug">
-            Enter a symbol and Zed fills in everything — direction, thesis, structure,
-            and the entry / stop / target / size / risk. You just approve.
+            Not sure what to trade? Leave the symbol blank and Zed scans live data to
+            pick one, then fills in everything — direction, thesis, structure, and the
+            entry / stop / target / size / risk. You just approve.
           </div>
           <button
             type="button"
@@ -624,7 +654,11 @@ function LogTradeForm({
             disabled={suggesting}
             className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
           >
-            {suggesting ? "Zed is building…" : "Zed, build this trade"}
+            {suggesting
+              ? "Zed is building…"
+              : form.symbol.trim()
+                ? "Zed, build this trade"
+                : "Zed, pick & build a trade"}
           </button>
         </div>
         <label className="mt-2 flex items-center gap-2">

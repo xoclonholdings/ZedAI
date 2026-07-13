@@ -20,6 +20,8 @@ import { TradingStore } from "../zcos/trading/TradingStore";
 import { importTradingViewSnapshot } from "../zcos/trading/TradingViewBridge";
 import { getMarketQuote, getMarketDataStatus } from "../zcos/trading/MarketDataService";
 import { resolveOpenPaperTrades } from "../zcos/trading/TradeAutoResolver";
+import { recommendSymbol } from "../zcos/trading/SymbolRecommender";
+import { tradingDbAvailable } from "../zcos/trading/tradingPersistence";
 import {
   marketDataKeyStatus,
   saveMarketDataKeys,
@@ -214,14 +216,26 @@ export function registerTradingRoutes(app: Express): void {
    * pass. Returns the strategy plus the thesisId to attach when logging.
    */
   app.post("/api/trading/strategies/propose", isAuthenticated, async (req: any, res) => {
-    const missing = requireFields(req.body || {}, ["symbol"]);
-    if (missing) return res.status(400).json({ error: `${missing} is required` });
-
     try {
       const userId = userIdFrom(req);
       const asset = req.body.asset || "stock";
       const market = req.body.market ? String(req.body.market) : "US";
-      const symbol = String(req.body.symbol);
+
+      // Zed can pick the symbol when the user doesn't supply one.
+      let symbol = String(req.body.symbol || "").trim();
+      let directionPreference = req.body.directionPreference || "auto";
+      let recommendation: Awaited<ReturnType<typeof recommendSymbol>> = null;
+      if (!symbol) {
+        recommendation = await recommendSymbol(asset, market);
+        if (!recommendation) {
+          return res.status(422).json({
+            error:
+              "Zed couldn't reach live data to pick a symbol. Enter a symbol, or add a market-data API key.",
+          });
+        }
+        symbol = recommendation.symbol;
+        if (directionPreference === "auto") directionPreference = recommendation.direction;
+      }
 
       // Pull a live quote so Zed prices the setup off real levels. A user-
       // supplied referencePrice always wins; otherwise the live price is
@@ -237,7 +251,7 @@ export function registerTradingRoutes(app: Express): void {
         symbol,
         asset,
         market,
-        directionPreference: req.body.directionPreference || "auto",
+        directionPreference,
         timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
         referencePrice,
         stopDistance: quote?.atr,
@@ -267,10 +281,42 @@ export function registerTradingRoutes(app: Express): void {
         notes: strategy.basis,
       });
 
-      res.json({ ...strategy, thesisId: thesis.id, session: strategy.session, marketData });
+      res.json({
+        ...strategy,
+        thesisId: thesis.id,
+        session: strategy.session,
+        marketData,
+        recommendedSymbol: recommendation
+          ? { symbol: recommendation.symbol, reason: recommendation.reason }
+          : null,
+      });
     } catch (error: any) {
       res.status(500).json({ error: error?.message || "Trade proposal failed" });
     }
+  });
+
+  /** Zed recommends a symbol to trade from live data (no symbol needed). */
+  app.post("/api/trading/strategies/recommend-symbol", isAuthenticated, async (req: any, res) => {
+    const asset = req.body.asset || "stock";
+    const market = req.body.market ? String(req.body.market) : "US";
+    const recommendation = await recommendSymbol(asset, market);
+    if (!recommendation) {
+      return res.status(422).json({
+        error: "No live market-data source is reachable to scan symbols right now.",
+      });
+    }
+    res.json(recommendation);
+  });
+
+  /** Whether trading data is persisting durably (survives logout/redeploy). */
+  app.get("/api/trading/storage-status", isAuthenticated, async (_req, res) => {
+    const durable = tradingDbAvailable();
+    res.json({
+      durable,
+      note: durable
+        ? "Trading data is saved to your account database — it survives logout and redeploys."
+        : "No database is connected, so trading data is only kept on the server disk and will be lost on redeploy. Set DATABASE_URL to persist.",
+    });
   });
 
   /** Self-report whether the server can reach a live feed right now. */

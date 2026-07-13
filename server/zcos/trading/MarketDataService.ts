@@ -38,6 +38,8 @@ export interface MarketQuote {
   source: string;
   /** Average true range over recent daily bars (absolute price), if known. */
   atr?: number;
+  /** Recent daily bars (oldest→newest), when the source provides history. */
+  bars?: MarketBar[];
 }
 
 const TIMEOUT_MS = 7000;
@@ -148,6 +150,7 @@ export function parseYahooChart(json: any, fallbackSymbol: string): MarketQuote 
     asOf: positive(asOfSeconds) ? new Date(asOfSeconds * 1000).toISOString() : new Date().toISOString(),
     source: "Yahoo Finance",
     atr: averageTrueRange(bars),
+    bars: bars.slice(-30),
   };
 }
 

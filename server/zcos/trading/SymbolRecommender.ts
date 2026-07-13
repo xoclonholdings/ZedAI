@@ -1,0 +1,112 @@
+import type { TradingAssetClass, TradeDirection } from "../../../shared/trading-types";
+
+import { getMarketQuote, type MarketBar } from "./MarketDataService";
+
+/**
+ * Zed picks a symbol to trade when the user doesn't know which to try.
+ *
+ * It scans a small universe of liquid instruments for the asset class,
+ * pulls real quotes + recent daily bars, and scores each on momentum and
+ * trend alignment (the higher-timeframe-continuation bias the curriculum
+ * teaches). The strongest, cleanest mover wins, and the direction follows
+ * its trend. Everything is grounded in live data — no random picks.
+ *
+ * If no live feed is reachable it returns null and the caller asks the
+ * user for a symbol instead of guessing.
+ */
+
+const UNIVERSE: Record<TradingAssetClass, string[]> = {
+  stock: ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", "AMD"],
+  etf: ["SPY", "QQQ", "IWM", "DIA"],
+  option: ["SPY", "QQQ", "AAPL", "NVDA"],
+  future: ["ES", "NQ", "YM", "CL", "GC"],
+  crypto: ["BTC", "ETH", "SOL"],
+  forex: ["EURUSD", "GBPUSD", "USDJPY"],
+};
+
+export interface SymbolRecommendation {
+  symbol: string;
+  direction: TradeDirection;
+  price: number;
+  source: string;
+  momentumPct: number;
+  reason: string;
+}
+
+function sma(values: number[], period: number): number | null {
+  if (values.length < period) return null;
+  const window = values.slice(-period);
+  return window.reduce((sum, v) => sum + v, 0) / period;
+}
+
+/**
+ * Score a symbol from its recent bars. Returns null when there isn't
+ * enough history to judge (so it won't be picked on noise).
+ */
+export function scoreSymbol(bars: MarketBar[] | undefined): {
+  score: number;
+  direction: TradeDirection;
+  momentumPct: number;
+} | null {
+  if (!bars || bars.length < 10) return null;
+  const closes = bars.map((b) => b.c).filter((c) => Number.isFinite(c) && c > 0);
+  if (closes.length < 10) return null;
+  const last = closes[closes.length - 1];
+  const ref = closes[closes.length - 10];
+  if (!(ref > 0)) return null;
+  const momentum = (last - ref) / ref; // 10-bar momentum
+  const sma10 = sma(closes, 10);
+  const sma20 = sma(closes, Math.min(20, closes.length));
+  const direction: TradeDirection = momentum >= 0 ? "long" : "short";
+  // Reward trend alignment: price on the right side of its averages.
+  let aligned = false;
+  if (sma10 != null && sma20 != null) {
+    aligned = direction === "long" ? last > sma10 && sma10 >= sma20 : last < sma10 && sma10 <= sma20;
+  }
+  const score = Math.abs(momentum) * (aligned ? 1.25 : 0.8);
+  return { score, direction, momentumPct: Math.round(momentum * 1000) / 10 };
+}
+
+export async function recommendSymbol(
+  asset: TradingAssetClass,
+  _market = "US",
+): Promise<SymbolRecommendation | null> {
+  const universe = UNIVERSE[asset] || UNIVERSE.etf;
+
+  const scored: Array<{
+    score: number;
+    symbol: string;
+    direction: TradeDirection;
+    price: number;
+    source: string;
+    momentumPct: number;
+  }> = [];
+  for (const symbol of universe) {
+    const quote = await getMarketQuote(symbol, asset);
+    if (!quote) continue;
+    const s = scoreSymbol(quote.bars);
+    if (!s) continue;
+    scored.push({
+      score: s.score,
+      symbol: quote.symbol || symbol,
+      direction: s.direction,
+      price: quote.price,
+      source: quote.source,
+      momentumPct: s.momentumPct,
+    });
+  }
+
+  if (!scored.length) return null;
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored[0];
+  const bias = top.direction === "long" ? "bullish" : "bearish";
+  const move = top.direction === "long" ? "up" : "down";
+  return {
+    symbol: top.symbol,
+    direction: top.direction,
+    price: top.price,
+    source: top.source,
+    momentumPct: top.momentumPct,
+    reason: `Zed scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${bias} momentum (${top.momentumPct}% over ~10 sessions, trending ${move}).`,
+  };
+}
