@@ -4,6 +4,7 @@ import path from "path";
 import { isDatabaseRequired } from "../../db";
 import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../../utils/repoPaths";
 import { readAppState, writeAppState } from "../appState";
+import { requireAuthenticatedMemoryUserId } from "../memory/MemoryOwnershipService";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -17,7 +18,7 @@ import type {
  * Unscoped dry-run/apply writes remain in hub/shared-memory for system
  * memory. User-scoped writes land under hub/user-memory/<userId>/ so
  * admin/project data does not become system memory by accident.
- * Apply mode is implemented by writeAppliedGraph — it backs up any
+ * Apply mode is implemented by writeAppliedGraph - it backs up any
  * existing graph, writes the new one alongside a reparse-history
  * entry, and never destroys prior data.
  */
@@ -30,7 +31,8 @@ export interface ObjectMemoryScope {
 }
 
 function safeUserId(userId: string): string {
-  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+  const owner = requireAuthenticatedMemoryUserId(userId, "object memory scope");
+  return owner.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 function appliedDir(scope?: ObjectMemoryScope): string {
@@ -190,7 +192,7 @@ export async function writeDryRunOutputs(input: WriteDryRunInput, scope?: Object
 /**
  * Apply mode: back up existing applied graph (if any), then write
  * the new one to the selected system or user-scoped graph.
- * Callers must be explicit — this only runs from the CLI --apply
+ * Callers must be explicit - this only runs from the CLI --apply
  * path, never by default.
  */
 export async function writeAppliedGraph(graph: ObjectGraph, scope?: ObjectMemoryScope): Promise<{
@@ -268,20 +270,9 @@ export async function readAppliedGraph(scope?: ObjectMemoryScope): Promise<Objec
 
 export async function resolveObjectMemoryUserId(
   userId: string | undefined,
-  options?: { isAdmin?: boolean },
+  _options?: { isAdmin?: boolean },
 ): Promise<string | undefined> {
-  const current = userId?.trim() || undefined;
-  if (!options?.isAdmin) return current;
-
-  const candidates = Array.from(new Set([current, "user_admin"].filter(Boolean) as string[]));
-  for (const candidate of candidates) {
-    const graph = await readAppliedGraph({ userId: candidate }).catch(() => null);
-    if ((graph?.objects?.length || 0) > 0 || (graph?.sources?.length || 0) > 0) {
-      return candidate;
-    }
-  }
-
-  return current || "user_admin";
+  return requireAuthenticatedMemoryUserId(userId, "object memory resolution");
 }
 
 function renderMarkdown(graph: ObjectGraph): string {
