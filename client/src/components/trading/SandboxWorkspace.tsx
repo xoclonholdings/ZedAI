@@ -1035,11 +1035,12 @@ function BacktestPanel({ report }: { report: BacktestReport }) {
         <BtStat label="Net" value={`${report.netR}R`} />
         <BtStat label="Profit factor" value={String(report.profitFactor)} />
         <BtStat label="Max DD" value={`${report.maxDrawdownR}R`} />
-        <BtStat label="Avg hold" value={`${report.avgHoldBars}d`} />
-        <BtStat label="R:R used" value={`${report.riskReward}:1`} />
+        <BtStat label="Gross exp." value={`${report.grossExpectancyR}R`} />
+        <BtStat label="Cost/trade" value={`${report.costPerTradeR}R`} />
       </div>
       <p className="mt-2 text-[10.5px] opacity-60 leading-snug">
-        Idealized fills at stop/target — no fees or slippage. A guide to whether the edge exists, not a P&L promise.
+        Net of costs — {report.slippageBps}bps slippage/fill + {report.commissionR}R commission
+        ({report.costPerTradeR}R per trade). Daily bars, so intraday-order effects aren't modeled.
       </p>
     </div>
   );

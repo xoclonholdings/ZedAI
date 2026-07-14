@@ -28,6 +28,10 @@ export interface BacktestInput {
   riskReward?: number;
   signalThreshold?: number;
   maxHoldBars?: number;
+  /** Slippage per fill in basis points of price (default 5 = 0.05%). */
+  slippageBps?: number;
+  /** Flat commission per trade expressed in R (default 0.02R). */
+  commissionR?: number;
 }
 
 const WARMUP = 60; // bars needed before indicators are valid (SMA50/MACD)
@@ -47,14 +51,21 @@ export function backtestOverBars(
   bars: MarketBar[],
   dates: string[],
   source: string,
-  input: Pick<BacktestInput, "riskReward" | "signalThreshold" | "maxHoldBars" | "asset">,
+  input: Pick<
+    BacktestInput,
+    "riskReward" | "signalThreshold" | "maxHoldBars" | "asset" | "slippageBps" | "commissionR"
+  >,
 ): BacktestReport | null {
   const riskReward = input.riskReward && input.riskReward >= 1 ? input.riskReward : 3;
   const signalThreshold = input.signalThreshold ?? 40;
   const maxHoldBars = input.maxHoldBars ?? 20;
+  const slippageBps = input.slippageBps ?? 5;
+  const commissionR = input.commissionR ?? 0.02;
   if (bars.length < WARMUP + 20) return null;
 
-  const rMultiples: number[] = [];
+  const rMultiples: number[] = []; // net of costs
+  let grossSum = 0;
+  let costSum = 0;
   let wins = 0;
   let losses = 0;
   let timeouts = 0;
@@ -75,15 +86,28 @@ export function backtestOverBars(
     const stop = direction === "long" ? entry - riskDist : entry + riskDist;
     const target = direction === "long" ? entry + riskReward * riskDist : entry - riskReward * riskDist;
 
+    // Round-trip cost in R: slippage on entry + exit (bps of price) plus a
+    // flat commission. Subtracted from every trade so the edge is honest.
+    const slipR = (2 * entry * (slippageBps / 10000)) / riskDist;
+    const costR = slipR + commissionR;
+
+    const record = (grossR: number, outcomeWin: boolean, isTimeout: boolean, held: number) => {
+      const net = grossR - costR;
+      rMultiples.push(net);
+      grossSum += grossR;
+      costSum += costR;
+      if (outcomeWin) wins++;
+      else losses++;
+      if (isTimeout) timeouts++;
+      holdSum += held;
+    };
+
     // Resolve against the following bars.
     let resolved = false;
     for (let j = i + 1; j < Math.min(i + 1 + maxHoldBars, bars.length); j++) {
       const hit = resolveAgainstRange(direction, stop, target, bars[j].h, bars[j].l);
       if (hit) {
-        rMultiples.push(hit.outcome === "win" ? riskReward : -1);
-        if (hit.outcome === "win") wins++;
-        else losses++;
-        holdSum += j - i;
+        record(hit.outcome === "win" ? riskReward : -1, hit.outcome === "win", false, j - i);
         i = j + 1;
         resolved = true;
         break;
@@ -94,11 +118,7 @@ export function backtestOverBars(
       const exitIdx = Math.min(i + maxHoldBars, bars.length - 1);
       const exit = bars[exitIdx].c;
       const r = (direction === "long" ? exit - entry : entry - exit) / riskDist;
-      rMultiples.push(r);
-      timeouts++;
-      if (r > 0) wins++;
-      else losses++;
-      holdSum += exitIdx - i;
+      record(r, r - costR > 0, true, exitIdx - i);
       i = exitIdx + 1;
     }
   }
@@ -108,6 +128,8 @@ export function backtestOverBars(
 
   const netR = round2(rMultiples.reduce((a, b) => a + b, 0));
   const expectancyR = round2(netR / totalTrades);
+  const grossExpectancyR = round2(grossSum / totalTrades);
+  const costPerTradeR = round2(costSum / totalTrades);
   const grossWin = rMultiples.filter((r) => r > 0).reduce((a, b) => a + b, 0);
   const grossLoss = Math.abs(rMultiples.filter((r) => r < 0).reduce((a, b) => a + b, 0));
   const profitFactor = grossLoss > 0 ? round2(grossWin / grossLoss) : grossWin > 0 ? 99 : 0;
@@ -124,12 +146,13 @@ export function backtestOverBars(
   }
 
   const edge: BacktestReport["edge"] = expectancyR > 0.05 ? "positive" : expectancyR < -0.05 ? "negative" : "flat";
+  const costNote = `after ${costPerTradeR}R/trade costs (gross ${grossExpectancyR}R)`;
   const summary =
     edge === "positive"
-      ? `Positive edge: ${expectancyR}R per trade over ${totalTrades} trades (${winRate}% win, PF ${profitFactor}). Net ${netR}R, worst drawdown ${round2(maxDD)}R.`
+      ? `Positive edge: ${expectancyR}R per trade ${costNote} over ${totalTrades} trades (${winRate}% win, PF ${profitFactor}). Net ${netR}R, worst drawdown ${round2(maxDD)}R.`
       : edge === "negative"
-        ? `No edge: ${expectancyR}R per trade over ${totalTrades} trades (${winRate}% win). This strategy loses on ${symbol.toUpperCase()} history — do not trade it as-is.`
-        : `Flat: ${expectancyR}R per trade over ${totalTrades} trades. No meaningful edge on ${symbol.toUpperCase()} history.`;
+        ? `No edge: ${expectancyR}R per trade ${costNote} over ${totalTrades} trades (${winRate}% win). This strategy loses on ${symbol.toUpperCase()} history — do not trade it as-is.`
+        : `Flat: ${expectancyR}R per trade ${costNote} over ${totalTrades} trades. No meaningful edge on ${symbol.toUpperCase()} history.`;
 
   return {
     symbol: symbol.toUpperCase(),
@@ -143,6 +166,10 @@ export function backtestOverBars(
     timeouts,
     winRate,
     expectancyR,
+    grossExpectancyR,
+    costPerTradeR,
+    slippageBps,
+    commissionR,
     netR,
     profitFactor,
     maxDrawdownR: round2(maxDD),

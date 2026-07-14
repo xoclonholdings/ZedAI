@@ -383,6 +383,8 @@ export function registerTradingRoutes(app: Express): void {
       riskReward: req.body.riskReward === undefined ? undefined : toNumber(req.body.riskReward),
       signalThreshold:
         req.body.signalThreshold === undefined ? undefined : toNumber(req.body.signalThreshold),
+      slippageBps: req.body.slippageBps === undefined ? undefined : toNumber(req.body.slippageBps),
+      commissionR: req.body.commissionR === undefined ? undefined : toNumber(req.body.commissionR),
     });
     if (!report) {
       return res.status(422).json({

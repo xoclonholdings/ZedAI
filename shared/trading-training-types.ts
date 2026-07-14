@@ -64,6 +64,10 @@ export interface BacktestReport {
   timeouts: number;
   winRate: number;
   expectancyR: number;
+  grossExpectancyR: number;
+  costPerTradeR: number;
+  slippageBps: number;
+  commissionR: number;
   netR: number;
   profitFactor: number;
   maxDrawdownR: number;
