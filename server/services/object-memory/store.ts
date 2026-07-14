@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 
-import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../../utils/repoPaths";
+import { isDatabaseRequired } from "../../db";`nimport { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../../utils/repoPaths";`nimport { readAppState, writeAppState } from "../appState";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -44,6 +44,18 @@ function graphPathFor(scope?: ObjectMemoryScope): string {
 
 function historyPathFor(scope?: ObjectMemoryScope): string {
   return path.join(appliedDir(scope), "reparse-history.jsonl");
+}
+
+function appliedScopeKey(scope?: ObjectMemoryScope): string {
+  return scope?.userId ? `user:${safeUserId(scope.userId)}` : "system";
+}
+
+function graphDbPath(scopeKey: string): string {
+  return `app_state:object-memory:applied-graph:${scopeKey}`;
+}
+
+function historyDbPath(scopeKey: string): string {
+  return `app_state:object-memory:reparse-history:${scopeKey}`;
 }
 
 async function ensureDir(dir: string): Promise<void> {
@@ -184,6 +196,31 @@ export async function writeAppliedGraph(graph: ObjectGraph, scope?: ObjectMemory
   backupPath?: string;
   historyPath: string;
 }> {
+  const scopeKey = appliedScopeKey(scope);
+  const historyEntry = {
+    appliedAt: graph.generatedAt,
+    sources: graph.sources,
+    stats: graph.stats,
+    backup: null,
+    scope: scope?.userId ? "user" : "system",
+    userId: scope?.userId || null,
+  };
+
+  const wroteGraph = await writeAppState("object-memory:applied-graph", scopeKey, graph);
+  const previousHistory = (await readAppState<any[]>("object-memory:reparse-history", scopeKey)) || [];
+  const wroteHistory = await writeAppState(
+    "object-memory:reparse-history",
+    scopeKey,
+    [...previousHistory.slice(-99), historyEntry],
+  );
+
+  if (isDatabaseRequired()) {
+    if (!wroteGraph || !wroteHistory) {
+      throw new Error("Unable to persist applied object memory to PostgreSQL.");
+    }
+    return { graphPath: graphDbPath(scopeKey), historyPath: historyDbPath(scopeKey) };
+  }
+
   const dir = appliedDir(scope);
   await ensureDir(dir);
   const graphPath = graphPathFor(scope);
@@ -195,20 +232,13 @@ export async function writeAppliedGraph(graph: ObjectGraph, scope?: ObjectMemory
     backupPath = path.join(dir, `graph.backup.${Date.now()}.json`);
     await fs.copyFile(graphPath, backupPath);
   } catch {
-    /* no existing graph — first apply */
+    /* no existing graph - first apply */
   }
 
   await writeJson(graphPath, graph);
   await fs.appendFile(
     historyPath,
-    JSON.stringify({
-      appliedAt: graph.generatedAt,
-      sources: graph.sources,
-      stats: graph.stats,
-      backup: backupPath ? path.basename(backupPath) : null,
-      scope: scope?.userId ? "user" : "system",
-      userId: scope?.userId || null,
-    }) + "\n",
+    JSON.stringify({ ...historyEntry, backup: backupPath ? path.basename(backupPath) : null }) + "\n",
     "utf-8",
   );
 
@@ -216,6 +246,16 @@ export async function writeAppliedGraph(graph: ObjectGraph, scope?: ObjectMemory
 }
 
 export async function readAppliedGraph(scope?: ObjectMemoryScope): Promise<ObjectGraph | null> {
+  const scopeKey = appliedScopeKey(scope);
+  try {
+    const stored = await readAppState<ObjectGraph>("object-memory:applied-graph", scopeKey);
+    if (stored) return stored;
+  } catch (error) {
+    if (isDatabaseRequired()) throw error;
+  }
+
+  if (isDatabaseRequired()) return null;
+
   try {
     const raw = await fs.readFile(graphPathFor(scope), "utf-8");
     return JSON.parse(raw) as ObjectGraph;
