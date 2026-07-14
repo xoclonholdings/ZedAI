@@ -9,11 +9,19 @@ hub/shared-memory/curation/
 hub/shared-memory/foundation-reparse/
 hub/shared-memory/execution/
 hub/shared-memory/knowledge-graph/
+hub/shared-memory/episodic/*.json
+hub/shared-memory/working/*.md
 hub/shared-memory/working/trading-intelligence.md
 hub/sessions/
+hub/trading/
+hub/learning/
+hub/user-memory/
 hub/user-personalization/
 hub/user-preferences/
 server/hub/logs/
+server/*.log
+client/*.log
+zed-memory/storage/
 shared/package-lock.json
 
 # Local Netlify folder
