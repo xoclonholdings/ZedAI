@@ -1,12 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
 import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
+import { requireAuthenticatedMemoryUserId } from "./memory/MemoryOwnershipService";
 
 const WORKING_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 const EPISODIC_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/email-decisions.json");
 const APPROVAL_QUEUE = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/approval-queue.json");
 const CONSENSUS = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/posting-guidelines.md");
-const FOUNDATION_OVERVIEW = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/foundation-overview.md");
 
 const MAX_WORKING_CHARS = 1200;
 const MAX_EPISODIC_ENTRIES = 5;
@@ -81,24 +81,22 @@ async function loadConsensus(): Promise<string> {
 }
 
 async function loadFoundation(userId?: string): Promise<string> {
-  const candidates = [
-    ...(userId
-      ? [path.resolve(HUB_USER_MEMORY_DIR, safeUserId(userId), "foundation/consensus/foundation-overview.md")]
-      : []),
-    FOUNDATION_OVERVIEW,
-  ];
+  const owner = requireAuthenticatedMemoryUserId(userId, "foundation memory injection");
+  const candidate = path.resolve(
+    HUB_USER_MEMORY_DIR,
+    safeUserId(owner),
+    "foundation/consensus/foundation-overview.md",
+  );
 
-  for (const candidate of candidates) {
-    try {
-      const raw = await fs.readFile(candidate, "utf-8");
-      const trimmed = raw.trim();
-      if (trimmed) return trimmed.slice(0, MAX_FOUNDATION_CHARS);
-    } catch {
-      /* try the next scoped/legacy path */
-    }
+  try {
+    const raw = await fs.readFile(candidate, "utf-8");
+    const trimmed = raw.trim();
+    if (trimmed) return trimmed.slice(0, MAX_FOUNDATION_CHARS);
+  } catch {
+    /* No scoped foundation summary exists yet. */
   }
 
-  return "No imported foundation memory summary yet.";
+  return "No imported foundation memory summary exists for this user scope.";
 }
 
 export async function injectMemory(agentName: string, options?: InjectMemoryOptions): Promise<InjectedMemory> {
