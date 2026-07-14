@@ -4,6 +4,7 @@ import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
 import { processFile, upload } from "../services/fileProcessor";
+import { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
 import { extractObjectsFromSource } from "../services/object-memory/extractor";
 import {
   graphStats,
@@ -15,7 +16,7 @@ import type { ObjectGraph } from "../../shared/object-memory-types";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
 
 /**
- * User-facing memory upload — a single endpoint that takes what a
+ * User-facing memory upload - a single endpoint that takes what a
  * user wants Zed to remember (a pasted note OR an uploaded file),
  * runs it through the same object-memory extractor the CLI uses,
  * and merges the result into the applied graph.
@@ -23,7 +24,7 @@ import { logRuntimeEvent } from "../services/RuntimeLogger";
  * That graph is already consulted by KnowledgeService on every chat
  * request via retrieveObjectMemoryForQuery, so anything the user
  * uploads here becomes something Zed can pull into any conversation
- * within seconds — no restart, no promotion step.
+ * within seconds - no restart, no promotion step.
  *
  * Two shapes accepted on POST /api/me/memory/upload:
  *
@@ -48,7 +49,10 @@ interface UploadResult {
 }
 
 function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || req.session?.userId || "user";
+  return requireAuthenticatedMemoryUserId(
+    req.user?.claims?.sub || req.session?.userId,
+    "memory upload",
+  );
 }
 
 function memoryScopeFrom(req: any): "admin" | "user" {
@@ -56,10 +60,11 @@ function memoryScopeFrom(req: any): "admin" | "user" {
 }
 
 async function memoryUserIdFrom(req: any): Promise<string> {
-  return (
-    (await resolveObjectMemoryUserId(userIdFrom(req), {
+  return requireAuthenticatedMemoryUserId(
+    await resolveObjectMemoryUserId(userIdFrom(req), {
       isAdmin: Boolean(req.user?.claims?.isAdmin),
-    })) || userIdFrom(req)
+    }),
+    "memory upload",
   );
 }
 
