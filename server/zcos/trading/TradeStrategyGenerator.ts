@@ -2,6 +2,7 @@ import type {
   TradeDirection,
   TradingAssetClass,
 } from "../../../shared/trading-types";
+import type { TradingSignal } from "../../../shared/trading-training-types";
 
 import { buildTradingCurriculumContext } from "./TradingCurriculum";
 import { TradingStore } from "./TradingStore";
@@ -47,6 +48,8 @@ export interface GenerateStrategyInput {
    * of a flat percentage of the reference price.
    */
   stopDistance?: number;
+  /** Live technical signal, when available — grounds the thesis in real reads. */
+  signal?: TradingSignal | null;
 }
 
 export interface GeneratedStrategy {
@@ -280,11 +283,45 @@ function buildInvalidation(direction: TradeDirection): string[] {
  * promise. It reflects how much of the learned framework the draft is
  * grounded in — never certainty.
  */
-function scoreConfidence(knowledgeMatches: number, auto: boolean): number {
+function scoreConfidence(knowledgeMatches: number, auto: boolean, signal?: TradingSignal | null): number {
   let score = 62; // baseline for a clean structural draft
   score += Math.min(16, knowledgeMatches * 4); // grounded in stored rules
   if (!auto) score += 6; // user-specified direction adds conviction
+  if (signal && signal.signal !== "neutral") score += Math.round(signal.strength * 0.12); // real indicator agreement
   return clampConfidence(score);
+}
+
+/**
+ * A thesis grounded in the actual indicator reads for THIS symbol — not a
+ * canned narrative. Cites the live price, the technical signal, each
+ * indicator's vote, and the concrete levels, so every proposal reads
+ * differently and reflects real analysis. Falls back to structural
+ * language only when no live signal is available.
+ */
+function buildDataDrivenThesis(
+  symbol: string,
+  direction: TradeDirection,
+  levels: { entry: number; stop: number; target: number },
+  riskReward: number,
+  signal: TradingSignal | null | undefined,
+): string {
+  if (!signal || signal.signal === "neutral") {
+    return buildThesis(direction, DEFAULT_TIMEFRAME);
+  }
+  const agree = direction === "long" ? signal.bullish : signal.bearish;
+  const total = signal.votes.length;
+  const reads = signal.votes
+    .filter((v) => v.verdict !== "neutral")
+    .map((v) => `${v.name} ${v.verdict} (${v.detail})`)
+    .join("; ");
+  const bias = direction === "long" ? "long" : "short";
+  return [
+    `${symbol} at $${levels.entry}: technical ${signal.signal.toUpperCase()} with ${signal.strength}% conviction — ${agree}/${total} indicators back a ${bias}.`,
+    reads ? `Reads: ${reads}.` : "",
+    `Plan: ${bias} at $${levels.entry}, stop $${levels.stop}, target $${levels.target} for ${riskReward}:1. Invalidates on a close through the stop.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export async function generateTradeStrategy(
@@ -311,7 +348,7 @@ export async function generateTradeStrategy(
   const { direction, auto } = resolveDirection(input.directionPreference, knowledgeText);
 
   const riskReward = roundRR(3.0);
-  const confidence = scoreConfidence(knowledgeEntries.length, auto);
+  const confidence = scoreConfidence(knowledgeEntries.length, auto, input.signal);
 
   const pricedFromReference =
     typeof input.referencePrice === "number" &&
@@ -340,7 +377,7 @@ export async function generateTradeStrategy(
     timeframe,
     riskReward,
     confidence,
-    thesis: buildThesis(direction, timeframe),
+    thesis: buildDataDrivenThesis(symbol, direction, levels, riskReward, input.signal),
     marketStructure: buildMarketStructure(direction, timeframe),
     liquidityAnalysis: buildLiquidityAnalysis(direction),
     entryPlan: buildEntryPlan(direction),

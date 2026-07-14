@@ -270,6 +270,7 @@ export function registerTradingRoutes(app: Express): void {
         timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
         referencePrice,
         stopDistance: quote?.atr,
+        signal: quote?.signal ?? null,
       });
 
       const marketData = quote

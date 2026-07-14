@@ -45,13 +45,39 @@ export function resolveAgainstPrice(
   target: number,
   price: number,
 ): { outcome: "win" | "loss"; exit: number } | null {
+  return resolveAgainstRange(direction, stop, target, price, price);
+}
+
+/**
+ * Decide a trade's outcome from a price *range* (a bar's high/low), so a
+ * trade that touched its target or stop intraday resolves even if the
+ * current price has since moved back between them. When a single bar hit
+ * both levels we can't know the order without tick data, so we take the
+ * conservative outcome — the stop (a loss). Returns null when the range
+ * never reached either level.
+ */
+export function resolveAgainstRange(
+  direction: "long" | "short",
+  stop: number,
+  target: number,
+  high: number,
+  low: number,
+): { outcome: "win" | "loss"; exit: number } | null {
+  const hi = Math.max(high, low);
+  const lo = Math.min(high, low);
   if (direction === "long") {
-    if (price >= target) return { outcome: "win", exit: target };
-    if (price <= stop) return { outcome: "loss", exit: stop };
+    const hitTarget = hi >= target;
+    const hitStop = lo <= stop;
+    if (hitTarget && hitStop) return { outcome: "loss", exit: stop };
+    if (hitTarget) return { outcome: "win", exit: target };
+    if (hitStop) return { outcome: "loss", exit: stop };
     return null;
   }
-  if (price <= target) return { outcome: "win", exit: target };
-  if (price >= stop) return { outcome: "loss", exit: stop };
+  const hitTarget = lo <= target;
+  const hitStop = hi >= stop;
+  if (hitTarget && hitStop) return { outcome: "loss", exit: stop };
+  if (hitTarget) return { outcome: "win", exit: target };
+  if (hitStop) return { outcome: "loss", exit: stop };
   return null;
 }
 
@@ -75,7 +101,14 @@ export async function resolveOpenPaperTrades(userId: string): Promise<ResolveRes
     anyLive = true;
     const price = quote.price;
 
-    const hit = resolveAgainstPrice(trade.direction, trade.stop, trade.target, price);
+    // Use the latest bar's intraday high/low when we have it, so a trade
+    // that touched its target/stop during the session resolves — not just
+    // when the current price is beyond a level. Fall back to the price.
+    const latestBar = quote.bars && quote.bars.length ? quote.bars[quote.bars.length - 1] : null;
+    const high = latestBar ? Math.max(latestBar.h, price) : price;
+    const low = latestBar ? Math.min(latestBar.l, price) : price;
+
+    const hit = resolveAgainstRange(trade.direction, trade.stop, trade.target, high, low);
     if (!hit) continue;
 
     const reason =
