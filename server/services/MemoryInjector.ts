@@ -27,7 +27,11 @@ type InjectMemoryOptions = {
 };
 
 function safeUserId(userId: string): string {
-  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+  const sanitized = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  if (!sanitized) {
+    throw new Error("Authenticated userId could not be converted to a scoped memory path.");
+  }
+  return sanitized;
 }
 
 async function loadWorking(): Promise<string> {
@@ -100,7 +104,7 @@ async function loadFoundation(userId?: string): Promise<string> {
 }
 
 export async function injectMemory(agentName: string, options?: InjectMemoryOptions): Promise<InjectedMemory> {
-  const includeFoundation = options?.includeFoundation !== false;
+  const includeFoundation = options?.includeFoundation === true;
   const [working, episodic, consensus, foundation] = await Promise.all([
     loadWorking(),
     loadEpisodic(),
