@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import { sql } from "drizzle-orm";
 
-import { db } from "../../db";
+import { db, isDatabaseRequired } from "../../db";
 import { HUB_DIR } from "../../utils/repoPaths";
 import type {
   AssessmentAttempt,
@@ -125,15 +125,25 @@ export class LearningStore {
     const objectId = objectIdFor(type, object);
     const now = new Date().toISOString();
     const payload = JSON.stringify(object);
-    if (await ensureTable()) {
-      await db!.execute(sql`
-        INSERT INTO learning_state (user_id, object_type, object_id, data, updated_at)
-        VALUES (${userId}, ${type}, ${objectId}, ${payload}::jsonb, now())
-        ON CONFLICT (user_id, object_type, object_id)
-        DO UPDATE SET data = EXCLUDED.data, updated_at = now();
-      `).catch(() => undefined);
+    const canUseDb = await ensureTable();
+    if (canUseDb) {
+      try {
+        await db!.execute(sql`
+          INSERT INTO learning_state (user_id, object_type, object_id, data, updated_at)
+          VALUES (${userId}, ${type}, ${objectId}, ${payload}::jsonb, now())
+          ON CONFLICT (user_id, object_type, object_id)
+          DO UPDATE SET data = EXCLUDED.data, updated_at = now();
+        `);
+      } catch (error) {
+        if (isDatabaseRequired()) throw error;
+      }
+    } else if (isDatabaseRequired()) {
+      throw new Error("learning_state requires PostgreSQL in this environment.");
     }
-    await upsertFileObject(userId, type, object);
+
+    if (!isDatabaseRequired()) {
+      await upsertFileObject(userId, type, object);
+    }
     return { ...object, updatedAt: (object as any).updatedAt || now } as T;
   }
 
@@ -159,10 +169,14 @@ export class LearningStore {
         `);
         const rows = rowsFrom(result);
         if (rows.length > 0) return rows.map((row) => row.data as T);
-      } catch {
+      } catch (error) {
+        if (isDatabaseRequired()) throw error;
         /* file fallback below */
       }
+    } else if (isDatabaseRequired()) {
+      throw new Error("learning_state requires PostgreSQL in this environment.");
     }
+    if (isDatabaseRequired()) return [];
     return listFileObjects<T>(userId, type);
   }
 
