@@ -2,30 +2,21 @@ import fs from "fs/promises";
 import path from "path";
 
 import { HUB_DIR } from "../utils/repoPaths";
+import { requireAuthenticatedMemoryUserId } from "./memory/MemoryOwnershipService";
 
 /**
  * Per-user personalization corpus. Each user can drop notes about
- * themselves — background, working style, preferences, ongoing
- * projects — and those notes get injected into the Cognitive Core
+ * themselves - background, working style, preferences, ongoing
+ * projects - and those notes get injected into the Cognitive Core
  * knowledge slot at query time, ranked against the query so only
  * the relevant chunks show up.
  *
  * Storage layout:
  *   hub/user-personalization/<userId>/notes/<slug>.md
  *
- * The user's directive: "It is SUPPOSED TO BE personalized for
- * each user in a way that would allow a user to 'dump' or upload
- * information and data that personalizes Zed to the user."
- *
- * For the current single-admin era this behaves like a small
- * per-admin note pad. When multi-user lands, each user reads and
- * writes only their own directory — nothing here consults
- * anyone else's slug.
- *
- * Non-goals: full-text embedding search. This is intentionally a
- * keyword-scored bag-of-words retrieval, same shape as the
- * FoundationMemoryService so behavior is predictable. Vector
- * retrieval can layer on top later without changing this API.
+ * Each read/write requires an authenticated user id. There is no
+ * anonymous, default, or admin fallback; admin is just another owner
+ * for their own personalization notes.
  */
 
 const CORPUS_ROOT = path.join(HUB_DIR, "user-personalization");
@@ -123,7 +114,8 @@ function scoreAgainst(content: string, keywords: string[]): number {
 }
 
 function userDir(userId: string): string {
-  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const owner = requireAuthenticatedMemoryUserId(userId, "personalization corpus access");
+  const safe = owner.replace(/[^a-zA-Z0-9_-]/g, "_");
   return path.join(CORPUS_ROOT, safe, "notes");
 }
 
