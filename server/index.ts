@@ -150,10 +150,6 @@ app.use((req, res, next) => {
     res.status(200).json({ status: "ok", uptimeSeconds: Math.round((Date.now() - bootedAt) / 1000) });
   });
 
-  app.use("/api/auth/user", (_req, res) => {
-    res.status(200).json({ message: "Auth temporarily disabled" });
-  });
-
   const server = await registerRoutes(app);
 
   if (app.get("env") === "development") {
