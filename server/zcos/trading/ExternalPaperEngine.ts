@@ -2,6 +2,7 @@ import type { ExternalPaperReport } from "../../../shared/trading-training-types
 
 import { TradingStore } from "./TradingStore";
 import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
+import { tradovateConfigured } from "./TradovateBridge";
 
 /**
  * Stage 5 — External paper trading.
@@ -23,14 +24,18 @@ const PAPER_PROVIDERS = ["tradovate", "tradingview", "lucid"];
 const REQUIRED_TRADES = 30;
 
 export async function getExternalPaperReport(userId: string): Promise<ExternalPaperReport> {
+  // A configured Tradovate DEMO bridge counts as a real paper account.
+  const tv = await tradovateConfigured(userId).catch(() => ({ configured: false, environment: "demo" as const }));
+  const tradovateDemo = tv.configured && tv.environment === "demo";
+
   const integrations = await TradingIntegrationsStore.list(userId).catch(() => []);
   const provider = integrations.find(
     (i) =>
       PAPER_PROVIDERS.includes(i.provider) &&
       (i.status === "connected" || i.status === "configured"),
   );
-  const providerConnected = Boolean(provider);
-  const providerLabel = provider?.label || "No paper/demo provider connected";
+  const providerConnected = tradovateDemo || Boolean(provider);
+  const providerLabel = tradovateDemo ? "Tradovate (demo)" : provider?.label || "No paper/demo provider connected";
 
   const perf = await TradingStore.getPerformance(userId).catch(() => null);
   const closedTrades = perf?.closedTrades || 0;

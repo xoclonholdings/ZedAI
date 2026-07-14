@@ -8,6 +8,7 @@ import type {
 } from "@shared/trading-training-types";
 
 import { EmptyBox, NoticeBanner, StageShell, inputClass } from "./stage-atoms";
+import TradovateConnect from "./TradovateConnect";
 
 const STATUS_LABEL: Record<string, string> = {
   connected: "connected",
@@ -225,6 +226,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       </div>
 
       <MarketDataKeysPanel />
+      <TradovateConnect />
     </StageShell>
   );
 }

@@ -6,6 +6,7 @@ import type {
 import { readTradingState, writeTradingState } from "./tradingPersistence";
 import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
 import { getQualificationReport } from "./QualificationEngine";
+import { tradovateConfigured } from "./TradovateBridge";
 import { loadProgression } from "../../services/TradingProgressionStore";
 
 /**
@@ -52,6 +53,11 @@ export async function setKillSwitch(userId: string, armed: boolean): Promise<Liv
 }
 
 async function broker(userId: string): Promise<{ connected: boolean; label: string }> {
+  // A fully-configured Tradovate LIVE bridge is the real order rail.
+  const tv = await tradovateConfigured(userId).catch(() => ({ configured: false, environment: "demo" as const }));
+  if (tv.configured && tv.environment === "live") {
+    return { connected: true, label: "Tradovate (live)" };
+  }
   const integrations = await TradingIntegrationsStore.list(userId).catch(() => []);
   const found = integrations.find(
     (i) =>
