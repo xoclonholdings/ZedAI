@@ -144,8 +144,9 @@ export function assertSharedMemoryAccess(
 }
 
 export function isLegacyArchivePath(value: string): boolean {
-  const normalized = value.replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\/+/, "").toLowerCase();
-  return normalized === LEGACY_ARCHIVE_ROOT || normalized.startsWith(`${LEGACY_ARCHIVE_ROOT}/`);
+  const root = LEGACY_ARCHIVE_ROOT.toLowerCase();
+  const normalized = value.replace(/\\/g, "/").replace(/^\.\//, "").toLowerCase();
+  return normalized === root || normalized.startsWith(`${root}/`) || normalized.endsWith(`/${root}`) || normalized.includes(`/${root}/`);
 }
 
 export function assertWritableMemoryPath(targetPath: string, operation = "memory write"): void {
