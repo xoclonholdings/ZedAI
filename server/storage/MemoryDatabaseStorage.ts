@@ -13,9 +13,21 @@ import {
   scratchpadMemory,
 } from "../../shared/schema";
 
-import { db } from "../db.ts";
+import { db, isDatabaseRequired } from "../db.ts";
 import { fallbackStorage } from "./fallback";
 import { memoryCache } from "./cache";
+
+function assertDbAvailable(operation: string): void {
+  if (isDatabaseRequired()) {
+    throw new Error(`${operation} requires PostgreSQL in this environment.`);
+  }
+}
+
+async function storeFallback(key: string, value: unknown): Promise<void> {
+  if (!isDatabaseRequired()) {
+    await storeFallback(key, value);
+  }
+}
 
 export class MemoryDatabaseStorage {
   private generateCacheKey(...parts: Array<string | number | undefined>) {
@@ -26,7 +38,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("core_memory", key);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
-    if (!db) return null;
+    if (!db) { assertDbAvailable("getCoreMemoryByKey"); return null; }
 
     try {
       const [memory] = await db
@@ -49,6 +61,7 @@ export class MemoryDatabaseStorage {
     const fallbackKey = `core_memory_${data.key}`;
 
     if (!db) {
+      assertDbAvailable("upsertCoreMemory");
       const timestamp = new Date();
       const memory = {
         id: randomUUID(),
@@ -59,7 +72,7 @@ export class MemoryDatabaseStorage {
         updatedAt: timestamp,
       } as CoreMemory;
       memoryCache.delete(this.generateCacheKey("core_memory", data.key));
-      await fallbackStorage.store(fallbackKey, memory);
+      await storeFallback(fallbackKey, memory);
       return memory;
     }
 
@@ -77,7 +90,7 @@ export class MemoryDatabaseStorage {
 
     memoryCache.delete(this.generateCacheKey("core_memory", data.key));
 
-    await fallbackStorage.store(fallbackKey, memory);
+    await storeFallback(fallbackKey, memory);
 
     return memory;
   }
@@ -86,7 +99,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("all_core_memory");
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
-    if (!db) return [];
+    if (!db) { assertDbAvailable("readMemory"); return []; }
 
     try {
       const result = await db
@@ -107,7 +120,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("project_memory", userId);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
-    if (!db) return [];
+    if (!db) { assertDbAvailable("readMemory"); return []; }
 
     try {
       const result = await db
@@ -136,6 +149,7 @@ export class MemoryDatabaseStorage {
     const fallbackKey = `project_memory_${data.userId}`;
 
     if (!db) {
+      assertDbAvailable("upsertCoreMemory");
       const timestamp = new Date();
       const memory = {
         id: randomUUID(),
@@ -147,7 +161,7 @@ export class MemoryDatabaseStorage {
         updatedAt: timestamp,
       } as ProjectMemory;
       memoryCache.delete(this.generateCacheKey("project_memory", data.userId));
-      await fallbackStorage.store(fallbackKey, memory);
+      await storeFallback(fallbackKey, memory);
       return memory;
     }
 
@@ -160,7 +174,7 @@ export class MemoryDatabaseStorage {
       this.generateCacheKey("project_memory", data.userId)
     );
 
-    await fallbackStorage.store(fallbackKey, memory);
+    await storeFallback(fallbackKey, memory);
 
     return memory;
   }
@@ -170,6 +184,7 @@ export class MemoryDatabaseStorage {
     updates: Partial<InsertProjectMemory>
   ): Promise<ProjectMemory> {
     if (!db) {
+      assertDbAvailable("updateProjectMemory");
       const updated = {
         id,
         userId: updates.userId || "offline",
@@ -181,7 +196,7 @@ export class MemoryDatabaseStorage {
         createdAt: new Date(),
         updatedAt: new Date(),
       } as ProjectMemory;
-      await fallbackStorage.store(`project_memory_${id}`, updated);
+      await storeFallback(`project_memory_${id}`, updated);
       return updated;
     }
 
@@ -232,7 +247,7 @@ export class MemoryDatabaseStorage {
     const cacheKey = this.generateCacheKey("scratchpad_memory", userId);
     const cached = memoryCache.get(cacheKey);
     if (cached) return cached;
-    if (!db) return [];
+    if (!db) { assertDbAvailable("readMemory"); return []; }
 
     try {
       const result = await db
@@ -256,6 +271,7 @@ export class MemoryDatabaseStorage {
     const fallbackKey = `scratchpad_memory_${data.userId}`;
 
     if (!db) {
+      assertDbAvailable("createScratchpadMemory");
       const memory = {
         id: randomUUID(),
         ...data,
@@ -264,7 +280,7 @@ export class MemoryDatabaseStorage {
         createdAt: new Date(),
       } as ScratchpadMemory;
       memoryCache.delete(this.generateCacheKey("scratchpad_memory", data.userId));
-      await fallbackStorage.store(fallbackKey, memory);
+      await storeFallback(fallbackKey, memory);
       return memory;
     }
 
@@ -277,7 +293,7 @@ export class MemoryDatabaseStorage {
       this.generateCacheKey("scratchpad_memory", data.userId)
     );
 
-    await fallbackStorage.store(fallbackKey, memory);
+    await storeFallback(fallbackKey, memory);
 
     return memory;
   }
