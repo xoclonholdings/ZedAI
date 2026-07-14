@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, index, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -58,7 +58,7 @@ export const memoryObjects = pgTable(
     structuredValue: jsonb("structured_value"),
     ownership: text("ownership").notNull(),
     authorityState: text("authority_state").notNull().default("observed"),
-    confidence: text("confidence").notNull().default("0"),
+    confidence: real("confidence").notNull().default(0),
     temporalStatus: text("temporal_status").notNull().default("unknown"),
     privacyLevel: text("privacy_level").notNull().default("private"),
     createdAt: timestamp("created_at").defaultNow(),
