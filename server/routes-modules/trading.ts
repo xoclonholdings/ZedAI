@@ -29,6 +29,7 @@ import {
   resetEvaluation,
 } from "../zcos/trading/EvaluationEngine";
 import { getExternalPaperReport } from "../zcos/trading/ExternalPaperEngine";
+import { runBacktest } from "../zcos/trading/BacktestEngine";
 import { getQualificationReport } from "../zcos/trading/QualificationEngine";
 import { getLiveState, saveLiveConfig, setKillSwitch } from "../zcos/trading/LiveTradingEngine";
 import {
@@ -369,6 +370,26 @@ export function registerTradingRoutes(app: Express): void {
     await clearMarketDataKey(vendor);
     const keys = await marketDataKeyStatus();
     res.json({ keys });
+  });
+
+  /** Backtest Zed's signal strategy over a symbol's price history. */
+  app.post("/api/trading/backtest", isAuthenticated, async (req: any, res) => {
+    const symbol = String((req.body || {}).symbol || "").trim();
+    if (!symbol) return res.status(400).json({ error: "symbol is required" });
+    const report = await runBacktest({
+      symbol,
+      asset: (req.body.asset || "stock") as any,
+      range: req.body.range ? String(req.body.range) : undefined,
+      riskReward: req.body.riskReward === undefined ? undefined : toNumber(req.body.riskReward),
+      signalThreshold:
+        req.body.signalThreshold === undefined ? undefined : toNumber(req.body.signalThreshold),
+    });
+    if (!report) {
+      return res.status(422).json({
+        error: "Not enough price history was reachable to backtest this symbol.",
+      });
+    }
+    res.json({ report });
   });
 
   /** Technical buy/sell signal for a symbol from live indicators. */

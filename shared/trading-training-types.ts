@@ -52,6 +52,28 @@ export interface TradingSignal {
   summary: string;
 }
 
+export interface BacktestReport {
+  symbol: string;
+  source: string;
+  fromDate: string;
+  toDate: string;
+  barsTested: number;
+  totalTrades: number;
+  wins: number;
+  losses: number;
+  timeouts: number;
+  winRate: number;
+  expectancyR: number;
+  netR: number;
+  profitFactor: number;
+  maxDrawdownR: number;
+  avgHoldBars: number;
+  riskReward: number;
+  signalThreshold: number;
+  edge: "positive" | "negative" | "flat";
+  summary: string;
+}
+
 export interface ExternalPaperReport {
   providerConnected: boolean;
   providerLabel: string;

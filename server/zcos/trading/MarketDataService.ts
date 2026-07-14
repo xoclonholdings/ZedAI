@@ -159,6 +159,39 @@ export function parseYahooChart(json: any, fallbackSymbol: string): MarketQuote 
   };
 }
 
+/** Full historical daily bars for backtesting (oldest→newest). */
+export async function getHistoricalBars(
+  symbol: string,
+  asset: TradingAssetClass,
+  range = "2y",
+): Promise<{ bars: MarketBar[]; dates: string[]; source: string }> {
+  const ticker = encodeURIComponent(toYahooSymbol(symbol, asset));
+  const json = await fetchJson(
+    `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=${range}`,
+  );
+  const result = json?.chart?.result?.[0];
+  const quote = result?.indicators?.quote?.[0];
+  if (!result || !quote) return { bars: [], dates: [], source: "" };
+  const opens: number[] = quote.open || [];
+  const highs: number[] = quote.high || [];
+  const lows: number[] = quote.low || [];
+  const closes: number[] = quote.close || [];
+  const times: number[] = result.timestamp || [];
+  const bars: MarketBar[] = [];
+  const dates: string[] = [];
+  for (let i = 0; i < closes.length; i++) {
+    const o = opens[i];
+    const h = highs[i];
+    const l = lows[i];
+    const c = closes[i];
+    if (positive(o) && positive(h) && positive(l) && positive(c)) {
+      bars.push({ o, h, l, c });
+      dates.push(times[i] ? new Date(times[i] * 1000).toISOString().slice(0, 10) : "");
+    }
+  }
+  return { bars, dates, source: "Yahoo Finance" };
+}
+
 async function fromYahoo(symbol: string, asset: TradingAssetClass): Promise<MarketQuote | null> {
   const ticker = encodeURIComponent(toYahooSymbol(symbol, asset));
   // 6 months of daily bars — enough history for SMA50 / RSI / MACD.

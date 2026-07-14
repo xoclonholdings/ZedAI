@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCw, X } from "lucide-react";
 
 import type { PaperTrade, TradingPerformanceReport } from "@shared/trading-types";
-import type { TradingSignal } from "@shared/trading-training-types";
+import type { TradingSignal, BacktestReport } from "@shared/trading-training-types";
 
 /**
  * The Sandbox stage workspace — the paper-trading workflow.
@@ -85,6 +85,31 @@ export default function SandboxWorkspace() {
     { symbol: string; price: number; source: string; signal: TradingSignal | null } | null
   >(null);
   const [lookingUp, setLookingUp] = useState<boolean>(false);
+  const [backtest, setBacktest] = useState<BacktestReport | null>(null);
+  const [backtesting, setBacktesting] = useState<boolean>(false);
+
+  const runBacktest = useCallback(async () => {
+    const sym = lookupSymbol.trim().toUpperCase();
+    if (!sym) return;
+    setBacktesting(true);
+    setBacktest(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/trading/backtest", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbol: sym }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      setBacktest(body.report);
+    } catch (err: any) {
+      setError(err?.message || "Backtest failed");
+    } finally {
+      setBacktesting(false);
+    }
+  }, [lookupSymbol]);
 
   const checkSignal = useCallback(async () => {
     const sym = lookupSymbol.trim().toUpperCase();
@@ -463,12 +488,12 @@ export default function SandboxWorkspace() {
         </div>
       )}
 
-      {/* Standalone signal read — check any symbol's buy/sell indicators. */}
+      {/* Signal read + backtest for any symbol. */}
       <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.02] p-3">
         <div className="text-[11px] uppercase tracking-[0.08em] text-white/40 mb-1.5">
-          Check a symbol's signal
+          Signal &amp; backtest — check any symbol
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             type="text"
             value={lookupSymbol}
@@ -487,6 +512,15 @@ export default function SandboxWorkspace() {
           >
             {lookingUp ? "Reading…" : "Read signal"}
           </button>
+          <button
+            type="button"
+            onClick={() => void runBacktest()}
+            disabled={backtesting || !lookupSymbol.trim()}
+            title="Test Zed's signal strategy over ~2 years of this symbol's price history"
+            className="rounded-lg border border-white/15 bg-white/[0.05] px-3 py-1.5 text-[12.5px] text-white/80 hover:bg-white/[0.1] disabled:opacity-50"
+          >
+            {backtesting ? "Backtesting…" : "Backtest 2y"}
+          </button>
           {lookupResult && (
             <span className="text-[11.5px] text-white/50 truncate">
               {lookupResult.signal
@@ -496,6 +530,7 @@ export default function SandboxWorkspace() {
           )}
         </div>
         {lookupResult?.signal && <div className="mt-3"><SignalPanel signal={lookupResult.signal} /></div>}
+        {backtest && <BacktestPanel report={backtest} />}
       </div>
 
       {performance && (
@@ -971,6 +1006,50 @@ function CloseDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BacktestPanel({ report }: { report: BacktestReport }) {
+  const tone =
+    report.edge === "positive"
+      ? "border-emerald-400/30 bg-emerald-400/[0.06] text-emerald-200"
+      : report.edge === "negative"
+        ? "border-red-400/30 bg-red-400/[0.06] text-red-200"
+        : "border-white/10 bg-white/[0.03] text-white/70";
+  return (
+    <div className={`mt-3 rounded-lg border p-3 ${tone}`}>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-[13px] font-semibold">
+          Backtest · {report.symbol} · {report.edge} edge
+        </div>
+        <div className="text-[10.5px] opacity-70">
+          {report.fromDate} → {report.toDate} · {report.source}
+        </div>
+      </div>
+      <p className="mt-1 text-[11.5px] leading-snug opacity-90">{report.summary}</p>
+      <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 gap-2">
+        <BtStat label="Trades" value={String(report.totalTrades)} />
+        <BtStat label="Win rate" value={`${report.winRate}%`} />
+        <BtStat label="Expectancy" value={`${report.expectancyR}R`} />
+        <BtStat label="Net" value={`${report.netR}R`} />
+        <BtStat label="Profit factor" value={String(report.profitFactor)} />
+        <BtStat label="Max DD" value={`${report.maxDrawdownR}R`} />
+        <BtStat label="Avg hold" value={`${report.avgHoldBars}d`} />
+        <BtStat label="R:R used" value={`${report.riskReward}:1`} />
+      </div>
+      <p className="mt-2 text-[10.5px] opacity-60 leading-snug">
+        Idealized fills at stop/target — no fees or slippage. A guide to whether the edge exists, not a P&L promise.
+      </p>
+    </div>
+  );
+}
+
+function BtStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-black/20 px-2 py-1.5">
+      <div className="text-[9px] uppercase tracking-[0.06em] opacity-50">{label}</div>
+      <div className="mt-0.5 text-[13px] font-semibold tabular-nums">{value}</div>
     </div>
   );
 }
