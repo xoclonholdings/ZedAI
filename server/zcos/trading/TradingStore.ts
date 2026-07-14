@@ -3,7 +3,7 @@ import path from "path";
 import { randomUUID } from "crypto";
 
 import { HUB_DIR, HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
-import { readTradingState, tradingDbAvailable, writeTradingState } from "./tradingPersistence";
+import { readTradingState, tradingDbAvailable, tradingPersistenceRequired, writeTradingState } from "./tradingPersistence";
 import type {
   PaperTrade,
   PaperTradeStatus,
@@ -27,6 +27,7 @@ const INCIDENT_REPORTS_PATH = path.resolve(TRADING_DIR, "incident-reports.json")
 const TRADING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working", "trading-intelligence.md");
 
 async function ensureTradingDirs() {
+  if (tradingPersistenceRequired()) return;
   await fs.mkdir(TRADING_DIR, { recursive: true });
   await fs.mkdir(path.dirname(TRADING_MEMORY_PATH), { recursive: true });
 }
@@ -51,19 +52,22 @@ async function readFileArray<T>(file: string): Promise<T[]> {
 }
 
 async function readJsonArray<T>(file: string): Promise<T[]> {
-  // Durable store first; fall back to the JSON file (also seeds any
-  // pre-existing file data on first read before the DB has a row).
-  if (tradingDbAvailable()) {
+  // Durable store first. In production/Render, do not fall back to JSON.
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
     const stored = await readTradingState<T[]>("collection", collectionKey(file));
     if (stored) return Array.isArray(stored) ? stored : [];
+    if (tradingPersistenceRequired()) return [];
   }
   return readFileArray<T>(file);
 }
 
 async function writeJsonArray<T>(file: string, data: T[]) {
-  if (tradingDbAvailable()) {
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
     const ok = await writeTradingState("collection", collectionKey(file), data);
     if (ok) return;
+    if (tradingPersistenceRequired()) {
+      throw new Error(`Unable to persist trading collection ${collectionKey(file)} to PostgreSQL.`);
+    }
   }
   await ensureTradingDirs();
   await fs.writeFile(file, JSON.stringify(data, null, 2), "utf8");
@@ -521,6 +525,7 @@ export const TradingStore = {
     // Best-effort activity log — must never break a save that already
     // persisted (the log file may be on a read-only/ephemeral disk).
     try {
+      if (tradingPersistenceRequired()) return;
       await ensureTradingDirs();
       const entry = `\n- ${now()}: ${summary}`;
       await fs.appendFile(TRADING_MEMORY_PATH, entry, "utf8");
