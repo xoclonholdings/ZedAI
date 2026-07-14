@@ -8,6 +8,7 @@ import { MemoryService } from "./memoryService";
 import { loadAdminSettings } from "./AdminSettingsStore";
 import { logRuntimeEvent } from "./RuntimeLogger";
 import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
+import { requireAuthenticatedMemoryUserId } from "./memory/MemoryOwnershipService";
 
 export type KnowledgeObjectKind = "core" | "project" | "scratchpad" | "incoming";
 export type KnowledgeHealthBand = "strong" | "acceptable" | "weak" | "needs_review" | "historical";
@@ -198,7 +199,7 @@ export class KnowledgeCurationEngine {
     userId: string;
     trigger?: string;
   }): Promise<KnowledgeCurationReport> {
-    const userId = params.userId || "admin-user";
+    const userId = requireAuthenticatedMemoryUserId(params.userId, "knowledge curation review");
     const trigger = params.trigger || "manual";
 
     await MemoryService.resetScratchpadMemory().catch(() => undefined);
@@ -300,6 +301,7 @@ export class KnowledgeCurationEngine {
     content: string;
     type?: string | null;
   }): Promise<IncomingKnowledgeEvaluation> {
+    const userId = requireAuthenticatedMemoryUserId(params.userId, "incoming knowledge evaluation");
     const title = (params.title || params.type || "Incoming knowledge").trim();
     const content = String(params.content || "").trim();
     if (!content) {
@@ -315,7 +317,7 @@ export class KnowledgeCurationEngine {
       };
     }
 
-    const report = await this.runReview({ userId: params.userId, trigger: "incoming-evaluation" });
+    const report = await this.runReview({ userId, trigger: "incoming-evaluation" });
     const incomingTokens = tokenize(`${title} ${content}`);
     const bestMatches = report.objects
       .map((object) => ({
@@ -727,7 +729,10 @@ export function startKnowledgeCurationScheduler(): void {
   const runScheduledReview = async () => {
     try {
       const settings = await loadAdminSettings().catch(() => null);
-      const userId = settings?.users?.[0]?.id || "admin-user";
+      const userId = requireAuthenticatedMemoryUserId(
+        settings?.users?.find((user) => user.isAdmin)?.id,
+        "knowledge curation scheduler",
+      );
       await KnowledgeCurationEngine.runReview({ userId, trigger: "scheduler" });
     } catch (error) {
       await logRuntimeEvent({
