@@ -5,6 +5,7 @@ import { HUB_DIR } from "../utils/repoPaths";
 import {
   readTradingState,
   tradingDbAvailable,
+  tradingPersistenceRequired,
   writeTradingState,
 } from "../zcos/trading/tradingPersistence";
 import {
@@ -19,11 +20,11 @@ import {
 /**
  * Persists the trader's 7-stage progression per user.
  *
- * Storage layout:
- *   hub/trading/progression/<userId>.json
+ * PostgreSQL is authoritative in production. The JSON file under
+ * hub/trading/progression is only a local/offline development fallback.
  *
- * The 7-stage architecture (Learn → Strategy → Validation →
- * Sandbox → Evaluation → Qualification → Live) is fully defined
+ * The 7-stage architecture (Learn -> Strategy -> Validation ->
+ * Sandbox -> Evaluation -> Qualification -> Live) is fully defined
  * in shared/trading-progression.ts. This store only holds which
  * stages the user has unlocked, where they currently are, and
  * their per-stage progress. Nothing here interprets the stages —
@@ -38,6 +39,7 @@ function fileFor(userId: string): string {
 }
 
 async function ensureDir(): Promise<void> {
+  if (tradingPersistenceRequired()) return;
   await fs.mkdir(PROGRESSION_DIR, { recursive: true });
 }
 
@@ -50,10 +52,13 @@ function mergeProgression(parsed: TradingProgression): TradingProgression {
 }
 
 export async function loadProgression(userId: string): Promise<TradingProgression> {
-  // Durable store first, then the JSON file (offline / pre-DB seed).
-  if (tradingDbAvailable()) {
+  // Durable store first. In production/Render, do not fall back to JSON.
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
     const stored = await readTradingState<TradingProgression>("progression", userId);
     if (stored) return mergeProgression(stored);
+    if (tradingPersistenceRequired()) {
+      return { ...DEFAULT_PROGRESSION, lastUpdated: new Date().toISOString() };
+    }
   }
   try {
     const raw = await fs.readFile(fileFor(userId), "utf-8");
@@ -64,9 +69,12 @@ export async function loadProgression(userId: string): Promise<TradingProgressio
 }
 
 async function writeProgression(userId: string, progression: TradingProgression): Promise<void> {
-  if (tradingDbAvailable()) {
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
     const ok = await writeTradingState("progression", userId, progression);
     if (ok) return;
+    if (tradingPersistenceRequired()) {
+      throw new Error("Unable to persist trading progression to PostgreSQL.");
+    }
   }
   await ensureDir();
   await fs.writeFile(fileFor(userId), JSON.stringify(progression, null, 2), "utf-8");
