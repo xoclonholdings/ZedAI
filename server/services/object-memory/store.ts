@@ -1,7 +1,9 @@
 import fs from "fs/promises";
 import path from "path";
 
-import { isDatabaseRequired } from "../../db";`nimport { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../../utils/repoPaths";`nimport { readAppState, writeAppState } from "../appState";
+import { isDatabaseRequired } from "../../db";
+import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../../utils/repoPaths";
+import { readAppState, writeAppState } from "../appState";
 import type {
   AnyMemoryObject,
   ObjectGraph,
