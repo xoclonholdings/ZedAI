@@ -97,6 +97,8 @@ function checkUrl(
 }
 
 function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
+  const defaultBaseUrl = "https://lightning.ai/api/v1";
+  const defaultModel = "lightning-ai/gpt-oss-120b";
   const baseUrlKey = present(env, "LIGHTNING_BASE_URL")
     ? "LIGHTNING_BASE_URL"
     : present(env, "LIGHTNING_AI_URL")
@@ -106,9 +108,9 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
   if (!baseUrlKey) {
     checks.push({
       name: "LIGHTNING_BASE_URL",
-      severity: "error",
-      message: "Not set. Lightning AI endpoint URL is required.",
-      hint: "Set LIGHTNING_BASE_URL to your Lightning AI endpoint.",
+      severity: "ok",
+      message: `Using default Lightning Model APIs base URL: ${defaultBaseUrl}.`,
+      hint: "Set LIGHTNING_BASE_URL only if Lightning changes the endpoint or you run a dedicated deployment.",
     });
   } else {
     const check = checkUrl(env, baseUrlKey);
@@ -136,20 +138,19 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     });
   }
 
-  const defaultModel = firstPresent(env, ["LIGHTNING_MODEL", "MODEL_NAME"]);
-  if (!defaultModel) {
+  const configuredModel = firstPresent(env, ["LIGHTNING_MODEL", "MODEL_NAME"]);
+  if (!configuredModel) {
     checks.push({
       name: "AI_MODEL",
-      severity: "warn",
-      message:
-        "Not set. Per-lane MODEL_<LANE> overrides must be set or the runner needs its own default.",
-      hint: "Set LIGHTNING_MODEL to the default Lightning model slug.",
+      severity: "ok",
+      message: `Using default Lightning model: ${defaultModel}.`,
+      hint: "Set LIGHTNING_MODEL or MODEL_<LANE> only when you want an explicit override.",
     });
   } else {
     checks.push({
       name: "AI_MODEL",
       severity: "ok",
-      message: `Default model from ${defaultModel.key}: ${defaultModel.value}.`,
+      message: `Default model from ${configuredModel.key}: ${configuredModel.value}.`,
     });
   }
 

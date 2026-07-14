@@ -3,6 +3,7 @@ import {
   buildPromptFromMessages,
   extractAssistantText,
   fetchWithTimeout,
+  mergeMessagesWithSystem,
   splitIntoTokens,
 } from "./provider-helpers";
 import type {
@@ -17,12 +18,9 @@ import type {
 /**
  * Lightning AI is the only provider ZED talks to.
  *
- * The Lightning runner (LitServe / user-hosted GPU endpoint) is called
- * with an OpenAI-compatible chat-completions body so runners built on
- * the common wrappers just work. A flattened `message` string and an
- * explicit top-level `images` array are also included so custom
- * runners that don't parse OpenAI content parts still have what they
- * need.
+ * Calls Lightning Model APIs with an OpenAI-compatible chat-completions
+ * body. Custom runner compatibility fields can be enabled explicitly
+ * with LIGHTNING_INCLUDE_RUNNER_COMPAT_FIELDS=true.
  *
  * Lane-based model routing is handled inside — the caller passes
  * options.lane (chat/manager/operations/research/business/finance)
@@ -115,7 +113,10 @@ export class LightningProvider implements ModelProvider {
   ): Promise<string> {
     const config = this.ensureConfigured();
     const attachments = options?.attachments || [];
-    const composed = attachImages(messages, attachments);
+    const composed = mergeMessagesWithSystem(
+      attachImages(messages, attachments),
+      options?.systemPrompt,
+    );
 
     const lastUser = [...composed].reverse().find((m) => m.role === "user");
     const userMessageText = lastUser
@@ -124,23 +125,19 @@ export class LightningProvider implements ModelProvider {
 
     const requestBody: Record<string, unknown> = {
       model: options?.model || resolveModelForLane(options?.lane, config.model, options?.reasoningEffort),
-      // OpenAI-compatible messages with content blocks so LitServe /
-      // vLLM / TGI runners that speak OpenAI schema light up.
       messages: composed.map((m) => ({
         role: m.role,
         content: toOpenAIStyleContent(m.content),
       })),
-      // Flattened fallbacks for custom Lightning runners that don't
-      // parse OpenAI content parts.
-      message: userMessageText,
-      system_prompt: options?.systemPrompt,
-      // Explicit vision payload alongside for runners that prefer a
-      // dedicated field. Empty when there are no attachments.
-      images: attachments.map((img) => ({
+    };
+    if (process.env.LIGHTNING_INCLUDE_RUNNER_COMPAT_FIELDS === "true") {
+      requestBody.message = userMessageText;
+      requestBody.system_prompt = options?.systemPrompt;
+      requestBody.images = attachments.map((img) => ({
         data: img.data,
         mediaType: img.mediaType,
-      })),
-    };
+      }));
+    }
     if (typeof options?.temperature === "number") requestBody.temperature = options.temperature;
     if (typeof options?.maxTokens === "number") requestBody.max_tokens = options.maxTokens;
     if (typeof options?.topP === "number") requestBody.top_p = options.topP;

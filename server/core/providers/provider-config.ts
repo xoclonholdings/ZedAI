@@ -111,7 +111,7 @@ function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record
  *   1. Lane + reasoning override (MODEL_FINANCE_DEEP, MODEL_RESEARCH_HIGH, ...)
  *   2. Reasoning override (MODEL_REASONING_DEEP, MODEL_REASONING_HIGH, ...)
  *   3. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
- *   4. Global OPENAI_MODEL / MODEL_NAME / ZED_MODEL_NAME
+ *   4. Global LIGHTNING_MODEL / MODEL_NAME / ZED_MODEL_NAME
  *   5. The Lightning-configured fallback.
  */
 export function resolveModelForLane(
@@ -132,23 +132,27 @@ export function resolveModelForLane(
     if (laneValue) return laneValue;
   }
   return (
+    process.env.LIGHTNING_MODEL?.trim() ||
     process.env.MODEL_NAME?.trim() ||
     process.env.ZED_MODEL_NAME?.trim() ||
     fallback
   );
 }
 
+const DEFAULT_LIGHTNING_BASE_URL = "https://lightning.ai/api/v1";
+const DEFAULT_LIGHTNING_MODEL = "lightning-ai/gpt-oss-120b";
+
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const baseUrl = trimTrailingSlash(
     process.env.LIGHTNING_BASE_URL ||
       process.env.LIGHTNING_AI_URL ||
-      "",
+      DEFAULT_LIGHTNING_BASE_URL,
   );
   const model =
     process.env.LIGHTNING_MODEL ||
     process.env.MODEL_NAME ||
     process.env.ZED_MODEL_NAME ||
-    "";
+    DEFAULT_LIGHTNING_MODEL;
   const activeModel = model;
 
   return {
@@ -165,8 +169,8 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
         process.env.LIGHTNING_TOKEN ||
         "",
       model,
-      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
-      healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
+      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat/completions",
+      healthPath: process.env.LIGHTNING_HEALTH_PATH || "/models",
       timeoutMs: Number(process.env.LIGHTNING_TIMEOUT_MS || 45000),
       // Health probes must fail fast — the runtime footer pings them
       // and a hung endpoint should not stall the UI for 45s.

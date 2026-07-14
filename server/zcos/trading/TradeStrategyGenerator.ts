@@ -4,6 +4,7 @@ import type {
 } from "../../../shared/trading-types";
 import type { TradingSignal } from "../../../shared/trading-training-types";
 
+import { executeProviderChat } from "../../core/providers/provider-executor";
 import { buildTradingCurriculumContext } from "./TradingCurriculum";
 import { TradingStore } from "./TradingStore";
 
@@ -325,6 +326,266 @@ function buildDataDrivenThesis(
 }
 
 export async function generateTradeStrategy(
+  input: GenerateStrategyInput,
+): Promise<GeneratedStrategy> {
+  const symbol = String(input.symbol || "").trim().toUpperCase();
+  const knowledgeEntries = await TradingStore.searchKnowledge(
+    `${symbol} ${input.asset} ${input.market} market structure liquidity sweep entry stop target`,
+    6,
+  );
+  const knowledgeText = [
+    buildTradingCurriculumContext(),
+    ...knowledgeEntries.flatMap((entry) => [
+      ...entry.rules,
+      ...entry.patterns,
+      ...entry.entryCriteria,
+      ...entry.riskRules,
+    ]),
+  ].join("\n");
+
+  try {
+    const strategy = await generateModelTradeStrategy(input, knowledgeEntries, knowledgeText);
+    if (input.userId) {
+      await TradingStore.appendMemory(
+        `Trade proposed by Lightning: ${strategy.symbol || "?"} ${strategy.direction} on ${strategy.timeframe}; entry ${strategy.entry}, stop ${strategy.stop}, target ${strategy.target}, size ${strategy.size}, risk ${strategy.riskAmount}, R:R ${strategy.riskReward}, confidence ${strategy.confidence}.`,
+      );
+    }
+    return strategy;
+  } catch (error) {
+    if (process.env.ALLOW_RULE_BASED_TRADE_FALLBACK === "true") {
+      await TradingStore.appendMemory(
+        `Lightning trade proposal failed; operator-enabled rules fallback used. ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return generateRuleBasedTradeStrategy(input);
+    }
+    throw error;
+  }
+}
+
+interface ModelTradeProposal {
+  direction?: TradeDirection;
+  timeframe?: string;
+  riskReward?: number;
+  confidence?: number;
+  thesis?: string;
+  marketStructure?: string;
+  liquidityAnalysis?: string;
+  entryPlan?: string;
+  stopPlan?: string;
+  targetPlan?: string;
+  invalidation?: string[] | string;
+  entry?: number;
+  stop?: number;
+  target?: number;
+  size?: number;
+  riskAmount?: number;
+  timeframeAlignment?: Record<string, string>;
+  session?: string;
+  basis?: string;
+}
+
+function extractJsonObject(text: string): unknown {
+  const trimmed = text.trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start < 0 || end <= start) {
+    throw new Error("Lightning returned a trade proposal without a JSON object.");
+  }
+  return JSON.parse(trimmed.slice(start, end + 1));
+}
+
+function cleanText(value: unknown, field: string): string {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!text) throw new Error(`Lightning trade proposal is missing ${field}.`);
+  return text.replace(/```[\s\S]*?```/g, "").replace(/\*\*/g, "").trim();
+}
+
+function cleanNumber(value: unknown, field: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`Lightning trade proposal has an invalid ${field}.`);
+  }
+  return round2(parsed);
+}
+
+function normalizeDirection(value: unknown): TradeDirection {
+  const direction = String(value || "").toLowerCase();
+  if (direction === "long" || direction === "short") return direction;
+  throw new Error("Lightning trade proposal is missing a valid direction.");
+}
+
+function normalizeRiskReward(direction: TradeDirection, entry: number, stop: number, target: number): number {
+  const risk = direction === "long" ? entry - stop : stop - entry;
+  const reward = direction === "long" ? target - entry : entry - target;
+  if (risk <= 0 || reward <= 0) {
+    throw new Error("Lightning trade proposal has entry, stop, and target on the wrong side.");
+  }
+  const rr = round2(reward / risk);
+  if (rr < 2) {
+    throw new Error("Lightning trade proposal failed the minimum 2:1 reward/risk rule.");
+  }
+  return rr;
+}
+
+function normalizeInvalidation(value: ModelTradeProposal["invalidation"]): string {
+  if (Array.isArray(value)) {
+    const items = value.map((item) => String(item).trim()).filter(Boolean);
+    if (items.length) return items.join("\n");
+  }
+  return cleanText(value, "invalidation");
+}
+
+function normalizeTimeframeAlignment(
+  value: unknown,
+  timeframe: string,
+  direction: TradeDirection,
+): Record<string, string> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([key, item]) => [key.trim(), String(item || "").trim()] as const)
+      .filter(([key, item]) => key && item);
+    if (entries.length) return Object.fromEntries(entries);
+  }
+  return buildTimeframeAlignment(timeframe, direction);
+}
+
+function normalizeModelProposal(
+  input: GenerateStrategyInput,
+  proposal: ModelTradeProposal,
+  knowledgeMatches: number,
+  pricedFromReference: boolean,
+): GeneratedStrategy {
+  const direction = normalizeDirection(proposal.direction);
+  const timeframe = cleanText(proposal.timeframe || input.timeframe || DEFAULT_TIMEFRAME, "timeframe");
+  const entry = cleanNumber(proposal.entry, "entry");
+  const stop = cleanNumber(proposal.stop, "stop");
+  const target = cleanNumber(proposal.target, "target");
+  const size = Math.max(1, Math.floor(cleanNumber(proposal.size, "size")));
+  const riskAmount = proposal.riskAmount === undefined
+    ? round2(Math.abs(entry - stop) * size)
+    : cleanNumber(proposal.riskAmount, "riskAmount");
+  const computedRiskReward = normalizeRiskReward(direction, entry, stop, target);
+  const riskReward = Math.max(computedRiskReward, roundRR(Number(proposal.riskReward || computedRiskReward)));
+
+  return {
+    market: input.market,
+    asset: input.asset,
+    symbol: String(input.symbol || "").trim().toUpperCase(),
+    direction,
+    timeframe,
+    riskReward,
+    confidence: clampConfidence(Number(proposal.confidence || scoreConfidence(knowledgeMatches, false))),
+    thesis: cleanText(proposal.thesis, "thesis"),
+    marketStructure: cleanText(proposal.marketStructure, "marketStructure"),
+    liquidityAnalysis: cleanText(proposal.liquidityAnalysis, "liquidityAnalysis"),
+    entryPlan: cleanText(proposal.entryPlan, "entryPlan"),
+    stopPlan: cleanText(proposal.stopPlan, "stopPlan"),
+    targetPlan: cleanText(proposal.targetPlan, "targetPlan"),
+    invalidation: normalizeInvalidation(proposal.invalidation),
+    entry,
+    stop,
+    target,
+    size,
+    riskAmount,
+    timeframeAlignment: normalizeTimeframeAlignment(proposal.timeframeAlignment, timeframe, direction),
+    session: cleanText(proposal.session || sessionFor(input.asset), "session"),
+    draft: true,
+    pricedFromReference,
+    basis: cleanText(
+      proposal.basis ||
+        `Generated by Lightning AI from ${knowledgeMatches} stored trading knowledge match(es), current request context, and governance risk rules.`,
+      "basis",
+    ),
+  };
+}
+
+async function generateModelTradeStrategy(
+  input: GenerateStrategyInput,
+  knowledgeEntries: Awaited<ReturnType<typeof TradingStore.searchKnowledge>>,
+  knowledgeText: string,
+): Promise<GeneratedStrategy> {
+  const symbol = String(input.symbol || "").trim().toUpperCase();
+  const pricedFromReference =
+    typeof input.referencePrice === "number" &&
+    Number.isFinite(input.referencePrice) &&
+    input.referencePrice > 0;
+
+  const context = {
+    symbol,
+    asset: input.asset,
+    market: input.market,
+    directionPreference: input.directionPreference || "auto",
+    timeframe: input.timeframe || DEFAULT_TIMEFRAME,
+    referencePrice: input.referencePrice ?? null,
+    stopDistance: input.stopDistance ?? null,
+    liveMarketDataAvailable: pricedFromReference,
+    minimumRewardRisk: 2,
+    maxPaperRisk: MAX_PAPER_RISK,
+    recentKnowledge: knowledgeEntries.slice(0, 4).map((entry) => ({
+      title: entry.title,
+      rules: entry.rules.slice(0, 5),
+      patterns: entry.patterns.slice(0, 5),
+      entryCriteria: entry.entryCriteria.slice(0, 5),
+      riskRules: entry.riskRules.slice(0, 5),
+    })),
+  };
+
+  const response = await executeProviderChat(
+    [
+      {
+        role: "system",
+        content: [
+          "You are Zed's Trading Intelligence proposal engine.",
+          "Return one complete paper-trade proposal as strict JSON only.",
+          "Do not return markdown, code fences, tables, templates, placeholders, or commentary.",
+          "Use the provided symbol, market, knowledge, and risk rules.",
+          "If liveMarketDataAvailable is false, do not claim live pricing; use a clearly disclosed paper reference basis.",
+          "The proposal must be specific to this symbol and must not reuse generic wording.",
+          "Entry, stop, target, size, and riskAmount are required and must pass a minimum 2:1 reward/risk check.",
+        ].join(" "),
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          requiredSchema: {
+            direction: "long | short",
+            timeframe: "string",
+            riskReward: "number >= 2",
+            confidence: "number 0-100",
+            thesis: "string",
+            marketStructure: "string",
+            liquidityAnalysis: "string",
+            entryPlan: "string",
+            stopPlan: "string",
+            targetPlan: "string",
+            invalidation: ["string"],
+            entry: "number",
+            stop: "number",
+            target: "number",
+            size: "integer",
+            riskAmount: "number",
+            timeframeAlignment: { Daily: "string", "4H": "string", "1H": "string" },
+            session: "string",
+            basis: "string",
+          },
+          context,
+          learnedTradingFramework: knowledgeText.slice(0, 12000),
+        }),
+      },
+    ],
+    {
+      lane: "finance",
+      reasoningEffort: "high",
+      temperature: 0.35,
+      maxTokens: 1800,
+    },
+  );
+
+  const parsed = extractJsonObject(response) as ModelTradeProposal;
+  return normalizeModelProposal(input, parsed, knowledgeEntries.length, pricedFromReference);
+}
+
+async function generateRuleBasedTradeStrategy(
   input: GenerateStrategyInput,
 ): Promise<GeneratedStrategy> {
   const symbol = String(input.symbol || "").trim().toUpperCase();
