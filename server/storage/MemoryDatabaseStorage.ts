@@ -25,7 +25,7 @@ function assertDbAvailable(operation: string): void {
 
 async function storeFallback(key: string, value: unknown): Promise<void> {
   if (!isDatabaseRequired()) {
-    await storeFallback(key, value);
+    await fallbackStorage.store(key, value);
   }
 }
 
