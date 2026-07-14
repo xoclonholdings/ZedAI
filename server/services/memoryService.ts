@@ -8,6 +8,7 @@ import {
   type ScratchpadMemory,
 } from "@shared/schema";
 
+import { requireAuthenticatedMemoryUserId } from "./memory/MemoryOwnershipService";
 import { initializeDefaultCoreMemory } from "./memory/initializeDefault";
 import { loadCoreMemoryFromFile } from "./memory/loadFromFile";
 
@@ -29,20 +30,25 @@ export class MemoryService {
 
   // Project Memory - Saved context and datasets
   static async getProjectMemory(userId: string): Promise<ProjectMemory[]> {
-    return await storage.getProjectMemoryByUser(userId);
+    const owner = requireAuthenticatedMemoryUserId(userId, "project memory read");
+    return await storage.getProjectMemoryByUser(owner);
   }
 
   static async createProjectMemory(
     data: InsertProjectMemory,
   ): Promise<ProjectMemory> {
-    return await storage.createProjectMemory(data);
+    const owner = requireAuthenticatedMemoryUserId(data.userId, "project memory write");
+    return await storage.createProjectMemory({ ...data, userId: owner });
   }
 
   static async updateProjectMemory(
     id: string,
     updates: Partial<InsertProjectMemory>,
   ): Promise<ProjectMemory> {
-    return await storage.updateProjectMemory(id, updates);
+    const safeUpdates = updates.userId
+      ? { ...updates, userId: requireAuthenticatedMemoryUserId(updates.userId, "project memory update") }
+      : updates;
+    return await storage.updateProjectMemory(id, safeUpdates);
   }
 
   static async deleteProjectMemory(id: string): Promise<boolean> {
@@ -51,14 +57,17 @@ export class MemoryService {
 
   // Scratchpad Memory - Persistent working memory
   static async getScratchpadMemory(userId: string): Promise<ScratchpadMemory[]> {
-    return await storage.getScratchpadMemoryByUser(userId);
+    const owner = requireAuthenticatedMemoryUserId(userId, "scratchpad memory read");
+    return await storage.getScratchpadMemoryByUser(owner);
   }
 
   static async createScratchpadMemory(
     data: InsertScratchpadMemory,
   ): Promise<ScratchpadMemory> {
+    const owner = requireAuthenticatedMemoryUserId(data.userId, "scratchpad memory write");
     return await storage.createScratchpadMemory({
       ...data,
+      userId: owner,
       expiresAt: this.PERSISTENT_SCRATCHPAD_EXPIRES_AT,
     });
   }
