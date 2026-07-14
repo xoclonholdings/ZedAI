@@ -5,6 +5,7 @@ import type {
   ManagedUser,
   PublicManagedUser,
 } from "../../../shared/adminSettings";
+import { CANONICAL_ADMIN_USER_ID } from "../../../shared/memoryOwnership";
 import {
   getEnvOrDevelopmentDefault,
   isProductionEnvironment,
@@ -54,7 +55,7 @@ export function createDefaultAdminUser(auth: AuthSettings): ManagedUser {
     "LocalDevPassword!234",
   );
   return {
-    id: "user_admin",
+    id: CANONICAL_ADMIN_USER_ID,
     username: auth.adminUsername,
     email: "admin@zed-ai.online",
     firstName: "ZED",
@@ -89,7 +90,7 @@ export function normalizeUsers(
   const adminUpdated = {
     ...admin,
     username: auth.adminUsername,
-    // Canonical email — older settings files (admin@zed-ai.local) get
+    // Canonical email - older settings files (admin@zed-ai.local) get
     // migrated forward without a separate migration script.
     email: "admin@zed-ai.online",
     updatedAt: admin.updatedAt || nowIso(),
