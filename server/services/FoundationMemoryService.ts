@@ -1,19 +1,13 @@
 import fs from "fs/promises";
 import path from "path";
-import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
+import { HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
+import { requireAuthenticatedMemoryUserId } from "./memory/MemoryOwnershipService";
 
 type FoundationPaths = {
   overview: string;
   docsDir: string;
   summary: string;
   sourceShardsDir: string;
-};
-
-const LEGACY_FOUNDATION_PATHS: FoundationPaths = {
-  overview: path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/foundation-overview.md"),
-  docsDir: path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/imported-docs"),
-  summary: path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/merged-summary.json"),
-  sourceShardsDir: path.resolve(HUB_SHARED_MEMORY_DIR, "semantic/foundation/shards/by-source"),
 };
 
 type MemoryBlock = {
@@ -63,7 +57,7 @@ function safeUserId(userId: string): string {
   return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
 }
 
-function adminFoundationPaths(userId: string): FoundationPaths {
+function userFoundationPaths(userId: string): FoundationPaths {
   const root = path.resolve(HUB_USER_MEMORY_DIR, safeUserId(userId), "foundation");
   return {
     overview: path.join(root, "consensus/foundation-overview.md"),
@@ -73,10 +67,8 @@ function adminFoundationPaths(userId: string): FoundationPaths {
   };
 }
 
-function foundationPathCandidates(userId?: string): FoundationPaths[] {
-  return userId
-    ? [adminFoundationPaths(userId), LEGACY_FOUNDATION_PATHS]
-    : [LEGACY_FOUNDATION_PATHS];
+function foundationPathCandidates(userId: string): FoundationPaths[] {
+  return [userFoundationPaths(userId)];
 }
 
 async function firstNonEmpty(
@@ -243,10 +235,11 @@ export async function retrieveFoundationMemoryWithTrace(
 ): Promise<{ content: string; trace: FoundationTraceItem[] }> {
   if (options?.enabled === false) return { content: "", trace: [] };
 
+  const userId = requireAuthenticatedMemoryUserId(options?.userId, "foundation memory retrieval");
   const keywords = extractKeywords(query);
   if (keywords.length === 0) return { content: "", trace: [] };
 
-  const candidates = foundationPathCandidates(options?.userId);
+  const candidates = foundationPathCandidates(userId);
   const [overviewBlocks, importedDocBlocks, summaryBlocks, sourceShardBlocks] = await Promise.all([
     firstNonEmpty(candidates, loadOverviewBlocksFrom),
     firstNonEmpty(candidates, loadImportedDocBlocksFrom),
