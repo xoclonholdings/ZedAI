@@ -87,6 +87,7 @@ export default function SandboxWorkspace() {
   const [lookingUp, setLookingUp] = useState<boolean>(false);
   const [backtest, setBacktest] = useState<BacktestReport | null>(null);
   const [backtesting, setBacktesting] = useState<boolean>(false);
+  const [toolsOpen, setToolsOpen] = useState<boolean>(false);
 
   const runBacktest = useCallback(async () => {
     const sym = lookupSymbol.trim().toUpperCase();
@@ -488,12 +489,19 @@ export default function SandboxWorkspace() {
         </div>
       )}
 
-      {/* Signal read + backtest for any symbol. */}
+      {/* Signal read + backtest for any symbol — tucked behind a toggle. */}
       <div className="mb-5 rounded-lg border border-white/10 bg-white/[0.02] p-3">
-        <div className="text-[11px] uppercase tracking-[0.08em] text-white/40 mb-1.5">
-          Signal &amp; backtest — check any symbol
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setToolsOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 text-[11px] uppercase tracking-[0.08em] text-white/40 hover:text-white/70"
+        >
+          <span>Signal &amp; backtest — check any symbol</span>
+          <span className="text-white/30">{toolsOpen ? "Hide" : "Open"}</span>
+        </button>
+        {toolsOpen && (
+        <>
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
           <input
             type="text"
             value={lookupSymbol}
@@ -531,6 +539,8 @@ export default function SandboxWorkspace() {
         </div>
         {lookupResult?.signal && <div className="mt-3"><SignalPanel signal={lookupResult.signal} /></div>}
         {backtest && <BacktestPanel report={backtest} />}
+        </>
+        )}
       </div>
 
       {performance && (
