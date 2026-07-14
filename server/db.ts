@@ -5,10 +5,23 @@ import * as schema from "../shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-if (!process.env.DATABASE_URL) {
-  console.warn(
-    "[DATABASE] DATABASE_URL not set - running in offline mode"
+export function isDatabaseRequired(): boolean {
+  return (
+    process.env.REQUIRE_DATABASE === "true" ||
+    process.env.NODE_ENV === "production" ||
+    process.env.RENDER === "true"
   );
+}
+
+if (!process.env.DATABASE_URL) {
+  const message = isDatabaseRequired()
+    ? "[DATABASE] DATABASE_URL is required in this environment; PostgreSQL is the authoritative store."
+    : "[DATABASE] DATABASE_URL not set - running in offline development mode";
+  if (isDatabaseRequired()) {
+    console.error(message);
+  } else {
+    console.warn(message);
+  }
 }
 
 // Configure pool with optimized settings for Neon (only if DATABASE_URL exists)
@@ -21,11 +34,18 @@ export const pool = process.env.DATABASE_URL ? new Pool({
 
 export const db = pool ? drizzle({ client: pool, schema }) : null;
 
-// Connection health check with timeout and graceful fallback
+// Connection health check with timeout and graceful fallback in development.
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
     if (!process.env.DATABASE_URL) {
-      console.log('[DATABASE] No DATABASE_URL configured - running in offline mode');
+      const message = isDatabaseRequired()
+        ? '[DATABASE] No DATABASE_URL configured - PostgreSQL is required'
+        : '[DATABASE] No DATABASE_URL configured - running in offline development mode';
+      if (isDatabaseRequired()) {
+        console.error(message);
+      } else {
+        console.log(message);
+      }
       return false;
     }
 
@@ -54,7 +74,12 @@ export async function checkDatabaseConnection(): Promise<boolean> {
 
     return await Promise.race([connectionPromise, timeoutPromise]);
   } catch (error) {
-    console.log('[DATABASE] Connection failed - running in offline mode:', error instanceof Error ? error.message : 'Unknown error');
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (isDatabaseRequired()) {
+      console.error('[DATABASE] Connection failed - PostgreSQL is required:', message);
+    } else {
+      console.log('[DATABASE] Connection failed - running in offline development mode:', message);
+    }
     return false;
   }
 }
