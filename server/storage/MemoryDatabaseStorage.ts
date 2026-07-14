@@ -53,6 +53,7 @@ export class MemoryDatabaseStorage {
       return memory || null;
     } catch (error) {
       console.warn("[MEMORY STORAGE] getCoreMemoryByKey failed:", error);
+      if (isDatabaseRequired()) throw error;
       return null;
     }
   }
@@ -112,6 +113,7 @@ export class MemoryDatabaseStorage {
       return result;
     } catch (error) {
       console.warn("[MEMORY STORAGE] getAllCoreMemory failed:", error);
+      if (isDatabaseRequired()) throw error;
       return [];
     }
   }
@@ -139,6 +141,7 @@ export class MemoryDatabaseStorage {
       return result;
     } catch (error) {
       console.warn("[MEMORY STORAGE] getProjectMemoryByUser failed:", error);
+      if (isDatabaseRequired()) throw error;
       return [];
     }
   }
@@ -237,6 +240,7 @@ export class MemoryDatabaseStorage {
       return success;
     } catch (error) {
       console.error("[MEMORY STORAGE] deleteProjectMemory failed:", error);
+      if (isDatabaseRequired()) throw error;
       return false;
     }
   }
@@ -261,6 +265,7 @@ export class MemoryDatabaseStorage {
       return result;
     } catch (error) {
       console.warn("[MEMORY STORAGE] getScratchpadMemoryByUser failed:", error);
+      if (isDatabaseRequired()) throw error;
       return [];
     }
   }
@@ -320,6 +325,7 @@ export class MemoryDatabaseStorage {
       return success;
     } catch (error) {
       console.error("[MEMORY STORAGE] deleteScratchpadMemory failed:", error);
+      if (isDatabaseRequired()) throw error;
       return false;
     }
   }
