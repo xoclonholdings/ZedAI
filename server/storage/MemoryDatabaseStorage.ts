@@ -149,7 +149,7 @@ export class MemoryDatabaseStorage {
     const fallbackKey = `project_memory_${data.userId}`;
 
     if (!db) {
-      assertDbAvailable("upsertCoreMemory");
+      assertDbAvailable("createProjectMemory");
       const timestamp = new Date();
       const memory = {
         id: randomUUID(),
