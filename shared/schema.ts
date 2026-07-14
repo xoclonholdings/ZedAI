@@ -71,6 +71,32 @@ export type {
 } from "./MemorySchema";
 
 export {
+  userMemoryProfiles,
+  userMemoryPolicies,
+  memorySources,
+  memoryObjects,
+  memoryProposals,
+  insertUserMemoryProfileSchema,
+  insertUserMemoryPolicySchema,
+  insertMemorySourceSchema,
+  insertMemoryObjectSchema,
+  insertMemoryProposalSchema,
+} from "./MemoryBoundarySchema";
+
+export type {
+  UserMemoryProfile,
+  InsertUserMemoryProfile,
+  UserMemoryPolicy,
+  InsertUserMemoryPolicy,
+  MemorySource,
+  InsertMemorySource,
+  MemoryObject,
+  InsertMemoryObject,
+  MemoryProposal,
+  InsertMemoryProposal,
+} from "./MemoryBoundarySchema";
+
+export {
   fileStorage,
   memoryIndex,
   knowledgeBase,
