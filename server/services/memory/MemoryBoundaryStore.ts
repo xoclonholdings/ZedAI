@@ -33,6 +33,10 @@ function requireDb(operation: string) {
   return db;
 }
 
+function confidenceOrZero(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
 async function persist<T>(operation: string, context: Record<string, unknown>, fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
@@ -186,7 +190,7 @@ export class MemoryBoundaryStore {
           structuredValue: input.structuredValue ?? null,
           ownership: ownership.layer,
           authorityState: input.authorityState || "observed",
-          confidence: input.confidence || "0",
+          confidence: confidenceOrZero(input.confidence),
           temporalStatus: input.temporalStatus || "unknown",
           privacyLevel: input.privacyLevel || (ownership.shared ? "shared_internal" : "private"),
         })
