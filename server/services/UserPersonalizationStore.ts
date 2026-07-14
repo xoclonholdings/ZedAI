@@ -4,11 +4,13 @@ import path from "path";
 import type { PersonalizationSettings } from "../../shared/adminSettings";
 import { defaultPersonalizationSettings } from "../../shared/adminSettings";
 import { resolveFromHub } from "../utils/repoPaths";
+import { requireAuthenticatedMemoryUserId } from "./memory/MemoryOwnershipService";
 
 const USER_PREFS_DIR = resolveFromHub("user-preferences");
 
 function getUserPrefsPath(userId: string) {
-  return path.join(USER_PREFS_DIR, `${userId}.json`);
+  const owner = requireAuthenticatedMemoryUserId(userId, "user personalization settings");
+  return path.join(USER_PREFS_DIR, `${owner}.json`);
 }
 
 function mergePersonalization(
