@@ -1,5 +1,6 @@
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import { CANONICAL_ADMIN_USER_ID } from "../shared/memoryOwnership";
 
 export async function runMigrations(): Promise<void> {
   try {
@@ -19,7 +20,7 @@ export async function runMigrations(): Promise<void> {
     // credentials, voice, approvals, integrations). The runtime keeps a
     // local hub/config/admin-settings.json cache for fast reads, but on
     // an ephemeral host (e.g. Render) that file is wiped on every
-    // redeploy â€” so this table is the source of truth that survives
+    // redeploy - so this table is the source of truth that survives
     // redeploys and is hydrated back into the file at boot.
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS app_settings (
@@ -42,10 +43,12 @@ export async function runMigrations(): Promise<void> {
       );
     `);
 
-    // Seed the single Admin user so FK constraints are satisfied
+    // Seed the canonical Admin user used by managed-user auth and
+    // legacy archive ownership. Older deployments may still have a
+    // user_001 seed row; this does not delete it.
     await db.execute(sql`
       INSERT INTO users (id, email, first_name, last_name)
-      VALUES ('user_001', 'admin@zed-ai.online', 'ZED', 'Admin')
+      VALUES (${CANONICAL_ADMIN_USER_ID}, 'admin@zed-ai.online', 'ZED', 'Admin')
       ON CONFLICT (id) DO NOTHING;
     `);
 
@@ -189,6 +192,121 @@ export async function runMigrations(): Promise<void> {
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_learning_state_user_type
       ON learning_state (user_id, object_type, updated_at DESC);
+    `);
+
+    // Memory boundary foundation. These tables establish the durable
+    // split between Zed Core, shared installed knowledge, per-user
+    // identity/personalization, and per-user knowledge/history. They do
+    // not import, summarize, or migrate legacy archive contents.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_memory_profiles (
+        user_id varchar PRIMARY KEY REFERENCES users(id),
+        preferred_name text,
+        profile_status text NOT NULL DEFAULT 'empty'
+          CHECK (profile_status IN ('empty', 'discovered', 'active', 'needs_review', 'disabled')),
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_memory_policies (
+        user_id varchar PRIMARY KEY REFERENCES users(id),
+        allowed_memory_categories text[] NOT NULL DEFAULT ARRAY[]::text[],
+        categories_requiring_confirmation text[] NOT NULL DEFAULT ARRAY[]::text[],
+        prohibited_categories text[] NOT NULL DEFAULT ARRAY[]::text[],
+        retention_preferences jsonb NOT NULL DEFAULT '{}'::jsonb,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      );
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS memory_sources (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        user_id varchar REFERENCES users(id),
+        source_type text NOT NULL,
+        label text NOT NULL,
+        original_location_ref text,
+        ownership text NOT NULL
+          CHECK (ownership IN ('zed_core', 'shared_system', 'user_identity', 'user_history')),
+        content_hash text NOT NULL,
+        status text NOT NULL DEFAULT 'staged'
+          CHECK (status IN ('staged', 'active', 'archived', 'blocked', 'deleted')),
+        authority_state text NOT NULL DEFAULT 'observed'
+          CHECK (authority_state IN ('historical_evidence', 'observed', 'proposed', 'confirmed', 'rejected', 'superseded')),
+        temporal_status text NOT NULL DEFAULT 'unknown'
+          CHECK (temporal_status IN ('current', 'historical', 'future', 'deprecated', 'superseded', 'unknown')),
+        privacy_level text NOT NULL DEFAULT 'private'
+          CHECK (privacy_level IN ('public', 'shared_internal', 'private', 'sensitive', 'secret')),
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now(),
+        CHECK (
+          (ownership IN ('zed_core', 'shared_system') AND user_id IS NULL) OR
+          (ownership IN ('user_identity', 'user_history') AND user_id IS NOT NULL)
+        )
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_memory_sources_user_owner
+      ON memory_sources (user_id, ownership);
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_memory_sources_hash
+      ON memory_sources (content_hash);
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS memory_objects (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        user_id varchar REFERENCES users(id),
+        source_references jsonb NOT NULL DEFAULT '[]'::jsonb,
+        object_type text NOT NULL,
+        canonical_name text NOT NULL,
+        summary text,
+        structured_value jsonb,
+        ownership text NOT NULL
+          CHECK (ownership IN ('zed_core', 'shared_system', 'user_identity', 'user_history')),
+        authority_state text NOT NULL DEFAULT 'observed'
+          CHECK (authority_state IN ('historical_evidence', 'observed', 'proposed', 'confirmed', 'rejected', 'superseded')),
+        confidence real NOT NULL DEFAULT 0 CHECK (confidence >= 0 AND confidence <= 1),
+        temporal_status text NOT NULL DEFAULT 'unknown'
+          CHECK (temporal_status IN ('current', 'historical', 'future', 'deprecated', 'superseded', 'unknown')),
+        privacy_level text NOT NULL DEFAULT 'private'
+          CHECK (privacy_level IN ('public', 'shared_internal', 'private', 'sensitive', 'secret')),
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now(),
+        CHECK (
+          (ownership IN ('zed_core', 'shared_system') AND user_id IS NULL) OR
+          (ownership IN ('user_identity', 'user_history') AND user_id IS NOT NULL)
+        )
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_memory_objects_user_owner
+      ON memory_objects (user_id, ownership);
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_memory_objects_type_name
+      ON memory_objects (object_type, canonical_name);
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS memory_proposals (
+        id varchar PRIMARY KEY DEFAULT gen_random_uuid()::varchar,
+        user_id varchar NOT NULL REFERENCES users(id),
+        proposed_category text NOT NULL,
+        proposed_value jsonb NOT NULL,
+        evidence_references jsonb NOT NULL DEFAULT '[]'::jsonb,
+        status text NOT NULL DEFAULT 'observed'
+          CHECK (status IN ('observed', 'proposed', 'confirmed', 'rejected', 'superseded')),
+        created_at timestamp DEFAULT now(),
+        resolved_at timestamp
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_memory_proposals_user_status
+      ON memory_proposals (user_id, status);
     `);
 
     console.log('[MIGRATIONS] Database setup completed successfully');
