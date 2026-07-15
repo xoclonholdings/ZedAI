@@ -322,6 +322,7 @@ The existing `zed-memory/` and `zed-memory/storage/` corpus is formally classifi
 No user data belongs in Git. Runtime files under `hub/`, local exports, generated graphs, user uploads, trading state, learning state, app state, and personal memory archives must remain outside source control unless they are deliberate static seed data or reviewed documentation.
 
 Filesystem storage may remain only as local development fallback, read-only legacy source, export, or temporary processing location. Production memory writes must use durable database-backed storage and must not silently report success when durable storage is unavailable.
+
 ### Knowledge Curation and Evolution Engine
 
 The Knowledge Curation and Evolution Engine is an active runtime memory system after the Knowledge Ingestion Engine and Context Engine. Its role is to act on what the first two systems learned by continuously maintaining knowledge quality, organization, accuracy, and long-term evolution.
