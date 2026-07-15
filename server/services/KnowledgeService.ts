@@ -29,8 +29,37 @@ import {
 
 export type { KnowledgeContext } from "./knowledge-service/types";
 
+const INVALID_MEMORY_USER_IDS = new Set([
+  "",
+  "user",
+  "user_001",
+  "default-user",
+  "default_user",
+  "anonymous",
+  "unknown",
+  "offline",
+  "admin-user",
+  "admin_user",
+]);
+
+function requireMemoryUserId(value: unknown, operation: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${operation} requires an authenticated userId.`);
+  }
+  const userId = value.trim();
+  if (
+    INVALID_MEMORY_USER_IDS.has(userId) ||
+    userId.includes("..") ||
+    userId.includes("/") ||
+    userId.includes("\\")
+  ) {
+    throw new Error(`${operation} received an invalid or fallback userId.`);
+  }
+  return userId;
+}
+
 /**
- * Knowledge orchestration — pulls together core memory, ruleset
+ * Knowledge orchestration - pulls together core memory, ruleset
  * YAMLs, foundation knowledge, project memory, scratchpad, and
  * vector-store retrieval into a single per-lane system-prompt
  * fragment.
@@ -44,6 +73,7 @@ export type { KnowledgeContext } from "./knowledge-service/types";
  */
 export class KnowledgeService {
   static async buildContext(params: BuildKnowledgeContextParams): Promise<KnowledgeContext> {
+    const userId = requireMemoryUserId(params.userId, "knowledge context memory retrieval");
     const lane = params.lane || "chat";
     const keywords = extractKeywords(params.query);
     const includeAdminKnowledge = params.includeAdminFoundation === true;
@@ -54,9 +84,9 @@ export class KnowledgeService {
       /* persistence cleanup is best-effort and non-destructive */
     });
 
-    const objectMemoryUserId = await resolveObjectMemoryUserId(params.userId, {
+    const objectMemoryUserId = await resolveObjectMemoryUserId(userId, {
       isAdmin: params.includeAdminFoundation === true,
-    }).catch(() => params.userId);
+    });
 
     const [
       allCoreMemory,
@@ -71,15 +101,15 @@ export class KnowledgeService {
     ] = await Promise.all([
       MemoryService.getAllCoreMemory(),
       loadRulesetMemory(),
-      MemoryService.getProjectMemory(params.userId),
-      MemoryService.getScratchpadMemory(params.userId),
+      MemoryService.getProjectMemory(userId),
+      MemoryService.getScratchpadMemory(userId),
       queryCollection("episodic", params.query, 3),
       queryCollection("semantic", params.query, 4),
       retrieveFoundationMemoryWithTrace(params.query, {
         enabled: params.includeAdminFoundation === true,
-        userId: params.userId,
+        userId,
       }),
-      retrievePersonalizationForQuery(params.userId, params.query, 3),
+      retrievePersonalizationForQuery(userId, params.query, 3),
       retrieveObjectMemoryForQuery(params.query, 5, objectMemoryUserId),
     ]);
     const foundation = foundationResult.content;
@@ -100,7 +130,7 @@ export class KnowledgeService {
       );
 
     // Personal-type project memory is always included (capped at 3),
-    // independent of keyword score — these are the "always-on" facts
+    // independent of keyword score - these are the "always-on" facts
     // about the user.
     const personalProjectMemory = allProjectMemory
       .filter(
@@ -225,15 +255,16 @@ export class KnowledgeService {
     query: string;
     conversationId?: string;
   }): Promise<KnowledgeSearchResult> {
+    const userId = requireMemoryUserId(params.userId, "knowledge search memory retrieval");
     const context = await this.buildContext({
-      userId: params.userId,
+      userId,
       query: params.query,
       conversationId: params.conversationId,
       lane: "admin",
     });
 
-    const projectMemory = await MemoryService.getProjectMemory(params.userId);
-    const scratchpadMemory = await MemoryService.getScratchpadMemory(params.userId);
+    const projectMemory = await MemoryService.getProjectMemory(userId);
+    const scratchpadMemory = await MemoryService.getScratchpadMemory(userId);
     const retrievedEntries = await Promise.all([
       queryCollection("episodic", params.query, 3),
       queryCollection("semantic", params.query, 3),
@@ -290,32 +321,33 @@ export class KnowledgeService {
   /**
    * Save a user/assistant turn into the vector stores (episodic +
    * semantic) and a short scratchpad note. Uses `Promise.allSettled`
-   * because losing one store shouldn't block the others — partial
+   * because losing one store shouldn't block the others - partial
    * persistence is better than none.
    */
   static async persistInteraction(params: PersistInteractionParams): Promise<void> {
+    const userId = requireMemoryUserId(params.userId, "knowledge interaction persistence");
     const timestamp = new Date().toISOString();
     const document = `User: ${params.userContent}\nAssistant: ${params.assistantContent}`;
     const metadata = {
       conversationId: params.conversationId || "none",
-      userId: params.userId,
+      userId,
       savedAt: timestamp,
       tags: (params.tags || []).join(","),
     };
 
     await Promise.allSettled([
       addToCollection("episodic", {
-        id: `episodic-${params.conversationId || params.userId}-${Date.now()}`,
+        id: `episodic-${params.conversationId || userId}-${Date.now()}`,
         document,
         metadata,
       }),
       addToCollection("semantic", {
-        id: `semantic-${params.conversationId || params.userId}-${Date.now()}`,
+        id: `semantic-${params.conversationId || userId}-${Date.now()}`,
         document,
         metadata,
       }),
       MemoryService.createScratchpadMemory({
-        userId: params.userId,
+        userId,
         conversationId: params.conversationId || null,
         content: safeExcerpt(document, 500),
         tags: (params.tags || []).slice(0, 8),
