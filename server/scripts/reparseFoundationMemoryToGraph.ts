@@ -4,7 +4,8 @@ import { createHash } from "crypto";
 
 import { KnowledgeIngestionService } from "../services/knowledge-ingestion/KnowledgeIngestionService";
 import { loadAdminSettings } from "../services/AdminSettingsStore";
-import { HUB_USER_MEMORY_DIR } from "../utils/repoPaths";`nimport { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
+import { HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
+import { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
 import type { IngestionReport, RawKnowledgeInput } from "../services/knowledge-ingestion/types";
 
 type FoundationMessage = {
