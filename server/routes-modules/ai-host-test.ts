@@ -36,6 +36,8 @@ interface PublicAiHostProbeResult {
   provider: string;
   target: string;
   model: string;
+  apiKey: string;
+  apiKeySource: string;
   reply: string;
   error: string;
   errorKind: string;
@@ -47,6 +49,20 @@ const PUBLIC_AI_HOST_PROBE_TTL_MS = 60_000;
 let publicAiHostProbeCache:
   | { at: number; body: PublicAiHostProbeResult }
   | null = null;
+
+function apiKeySource(): string {
+  if (process.env.LIGHTNING_API_KEY) return "LIGHTNING_API_KEY";
+  if (process.env.LIGHTNING_AI_API_KEY) return "LIGHTNING_AI_API_KEY";
+  if (process.env.LIGHTNING_TOKEN) return "LIGHTNING_TOKEN";
+  return "none";
+}
+
+function maskedApiKey(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "not set";
+  if (trimmed.length <= 12) return `set:${trimmed.length}`;
+  return `${trimmed.slice(0, 6)}...${trimmed.slice(-4)}`;
+}
 
 function errorMessageFor(error: any): { error: string; errorKind: string } {
   const message =
@@ -90,6 +106,8 @@ export function registerAiHostTestRoute(app: Express): void {
     const target = getResolvedTargetName({ lane: "chat" });
     const providerConfig = getProviderRuntimeConfig();
     const model = getActiveProviderDefaultModel(providerConfig);
+    const apiKey = maskedApiKey(providerConfig.lightning.apiKey);
+    const keySource = apiKeySource();
 
     try {
       const reply = await generateChatFromProvider(
@@ -102,6 +120,8 @@ export function registerAiHostTestRoute(app: Express): void {
         provider,
         target,
         model,
+        apiKey,
+        apiKeySource: keySource,
         reply,
         error: "",
         errorKind: "",
@@ -116,6 +136,8 @@ export function registerAiHostTestRoute(app: Express): void {
         provider,
         target,
         model,
+        apiKey,
+        apiKeySource: keySource,
         reply: "",
         error: detail.error,
         errorKind: detail.errorKind,

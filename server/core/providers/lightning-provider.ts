@@ -79,7 +79,7 @@ function toOpenAIStyleContent(content: ProviderMessage["content"]): unknown {
 
 function errorDetailForModel(model: string, status: number, body: string): string {
   const label = model || "deployment default";
-  return `${label}: Lightning ${status}${body ? `: ${body.slice(0, 220)}` : ""}`;
+  return `${label}: Lightning ${status}${body ? `: ${body.slice(0, 500)}` : ""}`;
 }
 
 export class LightningProvider implements ModelProvider {
