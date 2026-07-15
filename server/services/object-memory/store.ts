@@ -301,7 +301,7 @@ export async function readAppliedGraph(scope?: ObjectMemoryScope): Promise<Objec
 export async function resolveObjectMemoryUserId(
   userId: string | undefined,
   _options?: { isAdmin?: boolean },
-): Promise<string | undefined> {
+): Promise<string> {
   return requireObjectMemoryUserId(userId, "object memory owner resolution");
 }
 
