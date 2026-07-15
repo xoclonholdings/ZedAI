@@ -5,8 +5,14 @@ import { ContextInquiryEngine } from "../services/knowledge-ingestion/ContextInq
 import { KnowledgeIngestionService } from "../services/knowledge-ingestion/KnowledgeIngestionService";
 import type { RawKnowledgeInput } from "../services/knowledge-ingestion/types";
 
+const INVALID_MEMORY_USER_IDS = new Set(["user", "user_001", "default-user", "anonymous", "admin-user", "unknown"]);
+
 function userLabel(req: any): string {
-  return req?.user?.claims?.sub || req?.session?.userId || "user";
+  const userId = String(req?.user?.claims?.sub || req?.session?.userId || "").trim();
+  if (!userId || INVALID_MEMORY_USER_IDS.has(userId)) {
+    throw new Error("Knowledge memory action requires an authenticated owner");
+  }
+  return userId;
 }
 
 function normalizeImportBody(body: any): RawKnowledgeInput {
