@@ -5,22 +5,17 @@ import { HUB_DIR } from "../utils/repoPaths";
 
 /**
  * Per-user personalization corpus. Each user can drop notes about
- * themselves — background, working style, preferences, ongoing
- * projects — and those notes get injected into the Cognitive Core
+ * themselves - background, working style, preferences, ongoing
+ * projects - and those notes get injected into the Cognitive Core
  * knowledge slot at query time, ranked against the query so only
  * the relevant chunks show up.
  *
  * Storage layout:
  *   hub/user-personalization/<userId>/notes/<slug>.md
  *
- * The user's directive: "It is SUPPOSED TO BE personalized for
- * each user in a way that would allow a user to 'dump' or upload
- * information and data that personalizes Zed to the user."
- *
- * For the current single-admin era this behaves like a small
- * per-admin note pad. When multi-user lands, each user reads and
- * writes only their own directory — nothing here consults
- * anyone else's slug.
+ * Each read and write requires an authenticated userId. This corpus
+ * is user-owned memory and must never consult another user's directory
+ * or fall back to a synthetic owner.
  *
  * Non-goals: full-text embedding search. This is intentionally a
  * keyword-scored bag-of-words retrieval, same shape as the
@@ -29,6 +24,19 @@ import { HUB_DIR } from "../utils/repoPaths";
  */
 
 const CORPUS_ROOT = path.join(HUB_DIR, "user-personalization");
+
+const INVALID_MEMORY_USER_IDS = new Set([
+  "",
+  "user",
+  "user_001",
+  "default-user",
+  "default_user",
+  "anonymous",
+  "unknown",
+  "offline",
+  "admin-user",
+  "admin_user",
+]);
 
 const STOP_WORDS = new Set([
   "about",
@@ -86,6 +94,22 @@ export interface PersonalizationRetrievalResult {
   trace: PersonalizationRetrievalTraceItem[];
 }
 
+function requireMemoryUserId(value: unknown, operation: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${operation} requires an authenticated userId.`);
+  }
+  const userId = value.trim();
+  if (
+    INVALID_MEMORY_USER_IDS.has(userId) ||
+    userId.includes("..") ||
+    userId.includes("/") ||
+    userId.includes("\\")
+  ) {
+    throw new Error(`${operation} received an invalid or fallback userId.`);
+  }
+  return userId;
+}
+
 function normalize(value: string): string {
   return value
     .toLowerCase()
@@ -123,7 +147,9 @@ function scoreAgainst(content: string, keywords: string[]): number {
 }
 
 function userDir(userId: string): string {
-  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const owner = requireMemoryUserId(userId, "personalization notes");
+  const safe = owner.replace(/[^a-zA-Z0-9_-]/g, "_");
+  if (!safe) throw new Error("Authenticated userId could not be converted to a scoped memory path.");
   return path.join(CORPUS_ROOT, safe, "notes");
 }
 
@@ -196,7 +222,8 @@ export interface SavePersonalizationInput {
 export async function savePersonalizationNote(
   input: SavePersonalizationInput,
 ): Promise<PersonalizationNote> {
-  const dir = await ensureUserDir(input.userId);
+  const owner = requireMemoryUserId(input.userId, "personalization note write");
+  const dir = await ensureUserDir(owner);
   const slug = input.slug || slugify(input.title);
   const filepath = path.join(dir, `${slug}.md`);
   const body = input.content.startsWith("# ")
