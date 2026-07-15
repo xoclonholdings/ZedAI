@@ -98,7 +98,6 @@ function checkUrl(
 
 function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
   const defaultBaseUrl = "https://lightning.ai/api/v1";
-  const defaultModel = "lightning-ai/gpt-oss-120b";
   const baseUrlKey = present(env, "LIGHTNING_BASE_URL")
     ? "LIGHTNING_BASE_URL"
     : present(env, "LIGHTNING_AI_URL")
@@ -138,19 +137,20 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     });
   }
 
-  const configuredModel = firstPresent(env, ["LIGHTNING_MODEL", "MODEL_NAME"]);
+  const configuredModel = firstPresent(env, ["LIGHTNING_MODEL", "MODEL_NAME", "ZED_MODEL_NAME"]);
   if (!configuredModel) {
     checks.push({
       name: "AI_MODEL",
       severity: "ok",
-      message: `Using default Lightning model: ${defaultModel}.`,
-      hint: "Set LIGHTNING_MODEL or MODEL_<LANE> only when you want an explicit override.",
+      message: "No model override set. Zed will let the Lightning deployment choose.",
+      hint: "No action needed for a compiled Lightning deployment.",
     });
   } else {
     checks.push({
       name: "AI_MODEL",
-      severity: "ok",
-      message: `Default model from ${configuredModel.key}: ${configuredModel.value}.`,
+      severity: "warn",
+      message: `${configuredModel.key} is set to ${configuredModel.value}, but model overrides are ignored for this Lightning deployment.`,
+      hint: "Remove LIGHTNING_MODEL / MODEL_NAME / ZED_MODEL_NAME so Lightning is the only model router.",
     });
   }
 
@@ -285,14 +285,15 @@ export function validateEnv(
 
   pushLightningChecks(env, checks);
 
-  // 2. Per-lane overrides (informational only)
+  // 2. Legacy model override env vars are ignored by design.
   const lanes = ["CHAT", "MANAGER", "OPERATIONS", "RESEARCH", "BUSINESS", "FINANCE", "STRATEGY", "ADMIN"];
   const overrideCount = lanes.filter((lane) => present(env, `MODEL_${lane}`)).length;
   if (overrideCount > 0) {
     checks.push({
       name: "MODEL_<lane> overrides",
-      severity: "ok",
-      message: `${overrideCount} of ${lanes.length} lanes have explicit overrides.`,
+      severity: "warn",
+      message: `${overrideCount} legacy lane model override(s) are set but ignored. Zed uses one Lightning deployment.`,
+      hint: "Remove MODEL_<LANE> values such as MODEL_FINANCE to avoid confusion.",
     });
   }
 
@@ -308,8 +309,9 @@ export function validateEnv(
   if (reasoningOverrideCount > 0 || laneReasoningOverrideCount > 0) {
     checks.push({
       name: "MODEL_REASONING_<effort> overrides",
-      severity: "ok",
-      message: `${reasoningOverrideCount} general and ${laneReasoningOverrideCount} lane-specific reasoning overrides configured.`,
+      severity: "warn",
+      message: `${reasoningOverrideCount} general and ${laneReasoningOverrideCount} lane-specific reasoning model override(s) are set but ignored.`,
+      hint: "Remove MODEL_REASONING_<EFFORT> and MODEL_<LANE>_<EFFORT>; Lightning handles routing inside the deployment.",
     });
   }
 

@@ -20,8 +20,8 @@ const defaults: SecuritySettingsState = {
   adminUsername: "Admin",
   securePhraseConfigured: false,
   sessionTimeoutMinutes: 45,
-  maxFailedAttempts: 3,
-  lockoutDurationMinutes: 15,
+  maxFailedAttempts: 10,
+  lockoutDurationMinutes: 1,
   requireSecureCookies: false,
   effectiveSecureCookies: false,
 };
@@ -32,8 +32,8 @@ export default function AdminSecuritySettings() {
     adminUsername: "",
     newSecurePhrase: "",
     sessionTimeoutMinutes: 45,
-    maxFailedAttempts: 3,
-    lockoutDurationMinutes: 15,
+    maxFailedAttempts: 10,
+    lockoutDurationMinutes: 1,
     requireSecureCookies: false,
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -163,7 +163,7 @@ export default function AdminSecuritySettings() {
                 max={10}
                 value={draft.maxFailedAttempts}
                 onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, maxFailedAttempts: Number(e.target.value) || 3 }))
+                  setDraft((prev) => ({ ...prev, maxFailedAttempts: Number(e.target.value) || 10 }))
                 }
                 className="zed-glass border-white/10"
               />
@@ -177,7 +177,7 @@ export default function AdminSecuritySettings() {
                 max={60}
                 value={draft.lockoutDurationMinutes}
                 onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, lockoutDurationMinutes: Number(e.target.value) || 15 }))
+                  setDraft((prev) => ({ ...prev, lockoutDurationMinutes: Number(e.target.value) || 1 }))
                 }
                 className="zed-glass border-white/10"
               />

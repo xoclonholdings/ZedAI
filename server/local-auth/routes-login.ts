@@ -10,6 +10,8 @@ import {
   VERIFICATION_ATTEMPTS,
   attachUser,
   getClientIp,
+  lockoutMessage,
+  lockoutRemainingSeconds,
 } from "./session-helpers";
 
 /**
@@ -28,13 +30,16 @@ export function registerLoginRoutes(app: Express): void {
       const attempts =
         VERIFICATION_ATTEMPTS.get(attemptKey) || { count: 0, lastAttempt: 0 };
 
-      if (
-        attempts.count >= settings.auth.maxFailedAttempts &&
-        Date.now() - attempts.lastAttempt <
-          settings.auth.lockoutDurationMinutes * 60 * 1000
-      ) {
+      const retryAfterSeconds = lockoutRemainingSeconds(
+        attempts,
+        settings.auth.maxFailedAttempts,
+        settings.auth.lockoutDurationMinutes,
+      );
+      if (retryAfterSeconds > 0) {
+        res.setHeader("Retry-After", String(retryAfterSeconds));
         return res.status(429).json({
-          error: `Too many failed attempts. Please wait ${settings.auth.lockoutDurationMinutes} minutes.`,
+          error: lockoutMessage(retryAfterSeconds),
+          retryAfterSeconds,
         });
       }
 

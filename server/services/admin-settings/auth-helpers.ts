@@ -21,8 +21,8 @@ export function defaultAuthSettings(): AuthSettings {
       "LOCAL-DEV-SECURE-PHRASE",
     ),
     sessionTimeoutMinutes: 45,
-    maxFailedAttempts: 3,
-    lockoutDurationMinutes: 15,
+    maxFailedAttempts: 10,
+    lockoutDurationMinutes: 1,
     requireSecureCookies: process.env.NODE_ENV === "production",
     sessionSecret: isProductionEnvironment()
       ? requireProductionEnv("SESSION_SECRET")

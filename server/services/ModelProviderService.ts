@@ -16,24 +16,7 @@ const runtimeConfig = getProviderRuntimeConfig();
 
 console.log(`[boot] provider:       Lightning AI`);
 console.log(`[boot] target URL:     ${runtimeConfig.lightning.baseUrl || "(none)"}`);
-console.log(`[boot] default model:  ${runtimeConfig.lightning.model || "(none)"}`);
-
-const lanes = ["chat", "manager", "operations", "research", "business", "finance", "strategy", "admin"] as const;
-const laneRows = lanes
-  .map((lane) => {
-    const override = runtimeConfig.laneModels[lane];
-    return `  ${lane.padEnd(11)} -> ${override || "(default)"}`;
-  })
-  .join("\n");
-console.log(`[boot] per-lane model overrides:\n${laneRows}`);
-
-const effortRows = (["low", "medium", "high", "deep"] as const)
-  .map((effort) => {
-    const override = runtimeConfig.reasoningModels[effort];
-    return `  ${effort.padEnd(11)} -> ${override || "(default)"}`;
-  })
-  .join("\n");
-console.log(`[boot] per-reasoning model overrides:\n${effortRows}`);
+console.log(`[boot] model routing:  Lightning deployment default`);
 
 export type ModelProviderMessage = ProviderMessage;
 

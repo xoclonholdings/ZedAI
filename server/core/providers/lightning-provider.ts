@@ -1,4 +1,4 @@
-import { getProviderRuntimeConfig, resolveModelForLane } from "./provider-config";
+import { getProviderRuntimeConfig } from "./provider-config";
 import {
   buildPromptFromMessages,
   extractAssistantText,
@@ -124,7 +124,6 @@ export class LightningProvider implements ModelProvider {
       : buildPromptFromMessages(composed, options?.systemPrompt);
 
     const requestBody: Record<string, unknown> = {
-      model: options?.model || resolveModelForLane(options?.lane, config.model, options?.reasoningEffort),
       messages: composed.map((m) => ({
         role: m.role,
         content: toOpenAIStyleContent(m.content),
@@ -212,7 +211,7 @@ export class LightningProvider implements ModelProvider {
         : [];
       return {
         status: "online",
-        models: modelList.length > 0 ? modelList : data?.model ? [data.model] : [config.model],
+        models: modelList.length > 0 ? modelList : data?.model ? [data.model] : ["Lightning deployment default"],
         provider: "lightning",
       };
     } catch (err) {

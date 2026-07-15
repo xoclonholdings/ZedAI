@@ -19,6 +19,24 @@ interface RuntimeStatus {
   lane_models?: Partial<Record<LaneKey, string>>;
 }
 
+interface HostProbeResult {
+  name: string;
+  lane: LaneKey;
+  reasoningEffort?: string;
+  model: string;
+  status: "ok" | "error";
+  reply: string;
+  error: string;
+  errorKind: string;
+  elapsedMs: number;
+}
+
+interface HostTestResponse {
+  status: "success" | "failed";
+  detail: string;
+  checks: HostProbeResult[];
+}
+
 const LANE_ORDER: LaneKey[] = ["chat", "manager", "operations", "research", "business", "finance"];
 
 const LANE_LABELS: Record<LaneKey, string> = {
@@ -34,6 +52,9 @@ export default function ProviderDiagnosticsCard() {
   const [data, setData] = useState<RuntimeStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hostTest, setHostTest] = useState<HostTestResponse | null>(null);
+  const [hostTestError, setHostTestError] = useState<string | null>(null);
+  const [testingHost, setTestingHost] = useState(false);
 
   async function fetchRuntime() {
     setLoading(true);
@@ -58,23 +79,57 @@ export default function ProviderDiagnosticsCard() {
     void fetchRuntime();
   }, []);
 
+  async function testHost() {
+    setTestingHost(true);
+    setHostTestError(null);
+    try {
+      const res = await fetch("/api/admin/ai-host/test", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || `HTTP ${res.status}`);
+      }
+      setHostTest(body as HostTestResponse);
+    } catch (err: any) {
+      setHostTest(null);
+      setHostTestError(err?.message || "AI host test failed");
+    } finally {
+      setTestingHost(false);
+    }
+  }
+
   return (
-    <Card className="zed-glass border-white/10 md:col-span-2">
+    <Card className="zed-glass border-white/10">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Activity size={18} className="text-cyan-300" />
             Provider Routing
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={fetchRuntime}
-            disabled={loading}
-            className="zed-button text-muted-foreground hover:text-foreground h-7 px-2"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void testHost()}
+              disabled={testingHost}
+              className="zed-glass h-7 border-white/10 px-2 text-xs"
+            >
+              {testingHost ? "Testing..." : "Test AI Host"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchRuntime}
+              disabled={loading}
+              className="zed-button text-muted-foreground hover:text-foreground h-7 px-2"
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -82,6 +137,11 @@ export default function ProviderDiagnosticsCard() {
         {error ? (
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
             {error}
+          </div>
+        ) : null}
+        {hostTestError ? (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+            {hostTestError}
           </div>
         ) : null}
 
@@ -132,6 +192,49 @@ export default function ProviderDiagnosticsCard() {
             })}
           </div>
         </details>
+
+        {hostTest ? (
+          <div
+            className={`rounded-lg border px-3 py-2 text-xs ${
+              hostTest.status === "success"
+                ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-200"
+                : "border-red-500/30 bg-red-500/5 text-red-200"
+            }`}
+          >
+            <div className="font-medium">
+              {hostTest.status === "success" ? "AI host checks passed" : "AI host checks failed"}
+            </div>
+            <div className="mt-1 leading-5 opacity-85">{hostTest.detail}</div>
+            <div className="mt-2 space-y-1.5">
+              {hostTest.checks.map((check) => (
+                <div
+                  key={check.name}
+                  className="rounded-md border border-white/10 bg-black/20 px-2.5 py-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-white/75">
+                      {check.lane}
+                      {check.reasoningEffort ? ` / ${check.reasoningEffort}` : ""}
+                    </span>
+                    <span
+                      className={check.status === "ok" ? "text-emerald-300" : "text-red-300"}
+                    >
+                      {check.status}
+                    </span>
+                  </div>
+                  <div className="mt-1 break-all font-mono text-[11px] text-white/45">
+                    {check.model}
+                  </div>
+                  {check.error ? (
+                    <div className="mt-1 break-words text-[11px] text-red-200/90">
+                      {check.error}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

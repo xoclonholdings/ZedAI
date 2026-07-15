@@ -4,6 +4,8 @@ import { ChevronDown } from "lucide-react";
 import ToolsSection from "./FlowsSection";
 import RulesetSection from "./RulesetSection";
 import ZyncCodingOperatorSection from "./ZyncCodingOperatorSection";
+import EnvValidatorCard from "../EnvValidatorCard";
+import ProviderDiagnosticsCard from "../ProviderDiagnosticsCard";
 
 /**
  * Consolidated "Advanced" tab.
@@ -17,6 +19,7 @@ import ZyncCodingOperatorSection from "./ZyncCodingOperatorSection";
  * behind collapsed sections.
  */
 export default function AdvancedSection() {
+  const [openDiagnostics, setOpenDiagnostics] = useState<boolean>(true);
   const [openZync, setOpenZync] = useState<boolean>(false);
   const [openTools, setOpenTools] = useState<boolean>(false);
   const [openRules, setOpenRules] = useState<boolean>(false);
@@ -33,6 +36,18 @@ export default function AdvancedSection() {
           a section if you know exactly what you're changing.
         </p>
       </header>
+
+      <Section
+        title="AI host diagnostics"
+        subtitle="Provider routing, environment validation, and live host probes for the models Zed is about to call."
+        open={openDiagnostics}
+        onToggle={() => setOpenDiagnostics((v) => !v)}
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <ProviderDiagnosticsCard />
+          <EnvValidatorCard />
+        </div>
+      </Section>
 
       <Section
         title="Zync coding operator"

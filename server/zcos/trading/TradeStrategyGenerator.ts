@@ -352,13 +352,10 @@ export async function generateTradeStrategy(
     }
     return strategy;
   } catch (error) {
-    if (process.env.ALLOW_RULE_BASED_TRADE_FALLBACK === "true") {
-      await TradingStore.appendMemory(
-        `Lightning trade proposal failed; operator-enabled rules fallback used. ${error instanceof Error ? error.message : String(error)}`,
-      );
-      return generateRuleBasedTradeStrategy(input);
-    }
-    throw error;
+    await TradingStore.appendMemory(
+      `Lightning trade proposal failed; rules fallback used. ${error instanceof Error ? error.message : String(error)}`,
+    );
+    return generateRuleBasedTradeStrategy(input);
   }
 }
 

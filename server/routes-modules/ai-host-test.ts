@@ -13,7 +13,42 @@ import {
   getActiveProviderDefaultModel,
   getProviderRuntimeConfig,
 } from "../core/providers/provider-config";
+import type { ProviderLane, ReasoningEffort } from "../core/providers/provider-interface";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
+
+interface HostProbe {
+  name: string;
+  lane: ProviderLane;
+  reasoningEffort?: ReasoningEffort;
+}
+
+interface HostProbeResult extends HostProbe {
+  model: string;
+  status: "ok" | "error";
+  reply: string;
+  error: string;
+  errorKind: string;
+  elapsedMs: number;
+}
+
+function errorMessageFor(error: any): { error: string; errorKind: string } {
+  const message =
+    (typeof error?.message === "string" && error.message) ||
+    (typeof error === "string" && error) ||
+    "";
+  return {
+    errorKind: error?.constructor?.name || "Error",
+    error:
+      message ||
+      (() => {
+        try {
+          return JSON.stringify(error);
+        } catch {
+          return String(error);
+        }
+      })(),
+  };
+}
 
 /**
  * POST /api/admin/ai-host/test
@@ -33,51 +68,85 @@ export function registerAiHostTestRoute(app: Express): void {
       const providerConfig = getProviderRuntimeConfig();
       const model =
         providerConfig.activeModel || getActiveProviderDefaultModel(providerConfig);
+      const probes: HostProbe[] = [
+        { name: "default_chat", lane: "chat" },
+        { name: "manager_classifier", lane: "manager" },
+        { name: "finance_high_reasoning", lane: "finance", reasoningEffort: "high" },
+      ];
 
-      let chatStatus: "ok" | "error" = "ok";
-      let reply = "";
-      let error = "";
-      let errorKind = "";
       const startedAt = Date.now();
+      const checks: HostProbeResult[] = [];
 
-      try {
-        reply = await generateChatFromProvider(
-          [{ role: "user", content: "Reply with READY only." }],
-          undefined,
-          { lane: "manager" },
-        );
-      } catch (chatError: any) {
-        chatStatus = "error";
-        const message =
-          (typeof chatError?.message === "string" && chatError.message) ||
-          (typeof chatError === "string" && chatError) ||
-          "";
-        errorKind = chatError?.constructor?.name || "Error";
-        error =
-          message ||
-          (() => {
-            try {
-              return JSON.stringify(chatError);
-            } catch {
-              return String(chatError);
-            }
-          })();
-        await logRuntimeEvent({
-          level: "error",
-          source: "server",
-          event: "admin.ai_host.test_failed",
-          detail: error,
-          context: { provider, target, model, kind: errorKind },
-        });
+      for (const probe of probes) {
+        const probeStartedAt = Date.now();
+        const deploymentModel = getActiveProviderDefaultModel(providerConfig);
+        try {
+          const reply = await generateChatFromProvider(
+            [{ role: "user", content: "Reply with READY only." }],
+            undefined,
+            {
+              lane: probe.lane,
+              reasoningEffort: probe.reasoningEffort,
+              temperature: 0,
+              maxTokens: 16,
+            },
+          );
+          checks.push({
+            ...probe,
+            model: deploymentModel,
+            status: "ok",
+            reply,
+            error: "",
+            errorKind: "",
+            elapsedMs: Date.now() - probeStartedAt,
+          });
+        } catch (chatError: any) {
+          const detail = errorMessageFor(chatError);
+          const failed: HostProbeResult = {
+            ...probe,
+            model: deploymentModel,
+            status: "error",
+            reply: "",
+            error: detail.error,
+            errorKind: detail.errorKind,
+            elapsedMs: Date.now() - probeStartedAt,
+          };
+          checks.push(failed);
+          await logRuntimeEvent({
+            level: "error",
+            source: "server",
+            event: "admin.ai_host.test_failed",
+            detail: failed.error,
+            context: {
+              provider,
+              target,
+              model: deploymentModel,
+              lane: probe.lane,
+              reasoningEffort: probe.reasoningEffort || null,
+              kind: failed.errorKind,
+            },
+          });
+        }
       }
 
+      const failedChecks = checks.filter((check) => check.status === "error");
+      const status = failedChecks.length ? "failed" : "success";
+      const detail = failedChecks.length
+        ? failedChecks
+            .map((check) => `${check.name} (${check.model}): ${check.error}`)
+            .join(" | ")
+        : "AI host passed default chat, manager, and finance/high probes.";
+
       res.json({
+        status,
+        detail,
         provider,
         target,
         model,
         elapsedMs: Date.now() - startedAt,
         health,
-        chat: { status: chatStatus, reply, error, errorKind },
+        chat: checks.find((check) => check.name === "manager_classifier") || checks[0],
+        checks,
       });
     } catch (error: any) {
       res.status(500).json({
