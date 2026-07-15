@@ -77,6 +77,11 @@ function toOpenAIStyleContent(content: ProviderMessage["content"]): unknown {
   );
 }
 
+function errorDetailForModel(model: string, status: number, body: string): string {
+  const label = model || "deployment default";
+  return `${label}: Lightning ${status}${body ? `: ${body.slice(0, 220)}` : ""}`;
+}
+
 export class LightningProvider implements ModelProvider {
   private getConfig() {
     return getProviderRuntimeConfig().lightning;
@@ -123,43 +128,50 @@ export class LightningProvider implements ModelProvider {
       ? contentToText(lastUser.content)
       : buildPromptFromMessages(composed, options?.systemPrompt);
 
-    const requestBody: Record<string, unknown> = {
+    const baseRequestBody: Record<string, unknown> = {
       messages: composed.map((m) => ({
         role: m.role,
         content: toOpenAIStyleContent(m.content),
       })),
     };
-    if (config.model) requestBody.model = config.model;
     if (process.env.LIGHTNING_INCLUDE_RUNNER_COMPAT_FIELDS === "true") {
-      requestBody.message = userMessageText;
-      requestBody.system_prompt = options?.systemPrompt;
-      requestBody.images = attachments.map((img) => ({
+      baseRequestBody.message = userMessageText;
+      baseRequestBody.system_prompt = options?.systemPrompt;
+      baseRequestBody.images = attachments.map((img) => ({
         data: img.data,
         mediaType: img.mediaType,
       }));
     }
-    if (typeof options?.temperature === "number") requestBody.temperature = options.temperature;
-    if (typeof options?.maxTokens === "number") requestBody.max_tokens = options.maxTokens;
-    if (typeof options?.topP === "number") requestBody.top_p = options.topP;
+    if (typeof options?.temperature === "number") baseRequestBody.temperature = options.temperature;
+    if (typeof options?.maxTokens === "number") baseRequestBody.max_tokens = options.maxTokens;
+    if (typeof options?.topP === "number") baseRequestBody.top_p = options.topP;
 
-    const response = await fetchWithTimeout(
-      `${config.baseUrl}${config.chatPath}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...this.authHeaders() },
-        body: JSON.stringify(requestBody),
-      },
-      config.timeoutMs,
-    );
+    const modelAttempts = config.models.length ? config.models : [""];
+    const errors: string[] = [];
 
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "");
-      throw new Error(
-        `Lightning ${response.status}${errorBody ? `: ${errorBody.slice(0, 220)}` : ""}`,
+    for (const model of modelAttempts) {
+      const requestBody = model
+        ? { ...baseRequestBody, model }
+        : { ...baseRequestBody };
+      const response = await fetchWithTimeout(
+        `${config.baseUrl}${config.chatPath}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...this.authHeaders() },
+          body: JSON.stringify(requestBody),
+        },
+        config.timeoutMs,
       );
+
+      if (response.ok) {
+        return extractAssistantText(await response.json());
+      }
+
+      const errorBody = await response.text().catch(() => "");
+      errors.push(errorDetailForModel(model, response.status, errorBody));
     }
 
-    return extractAssistantText(await response.json());
+    throw new Error(`Lightning all approved models failed: ${errors.join(" | ")}`);
   }
 
   async streamChat(

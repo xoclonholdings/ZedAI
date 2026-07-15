@@ -137,21 +137,28 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     });
   }
 
+  const lightningModels = firstPresent(env, ["LIGHTNING_MODELS"]);
   const lightningModel = firstPresent(env, ["LIGHTNING_MODEL"]);
   const legacyModel = firstPresent(env, ["MODEL_NAME", "ZED_MODEL_NAME"]);
-  if (lightningModel) {
+  if (lightningModels) {
     checks.push({
       name: "AI_MODEL",
       severity: "ok",
-      message: `Using single Lightning model ${lightningModel.value}. Lane and reasoning model routing remains disabled.`,
+      message: `Using approved Lightning models ${lightningModels.value}. Lane and reasoning model routing remains disabled.`,
+    });
+  } else if (lightningModel) {
+    checks.push({
+      name: "AI_MODEL",
+      severity: "ok",
+      message: `Using approved Lightning model ${lightningModel.value}. Lane and reasoning model routing remains disabled.`,
     });
   } else if (!baseUrlKey) {
     checks.push({
       name: "AI_MODEL",
       severity: "ok",
       message:
-        "Using single default Lightning Model APIs model lightning-ai/gpt-oss-120b.",
-      hint: "Set LIGHTNING_MODEL only if Lightning changes the approved global API model.",
+        "Using approved Lightning Model APIs models lightning-ai/gpt-oss-120b and lightning-ai/gemma-4-31B-it.",
+      hint: "Set LIGHTNING_MODELS only if Lightning changes the approved global API models.",
     });
   } else {
     checks.push({

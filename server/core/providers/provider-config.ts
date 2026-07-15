@@ -22,6 +22,7 @@ export interface ProviderRuntimeConfig {
     baseUrl: string;
     apiKey: string;
     model: string;
+    models: string[];
     chatPath: string;
     healthPath: string;
     timeoutMs: number;
@@ -46,8 +47,15 @@ function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record
 }
 
 const DEFAULT_LIGHTNING_BASE_URL = "https://lightning.ai/api/v1";
-const DEFAULT_LIGHTNING_MODEL = "lightning-ai/gpt-oss-120b";
+const DEFAULT_LIGHTNING_MODELS = [
+  "lightning-ai/gpt-oss-120b",
+  "lightning-ai/gemma-4-31B-it",
+];
 const LIGHTNING_DEPLOYMENT_DEFAULT_LABEL = "Lightning deployment default";
+
+function uniqueNonEmpty(values: string[]): string[] {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const baseUrl = trimTrailingSlash(
@@ -56,13 +64,24 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
       DEFAULT_LIGHTNING_BASE_URL,
   );
   const usesDefaultModelApi = baseUrl === DEFAULT_LIGHTNING_BASE_URL;
-  const lightningModel = (
-    process.env.LIGHTNING_MODEL ||
-    (usesDefaultModelApi ? DEFAULT_LIGHTNING_MODEL : "")
-  ).trim();
+  const configuredModels = uniqueNonEmpty([
+    ...(process.env.LIGHTNING_MODELS || "")
+      .split(",")
+      .map((value) => value.trim()),
+    process.env.LIGHTNING_MODEL || "",
+  ]);
+  const lightningModels =
+    configuredModels.length > 0
+      ? configuredModels
+      : usesDefaultModelApi
+        ? DEFAULT_LIGHTNING_MODELS
+        : [];
+  const lightningModel = lightningModels[0] || "";
   return {
     activeProvider: "lightning",
-    activeModel: lightningModel || LIGHTNING_DEPLOYMENT_DEFAULT_LABEL,
+    activeModel: lightningModels.length
+      ? lightningModels.join(", ")
+      : LIGHTNING_DEPLOYMENT_DEFAULT_LABEL,
     laneModels: buildLaneModels(),
     reasoningModels: buildReasoningModels(),
     laneReasoningModels: buildLaneReasoningModels(),
@@ -74,6 +93,7 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
         process.env.LIGHTNING_TOKEN ||
         "",
       model: lightningModel,
+      models: lightningModels,
       chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat/completions",
       healthPath: process.env.LIGHTNING_HEALTH_PATH || "/models",
       timeoutMs: Number(process.env.LIGHTNING_TIMEOUT_MS || 45000),
@@ -91,5 +111,7 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
 export function getActiveProviderDefaultModel(
   config: ProviderRuntimeConfig = getProviderRuntimeConfig(),
 ): string {
-  return config.lightning.model || LIGHTNING_DEPLOYMENT_DEFAULT_LABEL;
+  return config.lightning.models.length
+    ? config.lightning.models.join(", ")
+    : LIGHTNING_DEPLOYMENT_DEFAULT_LABEL;
 }
