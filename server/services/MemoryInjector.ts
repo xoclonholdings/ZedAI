@@ -6,7 +6,6 @@ const WORKING_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-task
 const EPISODIC_MEMORY = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/email-decisions.json");
 const APPROVAL_QUEUE = path.resolve(HUB_SHARED_MEMORY_DIR, "episodic/approval-queue.json");
 const CONSENSUS = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/posting-guidelines.md");
-const FOUNDATION_OVERVIEW = path.resolve(HUB_SHARED_MEMORY_DIR, "consensus/foundation/foundation-overview.md");
 
 const MAX_WORKING_CHARS = 1200;
 const MAX_EPISODIC_ENTRIES = 5;
@@ -26,8 +25,39 @@ type InjectMemoryOptions = {
   userId?: string;
 };
 
+const INVALID_MEMORY_USER_IDS = new Set([
+  "",
+  "user",
+  "user_001",
+  "default-user",
+  "default_user",
+  "anonymous",
+  "unknown",
+  "offline",
+  "admin-user",
+  "admin_user",
+]);
+
+function requireMemoryUserId(value: unknown, operation: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${operation} requires an authenticated userId.`);
+  }
+  const userId = value.trim();
+  if (
+    INVALID_MEMORY_USER_IDS.has(userId) ||
+    userId.includes("..") ||
+    userId.includes("/") ||
+    userId.includes("\\")
+  ) {
+    throw new Error(`${operation} received an invalid or fallback userId.`);
+  }
+  return userId;
+}
+
 function safeUserId(userId: string): string {
-  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  if (!safe) throw new Error("Authenticated userId could not be converted to a scoped memory path.");
+  return safe;
 }
 
 async function loadWorking(): Promise<string> {
@@ -81,28 +111,26 @@ async function loadConsensus(): Promise<string> {
 }
 
 async function loadFoundation(userId?: string): Promise<string> {
-  const candidates = [
-    ...(userId
-      ? [path.resolve(HUB_USER_MEMORY_DIR, safeUserId(userId), "foundation/consensus/foundation-overview.md")]
-      : []),
-    FOUNDATION_OVERVIEW,
-  ];
+  const owner = requireMemoryUserId(userId, "foundation memory injection");
+  const candidate = path.resolve(
+    HUB_USER_MEMORY_DIR,
+    safeUserId(owner),
+    "foundation/consensus/foundation-overview.md",
+  );
 
-  for (const candidate of candidates) {
-    try {
-      const raw = await fs.readFile(candidate, "utf-8");
-      const trimmed = raw.trim();
-      if (trimmed) return trimmed.slice(0, MAX_FOUNDATION_CHARS);
-    } catch {
-      /* try the next scoped/legacy path */
-    }
+  try {
+    const raw = await fs.readFile(candidate, "utf-8");
+    const trimmed = raw.trim();
+    if (trimmed) return trimmed.slice(0, MAX_FOUNDATION_CHARS);
+  } catch {
+    /* No scoped foundation summary exists yet. */
   }
 
-  return "No imported foundation memory summary yet.";
+  return "No imported foundation memory summary exists for this user scope.";
 }
 
 export async function injectMemory(agentName: string, options?: InjectMemoryOptions): Promise<InjectedMemory> {
-  const includeFoundation = options?.includeFoundation !== false;
+  const includeFoundation = options?.includeFoundation === true;
   const [working, episodic, consensus, foundation] = await Promise.all([
     loadWorking(),
     loadEpisodic(),
