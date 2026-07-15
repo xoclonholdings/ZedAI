@@ -77,9 +77,27 @@ function toOpenAIStyleContent(content: ProviderMessage["content"]): unknown {
   );
 }
 
-function errorDetailForModel(model: string, status: number, body: string): string {
+interface AuthKeyAttempt {
+  label: string;
+  key: string;
+}
+
+function errorDetailForModel(
+  model: string,
+  authTarget: string,
+  status: number,
+  body: string,
+): string {
   const label = model || "deployment default";
-  return `${label}: Lightning ${status}${body ? `: ${body.slice(0, 500)}` : ""}`;
+  return `${label} via ${authTarget}: Lightning ${status}${body ? `: ${body.slice(0, 500)}` : ""}`;
+}
+
+function normalizeBillingTarget(value: string): string {
+  return value.trim().replace(/^\/+|\/+$/g, "");
+}
+
+function uniqueNonEmpty(values: string[]): string[] {
+  return Array.from(new Set(values.map(normalizeBillingTarget).filter(Boolean)));
 }
 
 export class LightningProvider implements ModelProvider {
@@ -103,9 +121,40 @@ export class LightningProvider implements ModelProvider {
    * so requests don't come back 401 "Missing or invalid Authorization
    * header". Falls back to no auth header only when no key is set.
    */
-  private authHeaders(): Record<string, string> {
+  private authHeaders(apiKey?: string): Record<string, string> {
+    const key = apiKey || this.getConfig().apiKey;
+    return key ? { Authorization: `Bearer ${key}` } : {};
+  }
+
+  private authKeyAttempts(): AuthKeyAttempt[] {
     const { apiKey } = this.getConfig();
-    return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+    if (!apiKey) return [{ label: "no api key", key: "" }];
+
+    const configuredTargets = uniqueNonEmpty([
+      ...(process.env.LIGHTNING_BILLING_TARGETS || "").split(","),
+      process.env.LIGHTNING_BILLING_TARGET || "",
+      process.env.LIGHTNING_TEAMSPACE && process.env.LIGHTNING_USERNAME
+        ? `${process.env.LIGHTNING_USERNAME}/${process.env.LIGHTNING_TEAMSPACE}`
+        : "",
+      process.env.LIGHTNING_TEAMSPACE && process.env.LIGHTNING_ORG
+        ? `${process.env.LIGHTNING_ORG}/${process.env.LIGHTNING_TEAMSPACE}`
+        : "",
+    ]);
+
+    const defaultTargets = uniqueNonEmpty([
+      "zed-ai/Default",
+      "zed-ai/default",
+      "zed-ai/Zed AI",
+    ]);
+    const targets = configuredTargets.length ? configuredTargets : defaultTargets;
+
+    return [
+      { label: "account", key: apiKey },
+      ...targets.map((target) => ({
+        label: target,
+        key: `${apiKey}/${target}`,
+      })),
+    ];
   }
 
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
@@ -147,28 +196,31 @@ export class LightningProvider implements ModelProvider {
     if (typeof options?.topP === "number") baseRequestBody.top_p = options.topP;
 
     const modelAttempts = config.models.length ? config.models : [""];
+    const authAttempts = this.authKeyAttempts();
     const errors: string[] = [];
 
-    for (const model of modelAttempts) {
-      const requestBody = model
-        ? { ...baseRequestBody, model }
-        : { ...baseRequestBody };
-      const response = await fetchWithTimeout(
-        `${config.baseUrl}${config.chatPath}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...this.authHeaders() },
-          body: JSON.stringify(requestBody),
-        },
-        config.timeoutMs,
-      );
+    for (const authAttempt of authAttempts) {
+      for (const model of modelAttempts) {
+        const requestBody = model
+          ? { ...baseRequestBody, model }
+          : { ...baseRequestBody };
+        const response = await fetchWithTimeout(
+          `${config.baseUrl}${config.chatPath}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...this.authHeaders(authAttempt.key) },
+            body: JSON.stringify(requestBody),
+          },
+          config.timeoutMs,
+        );
 
-      if (response.ok) {
-        return extractAssistantText(await response.json());
+        if (response.ok) {
+          return extractAssistantText(await response.json());
+        }
+
+        const errorBody = await response.text().catch(() => "");
+        errors.push(errorDetailForModel(model, authAttempt.label, response.status, errorBody));
       }
-
-      const errorBody = await response.text().catch(() => "");
-      errors.push(errorDetailForModel(model, response.status, errorBody));
     }
 
     throw new Error(`Lightning all approved models failed: ${errors.join(" | ")}`);
