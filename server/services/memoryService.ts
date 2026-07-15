@@ -11,6 +11,35 @@ import {
 import { initializeDefaultCoreMemory } from "./memory/initializeDefault";
 import { loadCoreMemoryFromFile } from "./memory/loadFromFile";
 
+const INVALID_MEMORY_USER_IDS = new Set([
+  "",
+  "user",
+  "user_001",
+  "default-user",
+  "default_user",
+  "anonymous",
+  "unknown",
+  "offline",
+  "admin-user",
+  "admin_user",
+]);
+
+function requireMemoryUserId(value: unknown, operation: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${operation} requires an authenticated userId.`);
+  }
+  const userId = value.trim();
+  if (
+    INVALID_MEMORY_USER_IDS.has(userId) ||
+    userId.includes("..") ||
+    userId.includes("/") ||
+    userId.includes("\\")
+  ) {
+    throw new Error(`${operation} received an invalid or fallback userId.`);
+  }
+  return userId;
+}
+
 export class MemoryService {
   private static readonly PERSISTENT_SCRATCHPAD_EXPIRES_AT = new Date("2100-01-01T00:00:00.000Z");
 
@@ -29,20 +58,28 @@ export class MemoryService {
 
   // Project Memory - Saved context and datasets
   static async getProjectMemory(userId: string): Promise<ProjectMemory[]> {
-    return await storage.getProjectMemoryByUser(userId);
+    return await storage.getProjectMemoryByUser(requireMemoryUserId(userId, "project memory read"));
   }
 
   static async createProjectMemory(
     data: InsertProjectMemory,
   ): Promise<ProjectMemory> {
-    return await storage.createProjectMemory(data);
+    return await storage.createProjectMemory({
+      ...data,
+      userId: requireMemoryUserId(data.userId, "project memory write"),
+    });
   }
 
   static async updateProjectMemory(
     id: string,
     updates: Partial<InsertProjectMemory>,
   ): Promise<ProjectMemory> {
-    return await storage.updateProjectMemory(id, updates);
+    return await storage.updateProjectMemory(
+      id,
+      updates.userId === undefined
+        ? updates
+        : { ...updates, userId: requireMemoryUserId(updates.userId, "project memory update") },
+    );
   }
 
   static async deleteProjectMemory(id: string): Promise<boolean> {
@@ -51,7 +88,7 @@ export class MemoryService {
 
   // Scratchpad Memory - Persistent working memory
   static async getScratchpadMemory(userId: string): Promise<ScratchpadMemory[]> {
-    return await storage.getScratchpadMemoryByUser(userId);
+    return await storage.getScratchpadMemoryByUser(requireMemoryUserId(userId, "scratchpad memory read"));
   }
 
   static async createScratchpadMemory(
@@ -59,6 +96,7 @@ export class MemoryService {
   ): Promise<ScratchpadMemory> {
     return await storage.createScratchpadMemory({
       ...data,
+      userId: requireMemoryUserId(data.userId, "scratchpad memory write"),
       expiresAt: this.PERSISTENT_SCRATCHPAD_EXPIRES_AT,
     });
   }
