@@ -9,7 +9,7 @@ import {
   insertScratchpadMemorySchema,
 } from "../../shared/schema";
 import { db } from "../db";
-import { users } from "../../shared/schema";
+import { users } from "../../shared/schema";`nimport { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
 
 /**
  * Knowledge / memory endpoints:
@@ -157,7 +157,7 @@ export function registerKnowledgeRoutes(app: Express): void {
       const latest = await KnowledgeCurationEngine.getLatestReview();
       if (latest) return res.json({ report: latest });
       const report = await KnowledgeCurationEngine.runReview({
-        userId: req.user?.claims?.sub || "admin-user",
+        userId: requireAuthenticatedMemoryUserId(req.user?.claims?.sub, "admin knowledge curation"),
         trigger: "admin-read-through",
       });
       res.json({ report });
@@ -220,7 +220,7 @@ export function registerKnowledgeRoutes(app: Express): void {
     try {
       const { ingestZedVoiceCorrection } = await import("../services/ZedVoiceFormationEngine");
       const item = await ingestZedVoiceCorrection({
-        userId: req.user?.claims?.sub || "unknown",
+        userId: requireAuthenticatedMemoryUserId(req.user?.claims?.sub, "voice correction memory"),
         conversationId: typeof req.body?.conversationId === "string" ? req.body.conversationId : undefined,
         userMessage: String(req.body?.correction || req.body?.content || ""),
         previousAssistantContent:
