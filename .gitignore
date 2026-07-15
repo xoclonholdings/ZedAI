@@ -23,3 +23,13 @@ zed-config/deployment/.netlify
 # Temporary files
 zed-temp/*
 memory-imports/*
+# Memory boundary: future runtime and personal-memory files must not enter Git.
+# Existing tracked legacy files stay tracked until a later verified migration/history pass.
+zed-memory/**
+!zed-memory/
+!zed-memory/LEGACY_BACKUP_MANIFEST.md
+hub/user-memory/
+hub/trading/
+hub/learning/
+hub/shared-memory/object-memory/
+hub/shared-memory/object-reparse/
