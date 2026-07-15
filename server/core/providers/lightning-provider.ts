@@ -142,6 +142,9 @@ export class LightningProvider implements ModelProvider {
     ]);
 
     const defaultTargets = uniqueNonEmpty([
+      "zed-ai/Zed-AI Teamspace",
+      "zed-ai/Zed-online",
+      "zed-ai/zed-online",
       "zed-ai/Default",
       "zed-ai/default",
       "zed-ai/Zed AI",
