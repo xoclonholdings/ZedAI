@@ -221,38 +221,18 @@ export class LightningProvider implements ModelProvider {
         detail: "LIGHTNING_BASE_URL not set",
       };
     }
-    try {
-      const res = await fetchWithTimeout(
-        `${config.baseUrl}${config.healthPath}`,
-        { headers: this.authHeaders() },
-        config.healthTimeoutMs,
-      );
-      if (!res.ok) {
-        return {
-          status: "offline",
-          models: [],
-          provider: "lightning",
-          detail: `HTTP ${res.status}`,
-        };
-      }
-      const data = await res.json().catch(() => ({}));
-      const modelList = Array.isArray(data?.data)
-        ? data.data
-            .map((item: any) => item?.id)
-            .filter((value: unknown): value is string => typeof value === "string")
-        : [];
-      return {
-        status: "online",
-        models: modelList.length > 0 ? modelList : data?.model ? [data.model] : ["Lightning deployment default"],
-        provider: "lightning",
-      };
-    } catch (err) {
+    if (!config.apiKey) {
       return {
         status: "offline",
         models: [],
         provider: "lightning",
-        detail: err instanceof Error ? err.message : String(err),
+        detail: "LIGHTNING_API_KEY not set",
       };
     }
+    return {
+      status: "online",
+      models: config.models.length ? config.models : ["Lightning deployment default"],
+      provider: "lightning",
+    };
   }
 }

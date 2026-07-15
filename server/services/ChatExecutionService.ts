@@ -124,6 +124,9 @@ function hasTemplateLeakage(value: string): boolean {
 
 function normalizeFailureReason(error: any, trace: ChatExecutionTrace): string {
   const message = error?.message || String(error);
+  if (/lightning/i.test(message)) {
+    return message;
+  }
   if (/fetch failed|ECONNREFUSED|ECONNRESET|model host|provider|api[_ -]?key|not configured/i.test(message)) {
     return `modelProviderUnavailable:${trace.providerUsed || "unknown"}:${trace.providerTarget || "unknown"}`;
   }
