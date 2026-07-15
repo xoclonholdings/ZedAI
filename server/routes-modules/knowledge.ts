@@ -9,7 +9,8 @@ import {
   insertScratchpadMemorySchema,
 } from "../../shared/schema";
 import { db } from "../db";
-import { users } from "../../shared/schema";`nimport { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
+import { users } from "../../shared/schema";
+import { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
 
 /**
  * Knowledge / memory endpoints:
