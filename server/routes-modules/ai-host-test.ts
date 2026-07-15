@@ -31,6 +31,23 @@ interface HostProbeResult extends HostProbe {
   elapsedMs: number;
 }
 
+interface PublicAiHostProbeResult {
+  status: "ok" | "error";
+  provider: string;
+  target: string;
+  model: string;
+  reply: string;
+  error: string;
+  errorKind: string;
+  elapsedMs: number;
+  cached?: boolean;
+}
+
+const PUBLIC_AI_HOST_PROBE_TTL_MS = 60_000;
+let publicAiHostProbeCache:
+  | { at: number; body: PublicAiHostProbeResult }
+  | null = null;
+
 function errorMessageFor(error: any): { error: string; errorKind: string } {
   const message =
     (typeof error?.message === "string" && error.message) ||
@@ -60,6 +77,67 @@ function errorMessageFor(error: any): { error: string; errorKind: string } {
  * tailing the server log.
  */
 export function registerAiHostTestRoute(app: Express): void {
+  app.get("/api/health/ai-host", async (_req, res) => {
+    if (
+      publicAiHostProbeCache &&
+      Date.now() - publicAiHostProbeCache.at < PUBLIC_AI_HOST_PROBE_TTL_MS
+    ) {
+      return res.json({ ...publicAiHostProbeCache.body, cached: true });
+    }
+
+    const startedAt = Date.now();
+    const provider = getActiveProviderName({ lane: "chat" });
+    const target = getResolvedTargetName({ lane: "chat" });
+    const providerConfig = getProviderRuntimeConfig();
+    const model = getActiveProviderDefaultModel(providerConfig);
+
+    try {
+      const reply = await generateChatFromProvider(
+        [{ role: "user", content: "Reply with READY only." }],
+        undefined,
+        { lane: "chat", temperature: 0, maxTokens: 16 },
+      );
+      const body: PublicAiHostProbeResult = {
+        status: "ok",
+        provider,
+        target,
+        model,
+        reply,
+        error: "",
+        errorKind: "",
+        elapsedMs: Date.now() - startedAt,
+      };
+      publicAiHostProbeCache = { at: Date.now(), body };
+      return res.json(body);
+    } catch (error: any) {
+      const detail = errorMessageFor(error);
+      const body: PublicAiHostProbeResult = {
+        status: "error",
+        provider,
+        target,
+        model,
+        reply: "",
+        error: detail.error,
+        errorKind: detail.errorKind,
+        elapsedMs: Date.now() - startedAt,
+      };
+      publicAiHostProbeCache = { at: Date.now(), body };
+      await logRuntimeEvent({
+        level: "error",
+        source: "server",
+        event: "health.ai_host.failed",
+        detail: detail.error,
+        context: {
+          provider,
+          target,
+          model,
+          kind: detail.errorKind,
+        },
+      });
+      return res.status(502).json(body);
+    }
+  });
+
   app.post("/api/admin/ai-host/test", isAdmin, async (_req, res) => {
     try {
       const health = await checkModelProviderHealth();
