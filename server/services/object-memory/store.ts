@@ -14,10 +14,10 @@ import type {
 /**
  * Persistence for the object-memory reparse.
  *
- * Unscoped dry-run/apply writes remain in hub/shared-memory for system
- * memory. User-scoped writes land under hub/user-memory/<userId>/ so
+ * Unscoped dry-run/apply writes remain in hub/shared-memory for explicit
+ * system memory. User-scoped writes land under hub/user-memory/<userId>/ so
  * admin/project data does not become system memory by accident.
- * Apply mode is implemented by writeAppliedGraph — it backs up any
+ * Apply mode is implemented by writeAppliedGraph - it backs up any
  * existing graph, writes the new one alongside a reparse-history
  * entry, and never destroys prior data.
  */
@@ -25,12 +25,44 @@ import type {
 const REPARSE_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "object-reparse");
 const APPLIED_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "object-memory");
 
+const INVALID_MEMORY_USER_IDS = new Set([
+  "",
+  "user",
+  "user_001",
+  "default-user",
+  "default_user",
+  "anonymous",
+  "unknown",
+  "offline",
+  "admin-user",
+  "admin_user",
+]);
+
 export interface ObjectMemoryScope {
   userId?: string;
 }
 
+function requireObjectMemoryUserId(value: unknown, operation: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${operation} requires an authenticated userId.`);
+  }
+  const userId = value.trim();
+  if (
+    INVALID_MEMORY_USER_IDS.has(userId) ||
+    userId.includes("..") ||
+    userId.includes("/") ||
+    userId.includes("\\")
+  ) {
+    throw new Error(`${operation} received an invalid or fallback userId.`);
+  }
+  return userId;
+}
+
 function safeUserId(userId: string): string {
-  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+  const owner = requireObjectMemoryUserId(userId, "object memory path");
+  const safe = owner.replace(/[^a-zA-Z0-9_-]/g, "_");
+  if (!safe) throw new Error("Authenticated userId could not be converted to a scoped memory path.");
+  return safe;
 }
 
 function appliedDir(scope?: ObjectMemoryScope): string {
@@ -190,7 +222,7 @@ export async function writeDryRunOutputs(input: WriteDryRunInput, scope?: Object
 /**
  * Apply mode: back up existing applied graph (if any), then write
  * the new one to the selected system or user-scoped graph.
- * Callers must be explicit — this only runs from the CLI --apply
+ * Callers must be explicit - this only runs from the CLI --apply
  * path, never by default.
  */
 export async function writeAppliedGraph(graph: ObjectGraph, scope?: ObjectMemoryScope): Promise<{
@@ -268,20 +300,9 @@ export async function readAppliedGraph(scope?: ObjectMemoryScope): Promise<Objec
 
 export async function resolveObjectMemoryUserId(
   userId: string | undefined,
-  options?: { isAdmin?: boolean },
+  _options?: { isAdmin?: boolean },
 ): Promise<string | undefined> {
-  const current = userId?.trim() || undefined;
-  if (!options?.isAdmin) return current;
-
-  const candidates = Array.from(new Set([current, "user_admin"].filter(Boolean) as string[]));
-  for (const candidate of candidates) {
-    const graph = await readAppliedGraph({ userId: candidate }).catch(() => null);
-    if ((graph?.objects?.length || 0) > 0 || (graph?.sources?.length || 0) > 0) {
-      return candidate;
-    }
-  }
-
-  return current || "user_admin";
+  return requireObjectMemoryUserId(userId, "object memory owner resolution");
 }
 
 function renderMarkdown(graph: ObjectGraph): string {
