@@ -22,11 +22,11 @@ ZedAI/
   attached_assets/  Static attached image assets
   client/           React + Vite frontend
   docs/             Canonical policies
-  hub/              Runtime shared-memory/config area
+  hub/              Runtime config plus local fallback/export areas
   scripts/local/    Local Windows workstation launchers
   server/           Express + TypeScript backend
   shared/           Shared schemas and cross-app types/config
-  zed-memory/       Immutable raw ChatGPT export backup (not runtime)
+  zed-memory/       Admin user read-only legacy personal archive (not runtime)
   netlify.toml      Netlify deploy configuration (production is Render)
   package.json      Root package metadata
   package-lock.json Root dependency lockfile
@@ -221,7 +221,7 @@ Per the buffer requirement above, the provider layer supports true streaming via
 - Structured ingestion lives under `server/services/knowledge-ingestion/` and is registered through `server/routes-modules/knowledge-ingestion.ts`.
 - Imported content is normalized into candidate knowledge first. It is not treated as canonical until validated or promoted.
 - The ingestion pipeline performs source analysis, semantic decomposition, object detection, relationship mapping, timeline detection, decision extraction, conflict detection, duplicate-aware graph integration, and reasoning-index generation.
-- The service creates durable graph state at runtime under `hub/shared-memory/knowledge-graph/knowledge-graph.json`.
+- Durable graph state belongs in the database-backed memory boundary. Files under `hub/shared-memory/knowledge-graph/` are local fallback/export artifacts only, not authoritative production user memory.
 - Graph objects retain current truth, historical truth, evidence, confidence, contradictions, open questions, related objects, temporal status, and candidate/canonical state.
 - Conflict resolution never overwrites silently. Resolved conflicts preserve the conflict record and update affected objects with a reviewed truth state.
 - The Context Inquiry Engine sits between retrieval and response generation. It scores completeness, confidence, recency, relationship density, conflict count, context depth, and unknown fields.
@@ -262,36 +262,66 @@ Per the buffer requirement above, the provider layer supports true streaming via
 
 - Lightning AI is the sole model provider, accessed directly over HTTP through `server/core/providers/lightning-provider.ts`. There are no OpenAI, Claude, Ollama, or intermediary-gateway adapters — the endpoint is configured with `LIGHTNING_BASE_URL` (model via `LIGHTNING_MODEL` / `MODEL_NAME`, optional per-lane overrides via `MODEL_<lane>`).
 - Filesystem-backed fallback storage
-- Hub/shared-memory content used by agents
+- Durable database-backed memory contracts plus scoped hub fallback/export areas used by agents
 
 ## Memory Model
 
-- Live runtime memory is rooted at `hub/shared-memory/`
-- Current active memory areas include:
-  - `working/`
-  - `episodic/`
-  - `consensus/`
-  - `semantic/`
-  - `curation/`
-  - `knowledge-graph/`
-- Structured candidate/canonical graph memory is persisted at runtime under:
-  - `hub/shared-memory/knowledge-graph/knowledge-graph.json`
-- Legacy ChatGPT exports were reconciled into the canonical foundation under:
-  - `hub/shared-memory/semantic/foundation/`
-  - `hub/shared-memory/episodic/imported/`
-  - `hub/shared-memory/consensus/foundation/`
-- Lightweight lookup files now exist for normal reasoning:
-  - `hub/shared-memory/semantic/foundation/conversation-index.json`
-  - `hub/shared-memory/semantic/foundation/recent-conversations.json`
-  - `hub/shared-memory/semantic/foundation/shards/`
-- Full normalized cold storage remains at:
-  - `hub/shared-memory/semantic/foundation/merged-conversations.json`
-- Knowledge curation review output is persisted under:
-  - `hub/shared-memory/curation/latest-review.json`
-  - `hub/shared-memory/curation/review-history.jsonl`
-- `zed-memory/` is retained as a read-only raw backup archive and is not the active runtime memory source
-- The backup/archive role of `zed-memory/` is documented in `zed-memory/LEGACY_BACKUP_MANIFEST.md`
+Zed has four separate memory layers. Ownership and authority must be explicit at the schema and service boundary.
 
+### Zed Core
+
+Zed Core is shared across every user and contains only Zed identity, operating principles, response governance, orchestration rules, tool and capability definitions, approval rules, memory-handling policy, retrieval policy, verification policy, universal workspace contracts, and shared object schemas.
+
+Zed Core must not contain personal conversations, preferences, user projects, uploaded documents, relationships, decisions, goals, private business records, ZWAP-specific history, or historical ChatGPT exports.
+
+### Shared System Knowledge
+
+Shared system knowledge is reusable domain knowledge intentionally installed for all authorized users. Examples include universal tool documentation, general operating frameworks, shared educational references, and reusable system workflows. It is distinct from Zed Core and from all user-owned memory.
+
+### User Identity and Personalization
+
+User identity and personalization is owned by exactly one authenticated user. It stores structured profile and preference records such as preferred name, communication preferences, values, goals, working style, memory permissions, relationship preferences with Zed, confirmed behavioral preferences, and proposed or observed preferences awaiting confirmation.
+
+### User Knowledge and History
+
+User knowledge and history is owned by exactly one authenticated user. It includes uploaded documents, imported conversations, projects, decisions, relationships, historical events, source material, extracted objects, extracted relationships, summaries, evidence, conflicts, timelines, and conversation history intended for long-term retrieval.
+
+### Durable Boundary Contracts
+
+The first durable boundary is represented by these database-backed contracts:
+
+- `user_memory_profiles`
+- `user_memory_policies`
+- `memory_sources`
+- `memory_objects`
+- `memory_proposals`
+
+Every user-owned memory source, object, proposal, policy, or profile must carry a real authenticated `userId`. Missing ownership must fail clearly. Fallback owners such as `user`, `user_001`, `default-user`, `anonymous`, `unknown`, or invented admin IDs are prohibited.
+
+Shared records use explicit shared layers (`zed_core` or `shared_system`) and must not carry a user owner. User-owned records use explicit user layers (`user_identity` or `user_history`) and must carry the owner `userId`.
+
+### Legacy Admin Archive
+
+The existing `zed-memory/` and `zed-memory/storage/` corpus is formally classified as:
+
+- Owner: `user_admin`
+- Role: legacy personal historical corpus
+- Authority: historical evidence, not automatic current truth
+- Shared with other users: never
+- Zed Core: no
+- Shared system knowledge: no
+- Writable by the runtime: no
+- Runtime source for new users: no
+- Migration in this pass: prohibited
+- Deletion before reconciliation: prohibited
+
+`zed-memory/` is preserved as read-only legacy source material until a later verified migration and reconciliation pass. It must not be loaded for other users and must not be treated as universal Zed memory.
+
+### Runtime Files and Git
+
+No user data belongs in Git. Runtime files under `hub/`, local exports, generated graphs, user uploads, trading state, learning state, app state, and personal memory archives must remain outside source control unless they are deliberate static seed data or reviewed documentation.
+
+Filesystem storage may remain only as local development fallback, read-only legacy source, export, or temporary processing location. Production memory writes must use durable database-backed storage and must not silently report success when durable storage is unavailable.
 ### Knowledge Curation and Evolution Engine
 
 The Knowledge Curation and Evolution Engine is an active runtime memory system after the Knowledge Ingestion Engine and Context Engine. Its role is to act on what the first two systems learned by continuously maintaining knowledge quality, organization, accuracy, and long-term evolution.
@@ -578,4 +608,4 @@ When the project changes, update `SPEC.md` for any of the following:
 - The repo previously contained tracked local model artifacts under `models/`
 - Those model artifacts were removed from current reachable history and should not be added again
 - The repository was normalized to keep only `main` and `backup`
-- New raw memory exports should be staged under `memory-imports/` and only merged into `hub/shared-memory/` after verification
+- New raw memory exports must stay out of Git and may only be imported into the correct durable layer after authenticated ownership, verification, and later migration tooling are in place
