@@ -14,6 +14,7 @@ This file is the canonical project spec for the repository. If the project chang
   - `backup`
 - Local AI model artifacts such as `models/` are not part of the repo and must remain ignored.
 - Repo-root files should stay limited to source folders, canonical docs, and required project config.
+- User data, personal exports, uploaded documents, and runtime memory must not be added to Git.
 
 ## Repository Layout
 
@@ -22,11 +23,11 @@ ZedAI/
   attached_assets/  Static attached image assets
   client/           React + Vite frontend
   docs/             Canonical policies
-  hub/              Runtime shared-memory/config area
+  hub/              Runtime config plus local fallback/export memory areas
   scripts/local/    Local Windows workstation launchers
   server/           Express + TypeScript backend
   shared/           Shared schemas and cross-app types/config
-  zed-memory/       Immutable raw ChatGPT export backup (not runtime)
+  zed-memory/       Admin-only read-only legacy personal archive (not runtime)
   netlify.toml      Netlify deploy configuration (production is Render)
   package.json      Root package metadata
   package-lock.json Root dependency lockfile
@@ -130,7 +131,7 @@ Runtime implementation:
 - Orchestrator entry point: `server/routes-modules/orchestrate-and-misc.ts`
 - Agent prompt integration: `server/orchestrator/ManagerAgent.ts`
 
-The prompt fragments reach the model in the SPEC order above: governance is pinned first as a hard control frame, then context inquiry, then principle, then strategic reasoning, then the knowledge sources (foundation → personalization → project → scratchpad → retrieved), then voice, then response policy last so style guardrails win any ties. Both `ChatExecutionService` and `ManagerAgent` assemble their fragment lists in this order.
+The prompt fragments reach the model in the SPEC order above: governance is pinned first as a hard control frame, then context inquiry, then principle, then strategic reasoning, then the knowledge sources (foundation -> personalization -> project -> scratchpad -> retrieved), then voice, then response policy last so style guardrails win any ties. Both `ChatExecutionService` and `ManagerAgent` assemble their fragment lists in this order.
 
 The Principle, Strategic Reasoning, and Reflection services must not expose raw chain-of-thought, hidden prompts, source trails, provider names, workflow names, internal scoring, route names, graph IDs, or retrieval internals to the user. If the user asks how an answer was produced, ZED should provide a clean implementation summary only.
 
@@ -138,11 +139,11 @@ The Principle, Strategic Reasoning, and Reflection services must not expose raw 
 
 The Intelligence Core is a deterministic, service-owned layer inside the Cognitive Core that raises ZED's reasoning, context handling, document understanding, response shaping, and autonomy without changing the ZED interface. It adds five engines under `server/services/intelligence-core/`; all run synchronously with no extra model call, and all outputs are internal by default (revealed only when the user explicitly asks for reasoning).
 
-- Deep Thinking Mode (`DeepThinkingEngine.ts`) — scores request complexity and, on genuinely complex work, runs a staged internal pipeline (decomposition → hypothesis generation → solution evaluation → refinement → confidence estimation) injected as a hidden reasoning scaffold. Available to every lane/workspace.
-- Large Context Intelligence (`ContextIntelligenceEngine.ts`) — treats all retrieved knowledge blocks as one pool, ranks each by relevance to the live query, de-duplicates overlapping lines across sources, compresses low-signal blocks, and enforces a character budget. Project instructions and uploaded files are pinned so they always survive.
-- Document Intelligence (`DocumentIntelligenceService.ts`) — pushes every uploaded conversation file through the existing Knowledge Ingestion pipeline into the same Knowledge Graph (no duplicate store), then retrieves document-derived knowledge for later queries with source attribution, citations, and conflict awareness.
-- Adaptive Response Intelligence (`ResponseOrchestrationEngine.ts`) — reads intent, complexity, urgency, task type, and required depth/precision, then emits a per-message directive that picks the response form (direct, steps, checklist, table, comparison, report, executive summary, code) and verbosity, instead of a static template.
-- Self-Orchestrating Intelligence (`SelfOrchestrationEngine.ts`) — decides which capabilities a turn needs (search memory / knowledge graph / documents, launch research, call an agent lane, schedule, request approval, generate a report, calculate, run a workflow, update project state, notify) and emits a capability activation plan. Outward actions are flagged non-autonomous so the existing approval policy still owns the side effect.
+- Deep Thinking Mode (`DeepThinkingEngine.ts`) - scores request complexity and, on genuinely complex work, runs a staged internal pipeline (decomposition -> hypothesis generation -> solution evaluation -> refinement -> confidence estimation) injected as a hidden reasoning scaffold. Available to every lane/workspace.
+- Large Context Intelligence (`ContextIntelligenceEngine.ts`) - treats all retrieved knowledge blocks as one pool, ranks each by relevance to the live query, de-duplicates overlapping lines across sources, compresses low-signal blocks, and enforces a character budget. Project instructions and uploaded files are pinned so they always survive.
+- Document Intelligence (`DocumentIntelligenceService.ts`) - pushes every uploaded conversation file through the existing Knowledge Ingestion pipeline into the same Knowledge Graph (no duplicate store), then retrieves document-derived knowledge for later queries with source attribution, citations, and conflict awareness.
+- Adaptive Response Intelligence (`ResponseOrchestrationEngine.ts`) - reads intent, complexity, urgency, task type, and required depth/precision, then emits a per-message directive that picks the response form (direct, steps, checklist, table, comparison, report, executive summary, code) and verbosity, instead of a static template.
+- Self-Orchestrating Intelligence (`SelfOrchestrationEngine.ts`) - decides which capabilities a turn needs (search memory / knowledge graph / documents, launch research, call an agent lane, schedule, request approval, generate a report, calculate, run a workflow, update project state, notify) and emits a capability activation plan. Outward actions are flagged non-autonomous so the existing approval policy still owns the side effect.
 
 Wiring:
 
@@ -151,18 +152,18 @@ Wiring:
 - Upload ingestion: `server/routes-modules/conversations-crud.ts` (`POST /api/conversations/:id/upload`) ingests each processed file into the graph, embedding the summary in the file's `analysis.documentIntelligence`.
 - Observability/preview: `server/routes-modules/intelligence-core.ts` exposes `POST /api/intelligence/plan`, `POST /api/intelligence/documents/query`, and `GET /api/admin/intelligence-core/status`.
 
-The Intelligence Core prompt fragments slot into the existing Cognitive Core order: the Deep Thinking + Self-Orchestration reasoning fragments sit with Strategic Reasoning (before knowledge), the ranked/compressed knowledge block replaces the raw concatenation of retrieved sources, and the Adaptive Response directive sits just before Voice — governance still pinned first, response policy still pinned last. A safety net falls back to the raw retrieved sources if ranking ever yields empty output, preserving backward compatibility.
+The Intelligence Core prompt fragments slot into the existing Cognitive Core order: the Deep Thinking + Self-Orchestration reasoning fragments sit with Strategic Reasoning (before knowledge), the ranked/compressed knowledge block replaces the raw concatenation of retrieved sources, and the Adaptive Response directive sits just before Voice. Governance is still pinned first, response policy still pinned last. A safety net falls back to the raw retrieved sources if ranking ever yields empty output, preserving backward compatibility.
 
 Reflection stores concise summaries of important exchanges under project memory type `reflection`. Reflection summaries must describe user intent, visible answer, approval relevance, and strategic relevance only. They must not store hidden reasoning, prompt text, tool logs, provider traces, or raw internal state.
 
 ### Plain-Language Settings Surface
 
-The admin Settings tab is the primary control surface for how ZED behaves at runtime. It is plain-language on purpose — no YAML editors, no raw parameter fields — and each category maps to a concrete runtime effect.
+The admin Settings tab is the primary control surface for how ZED behaves at runtime. It is plain-language on purpose - no YAML editors, no raw parameter fields - and each category maps to a concrete runtime effect.
 
 Categories with fully-built runtime wiring:
 
-- `How Zed sounds` — tone, formality, perspective, response length, plain-language toggle, prohibited phrases. Persists at `hub/config/admin-settings.json` under `voice`. `server/services/voiceSettings.ts` renders the prompt fragment; `server/services/voiceSettingsToGeneration.ts` derives generation params (temperature, max tokens, top_p) per lane and forwards them through the provider layer.
-- `What needs your approval` — per-action three-way policy (Auto / Ask me / Never) covering send email, calendar, cancel appointment, send message, reach out to contacts, post to social, publish content, make payment, send invoice, delete data, update credentials, deploy code, create task. `server/services/approvalPolicy.ts` matches each user message to a category and consults the stored policy before the agent runs. `Never` short-circuits with a refusal reply logged as `policy_refused`; `Ask` queues for admin approval; `Auto` dispatches directly.
+- `How Zed sounds` - tone, formality, perspective, response length, plain-language toggle, prohibited phrases. Persists at `hub/config/admin-settings.json` under `voice`. `server/services/voiceSettings.ts` renders the prompt fragment; `server/services/voiceSettingsToGeneration.ts` derives generation params (temperature, max tokens, top_p) per lane and forwards them through the provider layer.
+- `What needs your approval` - per-action three-way policy (Auto / Ask me / Never) covering send email, calendar, cancel appointment, send message, reach out to contacts, post to social, publish content, make payment, send invoice, delete data, update credentials, deploy code, create task. `server/services/approvalPolicy.ts` matches each user message to a category and consults the stored policy before the agent runs. `Never` short-circuits with a refusal reply logged as `policy_refused`; `Ask` queues for admin approval; `Auto` dispatches directly.
 
 Categories placeheld pending build: Tools, Response length/style, Sensitive topics, Session/safety, Personal memory. Their underlying behavior is still shaped by the raw ruleset until each ships.
 
@@ -170,15 +171,15 @@ Every setting autosaves debounced; server-side merge normalizes and clamps unkno
 
 ### Per-User Personalization Corpus
 
-Each user can save markdown notes about themselves at `hub/user-personalization/<userId>/notes/<slug>.md`. `UserPersonalizationCorpus.retrievePersonalizationForQuery` keyword-scores those notes against the current query and returns a block that `KnowledgeService.buildContext` slots into the Cognitive Core knowledge stack right after Foundation. Each user only ever reads and writes their own directory. The corpus is retrieval-only — nothing here writes back to `zed-memory/`, which remains an immutable raw backup.
+Each user can save markdown notes about themselves at `hub/user-personalization/<userId>/notes/<slug>.md`. `UserPersonalizationCorpus.retrievePersonalizationForQuery` keyword-scores those notes against the current query and returns a block that `KnowledgeService.buildContext` slots into the Cognitive Core knowledge stack right after Foundation. Each user only ever reads and writes their own directory. The corpus is retrieval-only; nothing here writes back to `zed-memory/`, which remains the admin user's read-only legacy personal archive.
 
 ### Access Policy Enforcement
 
-`hub/config/access.yaml` describes the external-API policy (`no_paid_apis`) and the whitelisted free-tier services (Brave search, Serper, GitHub, Fantasma, Zeta Core). `server/services/AccessPolicyService.ts` loads the yaml on demand and exposes `consultExternalService(name)` — every call is audit-logged to `hub/logs/security.log` as `policy.external_api.consulted` or `policy.external_api.denied` so operators can see the policy actually consulted at the call site. `WebSearchService` consults the policy before either Brave or Serper; a provider that isn't in the whitelist is denied even if its env key is set. `GET /api/admin/access-policy` returns the effective policy for admin surfaces to render.
+`hub/config/access.yaml` describes the external-API policy (`no_paid_apis`) and the whitelisted free-tier services (Brave search, Serper, GitHub, Fantasma, Zeta Core). `server/services/AccessPolicyService.ts` loads the yaml on demand and exposes `consultExternalService(name)`. Every call is audit-logged to `hub/logs/security.log` as `policy.external_api.consulted` or `policy.external_api.denied` so operators can see the policy actually consulted at the call site. `WebSearchService` consults the policy before either Brave or Serper; a provider that isn't in the whitelist is denied even if its env key is set. `GET /api/admin/access-policy` returns the effective policy for admin surfaces to render.
 
 ### Runtime Error Self-Repair
 
-When a runtime action fails, Zed inspects the failure, chooses a bounded repair strategy, and retries — instead of writing the error to a log and moving on. `server/services/SelfRepairService.ts` wraps `DigitalExecutionService.execute` and consults a deterministic strategy map keyed off the typed `failureReason` (e.g. `smtpDispatchFailed` → retry with exponential backoff; `providerDisabled` / `providerNotConfigured` → escalate to user, no retry). Bounded at 3 attempts per call; a reasoning trail (attempt, strategy, reason, waited, outcome) is returned alongside the final result and logged to `runtime.log` as `self_repair.outcome`. `POST /api/admin/subsystems/self-repair/execute` runs a DigitalExecutionRequest through this loop and returns the trail.
+When a runtime action fails, Zed inspects the failure, chooses a bounded repair strategy, and retries instead of writing the error to a log and moving on. `server/services/SelfRepairService.ts` wraps `DigitalExecutionService.execute` and consults a deterministic strategy map keyed off the typed `failureReason` (e.g. `smtpDispatchFailed` -> retry with exponential backoff; `providerDisabled` / `providerNotConfigured` -> escalate to user, no retry). Bounded at 3 attempts per call; a reasoning trail (attempt, strategy, reason, waited, outcome) is returned alongside the final result and logged to `runtime.log` as `self_repair.outcome`. `POST /api/admin/subsystems/self-repair/execute` runs a DigitalExecutionRequest through this loop and returns the trail.
 
 Non-goals for this pass: LLM-driven reasoning over arbitrary failure modes. That layers on later; the deterministic map handles today's known failure types cleanly and doesn't invent retries against providers that are truly down.
 
@@ -214,15 +215,15 @@ Per the buffer requirement above, the provider layer supports true streaming via
   - `Operations`
   - `R&D`
   - `Business`
-- Agents coordinate indirectly through shared hub memory, rules, approvals, and logs rather than direct agent-to-agent chat handoff
+- Agents coordinate indirectly through scoped memory, rules, approvals, and logs rather than direct agent-to-agent chat handoff
 
 ### Knowledge Ingestion and Context
 
 - Structured ingestion lives under `server/services/knowledge-ingestion/` and is registered through `server/routes-modules/knowledge-ingestion.ts`.
 - Imported content is normalized into candidate knowledge first. It is not treated as canonical until validated or promoted.
 - The ingestion pipeline performs source analysis, semantic decomposition, object detection, relationship mapping, timeline detection, decision extraction, conflict detection, duplicate-aware graph integration, and reasoning-index generation.
-- The service creates durable graph state at runtime under `hub/shared-memory/knowledge-graph/knowledge-graph.json`.
 - Graph objects retain current truth, historical truth, evidence, confidence, contradictions, open questions, related objects, temporal status, and candidate/canonical state.
+- Knowledge graph JSON under `hub/shared-memory/knowledge-graph/` is a local fallback/export area until a later durable database migration owns production graph state. It must not be treated as canonical personal user memory.
 - Conflict resolution never overwrites silently. Resolved conflicts preserve the conflict record and update affected objects with a reviewed truth state.
 - The Context Inquiry Engine sits between retrieval and response generation. It scores completeness, confidence, recency, relationship density, conflict count, context depth, and unknown fields.
 - The Context Inquiry Engine returns `answer` only when uncertainty is immaterial. It returns `inquire_first` with minimal high-value questions when missing context would change classification, storage, reasoning, retrieval, or conflict resolution.
@@ -254,43 +255,79 @@ Per the buffer requirement above, the provider layer supports true streaming via
 - Session data uses server-side persistence via file-backed session storage
 - Admin/user settings (managed users, credentials, voice, approvals, integrations) use a two-tier store: the local `hub/config/admin-settings.json` is a fast runtime cache, and the durable source of truth is the Postgres `app_settings` table. Every mutation via `updateAdminSettings` writes both; at boot (after the DB is confirmed healthy) `hydrateAdminSettingsFromDb` restores the file from the table. This is what keeps users and credential changes from being erased when an ephemeral host (e.g. Render) wipes the container filesystem on redeploy. The JSON cache is not part of source control.
 - The app currently supports one admin account plus admin-managed local users
+- The canonical seeded admin user ID is `user_admin`.
 - `GET /api/health` (alias `GET /healthz`) is an unauthenticated liveness ping that never touches the database or model provider; point an uptime monitor at it to keep the instance warm and avoid idle-spindown cold starts. Boot binds the HTTP server before the database/migration/memory warmup, so login (which needs only file-backed session + admin settings) responds immediately on a cold start while the DB warms up in the background.
 
 ## Data and Service Dependencies
 
 ### Local/Primary Dependencies
 
-- Lightning AI is the sole model provider, accessed directly over HTTP through `server/core/providers/lightning-provider.ts`. There are no OpenAI, Claude, Ollama, or intermediary-gateway adapters — the endpoint is configured with `LIGHTNING_BASE_URL` (model via `LIGHTNING_MODEL` / `MODEL_NAME`, optional per-lane overrides via `MODEL_<lane>`).
-- Filesystem-backed fallback storage
-- Hub/shared-memory content used by agents
+- Lightning AI is the sole model provider, accessed directly over HTTP through `server/core/providers/lightning-provider.ts`. There are no OpenAI, Claude, Ollama, or intermediary-gateway adapters. The endpoint is configured with `LIGHTNING_BASE_URL` (model via `LIGHTNING_MODEL` / `MODEL_NAME`, optional per-lane overrides via `MODEL_<lane>`).
+- Durable database-backed application state where supported by the current schema.
+- Filesystem-backed fallback, export, read-only legacy, and temporary processing storage only.
+- Scoped memory content used by agents; shared system memory must be explicitly shared, and user memory must be explicitly user-owned.
 
 ## Memory Model
 
-- Live runtime memory is rooted at `hub/shared-memory/`
-- Current active memory areas include:
-  - `working/`
-  - `episodic/`
-  - `consensus/`
-  - `semantic/`
-  - `curation/`
-  - `knowledge-graph/`
-- Structured candidate/canonical graph memory is persisted at runtime under:
-  - `hub/shared-memory/knowledge-graph/knowledge-graph.json`
-- Legacy ChatGPT exports were reconciled into the canonical foundation under:
-  - `hub/shared-memory/semantic/foundation/`
-  - `hub/shared-memory/episodic/imported/`
-  - `hub/shared-memory/consensus/foundation/`
-- Lightweight lookup files now exist for normal reasoning:
-  - `hub/shared-memory/semantic/foundation/conversation-index.json`
-  - `hub/shared-memory/semantic/foundation/recent-conversations.json`
-  - `hub/shared-memory/semantic/foundation/shards/`
-- Full normalized cold storage remains at:
-  - `hub/shared-memory/semantic/foundation/merged-conversations.json`
-- Knowledge curation review output is persisted under:
+ZED has four separate memory classes. These classes must not be collapsed into one shared folder or treated as interchangeable runtime truth.
+
+1. ZED Core
+
+- Shared operating intelligence required by every ZED user.
+- Includes ZED identity, reasoning governance, operating principles, orchestration rules, tool definitions, approval policy, retrieval policy, memory-handling policy, verification policy, response formation rules, and shared object/workspace contracts.
+- Must not include personal conversations, uploaded user documents, user preferences, user projects, private business records, personal relationships, or historical ChatGPT exports.
+
+2. Shared system knowledge
+
+- Reusable knowledge deliberately installed for all users.
+- Includes universal capability documentation, shared tool guidance, general reusable frameworks, and system-level educational material.
+- Must be explicitly marked shared and must not contain personal user history.
+
+3. User identity and personalization
+
+- Owned by exactly one authenticated user.
+- Includes preferred name, communication preferences, values, goals, working style, challenge preference, memory permissions, confirmed personalization, and proposed personalization awaiting confirmation.
+
+4. User knowledge and history
+
+- Owned by exactly one authenticated user.
+- Includes uploaded files, imported conversations, project records, decisions, relationships, historical events, source documents, extracted objects, summaries, evidence, conflicts, and timelines.
+
+Ownership requirements:
+
+- User-owned memory reads and writes must require an authenticated `userId`.
+- Missing ownership must fail clearly; memory code must not fall back to `user`, `user_001`, `default-user`, `anonymous`, `admin-user`, or any invented owner.
+- User A must not retrieve User B's user-owned memory.
+- Shared system knowledge must be distinguishable from user memory and must not be reassigned to a user by retrieval.
+- ZED Core must be distinguishable from shared system knowledge and from user memory.
+- Production user memory must be stored through the repository's durable database architecture when the relevant schema exists. Filesystem storage may remain only as an existing local fallback, read-only legacy source, export, or temporary processing location.
+
+Legacy archive classification:
+
+- `zed-memory/` and `zed-memory/storage/` are the admin user's legacy personal historical corpus.
+- Canonical owner: `user_admin`.
+- Authority: historical evidence, not automatic current truth.
+- Shared across users: never.
+- Part of ZED Core: no.
+- Part of shared system knowledge: no.
+- Writable by runtime: no.
+- Active runtime source: no.
+- Eligible for deletion now: no.
+- Eligible for migration now: no.
+- Later migration destination: admin-owned durable user memory, not shared memory.
+- The archive must not be loaded for non-admin users and must not be exposed through ordinary user-memory APIs.
+- Existing tracked legacy files remain preserved until a later verified migration and reconciliation pass.
+- New raw personal exports or runtime memory files must not be added to Git.
+- The archive role is documented in `zed-memory/LEGACY_BACKUP_MANIFEST.md`.
+
+Current hub path policy:
+
+- `hub/user-memory/<userId>/...` is scoped to a single authenticated user and may only be accessed for that owner.
+- `hub/user-personalization/<userId>/...` is scoped to a single authenticated user and may only be accessed for that owner.
+- `hub/shared-memory/...` may contain shared system material, local fallback graph/export files, and curation reports, but it is not the destination for personal history and must not receive normalized admin conversations as shared canonical memory.
+- Knowledge curation review output may still be written under:
   - `hub/shared-memory/curation/latest-review.json`
   - `hub/shared-memory/curation/review-history.jsonl`
-- `zed-memory/` is retained as a read-only raw backup archive and is not the active runtime memory source
-- The backup/archive role of `zed-memory/` is documented in `zed-memory/LEGACY_BACKUP_MANIFEST.md`
 
 ### Knowledge Curation and Evolution Engine
 
@@ -538,7 +575,7 @@ and expects:
 - local port `5000`
 - all hub/config/log/session paths to resolve against the repo-root `hub/` directory
 
-At server boot, ZED initializes runtime directories, fallback storage, core memory, and the Knowledge Curation scheduler. The scheduler writes curation reports under `hub/shared-memory/curation/` and logs review status to the runtime log.
+At server boot, ZED initializes runtime directories, fallback storage, core memory, and the Knowledge Curation scheduler. The scheduler writes curation reports under `hub/shared-memory/curation/` and logs review status to the runtime log. This does not make `hub/shared-memory/` the destination for personal history or the owner of the admin legacy archive.
 
 The backend is deployed to Render; configuration lives in the Render dashboard
 (environment variables, build/start command, optional persistent disk).
@@ -554,7 +591,7 @@ The backend is deployed to Render; configuration lives in the Render dashboard
 
 ### Legacy Docs
 
-Agent-specific skill markdown lives under `server/agents/**`. Those files are per-agent behavior notes; if one conflicts with this spec or the code, the code and `SPEC.md` win. The earlier `zed-docs/` tree and `docs/legacy/` files (Agentic_Guide*, SKILL.md) were removed in Phase 3 cleanup — they referenced Ollama, Netlify Functions, and the retired `/api/chat` route and were long superseded.
+Agent-specific skill markdown lives under `server/agents/**`. Those files are per-agent behavior notes; if one conflicts with this spec or the code, the code and `SPEC.md` win. The earlier `zed-docs/` tree and `docs/legacy/` files (Agentic_Guide*, SKILL.md) were removed in Phase 3 cleanup; they referenced Ollama, Netlify Functions, and the retired `/api/chat` route and were long superseded.
 
 ## Maintenance Checklist
 
@@ -575,7 +612,8 @@ When the project changes, update `SPEC.md` for any of the following:
 
 ## Known Historical Notes
 
-- The repo previously contained tracked local model artifacts under `models/`
-- Those model artifacts were removed from current reachable history and should not be added again
-- The repository was normalized to keep only `main` and `backup`
-- New raw memory exports should be staged under `memory-imports/` and only merged into `hub/shared-memory/` after verification
+- The repo previously contained tracked local model artifacts under `models/`.
+- Those model artifacts were removed from current reachable history and should not be added again.
+- The repository was normalized to keep only `main` and `backup`.
+- New raw memory exports must not be committed to Git and must not be merged into `hub/shared-memory/` as personal history.
+- The existing `zed-memory/` archive has not been migrated, deleted, summarized, embedded, or made active at runtime.
