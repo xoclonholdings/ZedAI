@@ -92,14 +92,6 @@ function errorDetailForModel(
   return `${label} via ${authTarget}: Lightning ${status}${body ? `: ${body.slice(0, 500)}` : ""}`;
 }
 
-function normalizeBillingTarget(value: string): string {
-  return value.trim().replace(/^\/+|\/+$/g, "");
-}
-
-function uniqueNonEmpty(values: string[]): string[] {
-  return Array.from(new Set(values.map(normalizeBillingTarget).filter(Boolean)));
-}
-
 export class LightningProvider implements ModelProvider {
   private getConfig() {
     return getProviderRuntimeConfig().lightning;
@@ -129,41 +121,7 @@ export class LightningProvider implements ModelProvider {
   private authKeyAttempts(): AuthKeyAttempt[] {
     const { apiKey } = this.getConfig();
     if (!apiKey) return [{ label: "no api key", key: "" }];
-
-    const configuredTargets = uniqueNonEmpty([
-      ...(process.env.LIGHTNING_BILLING_TARGETS || "").split(","),
-      process.env.LIGHTNING_BILLING_TARGET || "",
-      process.env.LIGHTNING_TEAMSPACE && process.env.LIGHTNING_USERNAME
-        ? `${process.env.LIGHTNING_USERNAME}/${process.env.LIGHTNING_TEAMSPACE}`
-        : "",
-      process.env.LIGHTNING_TEAMSPACE && process.env.LIGHTNING_ORG
-        ? `${process.env.LIGHTNING_ORG}/${process.env.LIGHTNING_TEAMSPACE}`
-        : "",
-    ]);
-
-    const defaultTargets = uniqueNonEmpty([
-      "zed-ai/Zed-AI Teamspace",
-      "zed-ai/Zed-online",
-      "zed-ai/zed-online",
-      "xoclon/Zed-AI Teamspace",
-      "xoclon/Zed-online",
-      "xoclon/zed-online",
-      "xoclonholdings/Zed-AI Teamspace",
-      "xoclonholdings/Zed-online",
-      "xoclonholdings/zed-online",
-      "zed-ai/Default",
-      "zed-ai/default",
-      "zed-ai/Zed AI",
-    ]);
-    const targets = configuredTargets.length ? configuredTargets : defaultTargets;
-
-    return [
-      { label: "account", key: apiKey },
-      ...targets.map((target) => ({
-        label: target,
-        key: `${apiKey}/${target}`,
-      })),
-    ];
+    return [{ label: "LIGHTNING_API_KEY", key: apiKey }];
   }
 
   async executePrompt(prompt: string, options?: ProviderExecutionOptions): Promise<string> {
