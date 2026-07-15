@@ -3,10 +3,13 @@ import type { Express, Request, Response } from "express";
 import { isAdmin, isAuthenticated } from "../localAuth";
 import { ContextInquiryEngine } from "../services/knowledge-ingestion/ContextInquiryEngine";
 import { KnowledgeIngestionService } from "../services/knowledge-ingestion/KnowledgeIngestionService";
-import type { RawKnowledgeInput } from "../services/knowledge-ingestion/types";
+import type { RawKnowledgeInput } from "../services/knowledge-ingestion/types";`nimport { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
 
 function userLabel(req: any): string {
-  return req?.user?.claims?.sub || req?.session?.userId || "user";
+  return requireAuthenticatedMemoryUserId(
+    req?.user?.claims?.sub || req?.session?.userId,
+    "knowledge ingestion action",
+  );
 }
 
 function normalizeImportBody(body: any): RawKnowledgeInput {
