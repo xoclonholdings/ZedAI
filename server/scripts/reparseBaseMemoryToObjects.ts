@@ -30,7 +30,7 @@ import { fileURLToPath } from "url";
 
 import { extractObjectsFromSource } from "../services/object-memory/extractor";
 import { writeDryRunOutputs, writeAppliedGraph } from "../services/object-memory/store";
-import { loadAdminSettings } from "../services/AdminSettingsStore";
+import { loadAdminSettings } from "../services/AdminSettingsStore";`nimport { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
 import type { AnyMemoryObject, ObjectRelationship } from "../../shared/object-memory-types";
 
 const FILE_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -109,23 +109,31 @@ function parseFlags(argv: string[]): CliFlags {
 
 async function applyUserId(flags: CliFlags): Promise<string | undefined> {
   if (flags.system) return undefined;
-  if (flags.userId) return flags.userId;
+  if (flags.userId) return requireAuthenticatedMemoryUserId(flags.userId, "object-memory reparse --user");
   const settings = await loadAdminSettings();
-  return settings.users.find((user) => user.isAdmin)?.id || settings.users[0]?.id || "user_admin";
+  return requireAuthenticatedMemoryUserId(
+    settings.users.find((user) => user.isAdmin)?.id,
+    "object-memory reparse admin owner",
+  );
+}
+
+function safeUserPathSegment(userId: string): string {
+  const owner = requireAuthenticatedMemoryUserId(userId, "object-memory reparse source scope");
+  const safe = owner.replace(/[^a-zA-Z0-9_-]/g, "_");
+  if (!safe) throw new Error("Authenticated userId could not be converted to a scoped memory path.");
+  return safe;
 }
 
 async function defaultSources(userId?: string): Promise<string[]> {
-  const safeUserId = (userId || "").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const roots = [
-    ...(safeUserId
-      ? [
-          path.join(REPO_ROOT, "hub/user-memory", safeUserId, "foundation/semantic"),
-          path.join(REPO_ROOT, "hub/user-memory", safeUserId, "foundation/consensus"),
-        ]
-      : []),
-    path.join(REPO_ROOT, "hub/shared-memory/semantic/foundation"),
-    path.join(REPO_ROOT, "hub/shared-memory/consensus/foundation"),
-  ];
+  const roots = userId
+    ? [
+        path.join(REPO_ROOT, "hub/user-memory", safeUserPathSegment(userId), "foundation/semantic"),
+        path.join(REPO_ROOT, "hub/user-memory", safeUserPathSegment(userId), "foundation/consensus"),
+      ]
+    : [
+        path.join(REPO_ROOT, "hub/shared-memory/semantic/foundation"),
+        path.join(REPO_ROOT, "hub/shared-memory/consensus/foundation"),
+      ];
   const results: string[] = [];
   for (const root of roots) {
     try {
@@ -136,7 +144,7 @@ async function defaultSources(userId?: string): Promise<string[]> {
         }
       }
     } catch {
-      /* directory absent — skip */
+      /* directory absent - skip */
     }
   }
   return results;
