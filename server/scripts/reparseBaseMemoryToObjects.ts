@@ -30,7 +30,8 @@ import { fileURLToPath } from "url";
 
 import { extractObjectsFromSource } from "../services/object-memory/extractor";
 import { writeDryRunOutputs, writeAppliedGraph } from "../services/object-memory/store";
-import { loadAdminSettings } from "../services/AdminSettingsStore";`nimport { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
+import { loadAdminSettings } from "../services/AdminSettingsStore";
+import { requireAuthenticatedMemoryUserId } from "../services/memory/MemoryOwnershipService";
 import type { AnyMemoryObject, ObjectRelationship } from "../../shared/object-memory-types";
 
 const FILE_DIR = path.dirname(fileURLToPath(import.meta.url));
