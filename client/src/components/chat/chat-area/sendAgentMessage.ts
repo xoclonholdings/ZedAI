@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
+import { zedErrorMessage } from "@shared/error-contract";
 import type { AgentTarget, Message } from "@shared/schema";
 
 interface SendAgentMessageArgs {
@@ -76,11 +77,16 @@ export async function sendAgentMessage({
       const isAuthLike = res.status === 401 || res.status === 403;
       replyContent = isAuthLike
         ? `Session expired (HTTP ${res.status}). Please sign in again.`
-        : data?.reply ||
+        : zedErrorMessage(data?.errorDetail, data?.reply || data?.error || "") ||
+          data?.reply ||
           data?.error ||
           `ZED request failed: HTTP ${res.status} ${res.statusText || ""}`.trim();
     } else {
-      replyContent = data?.reply || data?.error || "Execution failed: server returned no reply content.";
+      replyContent =
+        zedErrorMessage(data?.errorDetail, data?.reply || data?.error || "") ||
+        data?.reply ||
+        data?.error ||
+        "Execution failed: server returned no reply content.";
     }
 
     setLocalMessages((prev) => {

@@ -33,6 +33,8 @@ import { isWebLookupIntent } from "../orchestrator/manager-agent/agent-selection
 import { getActiveProviderName, getResolvedTargetName } from "../core/providers/provider-executor";
 import { logRuntimeEvent } from "./RuntimeLogger";
 import { auditTrace } from "./TraceValidator";
+import { classifyChatError } from "./ErrorContract";
+import { zedErrorMessage } from "../../shared/error-contract";
 
 type ExecutionStatus = "success" | "partial" | "failed";
 
@@ -754,18 +756,23 @@ export class ChatExecutionService {
     } catch (error: any) {
       trace.executionStatus = "failed";
       trace.failureReason = normalizeFailureReason(error, trace);
+      const errorDetail = classifyChatError(error, {
+        provider: trace.providerUsed,
+        target: trace.providerTarget,
+      });
       await (hooks.log || logRuntimeEvent)({
         level: "error",
         source: "server",
         event: "chat.execution.failed",
         detail: trace.failureReason,
-        context: { traceId: trace.traceId, conversationId: input.conversationId },
+        context: { traceId: trace.traceId, conversationId: input.conversationId, errorDetail },
       });
-      const failureReply = `Execution failed: ${trace.failureReason}.`;
+      const failureReply = zedErrorMessage(errorDetail, `Execution failed: ${trace.failureReason}.`);
       await saveAssistantMessage(input.conversationId, failureReply, {
         agent: "ManagerAgent",
         executionStatus: trace.executionStatus,
         failureReason: trace.failureReason,
+        errorDetail,
         executionTrace: trace,
       }).catch(() => null);
       return {
@@ -775,8 +782,10 @@ export class ChatExecutionService {
         metadata: {
           executionStatus: trace.executionStatus,
           failureReason: trace.failureReason,
+          errorDetail,
           executionTrace: trace,
         },
+        errorDetail,
         trace,
       };
     }

@@ -32,6 +32,8 @@ import { getExternalPaperReport } from "../zcos/trading/ExternalPaperEngine";
 import { runBacktest } from "../zcos/trading/BacktestEngine";
 import { getQualificationReport } from "../zcos/trading/QualificationEngine";
 import { getLiveState, saveLiveConfig, setKillSwitch } from "../zcos/trading/LiveTradingEngine";
+import { classifyGovernanceError } from "../services/ErrorContract";
+import { zedErrorMessage } from "../../shared/error-contract";
 import {
   getTradovateStatus,
   saveTradovateCredentials,
@@ -577,8 +579,10 @@ export function registerTradingRoutes(app: Express): void {
     });
 
     if (!authorization.authorized) {
+      const errorDetail = classifyGovernanceError(authorization.decision.checklist);
       return res.status(409).json({
-        error: "Paper trade not authorized by governance layer",
+        error: zedErrorMessage(errorDetail, "Paper trade not authorized by governance layer"),
+        errorDetail,
         authorization: authorization.decision,
       });
     }

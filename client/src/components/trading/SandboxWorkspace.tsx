@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCw, X } from "lucide-react";
 
+import { zedErrorMessage } from "@shared/error-contract";
 import type { PaperTrade, TradingPerformanceReport } from "@shared/trading-types";
 import type { TradingSignal, BacktestReport } from "@shared/trading-training-types";
 
@@ -67,6 +68,10 @@ function rr(v?: number | null): string {
   return `${v.toFixed(2)}R`;
 }
 
+function responseError(body: any, fallback: string): string {
+  return zedErrorMessage(body?.errorDetail, body?.error || fallback);
+}
+
 export default function SandboxWorkspace() {
   const [trades, setTrades] = useState<PaperTrade[]>([]);
   const [performance, setPerformance] = useState<TradingPerformanceReport | null>(null);
@@ -103,7 +108,7 @@ export default function SandboxWorkspace() {
         body: JSON.stringify({ symbol: sym }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(responseError(body, `HTTP ${res.status}`));
       setBacktest(body.report);
     } catch (err: any) {
       setError(err?.message || "Backtest failed");
@@ -205,7 +210,7 @@ export default function SandboxWorkspace() {
         credentials: "include",
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(responseError(body, `HTTP ${res.status}`));
       setNotice(body.note || "Checked open trades against live prices.");
       await refresh();
     } catch (err: any) {
@@ -261,7 +266,7 @@ export default function SandboxWorkspace() {
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const detail = body?.authorization?.reason || body?.error || `HTTP ${res.status}`;
+        const detail = responseError(body, body?.authorization?.reason || `HTTP ${res.status}`);
         throw new Error(detail);
       }
       setLogForm(EMPTY_LOG_FORM);
@@ -302,7 +307,7 @@ export default function SandboxWorkspace() {
         }),
       });
       const s = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(s?.error || `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(responseError(s, `HTTP ${res.status}`));
       const reason = [
         s.thesis,
         s.entryPlan ? `Entry: ${s.entryPlan}` : "",
@@ -381,7 +386,7 @@ export default function SandboxWorkspace() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error || `HTTP ${res.status}`);
+        throw new Error(responseError(body, `HTTP ${res.status}`));
       }
       setCloseTarget(null);
       setNotice(`Trade closed. Journaled to your review.`);
