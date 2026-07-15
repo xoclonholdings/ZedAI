@@ -137,20 +137,37 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     });
   }
 
-  const configuredModel = firstPresent(env, ["LIGHTNING_MODEL", "MODEL_NAME", "ZED_MODEL_NAME"]);
-  if (!configuredModel) {
+  const lightningModel = firstPresent(env, ["LIGHTNING_MODEL"]);
+  const legacyModel = firstPresent(env, ["MODEL_NAME", "ZED_MODEL_NAME"]);
+  if (lightningModel) {
     checks.push({
       name: "AI_MODEL",
       severity: "ok",
-      message: "No model override set. Zed will let the Lightning deployment choose.",
-      hint: "No action needed for a compiled Lightning deployment.",
+      message: `Using single Lightning model ${lightningModel.value}. Lane and reasoning model routing remains disabled.`,
+    });
+  } else if (!baseUrlKey) {
+    checks.push({
+      name: "AI_MODEL",
+      severity: "ok",
+      message:
+        "Using single default Lightning Model APIs model lightning-ai/gpt-oss-120b.",
+      hint: "Set LIGHTNING_MODEL only if Lightning changes the approved global API model.",
     });
   } else {
     checks.push({
       name: "AI_MODEL",
+      severity: "ok",
+      message: "No model selector sent. Zed will let the Lightning deployment choose.",
+      hint: "No action needed for a compiled Lightning deployment.",
+    });
+  }
+
+  if (legacyModel) {
+    checks.push({
+      name: "Legacy AI_MODEL",
       severity: "warn",
-      message: `${configuredModel.key} is set to ${configuredModel.value}, but model overrides are ignored for this Lightning deployment.`,
-      hint: "Remove LIGHTNING_MODEL / MODEL_NAME / ZED_MODEL_NAME so Lightning is the only model router.",
+      message: `${legacyModel.key} is set to ${legacyModel.value}, but legacy model overrides are ignored.`,
+      hint: "Remove MODEL_NAME / ZED_MODEL_NAME so there is no confusion.",
     });
   }
 

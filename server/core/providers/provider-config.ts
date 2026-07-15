@@ -11,9 +11,9 @@ export interface ProviderRuntimeConfig {
   activeProvider: ProviderName;
   activeModel: string;
   /**
-   * Model routing is intentionally disabled for Lightning dedicated
-   * deployments. Lanes still exist for prompting / generation params,
-   * but they do not select models.
+   * Lane and reasoning model routing are intentionally disabled. The
+   * global Lightning API may still require one model selector, while
+   * dedicated deployments can leave it blank.
    */
   laneModels: Partial<Record<ProviderLane, string>>;
   reasoningModels: Partial<Record<ReasoningEffort, string>>;
@@ -46,6 +46,7 @@ function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record
 }
 
 const DEFAULT_LIGHTNING_BASE_URL = "https://lightning.ai/api/v1";
+const DEFAULT_LIGHTNING_MODEL = "lightning-ai/gpt-oss-120b";
 const LIGHTNING_DEPLOYMENT_DEFAULT_LABEL = "Lightning deployment default";
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
@@ -54,9 +55,14 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
       process.env.LIGHTNING_AI_URL ||
       DEFAULT_LIGHTNING_BASE_URL,
   );
+  const usesDefaultModelApi = baseUrl === DEFAULT_LIGHTNING_BASE_URL;
+  const lightningModel = (
+    process.env.LIGHTNING_MODEL ||
+    (usesDefaultModelApi ? DEFAULT_LIGHTNING_MODEL : "")
+  ).trim();
   return {
     activeProvider: "lightning",
-    activeModel: LIGHTNING_DEPLOYMENT_DEFAULT_LABEL,
+    activeModel: lightningModel || LIGHTNING_DEPLOYMENT_DEFAULT_LABEL,
     laneModels: buildLaneModels(),
     reasoningModels: buildReasoningModels(),
     laneReasoningModels: buildLaneReasoningModels(),
@@ -67,7 +73,7 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
         process.env.LIGHTNING_AI_API_KEY ||
         process.env.LIGHTNING_TOKEN ||
         "",
-      model: "",
+      model: lightningModel,
       chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat/completions",
       healthPath: process.env.LIGHTNING_HEALTH_PATH || "/models",
       timeoutMs: Number(process.env.LIGHTNING_TIMEOUT_MS || 45000),
@@ -79,11 +85,11 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
 }
 
 /**
- * Returns the deployment-default model label used by diagnostics. Zed
- * does not send this as a model selector to Lightning.
+ * Returns the single Lightning model used by diagnostics, or the
+ * deployment-default label when no model selector is sent.
  */
 export function getActiveProviderDefaultModel(
   config: ProviderRuntimeConfig = getProviderRuntimeConfig(),
 ): string {
-  return LIGHTNING_DEPLOYMENT_DEFAULT_LABEL;
+  return config.lightning.model || LIGHTNING_DEPLOYMENT_DEFAULT_LABEL;
 }

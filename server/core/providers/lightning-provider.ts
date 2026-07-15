@@ -129,6 +129,7 @@ export class LightningProvider implements ModelProvider {
         content: toOpenAIStyleContent(m.content),
       })),
     };
+    if (config.model) requestBody.model = config.model;
     if (process.env.LIGHTNING_INCLUDE_RUNNER_COMPAT_FIELDS === "true") {
       requestBody.message = userMessageText;
       requestBody.system_prompt = options?.systemPrompt;
