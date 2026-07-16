@@ -205,7 +205,7 @@ export default function ProviderDiagnosticsCard() {
               {hostTest.status === "success" ? "AI host checks passed" : "AI host checks failed"}
             </div>
             <div className="mt-1 leading-5 opacity-85">{hostTest.detail}</div>
-            <div className="mt-2 space-y-1.5">
+            <div className="mt-2 grid gap-1.5 sm:grid-cols-3">
               {hostTest.checks.map((check) => (
                 <div
                   key={check.name}
@@ -222,17 +222,28 @@ export default function ProviderDiagnosticsCard() {
                       {check.status}
                     </span>
                   </div>
-                  <div className="mt-1 break-all font-mono text-[11px] text-white/45">
+                  <div className="mt-1 truncate font-mono text-[11px] text-white/45">
                     {check.model}
                   </div>
-                  {check.error ? (
-                    <div className="mt-1 break-words text-[11px] text-red-200/90">
-                      {check.error}
-                    </div>
-                  ) : null}
                 </div>
               ))}
             </div>
+            {hostTest.checks.some((check) => check.error) ? (
+              <details className="mt-2 rounded-md border border-white/10 bg-black/20">
+                <summary className="cursor-pointer px-2.5 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/50">
+                  Diagnostic detail
+                </summary>
+                <div className="space-y-1.5 p-2.5">
+                  {hostTest.checks
+                    .filter((check) => check.error)
+                    .map((check) => (
+                      <div key={`${check.name}-error`} className="text-[11px] leading-5 text-red-200/80">
+                        <span className="font-medium text-red-100">{check.lane}</span>: {check.error}
+                      </div>
+                    ))}
+                </div>
+              </details>
+            ) : null}
           </div>
         ) : null}
       </CardContent>

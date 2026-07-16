@@ -83,6 +83,23 @@ function errorMessageFor(error: any): { error: string; errorKind: string } {
   };
 }
 
+function publicHostErrorMessage(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("lightning_api_key not set") || lower.includes("no api key")) {
+    return "LIGHTNING_API_KEY is not set. Add a Lightning Model API key and restart Zed.";
+  }
+  if (lower.includes("401") || lower.includes("unauthorized")) {
+    return "Lightning rejected the configured API key. Create or copy a valid Lightning Model API key, confirm it has access to the selected model, update LIGHTNING_API_KEY, and restart Zed.";
+  }
+  if (lower.includes("404") || lower.includes("not found")) {
+    return "Lightning Model APIs endpoint or model slug was not found. Confirm the base URL and selected model in Lightning.";
+  }
+  if (lower.includes("timeout")) {
+    return "Lightning did not respond before Zed timed out. Retry after confirming the Lightning service is available.";
+  }
+  return message || "Lightning host check failed. Review the server logs for the upstream response.";
+}
+
 /**
  * POST /api/admin/ai-host/test
  *
@@ -139,7 +156,7 @@ export function registerAiHostTestRoute(app: Express): void {
         apiKey,
         apiKeySource: keySource,
         reply: "",
-        error: detail.error,
+        error: publicHostErrorMessage(detail.error),
         errorKind: detail.errorKind,
         elapsedMs: Date.now() - startedAt,
       };
@@ -207,7 +224,7 @@ export function registerAiHostTestRoute(app: Express): void {
             model: deploymentModel,
             status: "error",
             reply: "",
-            error: detail.error,
+            error: publicHostErrorMessage(detail.error),
             errorKind: detail.errorKind,
             elapsedMs: Date.now() - probeStartedAt,
           };
@@ -232,9 +249,7 @@ export function registerAiHostTestRoute(app: Express): void {
       const failedChecks = checks.filter((check) => check.status === "error");
       const status = failedChecks.length ? "failed" : "success";
       const detail = failedChecks.length
-        ? failedChecks
-            .map((check) => `${check.name} (${check.model}): ${check.error}`)
-            .join(" | ")
+        ? failedChecks[0].error
         : "AI host passed default chat, manager, and finance/high probes.";
 
       res.json({
