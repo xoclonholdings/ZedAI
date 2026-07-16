@@ -30,6 +30,26 @@ export type ChecklistResult = "PASS" | "FAIL" | "NOT_APPLICABLE" | "UNKNOWN";
 
 export type LiveTradingEligibility = "Eligible" | "Nearly Eligible" | "Not Eligible";
 
+export type PaperTradingGovernanceMode = "enforce" | "warn" | "off";
+
+export interface PaperTradingGovernanceCheckSetting {
+  enabled: boolean;
+  blocking: boolean;
+}
+
+export interface PaperTradingGovernanceSettings {
+  userId: string;
+  updatedAt: string;
+  mode: PaperTradingGovernanceMode;
+  checks: Record<string, PaperTradingGovernanceCheckSetting>;
+  thresholds: {
+    minimumRiskReward: number;
+    maxRiskPerPaperTrade: number;
+    maxNegativeDrawdown: number;
+    requiredSampleSize: number;
+  };
+}
+
 export interface TradingGovernanceChecklistItem {
   key: string;
   label: string;

@@ -9,6 +9,7 @@ import type {
   PaperTradeStatus,
   TradeReviewReport,
   TradeThesis,
+  PaperTradingGovernanceSettings,
   TradingGovernanceDecision,
   TradingIncidentReport,
   TradingKnowledgeEntry,
@@ -23,8 +24,40 @@ const THESES_PATH = path.resolve(TRADING_DIR, "trade-theses.json");
 const PAPER_TRADES_PATH = path.resolve(TRADING_DIR, "paper-trades.json");
 const TRADINGVIEW_PATH = path.resolve(TRADING_DIR, "tradingview-records.json");
 const GOVERNANCE_DECISIONS_PATH = path.resolve(TRADING_DIR, "governance-decisions.json");
+const GOVERNANCE_SETTINGS_PATH = path.resolve(TRADING_DIR, "governance-settings.json");
 const INCIDENT_REPORTS_PATH = path.resolve(TRADING_DIR, "incident-reports.json");
 const TRADING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working", "trading-intelligence.md");
+
+const DEFAULT_PAPER_GOVERNANCE_CHECKS: Record<string, { enabled: boolean; blocking: boolean }> = {
+  market_context: { enabled: true, blocking: true },
+  trend_alignment: { enabled: true, blocking: false },
+  market_structure: { enabled: true, blocking: true },
+  liquidity_conditions: { enabled: true, blocking: true },
+  session: { enabled: true, blocking: false },
+  news_filter: { enabled: true, blocking: false },
+  trade_thesis: { enabled: true, blocking: false },
+  entry_rules: { enabled: true, blocking: true },
+  exit_rules: { enabled: true, blocking: true },
+  risk_limits: { enabled: true, blocking: true },
+  position_size: { enabled: true, blocking: true },
+  correlation: { enabled: true, blocking: false },
+  drawdown_limits: { enabled: true, blocking: true },
+  system_health: { enabled: true, blocking: false },
+  risk_reward: { enabled: true, blocking: true },
+};
+
+const DEFAULT_PAPER_GOVERNANCE_THRESHOLDS = {
+  minimumRiskReward: 2,
+  maxRiskPerPaperTrade: 100,
+  maxNegativeDrawdown: -500,
+  requiredSampleSize: 100,
+};
+
+type PaperGovernanceSettingsPatch = {
+  mode?: PaperTradingGovernanceSettings["mode"];
+  checks?: Partial<PaperTradingGovernanceSettings["checks"]>;
+  thresholds?: Partial<PaperTradingGovernanceSettings["thresholds"]>;
+};
 
 async function ensureTradingDirs() {
   if (tradingPersistenceRequired()) return;
@@ -231,6 +264,47 @@ function createReviewReport(trade: PaperTrade, thesis?: TradeThesis): TradeRevie
     mistakes: trade.ruleViolations,
     lessonsLearned: trade.lessonsLearned,
     recommendedImprovements,
+  };
+}
+
+function defaultPaperGovernanceSettings(userId: string): PaperTradingGovernanceSettings {
+  return {
+    userId,
+    updatedAt: now(),
+    mode: "enforce",
+    checks: Object.fromEntries(
+      Object.entries(DEFAULT_PAPER_GOVERNANCE_CHECKS).map(([key, value]) => [
+        key,
+        { ...value },
+      ]),
+    ),
+    thresholds: { ...DEFAULT_PAPER_GOVERNANCE_THRESHOLDS },
+  };
+}
+
+function normalizePaperGovernanceSettings(
+  userId: string,
+  input?: PaperGovernanceSettingsPatch & Pick<Partial<PaperTradingGovernanceSettings>, "updatedAt">,
+): PaperTradingGovernanceSettings {
+  const base = defaultPaperGovernanceSettings(userId);
+  const checks = { ...base.checks };
+  for (const [key, value] of Object.entries(input?.checks || {})) {
+    checks[key] = {
+      enabled: typeof value?.enabled === "boolean" ? value.enabled : checks[key]?.enabled ?? true,
+      blocking: typeof value?.blocking === "boolean" ? value.blocking : checks[key]?.blocking ?? false,
+    };
+  }
+  return {
+    ...base,
+    ...input,
+    userId,
+    updatedAt: input?.updatedAt || base.updatedAt,
+    mode: input?.mode === "warn" || input?.mode === "off" ? input.mode : "enforce",
+    checks,
+    thresholds: {
+      ...base.thresholds,
+      ...(input?.thresholds || {}),
+    },
   };
 }
 
@@ -449,6 +523,38 @@ export const TradingStore = {
     await writeJsonArray(GOVERNANCE_DECISIONS_PATH, [decision, ...decisions]);
     await this.appendMemory(`Governance decision recorded: ${decision.symbol || "trade"} => ${decision.decision}. ${decision.reason}`);
     return decision;
+  },
+
+  async getPaperGovernanceSettings(userId: string): Promise<PaperTradingGovernanceSettings> {
+    await ensureTradingDirs();
+    const allSettings = await readJsonArray<PaperTradingGovernanceSettings>(GOVERNANCE_SETTINGS_PATH);
+    const existing = allSettings.find((settings) => settings.userId === userId);
+    return normalizePaperGovernanceSettings(userId, existing);
+  },
+
+  async updatePaperGovernanceSettings(
+    userId: string,
+    patch: PaperGovernanceSettingsPatch,
+  ): Promise<PaperTradingGovernanceSettings> {
+    const allSettings = await readJsonArray<PaperTradingGovernanceSettings>(GOVERNANCE_SETTINGS_PATH);
+    const current = allSettings.find((settings) => settings.userId === userId);
+    const updated = normalizePaperGovernanceSettings(userId, {
+      ...current,
+      ...patch,
+      checks: {
+        ...(current?.checks || {}),
+        ...(patch.checks || {}),
+      },
+      thresholds: {
+        ...(current?.thresholds || {}),
+        ...(patch.thresholds || {}),
+      },
+      updatedAt: now(),
+    });
+    const nextSettings = allSettings.filter((settings) => settings.userId !== userId);
+    await writeJsonArray(GOVERNANCE_SETTINGS_PATH, [updated, ...nextSettings]);
+    await this.appendMemory(`Paper governance settings updated: mode ${updated.mode}.`);
+    return updated;
   },
 
   async listIncidentReports(userId?: string): Promise<TradingIncidentReport[]> {

@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, RefreshCw, X } from "lucide-react";
+import { Plus, RefreshCw, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 
 import { zedErrorMessage } from "@shared/error-contract";
-import type { PaperTrade, TradingPerformanceReport } from "@shared/trading-types";
+import type {
+  PaperTrade,
+  PaperTradingGovernanceCheckSetting,
+  PaperTradingGovernanceSettings,
+  PaperTradingGovernanceMode,
+  TradingPerformanceReport,
+} from "@shared/trading-types";
 import type { TradingSignal, BacktestReport } from "@shared/trading-training-types";
 
 /**
@@ -20,6 +26,11 @@ import type { TradingSignal, BacktestReport } from "@shared/trading-training-typ
  */
 
 type Panel = "list" | "log" | "close";
+type PaperGovernancePatch = {
+  mode?: PaperTradingGovernanceMode;
+  checks?: Record<string, PaperTradingGovernanceCheckSetting>;
+  thresholds?: Partial<PaperTradingGovernanceSettings["thresholds"]>;
+};
 
 interface CloseTarget {
   trade: PaperTrade;
@@ -93,6 +104,7 @@ export default function SandboxWorkspace() {
   const [backtest, setBacktest] = useState<BacktestReport | null>(null);
   const [backtesting, setBacktesting] = useState<boolean>(false);
   const [toolsOpen, setToolsOpen] = useState<boolean>(false);
+  const [governanceOpen, setGovernanceOpen] = useState<boolean>(false);
 
   const runBacktest = useCallback(async () => {
     const sym = lookupSymbol.trim().toUpperCase();
@@ -145,14 +157,18 @@ export default function SandboxWorkspace() {
     note: string;
   } | null>(null);
   const [storage, setStorage] = useState<{ durable: boolean; note: string } | null>(null);
+  const [governanceSettings, setGovernanceSettings] =
+    useState<PaperTradingGovernanceSettings | null>(null);
+  const [savingGovernance, setSavingGovernance] = useState<boolean>(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [dataRes, storageRes] = await Promise.all([
+        const [dataRes, storageRes, governanceRes] = await Promise.all([
           fetch("/api/trading/market-data/status", { credentials: "include" }),
           fetch("/api/trading/storage-status", { credentials: "include" }),
+          fetch("/api/trading/governance/paper-settings", { credentials: "include" }),
         ]);
         if (dataRes.ok && !cancelled) {
           const s = await dataRes.json();
@@ -162,6 +178,10 @@ export default function SandboxWorkspace() {
           const s = await storageRes.json();
           setStorage({ durable: !!s.durable, note: s.note });
         }
+        if (governanceRes.ok && !cancelled) {
+          const s = await governanceRes.json();
+          setGovernanceSettings(s.settings || null);
+        }
       } catch {
         /* leave unknown */
       }
@@ -169,6 +189,26 @@ export default function SandboxWorkspace() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const saveGovernanceSettings = useCallback(async (patch: PaperGovernancePatch) => {
+    setSavingGovernance(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/trading/governance/paper-settings", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(responseError(body, `HTTP ${res.status}`));
+      setGovernanceSettings(body.settings || null);
+    } catch (err: any) {
+      setError(err?.message || "Could not save paper governance settings.");
+    } finally {
+      setSavingGovernance(false);
+    }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -401,7 +441,7 @@ export default function SandboxWorkspace() {
   return (
     <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
       <header className="mb-5 flex items-start justify-between gap-3 flex-wrap">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-400/80 mb-1">
             Sandbox
           </div>
@@ -409,9 +449,7 @@ export default function SandboxWorkspace() {
             Paper trading
           </h2>
           <p className="mt-1 text-[12.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Name a symbol and Zed builds the whole trade — direction, thesis, structure,
-            and the entry / stop / target / size / risk, sized to pass governance. You just
-            approve. Nothing here is real money — Zed is proving the strategy.
+            Build, approve, and track simulated trades. ZAR handles the trade build; paper governance is user controlled.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {dataStatus && (
@@ -450,9 +488,28 @@ export default function SandboxWorkspace() {
                 {storage.durable ? "Saved to your account" : "Not saving — no database"}
               </div>
             )}
+            {governanceSettings && (
+              <div
+                title="Paper-trade governance setting"
+                className="inline-flex items-center gap-1.5 rounded-full bg-cyan-400/10 px-2.5 py-1 text-[11px] font-medium text-cyan-200"
+              >
+                <ShieldCheck size={11} />
+                Governance: {governanceSettings.mode}
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {governanceSettings && (
+            <button
+              type="button"
+              onClick={() => setGovernanceOpen((value) => !value)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.05] px-3 py-1.5 text-[12.5px] text-cyan-100 hover:bg-cyan-400/[0.1] transition-colors"
+            >
+              <SlidersHorizontal size={12} />
+              Governance
+            </button>
+          )}
           <button
             type="button"
             onClick={() => void resolveVsLive()}
@@ -492,6 +549,14 @@ export default function SandboxWorkspace() {
         <div className="mb-4 rounded-lg border border-red-400/30 bg-red-400/5 px-3 py-2 text-[12.5px] text-red-200">
           {error}
         </div>
+      )}
+
+      {governanceOpen && governanceSettings && (
+        <PaperGovernanceControls
+          settings={governanceSettings}
+          saving={savingGovernance}
+          onSave={(patch) => void saveGovernanceSettings(patch)}
+        />
       )}
 
       {/* Signal read + backtest for any symbol — tucked behind a toggle. */}
@@ -718,6 +783,175 @@ function ClosedTradeRow({ trade }: { trade: PaperTrade }) {
         {money(trade.realizedPnl)}
       </span>
     </div>
+  );
+}
+
+const PAPER_GOVERNANCE_CHECKS = [
+  ["market_context", "Market"],
+  ["market_structure", "Structure"],
+  ["liquidity_conditions", "Liquidity"],
+  ["entry_rules", "Entry"],
+  ["exit_rules", "Exit"],
+  ["risk_limits", "Risk"],
+  ["position_size", "Size"],
+  ["drawdown_limits", "Drawdown"],
+  ["risk_reward", "R:R"],
+] as const;
+
+function PaperGovernanceControls({
+  settings,
+  saving,
+  onSave,
+}: {
+  settings: PaperTradingGovernanceSettings;
+  saving: boolean;
+  onSave: (patch: PaperGovernancePatch) => void;
+}) {
+  const modeText =
+    settings.mode === "off"
+      ? "Paper trades log without blocking. Checklist is recorded only."
+      : settings.mode === "warn"
+        ? "Checklist failures warn but do not block paper trades."
+        : "Blocking checklist failures stop paper trades.";
+
+  const setMode = (mode: PaperTradingGovernanceMode) => onSave({ mode });
+  const toggleEnabled = (key: string) => {
+    const current = settings.checks[key] || { enabled: true, blocking: false };
+    onSave({ checks: { [key]: { ...current, enabled: !current.enabled } } });
+  };
+  const toggleBlocking = (key: string) => {
+    const current = settings.checks[key] || { enabled: true, blocking: false };
+    onSave({ checks: { [key]: { ...current, blocking: !current.blocking, enabled: true } } });
+  };
+  const setThreshold = (key: keyof PaperTradingGovernanceSettings["thresholds"], value: string) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+    onSave({ thresholds: { [key]: parsed } });
+  };
+
+  return (
+    <div className="mb-5 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.025] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <ShieldCheck size={14} className="text-cyan-300" />
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
+              Paper governance
+            </div>
+            <div className="text-[11.5px] text-white/45">{modeText}</div>
+          </div>
+        </div>
+        <div className="inline-flex rounded-lg border border-white/10 bg-black/20 p-0.5">
+          {(["enforce", "warn", "off"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setMode(mode)}
+              disabled={saving}
+              className={`rounded-md px-2.5 py-1 text-[11.5px] font-medium capitalize transition-colors ${
+                settings.mode === mode
+                  ? "bg-cyan-400 text-black"
+                  : "text-white/55 hover:bg-white/[0.06] hover:text-white/80"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <ThresholdInput
+          label="Max drawdown"
+          value={settings.thresholds.maxNegativeDrawdown}
+          onChange={(value) => setThreshold("maxNegativeDrawdown", value)}
+          disabled={saving}
+        />
+        <ThresholdInput
+          label="Risk limit"
+          value={settings.thresholds.maxRiskPerPaperTrade}
+          onChange={(value) => setThreshold("maxRiskPerPaperTrade", value)}
+          disabled={saving}
+        />
+        <ThresholdInput
+          label="Min R:R"
+          value={settings.thresholds.minimumRiskReward}
+          onChange={(value) => setThreshold("minimumRiskReward", value)}
+          disabled={saving}
+        />
+        <ThresholdInput
+          label="Sample size"
+          value={settings.thresholds.requiredSampleSize}
+          onChange={(value) => setThreshold("requiredSampleSize", value)}
+          disabled={saving}
+        />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {PAPER_GOVERNANCE_CHECKS.map(([key, label]) => {
+          const check = settings.checks[key] || { enabled: true, blocking: false };
+          return (
+            <div
+              key={key}
+              className="rounded-md border border-white/[0.08] bg-black/20 px-2 py-1.5"
+            >
+              <div className="mb-1 text-[10.5px] font-medium text-white/70">{label}</div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => toggleEnabled(key)}
+                  disabled={saving}
+                  className={`rounded px-2 py-0.5 text-[10.5px] ${
+                    check.enabled
+                      ? "bg-emerald-400/15 text-emerald-200"
+                      : "bg-white/[0.06] text-white/45"
+                  }`}
+                >
+                  {check.enabled ? "On" : "Off"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleBlocking(key)}
+                  disabled={saving || settings.mode !== "enforce"}
+                  className={`rounded px-2 py-0.5 text-[10.5px] ${
+                    settings.mode === "enforce" && check.blocking
+                      ? "bg-red-400/15 text-red-200"
+                      : "bg-white/[0.06] text-white/45"
+                  }`}
+                >
+                  Block
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ThresholdInput({
+  label,
+  value,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}) {
+  return (
+    <label className="block rounded-md border border-white/[0.08] bg-black/20 px-2 py-1.5">
+      <span className="block text-[10px] font-medium uppercase tracking-[0.06em] text-white/45">
+        {label}
+      </span>
+      <input
+        type="number"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-1 w-full bg-transparent text-[12.5px] font-semibold tabular-nums text-white outline-none disabled:opacity-50"
+      />
+    </label>
   );
 }
 

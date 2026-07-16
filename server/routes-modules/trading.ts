@@ -1,7 +1,12 @@
 import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
-import type { AuthorizationDecision, PaperTradeStatus } from "../../shared/trading-types";
+import type {
+  AuthorizationDecision,
+  PaperTradeStatus,
+  PaperTradingGovernanceMode,
+  PaperTradingGovernanceSettings,
+} from "../../shared/trading-types";
 import { evaluateScannerObservation } from "../zcos/trading/ScannerEngine";
 import { createTradeThesis } from "../zcos/trading/TradeThesisEngine";
 import { generateTradeStrategy } from "../zcos/trading/TradeStrategyGenerator";
@@ -60,6 +65,16 @@ function toArray(value: unknown): string[] {
   if (typeof value === "string" && value.trim()) return value.split(",").map((item) => item.trim()).filter(Boolean);
   return [];
 }
+
+function toGovernanceMode(value: unknown): PaperTradingGovernanceMode | undefined {
+  return value === "enforce" || value === "warn" || value === "off" ? value : undefined;
+}
+
+type PaperGovernanceSettingsPatch = {
+  mode?: PaperTradingGovernanceMode;
+  checks?: PaperTradingGovernanceSettings["checks"];
+  thresholds?: Partial<PaperTradingGovernanceSettings["thresholds"]>;
+};
 
 function requireFields(body: Record<string, unknown>, fields: string[]): string | null {
   for (const field of fields) {
@@ -645,6 +660,30 @@ export function registerTradingRoutes(app: Express): void {
   app.post("/api/trading/governance/review", isAuthenticated, async (req: any, res) => {
     const governanceDecision = await governanceReview(userIdFrom(req));
     res.json({ governanceDecision });
+  });
+
+  app.get("/api/trading/governance/paper-settings", isAuthenticated, async (req: any, res) => {
+    const settings = await TradingStore.getPaperGovernanceSettings(userIdFrom(req));
+    res.json({ settings });
+  });
+
+  app.patch("/api/trading/governance/paper-settings", isAuthenticated, async (req: any, res) => {
+    const body = req.body || {};
+    const patch: PaperGovernanceSettingsPatch = {};
+    const mode = toGovernanceMode(body.mode);
+    if (mode) patch.mode = mode;
+    if (body.checks && typeof body.checks === "object") patch.checks = body.checks;
+    if (body.thresholds && typeof body.thresholds === "object") {
+      const thresholds: Partial<PaperTradingGovernanceSettings["thresholds"]> = {};
+      for (const key of ["minimumRiskReward", "maxRiskPerPaperTrade", "maxNegativeDrawdown", "requiredSampleSize"]) {
+        if (body.thresholds[key] !== undefined) {
+          thresholds[key as keyof PaperTradingGovernanceSettings["thresholds"]] = toNumber(body.thresholds[key]);
+        }
+      }
+      patch.thresholds = thresholds;
+    }
+    const settings = await TradingStore.updatePaperGovernanceSettings(userIdFrom(req), patch);
+    res.json({ settings });
   });
 
   app.get("/api/trading/governance/decisions", isAuthenticated, async (req: any, res) => {

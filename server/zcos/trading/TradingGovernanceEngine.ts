@@ -4,6 +4,7 @@ import type {
   GovernanceDecisionOutcome,
   LiveTradingEligibility,
   PaperTrade,
+  PaperTradingGovernanceSettings,
   TradeThesis,
   TradingAssetClass,
   TradingGovernanceChecklistItem,
@@ -63,6 +64,34 @@ function checklistItem(
   opts?: { missingInformation?: string[]; critical?: boolean },
 ): TradingGovernanceChecklistItem {
   return { key, label, result, evidence, ...opts };
+}
+
+function applyPaperGovernanceSetting(
+  item: TradingGovernanceChecklistItem,
+  settings: PaperTradingGovernanceSettings,
+): TradingGovernanceChecklistItem {
+  const check = settings.checks[item.key];
+  if (settings.mode === "off") {
+    return {
+      ...item,
+      result: "NOT_APPLICABLE",
+      evidence: `${item.evidence} Paper governance is turned off by user setting.`,
+      critical: false,
+    };
+  }
+  if (check && !check.enabled) {
+    return {
+      ...item,
+      result: "NOT_APPLICABLE",
+      evidence: `${item.label} is disabled in paper governance settings. ${item.evidence}`,
+      critical: false,
+    };
+  }
+  if (settings.mode === "warn") {
+    return { ...item, critical: false };
+  }
+  if (check) return { ...item, critical: check.blocking };
+  return item;
 }
 
 function liveEligibility(performance: TradingPerformanceReport): LiveTradingEligibility {
@@ -220,6 +249,8 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
   authorized: boolean;
 }> {
   const performance = await TradingStore.getPerformance(input.userId);
+  const settings = await TradingStore.getPaperGovernanceSettings(input.userId);
+  const thresholds = settings.thresholds;
   const openTrades = await TradingStore.listPaperTrades(input.userId, "open");
   const rr = riskRewardFrom(input);
   const checklist: TradingGovernanceChecklistItem[] = [
@@ -291,9 +322,9 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
     checklistItem(
       "risk_limits",
       "Risk Limits",
-      hasPositiveNumber(input.riskAmount) && input.riskAmount <= MAX_RISK_PER_PAPER_TRADE ? "PASS" : "FAIL",
+      hasPositiveNumber(input.riskAmount) && input.riskAmount <= thresholds.maxRiskPerPaperTrade ? "PASS" : "FAIL",
       hasPositiveNumber(input.riskAmount)
-        ? `Risk amount ${input.riskAmount}; limit ${MAX_RISK_PER_PAPER_TRADE}.`
+        ? `Risk amount ${input.riskAmount}; limit ${thresholds.maxRiskPerPaperTrade}.`
         : "Risk amount is missing/invalid.",
       { missingInformation: ["Risk amount"], critical: true },
     ),
@@ -314,37 +345,42 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
     checklistItem(
       "drawdown_limits",
       "Drawdown Limits",
-      performance.maximumDrawdown > MAX_NEGATIVE_DRAWDOWN ? "PASS" : "FAIL",
-      `Current max drawdown ${performance.maximumDrawdown}; floor ${MAX_NEGATIVE_DRAWDOWN}.`,
+      performance.maximumDrawdown > thresholds.maxNegativeDrawdown ? "PASS" : "FAIL",
+      `Current max drawdown ${performance.maximumDrawdown}; floor ${thresholds.maxNegativeDrawdown}.`,
       { critical: true },
     ),
     checklistItem(
       "system_health",
       "System Health",
-      performance.closedTrades >= REQUIRED_SAMPLE_SIZE && performance.expectancy > 0 ? "PASS" : "UNKNOWN",
-      `Validation sample ${performance.closedTrades}/${REQUIRED_SAMPLE_SIZE}; expectancy ${performance.expectancy}.`,
-      { missingInformation: performance.closedTrades >= REQUIRED_SAMPLE_SIZE ? undefined : ["Validated sample size"], critical: false },
+      performance.closedTrades >= thresholds.requiredSampleSize && performance.expectancy > 0 ? "PASS" : "UNKNOWN",
+      `Validation sample ${performance.closedTrades}/${thresholds.requiredSampleSize}; expectancy ${performance.expectancy}.`,
+      { missingInformation: performance.closedTrades >= thresholds.requiredSampleSize ? undefined : ["Validated sample size"], critical: false },
     ),
     checklistItem(
       "risk_reward",
       "Risk/Reward Math",
-      rr !== null && rr >= MINIMUM_RISK_REWARD ? "PASS" : "FAIL",
-      rr === null ? "Risk/reward cannot be calculated from entry, stop, and target." : `Calculated risk/reward ${rr}; minimum ${MINIMUM_RISK_REWARD}.`,
+      rr !== null && rr >= thresholds.minimumRiskReward ? "PASS" : "FAIL",
+      rr === null ? "Risk/reward cannot be calculated from entry, stop, and target." : `Calculated risk/reward ${rr}; minimum ${thresholds.minimumRiskReward}.`,
       { missingInformation: rr === null ? ["Valid entry", "Valid stop", "Valid target"] : undefined, critical: true },
     ),
-  ];
+  ].map((item) => applyPaperGovernanceSetting(item, settings));
 
   const hardFailures = hardRiskFailures(checklist);
   const softFailures = nonCriticalFailures(checklist);
 
   let authorization: AuthorizationDecision;
   let reason: string;
-  if (hardFailures.length > 0) {
+  if (settings.mode === "off") {
+    authorization = "AUTHORIZED";
+    reason = "Paper-trade governance is turned off by user setting. Checklist recorded for visibility only.";
+  } else if (hardFailures.length > 0) {
     authorization = "DENIED";
     reason = "One or more critical governance checks failed or returned unknown.";
-  } else if (softFailures.length > 0 || performance.closedTrades < REQUIRED_SAMPLE_SIZE) {
+  } else if (softFailures.length > 0 || performance.closedTrades < thresholds.requiredSampleSize) {
     authorization = "AUTHORIZED_WITH_CONDITIONS";
-    reason = "Critical risk checks passed, but validation or context remains incomplete. Paper trading may continue for validation only.";
+    reason = settings.mode === "warn"
+      ? "Paper-trade governance is warning-only. Checklist failures were recorded but did not block the trade."
+      : "Critical risk checks passed, but validation or context remains incomplete. Paper trading may continue for validation only.";
   } else {
     authorization = "AUTHORIZED";
     reason = "All critical and validation checks passed for paper trading.";
