@@ -16,7 +16,6 @@ import { TradingStore } from "./TradingStore";
 const REQUIRED_SAMPLE_SIZE = 100;
 const MINIMUM_RISK_REWARD = 2;
 const MAX_RISK_PER_PAPER_TRADE = 100;
-const MAX_OPEN_PAPER_TRADES = 5;
 const MAX_NEGATIVE_DRAWDOWN = -500;
 
 interface PaperTradeAuthorizationInput {
@@ -304,13 +303,6 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
       hasPositiveNumber(input.size) ? "PASS" : "FAIL",
       hasPositiveNumber(input.size) ? `Position size ${input.size}.` : "Position size is missing/invalid.",
       { missingInformation: ["Position size"], critical: true },
-    ),
-    checklistItem(
-      "portfolio_exposure",
-      "Portfolio Exposure",
-      openTrades.length < MAX_OPEN_PAPER_TRADES ? "PASS" : "FAIL",
-      `${openTrades.length} open paper trades; limit ${MAX_OPEN_PAPER_TRADES}.`,
-      { critical: true },
     ),
     checklistItem(
       "correlation",
