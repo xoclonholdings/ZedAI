@@ -1,5 +1,7 @@
 import type { IntegrationProvider } from "../../../shared/trading-training-types";
-import crypto from "crypto";
+import { spawn } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
 
 import type { ExecutionAccountSummary, ExecutionAdapterStatus } from "./ExecutionAdapterTypes";
 import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
@@ -7,6 +9,10 @@ import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
 const PROVIDER: IntegrationProvider = "webull";
 const DEFAULT_SANDBOX_ENDPOINT = "api.sandbox.webull.com";
 const DEFAULT_PRODUCTION_ENDPOINT = "api.webull.com";
+const WEBULL_SDK_PROBE = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../scripts/webull_sdk_account_list.py",
+);
 
 function value(record: Awaited<ReturnType<typeof TradingIntegrationsStore.getConnection>>, key: string): string {
   return String(record?.fields?.[key] || record?.secrets?.[key] || "").trim();
@@ -171,73 +177,85 @@ export async function listWebullOrders(userId: string): Promise<{
   };
 }
 
-function compactBody(body: unknown): string | undefined {
-  return body ? JSON.stringify(body) : undefined;
-}
-
-function webullPercentEncode(value: string): string {
-  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
-    `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
-  );
-}
-
-function webullAuthMessage(status: number, text: string, appKey: string, endpoint: string): string {
-  const lower = text.toLowerCase();
-  if (status === 401 && lower.includes("x-signature")) {
-    return [
-      `Webull rejected x-signature for App Key ending ${appKey.slice(-4)} at ${endpoint}.`,
-      "Most likely cause: the saved App Secret does not match that App Key.",
-      "Enter the matching App Secret and save the Webull connection, then test again.",
-      `Raw Webull response: ${text.slice(0, 180)}`,
-    ].join(" ");
-  }
-  return `Webull account-list test failed with HTTP ${status}: ${text.slice(0, 240) || "no response body"}`;
-}
-
-function signWebullRequest(input: {
+async function runWebullSdkAccountList(input: {
   appKey: string;
   appSecret: string;
-  host: string;
-  path: string;
-  queryParams?: Record<string, string>;
-  body?: unknown;
-}): { headers: Record<string, string>; bodyString?: string } {
-  const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-  const nonce = crypto.randomUUID().replace(/-/g, "");
-  const bodyString = compactBody(input.body);
-  const signingParams: Record<string, string> = {
-    ...(input.queryParams || {}),
-    host: input.host,
-    "x-app-key": input.appKey,
-    "x-signature-algorithm": "HMAC-SHA1",
-    "x-signature-nonce": nonce,
-    "x-signature-version": "1.0",
-    "x-timestamp": timestamp,
-  };
-  const str1 = Object.keys(signingParams)
-    .sort()
-    .map((key) => `${key}=${signingParams[key]}`)
-    .join("&");
-  const str3 = bodyString
-    ? `${input.path}&${str1}&${crypto.createHash("md5").update(bodyString).digest("hex").toUpperCase()}`
-    : `${input.path}&${str1}`;
-  const encoded = webullPercentEncode(str3);
-  const signature = crypto
-    .createHmac("sha1", `${input.appSecret}&`)
-    .update(encoded)
-    .digest("base64");
-  return {
-    bodyString,
-    headers: {
-      "x-app-key": input.appKey,
-      "x-timestamp": timestamp,
-      "x-signature": signature,
-      "x-signature-algorithm": "HMAC-SHA1",
-      "x-signature-version": "1.0",
-      "x-signature-nonce": nonce,
-      "x-version": "v2",
-    },
-  };
+  endpoint: string;
+}): Promise<{
+  ok: boolean;
+  statusCode?: number;
+  accounts: ExecutionAccountSummary[];
+  message: string;
+}> {
+  const python = envValue("WEBULL_PYTHON_BIN") || "python";
+  return new Promise((resolve) => {
+    const child = spawn(python, [WEBULL_SDK_PROBE], {
+      env: {
+        ...process.env,
+        WEBULL_APP_KEY: input.appKey,
+        WEBULL_APP_SECRET: input.appSecret,
+        WEBULL_API_ENDPOINT: input.endpoint,
+        WEBULL_REGION: "us",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      resolve({
+        ok: false,
+        accounts: [],
+        message:
+          "Webull SDK account-list test timed out after 20 seconds. This follows Webull's official SDK flow; check host network access to Webull.",
+      });
+    }, 20000);
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({
+        ok: false,
+        accounts: [],
+        message: `Could not start Python for Webull's official SDK flow. Set WEBULL_PYTHON_BIN to Python 3.8-3.13 with webull-openapi-python-sdk installed. ${err.message}`,
+      });
+    });
+    child.on("close", () => {
+      clearTimeout(timer);
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        const accounts: ExecutionAccountSummary[] = Array.isArray(parsed.accounts)
+          ? parsed.accounts.map((account: any, index: number) => ({
+              id: String(account.id || account.account_id || account.accountId || `account-${index + 1}`),
+              label: String(account.label || account.account_type || account.accountType || account.type || "Webull account"),
+              type: String(account.type || account.account_type || account.accountType || "unknown"),
+              raw: account.raw ?? account,
+            }))
+          : [];
+        resolve({
+          ok: Boolean(parsed.ok),
+          statusCode: parsed.statusCode,
+          accounts,
+          message:
+            parsed.message ||
+            (parsed.ok
+              ? `Webull SDK account-list test succeeded (${accounts.length} account${accounts.length === 1 ? "" : "s"} returned).`
+              : `Webull SDK account-list test failed.${stderr ? ` ${stderr.slice(0, 240)}` : ""}`),
+        });
+      } catch {
+        resolve({
+          ok: false,
+          accounts: [],
+          message: `Webull SDK account-list test did not return valid JSON. stdout=${stdout.slice(0, 180)} stderr=${stderr.slice(0, 180)}`,
+        });
+      }
+    });
+  });
 }
 
 export async function testWebullConnection(userId: string): Promise<{
@@ -255,7 +273,6 @@ export async function testWebullConnection(userId: string): Promise<{
   const mode = environmentMode(resolvedValue(connection, "environment", "WEBULL_ENVIRONMENT"));
   const endpoint = endpointFor(resolvedValue(connection, "endpoint", "WEBULL_API_ENDPOINT"), mode);
   const savedAccountId = resolvedValue(connection, "accountId", "WEBULL_ACCOUNT_ID");
-  const accessToken = resolvedValue(connection, "accessToken", "WEBULL_ACCESS_TOKEN");
   if (!appKey || !appSecret) {
     return {
       ok: false,
@@ -265,72 +282,28 @@ export async function testWebullConnection(userId: string): Promise<{
     };
   }
 
-  const path = "/openapi/account/list";
-  const signed = signWebullRequest({ appKey, appSecret, host: endpoint, path });
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  try {
-    const res = await fetch(`https://${endpoint}${path}`, {
-      method: "GET",
-      headers: {
-        ...signed.headers,
-        ...(accessToken ? { "x-access-token": accessToken } : {}),
+  const result = await runWebullSdkAccountList({ appKey, appSecret, endpoint });
+  const selectedAccountId = savedAccountId || result.accounts[0]?.id;
+  if (result.ok && selectedAccountId && !savedAccountId) {
+    await TradingIntegrationsStore.connect({
+      userId,
+      provider: PROVIDER,
+      fields: {
+        accountId: selectedAccountId,
+        endpoint,
+        environment: mode,
       },
-      signal: controller.signal,
     });
-    const text = await res.text();
-    let parsed: unknown = null;
-    try {
-      parsed = text ? JSON.parse(text) : null;
-    } catch {
-      parsed = null;
-    }
-    const rawAccounts = Array.isArray(parsed)
-      ? parsed
-      : Array.isArray((parsed as any)?.data)
-        ? (parsed as any).data
-        : Array.isArray((parsed as any)?.accounts)
-          ? (parsed as any).accounts
-          : [];
-    const accounts: ExecutionAccountSummary[] = rawAccounts.map((account: any, index: number) => ({
-      id: String(account.account_id || account.accountId || account.id || `account-${index + 1}`),
-      label: String(account.account_type || account.accountType || account.type || "Webull account"),
-      type: String(account.account_type || account.accountType || account.type || "unknown"),
-      raw: account,
-    }));
-    const selectedAccountId = savedAccountId || accounts[0]?.id;
-    if (res.ok && selectedAccountId && !savedAccountId) {
-      await TradingIntegrationsStore.connect({
-        userId,
-        provider: PROVIDER,
-        fields: {
-          accountId: selectedAccountId,
-          endpoint,
-          environment: mode,
-        },
-      });
-    }
-    return {
-      ok: res.ok,
-      statusCode: res.status,
-      endpoint,
-      accountCount: accounts.length,
-      selectedAccountId,
-      accounts,
-      message: res.ok
-        ? selectedAccountId
-          ? `Webull account-list test succeeded. Paper account ${selectedAccountId} is selected.`
-          : "Webull account-list test succeeded, but Webull returned no accounts. Add the paper account ID manually."
-        : webullAuthMessage(res.status, text || res.statusText, appKey, endpoint),
-    };
-  } catch (err: any) {
-    return {
-      ok: false,
-      endpoint,
-      accounts: [],
-      message: `Could not reach Webull ${endpoint}: ${err?.message || "request failed"}.`,
-    };
-  } finally {
-    clearTimeout(timeout);
   }
+  return {
+    ...result,
+    endpoint,
+    accountCount: result.accounts.length,
+    selectedAccountId,
+    message: result.ok
+      ? selectedAccountId
+        ? `Webull SDK account-list test succeeded. Paper account ${selectedAccountId} is selected.`
+        : "Webull SDK account-list test succeeded, but Webull returned no accounts. Add the paper account ID manually."
+      : result.message,
+  };
 }
