@@ -12,6 +12,7 @@ interface WebullStatus {
     appKey?: boolean;
     appKeyLast4?: string;
     appSecret?: boolean;
+    accessToken?: boolean;
     endpoint?: string;
     accountId?: string;
     environment?: string;
@@ -21,6 +22,7 @@ interface WebullStatus {
 interface WebullForm {
   appKey: string;
   appSecret: string;
+  accessToken: string;
   endpoint: string;
   accountId: string;
   environment: string;
@@ -45,6 +47,7 @@ export default function ExternalPaperStage() {
   const [form, setForm] = useState<WebullForm>({
     appKey: "",
     appSecret: "",
+    accessToken: "",
     endpoint: "",
     accountId: "",
     environment: "sandbox",
@@ -115,7 +118,7 @@ export default function ExternalPaperStage() {
           ? "Webull paper account connected."
           : "Webull credentials saved. Add the paper account ID to mark the account connected.",
       );
-      setForm((current) => ({ ...current, appSecret: "" }));
+      setForm((current) => ({ ...current, appSecret: "", accessToken: "" }));
       await refresh();
     } catch (err: any) {
       setError(err?.message || "Could not save Webull connection");
@@ -136,6 +139,12 @@ export default function ExternalPaperStage() {
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.result?.message || body?.error || `HTTP ${res.status}`);
       setStatus(body.status);
+      setForm((current) => ({
+        ...current,
+        accountId: body.status?.saved?.accountId || current.accountId,
+        endpoint: body.status?.saved?.endpoint || current.endpoint,
+        environment: body.status?.saved?.environment || current.environment,
+      }));
       setNotice(body.result?.message || "Webull test succeeded.");
     } catch (err: any) {
       setError(err?.message || "Webull test failed");
@@ -276,6 +285,7 @@ function WebullConnectCard({
             <div className="mt-2 flex flex-wrap gap-1.5 text-[10.5px] text-white/45">
               {status.saved.appKey && <span className="rounded-full bg-white/10 px-2 py-0.5">App key saved {status.saved.appKeyLast4 ? `...${status.saved.appKeyLast4}` : ""}</span>}
               {status.saved.appSecret && <span className="rounded-full bg-white/10 px-2 py-0.5">Secret saved</span>}
+              {status.saved.accessToken && <span className="rounded-full bg-white/10 px-2 py-0.5">Access token saved</span>}
               {status.saved.accountId && <span className="rounded-full bg-white/10 px-2 py-0.5">Account {status.saved.accountId}</span>}
               {status.saved.environment && <span className="rounded-full bg-white/10 px-2 py-0.5">{status.saved.environment}</span>}
             </div>
@@ -297,6 +307,7 @@ function WebullConnectCard({
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <Input label="App key" value={form.appKey} onChange={(appKey) => setForm((v) => ({ ...v, appKey }))} />
         <Input label="App secret" type="password" value={form.appSecret} onChange={(appSecret) => setForm((v) => ({ ...v, appSecret }))} />
+        <Input label="Access token" type="password" value={form.accessToken} onChange={(accessToken) => setForm((v) => ({ ...v, accessToken }))} placeholder="optional for 2FA accounts" />
         <Input label="Paper account ID" value={form.accountId} onChange={(accountId) => setForm((v) => ({ ...v, accountId }))} />
         <Input label="Endpoint" value={form.endpoint} onChange={(endpoint) => setForm((v) => ({ ...v, endpoint }))} placeholder="optional" />
         <label className="block sm:col-span-2">

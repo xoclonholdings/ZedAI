@@ -31,6 +31,7 @@ export interface ExecutionAdapterStatus {
     appKey?: boolean;
     appKeyLast4?: string;
     appSecret?: boolean;
+    accessToken?: boolean;
     endpoint?: string;
     accountId?: string;
     environment?: string;

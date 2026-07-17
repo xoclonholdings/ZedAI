@@ -41,6 +41,7 @@ export async function getWebullStatus(userId: string): Promise<ExecutionAdapterS
   const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
   const appKey = resolvedValue(connection, "appKey", "WEBULL_APP_KEY");
   const appSecret = resolvedValue(connection, "appSecret", "WEBULL_APP_SECRET");
+  const accessToken = resolvedValue(connection, "accessToken", "WEBULL_ACCESS_TOKEN");
   const endpoint = resolvedValue(connection, "endpoint", "WEBULL_API_ENDPOINT");
   const accountId = resolvedValue(connection, "accountId", "WEBULL_ACCOUNT_ID");
   const mode = environmentMode(resolvedValue(connection, "environment", "WEBULL_ENVIRONMENT"));
@@ -80,6 +81,7 @@ export async function getWebullStatus(userId: string): Promise<ExecutionAdapterS
       appKey: Boolean(appKey),
       appKeyLast4: appKey ? appKey.slice(-4) : undefined,
       appSecret: Boolean(appSecret),
+      accessToken: Boolean(accessToken),
       endpoint: effectiveEndpoint,
       accountId: accountId || undefined,
       environment: mode,
@@ -215,6 +217,7 @@ export async function testWebullConnection(userId: string): Promise<{
   statusCode?: number;
   endpoint?: string;
   accountCount?: number;
+  selectedAccountId?: string;
   accounts: ExecutionAccountSummary[];
   message: string;
 }> {
@@ -223,6 +226,7 @@ export async function testWebullConnection(userId: string): Promise<{
   const appSecret = resolvedValue(connection, "appSecret", "WEBULL_APP_SECRET");
   const mode = environmentMode(resolvedValue(connection, "environment", "WEBULL_ENVIRONMENT"));
   const endpoint = endpointFor(resolvedValue(connection, "endpoint", "WEBULL_API_ENDPOINT"), mode);
+  const savedAccountId = resolvedValue(connection, "accountId", "WEBULL_ACCOUNT_ID");
   const accessToken = resolvedValue(connection, "accessToken", "WEBULL_ACCESS_TOKEN");
   if (!appKey || !appSecret) {
     return {
@@ -266,14 +270,29 @@ export async function testWebullConnection(userId: string): Promise<{
       type: String(account.account_type || account.accountType || account.type || "unknown"),
       raw: account,
     }));
+    const selectedAccountId = savedAccountId || accounts[0]?.id;
+    if (res.ok && selectedAccountId && !savedAccountId) {
+      await TradingIntegrationsStore.connect({
+        userId,
+        provider: PROVIDER,
+        fields: {
+          accountId: selectedAccountId,
+          endpoint,
+          environment: mode,
+        },
+      });
+    }
     return {
       ok: res.ok,
       statusCode: res.status,
       endpoint,
       accountCount: accounts.length,
+      selectedAccountId,
       accounts,
       message: res.ok
-        ? `Webull account-list test succeeded (${accounts.length} account${accounts.length === 1 ? "" : "s"} returned).`
+        ? selectedAccountId
+          ? `Webull account-list test succeeded. Paper account ${selectedAccountId} is selected.`
+          : "Webull account-list test succeeded, but Webull returned no accounts. Add the paper account ID manually."
         : `Webull account-list test failed with HTTP ${res.status}: ${text.slice(0, 240) || res.statusText}`,
     };
   } catch (err: any) {
