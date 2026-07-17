@@ -151,7 +151,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose:
       "Zed proves the same strategy on a real broker's paper/demo account — real platform mechanics and live data, no money — before any funded risk.",
     yourMove:
-      "Connect a paper/demo provider (Tradovate demo, TradingView paper, or Lucid) so Zed trades on real platform rails.",
+      "Connect Webull paper trading, Tradovate demo, TradingView paper, or Lucid so Zed trades on real platform rails.",
     whatZedDoes:
       "Runs the governed strategy on the connected paper account against live data, tracks the external sample, and compares it to the internal results to confirm the edge holds off Zed's own simulator.",
     readyWhen: [
@@ -268,7 +268,7 @@ export interface TradingProgression {
  * bridge exists, Qualification scores a readiness card from that
  * performance, and Live wires the full risk framework + kill switch and
  * unlocks when qualified with a broker connected. Live *order routing*
- * still requires a broker bridge (Tradovate) — Zed reports "ready,
+ * still requires a broker bridge (Webull/Tradovate) — Zed reports "ready,
  * pending broker" rather than faking execution.
  */
 export const DEFAULT_PROGRESSION: TradingProgression = {

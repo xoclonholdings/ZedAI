@@ -24,7 +24,7 @@ import { loadProgression } from "../../services/TradingProgressionStore";
  */
 
 const CONFIG_SCOPE = "live-config";
-const BROKER_PROVIDERS = ["tradovate", "topstep"];
+const BROKER_PROVIDERS = ["webull", "tradovate", "topstep"];
 
 export const DEFAULT_LIVE_CONFIG: LiveTradingConfig = {
   maxRiskPerTrade: 100,
@@ -79,7 +79,7 @@ export async function getLiveState(userId: string): Promise<LiveTradingState> {
 
   const blockers: string[] = [];
   if (!qualPassed) blockers.push("Qualification is not passed yet.");
-  if (!brokerInfo.connected) blockers.push("No broker is connected for order routing (connect Tradovate).");
+  if (!brokerInfo.connected) blockers.push("No broker is connected for order routing (connect Webull or Tradovate).");
   if (!config.killSwitchArmed) blockers.push("Kill switch is not armed.");
 
   const canExecute = qualPassed && brokerInfo.connected && config.killSwitchArmed;
@@ -92,7 +92,7 @@ export async function getLiveState(userId: string): Promise<LiveTradingState> {
   const summary = canExecute
     ? "All gates satisfied and the kill switch is armed. Live execution runs through the broker bridge once it is enabled."
     : status === "ready_pending_broker"
-      ? "Zed is qualified and governed — connect a broker (Tradovate) to enable live order routing."
+      ? "Zed is qualified and governed — connect Webull or Tradovate to enable live order routing."
       : `Live is blocked: ${blockers.join(" ")}`;
 
   return {

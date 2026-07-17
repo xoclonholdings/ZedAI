@@ -23,7 +23,7 @@ import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
 const CONFIG_SCOPE = "evaluation-config";
 const STATE_SCOPE = "evaluation-state";
 
-const EVALUATION_PROVIDERS = ["topstep", "tradovate", "lucid", "tradingview"];
+const EVALUATION_PROVIDERS = ["webull", "topstep", "tradovate", "lucid", "tradingview"];
 
 export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
   provider: "auto",
