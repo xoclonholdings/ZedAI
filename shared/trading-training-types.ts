@@ -203,6 +203,7 @@ export type IntegrationProvider =
   | "topstep"
   | "tradingview"
   | "lucid"
+  | "webull"
   | "tradovate"
   | "kalshi"
   | "polymarket"
@@ -256,6 +257,11 @@ const LOGIN_FIELDS = [
   { key: "password", label: "Password", secret: true },
 ];
 
+const API_KEY_FIELDS = [
+  { key: "keyId", label: "Key ID" },
+  { key: "secretKey", label: "Secret key", secret: true },
+];
+
 export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
   {
     provider: "topstep",
@@ -286,6 +292,19 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
     liveBridge: false,
   },
   {
+    provider: "webull",
+    label: "Webull",
+    purpose: "ZAR connects to Webull OpenAPI for stocks, options, futures, crypto, and event-contract account rails.",
+    fields: [
+      { key: "appKey", label: "App key" },
+      { key: "appSecret", label: "App secret", secret: true },
+      { key: "endpoint", label: "API endpoint", optional: true },
+      { key: "accountId", label: "Default account ID", optional: true },
+      { key: "environment", label: "Environment: sandbox or production", optional: true },
+    ],
+    liveBridge: true,
+  },
+  {
     provider: "kalshi",
     label: "Kalshi",
     purpose: "Zed signs in to your Kalshi account for event/prediction (props) markets.",
@@ -294,10 +313,10 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
   },
   {
     provider: "polymarket",
-    label: "Polymarket",
-    purpose: "Zed signs in to your Polymarket account for prediction (props) markets.",
-    fields: LOGIN_FIELDS,
-    liveBridge: false,
+    label: "Polymarket US",
+    purpose: "ZAR connects to Polymarket US for event-market discovery, balances, positions, and approved order routing.",
+    fields: API_KEY_FIELDS,
+    liveBridge: true,
   },
   {
     provider: "custom",

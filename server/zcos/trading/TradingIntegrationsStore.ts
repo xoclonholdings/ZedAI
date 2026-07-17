@@ -46,6 +46,15 @@ interface StoredIntegration {
   updatedAt: string;
 }
 
+export interface TradingIntegrationConnection {
+  provider: IntegrationProvider;
+  label: string;
+  status: IntegrationStatus;
+  baseUrl?: string;
+  fields: Record<string, string>;
+  secrets: Record<string, string>;
+}
+
 function keyFor(userId: string): string {
   return userId.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
@@ -113,6 +122,20 @@ export const TradingIntegrationsStore = {
         updatedAt: "",
       };
     });
+  },
+
+  async getConnection(userId: string, provider: IntegrationProvider): Promise<TradingIntegrationConnection | null> {
+    const records = await readAll(userId);
+    const record = records.find((r) => r.provider === provider);
+    if (!record) return null;
+    return {
+      provider: record.provider,
+      label: record.label,
+      status: record.status,
+      baseUrl: record.baseUrl,
+      fields: { ...(record.fields || {}) },
+      secrets: { ...(record.secrets || {}) },
+    };
   },
 
   async connect(input: {

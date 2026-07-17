@@ -38,6 +38,8 @@ import { getExternalPaperReport } from "../zcos/trading/ExternalPaperEngine";
 import { runBacktest } from "../zcos/trading/BacktestEngine";
 import { getQualificationReport } from "../zcos/trading/QualificationEngine";
 import { getLiveState, saveLiveConfig, setKillSwitch } from "../zcos/trading/LiveTradingEngine";
+import { getPolymarketUsStatus, searchPolymarketUsMarkets } from "../zcos/trading/PolymarketUsBridge";
+import { getWebullStatus } from "../zcos/trading/WebullBridge";
 import { classifyGovernanceError } from "../services/ErrorContract";
 import { zedErrorMessage } from "../../shared/error-contract";
 import {
@@ -758,6 +760,29 @@ export function registerTradingRoutes(app: Express): void {
   app.post("/api/trading/live/kill-switch", isAuthenticated, async (req: any, res) => {
     const armed = Boolean((req.body || {}).armed);
     res.json({ state: await setKillSwitch(userIdFrom(req), armed) });
+  });
+
+  /* ---- Execution adapters (readiness + read-only discovery) ---- */
+  app.get("/api/trading/execution/adapters", isAuthenticated, async (req: any, res) => {
+    const userId = userIdFrom(req);
+    const [webull, polymarket] = await Promise.all([
+      getWebullStatus(userId),
+      getPolymarketUsStatus(userId),
+    ]);
+    res.json({ adapters: [webull, polymarket] });
+  });
+
+  app.get("/api/trading/execution/webull/status", isAuthenticated, async (req: any, res) => {
+    res.json({ status: await getWebullStatus(userIdFrom(req)) });
+  });
+
+  app.get("/api/trading/execution/polymarket/status", isAuthenticated, async (req: any, res) => {
+    res.json({ status: await getPolymarketUsStatus(userIdFrom(req)) });
+  });
+
+  app.get("/api/trading/execution/polymarket/markets", isAuthenticated, async (req: any, res) => {
+    const query = String(req.query.query || "");
+    res.json(await searchPolymarketUsMarkets(query));
   });
 
   /* ---- Tradovate execution bridge ---- */

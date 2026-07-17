@@ -226,8 +226,118 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       </div>
 
       <MarketDataKeysPanel />
+      <ExecutionAdaptersPanel />
       <TradovateConnect />
     </StageShell>
+  );
+}
+
+interface ExecutionAdapterStatus {
+  provider: string;
+  label: string;
+  configured: boolean;
+  connected: boolean;
+  mode: string;
+  missing: string[];
+  capabilities: {
+    assets: string[];
+    placeOrders: boolean;
+  };
+  accounts: Array<{ id: string; label: string; type: string }>;
+  note: string;
+}
+
+function ExecutionAdaptersPanel() {
+  const [adapters, setAdapters] = useState<ExecutionAdapterStatus[]>([]);
+  const [query, setQuery] = useState("");
+  const [markets, setMarkets] = useState<Array<{ id: string; slug: string; title: string }>>([]);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/trading/execution/adapters", { credentials: "include" });
+      if (res.ok) setAdapters((await res.json()).adapters || []);
+    } catch {
+      /* silent */
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const searchMarkets = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/trading/execution/polymarket/markets?query=${encodeURIComponent(query)}`, {
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      setMarkets(body.markets || []);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-5">
+      <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
+        <Plug size={13} className="text-cyan-300" />
+        Execution adapters
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {adapters.map((adapter) => (
+          <div key={adapter.provider} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[13px] font-semibold text-white">{adapter.label}</div>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.06em] ${
+                  adapter.connected
+                    ? "bg-emerald-400/15 text-emerald-300"
+                    : adapter.configured
+                      ? "bg-cyan-400/15 text-cyan-300"
+                      : "bg-white/10 text-white/45"
+                }`}
+              >
+                {adapter.connected ? "ready" : adapter.configured ? "configured" : "missing keys"}
+              </span>
+            </div>
+            <div className="mt-1 text-[11.5px] text-white/45 leading-snug">{adapter.note}</div>
+            <div className="mt-2 text-[10.5px] text-white/35">
+              {adapter.capabilities.assets.join(", ")} · orders {adapter.capabilities.placeOrders ? "enabled" : "disabled"}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+        <div className="mb-2 text-[12px] font-semibold text-white">Polymarket US market lookup</div>
+        <div className="flex gap-2">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search events"
+            className={inputClass}
+          />
+          <button
+            type="button"
+            onClick={() => void searchMarkets()}
+            disabled={busy}
+            className="rounded-lg bg-cyan-400 px-3 py-1.5 text-[13px] font-medium text-black disabled:opacity-50"
+          >
+            {busy ? "Searching..." : "Search"}
+          </button>
+        </div>
+        {markets.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {markets.slice(0, 5).map((market) => (
+              <div key={market.id || market.slug} className="rounded-lg bg-black/20 px-2.5 py-1.5 text-[11.5px] text-white/65">
+                {market.title}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
