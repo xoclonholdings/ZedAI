@@ -39,7 +39,13 @@ import { runBacktest } from "../zcos/trading/BacktestEngine";
 import { getQualificationReport } from "../zcos/trading/QualificationEngine";
 import { getLiveState, saveLiveConfig, setKillSwitch } from "../zcos/trading/LiveTradingEngine";
 import { getPolymarketUsStatus, searchPolymarketUsMarkets } from "../zcos/trading/PolymarketUsBridge";
-import { getWebullStatus } from "../zcos/trading/WebullBridge";
+import {
+  getWebullStatus,
+  listWebullAccounts,
+  listWebullOrders,
+  listWebullPositions,
+  saveWebullCredentials,
+} from "../zcos/trading/WebullBridge";
 import { classifyGovernanceError } from "../services/ErrorContract";
 import { zedErrorMessage } from "../../shared/error-contract";
 import {
@@ -774,6 +780,35 @@ export function registerTradingRoutes(app: Express): void {
 
   app.get("/api/trading/execution/webull/status", isAuthenticated, async (req: any, res) => {
     res.json({ status: await getWebullStatus(userIdFrom(req)) });
+  });
+
+  /* ---- Webull execution bridge ---- */
+  app.get("/api/trading/webull/status", isAuthenticated, async (req: any, res) => {
+    res.json({ status: await getWebullStatus(userIdFrom(req)) });
+  });
+
+  app.post("/api/trading/webull/credentials", isAuthenticated, async (req: any, res) => {
+    const b = req.body || {};
+    const status = await saveWebullCredentials(userIdFrom(req), {
+      appKey: b.appKey ? String(b.appKey) : undefined,
+      appSecret: b.appSecret ? String(b.appSecret) : undefined,
+      endpoint: b.endpoint ? String(b.endpoint) : undefined,
+      accountId: b.accountId ? String(b.accountId) : undefined,
+      environment: b.environment ? String(b.environment) : undefined,
+    });
+    res.json({ status });
+  });
+
+  app.get("/api/trading/webull/accounts", isAuthenticated, async (req: any, res) => {
+    res.json(await listWebullAccounts(userIdFrom(req)));
+  });
+
+  app.get("/api/trading/webull/positions", isAuthenticated, async (req: any, res) => {
+    res.json(await listWebullPositions(userIdFrom(req)));
+  });
+
+  app.get("/api/trading/webull/orders", isAuthenticated, async (req: any, res) => {
+    res.json(await listWebullOrders(userIdFrom(req)));
   });
 
   app.get("/api/trading/execution/polymarket/status", isAuthenticated, async (req: any, res) => {

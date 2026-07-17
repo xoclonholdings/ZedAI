@@ -1,6 +1,6 @@
 import type { IntegrationProvider } from "../../../shared/trading-training-types";
 
-import type { ExecutionAdapterStatus } from "./ExecutionAdapterTypes";
+import type { ExecutionAccountSummary, ExecutionAdapterStatus } from "./ExecutionAdapterTypes";
 import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
 
 const PROVIDER: IntegrationProvider = "webull";
@@ -57,3 +57,73 @@ export async function getWebullStatus(userId: string): Promise<ExecutionAdapterS
   };
 }
 
+export async function saveWebullCredentials(
+  userId: string,
+  input: {
+    appKey?: string;
+    appSecret?: string;
+    endpoint?: string;
+    accountId?: string;
+    environment?: string;
+  },
+): Promise<ExecutionAdapterStatus> {
+  await TradingIntegrationsStore.connect({
+    userId,
+    provider: PROVIDER,
+    fields: {
+      ...(input.appKey ? { appKey: input.appKey } : {}),
+      ...(input.endpoint ? { endpoint: input.endpoint } : {}),
+      ...(input.accountId ? { accountId: input.accountId } : {}),
+      ...(input.environment ? { environment: input.environment } : {}),
+    },
+    secrets: {
+      ...(input.appSecret ? { appSecret: input.appSecret } : {}),
+    },
+  });
+  return getWebullStatus(userId);
+}
+
+export async function listWebullAccounts(userId: string): Promise<{
+  connected: boolean;
+  accounts: ExecutionAccountSummary[];
+  note: string;
+}> {
+  const status = await getWebullStatus(userId);
+  return {
+    connected: status.connected,
+    accounts: status.accounts,
+    note: status.accounts.length
+      ? "Using the saved Webull default account. Full account discovery is next in the Webull SDK bridge."
+      : status.note,
+  };
+}
+
+export async function listWebullPositions(userId: string): Promise<{
+  connected: boolean;
+  positions: unknown[];
+  note: string;
+}> {
+  const status = await getWebullStatus(userId);
+  return {
+    connected: status.connected,
+    positions: [],
+    note: status.configured
+      ? "Webull position sync endpoint is reserved; SDK-backed position reads are not enabled yet."
+      : status.note,
+  };
+}
+
+export async function listWebullOrders(userId: string): Promise<{
+  connected: boolean;
+  orders: unknown[];
+  note: string;
+}> {
+  const status = await getWebullStatus(userId);
+  return {
+    connected: status.connected,
+    orders: [],
+    note: status.configured
+      ? "Webull order sync endpoint is reserved; SDK-backed order reads are not enabled yet."
+      : status.note,
+  };
+}
