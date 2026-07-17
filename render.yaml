@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: zed-ai
+    runtime: node
+    plan: starter
+    buildCommand: |
+      npm install --prefix shared
+      npm install --prefix client
+      npm run build --prefix client
+      npm install --prefix server
+      python3 -m pip install --upgrade pip
+      python3 -m pip install --user -r server/requirements.txt
+    startCommand: cd server && npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PYTHON_VERSION
+        value: "3.13.5"
+      - key: WEBULL_PYTHON_BIN
+        value: "python3"
+      - key: REQUIRE_DATABASE
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: LIGHTNING_API_KEY
+        sync: false
+      - key: LIGHTNING_BASE_URL
+        sync: false
+      - key: WEBULL_APP_KEY
+        sync: false
+      - key: WEBULL_APP_SECRET
+        sync: false
+      - key: WEBULL_API_ENDPOINT
+        value: "api.sandbox.webull.com"
+      - key: WEBULL_ENVIRONMENT
+        value: "sandbox"

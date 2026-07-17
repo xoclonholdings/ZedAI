@@ -577,8 +577,16 @@ and expects:
 
 At server boot, ZED initializes runtime directories, fallback storage, core memory, and the Knowledge Curation scheduler. The scheduler writes curation reports under `hub/shared-memory/curation/` and logs review status to the runtime log. This does not make `hub/shared-memory/` the destination for personal history or the owner of the admin legacy archive.
 
-The backend is deployed to Render; configuration lives in the Render dashboard
-(environment variables, build/start command, optional persistent disk).
+The backend is deployed to Render. Canonical deploy configuration is checked in at
+`render.yaml` so runtime dependencies do not drift from code. The Webull OpenAPI
+bridge follows Webull's official Python SDK path and therefore requires Python
+3.8-3.13 plus `webull-openapi-python-sdk`; the Render blueprint pins
+`PYTHON_VERSION=3.13.5`, installs `server/requirements.txt`, and sets
+`WEBULL_PYTHON_BIN=python3` for the Node backend.
+
+Secrets still live in Render environment variables, not Git:
+`DATABASE_URL`, `SESSION_SECRET`, `LIGHTNING_API_KEY`, `LIGHTNING_BASE_URL`,
+`WEBULL_APP_KEY`, and `WEBULL_APP_SECRET`.
 
 ## Documentation Policy
 
