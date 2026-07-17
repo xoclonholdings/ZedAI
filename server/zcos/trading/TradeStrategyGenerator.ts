@@ -61,6 +61,7 @@ export interface GeneratedStrategy {
   timeframe: string;
   riskReward: number;
   confidence: number;
+  setupType: string;
   thesis: string;
   marketStructure: string;
   liquidityAnalysis: string;
@@ -170,10 +171,13 @@ function roundRR(value: number): number {
 function resolveDirection(
   preference: DirectionPreference | undefined,
   knowledgeText: string,
+  signal?: TradingSignal | null,
 ): { direction: TradeDirection; auto: boolean } {
   if (preference === "long" || preference === "short") {
     return { direction: preference, auto: false };
   }
+  if (signal?.signal === "buy") return { direction: "long", auto: true };
+  if (signal?.signal === "sell") return { direction: "short", auto: true };
   const lower = knowledgeText.toLowerCase();
   const bearish =
     (lower.match(/bearish|lower high|lower low|breakdown|short/g) || []).length;
@@ -292,6 +296,16 @@ function scoreConfidence(knowledgeMatches: number, auto: boolean, signal?: Tradi
   return clampConfidence(score);
 }
 
+function inferSetupType(direction: TradeDirection, signal?: TradingSignal | null): string {
+  const rsiVote = signal?.votes.find((vote) => vote.name === "RSI 14")?.detail || "";
+  const momentum = signal?.votes.find((vote) => vote.name === "Momentum")?.verdict;
+  if (/overbought/i.test(rsiVote) && direction === "short") return "Mean-reversion short";
+  if (/oversold/i.test(rsiVote) && direction === "long") return "Mean-reversion long";
+  if (momentum === "bullish" && direction === "long") return "Momentum continuation";
+  if (momentum === "bearish" && direction === "short") return "Breakdown continuation";
+  return direction === "long" ? "Liquidity reclaim long" : "Liquidity rejection short";
+}
+
 /**
  * A thesis grounded in the actual indicator reads for THIS symbol — not a
  * canned narrative. Cites the live price, the technical signal, each
@@ -364,6 +378,7 @@ interface ModelTradeProposal {
   timeframe?: string;
   riskReward?: number;
   confidence?: number;
+  setupType?: string;
   thesis?: string;
   marketStructure?: string;
   liquidityAnalysis?: string;
@@ -472,6 +487,7 @@ function normalizeModelProposal(
     timeframe,
     riskReward,
     confidence: clampConfidence(Number(proposal.confidence || scoreConfidence(knowledgeMatches, false))),
+    setupType: cleanText(proposal.setupType || inferSetupType(direction, input.signal), "setupType"),
     thesis: cleanText(proposal.thesis, "thesis"),
     marketStructure: cleanText(proposal.marketStructure, "marketStructure"),
     liquidityAnalysis: cleanText(proposal.liquidityAnalysis, "liquidityAnalysis"),
@@ -549,6 +565,7 @@ async function generateModelTradeStrategy(
             timeframe: "string",
             riskReward: "number >= 2",
             confidence: "number 0-100",
+            setupType: "string describing the setup archetype",
             thesis: "string",
             marketStructure: "string",
             liquidityAnalysis: "string",
@@ -603,7 +620,7 @@ async function generateRuleBasedTradeStrategy(
     ]),
   ].join("\n");
 
-  const { direction, auto } = resolveDirection(input.directionPreference, knowledgeText);
+  const { direction, auto } = resolveDirection(input.directionPreference, knowledgeText, input.signal);
 
   const riskReward = roundRR(3.0);
   const confidence = scoreConfidence(knowledgeEntries.length, auto, input.signal);
@@ -635,6 +652,7 @@ async function generateRuleBasedTradeStrategy(
     timeframe,
     riskReward,
     confidence,
+    setupType: inferSetupType(direction, input.signal),
     thesis: buildDataDrivenThesis(symbol, direction, levels, riskReward, input.signal),
     marketStructure: buildMarketStructure(direction, timeframe),
     liquidityAnalysis: buildLiquidityAnalysis(direction),

@@ -4,6 +4,7 @@ import { isAuthenticated } from "../localAuth";
 import type {
   AuthorizationDecision,
   PaperTradeStatus,
+  PaperTradeManagementStyle,
   PaperTradingGovernanceMode,
   PaperTradingGovernanceSettings,
 } from "../../shared/trading-types";
@@ -68,6 +69,10 @@ function toArray(value: unknown): string[] {
 
 function toGovernanceMode(value: unknown): PaperTradingGovernanceMode | undefined {
   return value === "enforce" || value === "warn" || value === "off" ? value : undefined;
+}
+
+function toManagementStyle(value: unknown): PaperTradeManagementStyle {
+  return value === "stop_only" || value === "target_only" || value === "manual" ? value : "bracket";
 }
 
 type PaperGovernanceSettingsPatch = {
@@ -258,7 +263,11 @@ export function registerTradingRoutes(app: Express): void {
       let directionPreference = req.body.directionPreference || "auto";
       let recommendation: Awaited<ReturnType<typeof recommendSymbol>> = null;
       if (!symbol) {
-        recommendation = await recommendSymbol(asset, market);
+        const recentTrades = await TradingStore.listPaperTrades(userId);
+        recommendation = await recommendSymbol(asset, market, {
+          avoidSymbols: recentTrades.slice(0, 12).map((trade) => trade.symbol),
+          preferDirection: directionPreference,
+        });
         if (!recommendation) {
           return res.status(422).json({
             error:
@@ -616,6 +625,7 @@ export function registerTradingRoutes(app: Express): void {
       target: toNumber(req.body.target),
       size: toNumber(req.body.size),
       riskAmount: toNumber(req.body.riskAmount),
+      managementStyle: toManagementStyle(req.body.managementStyle),
       entryReason: String(req.body.entryReason),
       screenshots: toArray(req.body.screenshots),
       lessonsLearned: toArray(req.body.lessonsLearned),

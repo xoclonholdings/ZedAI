@@ -62,19 +62,21 @@ export function resolveAgainstRange(
   target: number,
   high: number,
   low: number,
+  managementStyle: "bracket" | "stop_only" | "target_only" | "manual" = "bracket",
 ): { outcome: "win" | "loss"; exit: number } | null {
+  if (managementStyle === "manual") return null;
   const hi = Math.max(high, low);
   const lo = Math.min(high, low);
   if (direction === "long") {
-    const hitTarget = hi >= target;
-    const hitStop = lo <= stop;
+    const hitTarget = managementStyle !== "stop_only" && hi >= target;
+    const hitStop = managementStyle !== "target_only" && lo <= stop;
     if (hitTarget && hitStop) return { outcome: "loss", exit: stop };
     if (hitTarget) return { outcome: "win", exit: target };
     if (hitStop) return { outcome: "loss", exit: stop };
     return null;
   }
-  const hitTarget = lo <= target;
-  const hitStop = hi >= stop;
+  const hitTarget = managementStyle !== "stop_only" && lo <= target;
+  const hitStop = managementStyle !== "target_only" && hi >= stop;
   if (hitTarget && hitStop) return { outcome: "loss", exit: stop };
   if (hitTarget) return { outcome: "win", exit: target };
   if (hitStop) return { outcome: "loss", exit: stop };
@@ -108,7 +110,14 @@ export async function resolveOpenPaperTrades(userId: string): Promise<ResolveRes
     const high = latestBar ? Math.max(latestBar.h, price) : price;
     const low = latestBar ? Math.min(latestBar.l, price) : price;
 
-    const hit = resolveAgainstRange(trade.direction, trade.stop, trade.target, high, low);
+    const hit = resolveAgainstRange(
+      trade.direction,
+      trade.stop,
+      trade.target,
+      high,
+      low,
+      trade.managementStyle || "bracket",
+    );
     if (!hit) continue;
 
     const reason =

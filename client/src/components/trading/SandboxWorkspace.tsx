@@ -51,6 +51,7 @@ const EMPTY_LOG_FORM = {
   target: "",
   size: "1",
   riskAmount: "",
+  managementStyle: "bracket" as NonNullable<PaperTrade["managementStyle"]>,
   entryReason: "",
   // Filled by Zed's proposal so governance can link the thesis + context.
   thesisId: "",
@@ -299,6 +300,7 @@ export default function SandboxWorkspace() {
           target: num(logForm.target),
           size: num(logForm.size) || 1,
           riskAmount: risk,
+          managementStyle: logForm.managementStyle,
           entryReason: logForm.entryReason.trim(),
           thesisId: logForm.thesisId || undefined,
           session: logForm.session || undefined,
@@ -362,7 +364,7 @@ export default function SandboxWorkspace() {
         symbol: s.symbol || f.symbol,
         direction: s.direction === "short" ? "short" : "long",
         timeframe: s.timeframe || f.timeframe,
-        setupName: "Zed proposal",
+        setupName: s.setupType || "Zed proposal",
         entry: s.entry != null ? String(s.entry) : f.entry,
         stop: s.stop != null ? String(s.stop) : f.stop,
         target: s.target != null ? String(s.target) : f.target,
@@ -722,6 +724,9 @@ function TradeCard({ trade, onClose }: { trade: PaperTrade; onClose: () => void 
           <div className="mt-1 text-[11.5px] text-white/60 leading-snug">
             Entry ${trade.entry} · Stop ${trade.stop} · Target ${trade.target} · {rrPlanned.toFixed(2)}R planned
           </div>
+          <div className="mt-1 text-[10.5px] uppercase tracking-[0.06em] text-white/35">
+            ZAR manages: {(trade.managementStyle || "bracket").replace("_", " ")}
+          </div>
           {trade.entryReason && (
             <div className="mt-1.5 text-[11.5px] text-white/50 italic max-w-[62ch]">
               "{trade.entryReason.slice(0, 200)}"
@@ -1051,6 +1056,18 @@ function LogTradeForm({
           >
             <option value="long" className="bg-neutral-900">Long</option>
             <option value="short" className="bg-neutral-900">Short</option>
+          </select>
+        </FormField>
+        <FormField label="ZAR manages">
+          <select
+            value={form.managementStyle}
+            onChange={(e) => set("managementStyle")(e.target.value as NonNullable<PaperTrade["managementStyle"]>)}
+            className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+          >
+            <option value="bracket" className="bg-neutral-900">Bracket</option>
+            <option value="stop_only" className="bg-neutral-900">Stop only</option>
+            <option value="target_only" className="bg-neutral-900">Target only</option>
+            <option value="manual" className="bg-neutral-900">Manual</option>
           </select>
         </FormField>
         <FormField label="Setup (optional)">

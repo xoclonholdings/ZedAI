@@ -154,6 +154,7 @@ export interface TradeThesis {
 }
 
 export type PaperTradeStatus = "open" | "closed" | "cancelled";
+export type PaperTradeManagementStyle = "bracket" | "stop_only" | "target_only" | "manual";
 
 export interface TradeReviewReport {
   id: string;
@@ -188,6 +189,7 @@ export interface PaperTrade {
   target: number;
   size: number;
   riskAmount: number;
+  managementStyle?: PaperTradeManagementStyle;
   exitPrice?: number;
   realizedPnl?: number;
   unrealizedPnl?: number;

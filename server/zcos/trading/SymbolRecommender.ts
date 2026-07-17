@@ -72,8 +72,11 @@ export function scoreSymbol(bars: MarketBar[] | undefined): {
 export async function recommendSymbol(
   asset: TradingAssetClass,
   _market = "US",
+  opts: { avoidSymbols?: string[]; preferDirection?: TradeDirection | "auto" } = {},
 ): Promise<SymbolRecommendation | null> {
   const universe = UNIVERSE[asset] || UNIVERSE.etf;
+  const avoid = new Set((opts.avoidSymbols || []).map((symbol) => symbol.trim().toUpperCase()).filter(Boolean));
+  const pool = universe.some((symbol) => !avoid.has(symbol.toUpperCase())) ? universe : universe.concat();
 
   const scored: Array<{
     score: number;
@@ -85,7 +88,8 @@ export async function recommendSymbol(
     signal: "buy" | "sell" | "neutral" | null;
     signalStrength: number;
   }> = [];
-  for (const symbol of universe) {
+  for (const symbol of pool) {
+    if (avoid.has(symbol.toUpperCase()) && pool === universe) continue;
     const quote = await getMarketQuote(symbol, asset);
     if (!quote) continue;
     const mom = scoreSymbol(quote.bars);
@@ -104,6 +108,9 @@ export async function recommendSymbol(
     } else {
       continue;
     }
+    if (opts.preferDirection && opts.preferDirection !== "auto" && direction !== opts.preferDirection) {
+      score *= 0.82;
+    }
 
     scored.push({
       score,
@@ -119,7 +126,10 @@ export async function recommendSymbol(
 
   if (!scored.length) return null;
   scored.sort((a, b) => b.score - a.score);
-  const top = scored[0];
+  const bestScore = scored[0].score;
+  const candidates = scored.filter((item) => item.score >= bestScore * 0.9).slice(0, 4);
+  const index = Math.abs(hash(`${asset}:${_market}:${new Date().toISOString().slice(0, 10)}:${candidates.map((item) => item.symbol).join(",")}`)) % candidates.length;
+  const top = candidates[index] || scored[0];
   const bias = top.direction === "long" ? "bullish" : "bearish";
   const reason = top.signal && top.signal !== "neutral"
     ? `Zed scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${top.signal.toUpperCase()} signal (${top.signalStrength}% indicator conviction, ${top.momentumPct}% momentum).`
@@ -135,4 +145,13 @@ export async function recommendSymbol(
     signalStrength: top.signalStrength,
     reason,
   };
+}
+
+function hash(value: string): number {
+  let h = 0;
+  for (let i = 0; i < value.length; i++) {
+    h = (h << 5) - h + value.charCodeAt(i);
+    h |= 0;
+  }
+  return h;
 }
