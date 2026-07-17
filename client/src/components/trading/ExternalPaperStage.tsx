@@ -63,6 +63,7 @@ export default function ExternalPaperStage() {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -123,6 +124,26 @@ export default function ExternalPaperStage() {
     }
   };
 
+  const testWebull = async () => {
+    setTesting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/trading/webull/test", {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.result?.message || body?.error || `HTTP ${res.status}`);
+      setStatus(body.status);
+      setNotice(body.result?.message || "Webull test succeeded.");
+    } catch (err: any) {
+      setError(err?.message || "Webull test failed");
+    } finally {
+      setTesting(false);
+    }
+  };
+
   const submitWebullPaperOrder = async () => {
     setSaving(true);
     setError(null);
@@ -174,6 +195,8 @@ export default function ExternalPaperStage() {
             setForm={setForm}
             saving={saving}
             onSave={() => void saveWebull()}
+            testing={testing}
+            onTest={() => void testWebull()}
           />
 
           <WebullPaperOrderCard
@@ -228,12 +251,16 @@ function WebullConnectCard({
   setForm,
   saving,
   onSave,
+  testing,
+  onTest,
 }: {
   status: WebullStatus | null;
   form: WebullForm;
   setForm: Dispatch<SetStateAction<WebullForm>>;
   saving: boolean;
   onSave: () => void;
+  testing: boolean;
+  onTest: () => void;
 }) {
   const connected = Boolean(status?.connected);
   const configured = Boolean(status?.configured);
@@ -285,7 +312,15 @@ function WebullConnectCard({
         </label>
       </div>
 
-      <div className="mt-3 flex justify-end">
+      <div className="mt-3 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          onClick={onTest}
+          disabled={testing}
+          className="rounded-lg border border-cyan-400/25 bg-cyan-400/[0.08] px-3 py-1.5 text-[12.5px] font-medium text-cyan-100 hover:bg-cyan-400/[0.14] disabled:opacity-50"
+        >
+          {testing ? "Testing..." : "Test Webull"}
+        </button>
         <button
           type="button"
           onClick={onSave}

@@ -45,6 +45,7 @@ import {
   listWebullOrders,
   listWebullPositions,
   saveWebullCredentials,
+  testWebullConnection,
 } from "../zcos/trading/WebullBridge";
 import { classifyGovernanceError } from "../services/ErrorContract";
 import { zedErrorMessage } from "../../shared/error-contract";
@@ -743,8 +744,14 @@ export function registerTradingRoutes(app: Express): void {
       endpoint: b.endpoint ? String(b.endpoint) : undefined,
       accountId: b.accountId ? String(b.accountId) : undefined,
       environment: b.environment ? String(b.environment) : undefined,
+      accessToken: b.accessToken ? String(b.accessToken) : undefined,
     });
     res.json({ status });
+  });
+
+  app.post("/api/trading/webull/test", isAuthenticated, async (req: any, res) => {
+    const result = await testWebullConnection(userIdFrom(req));
+    res.status(result.ok ? 200 : 502).json({ result, status: await getWebullStatus(userIdFrom(req)) });
   });
 
   app.get("/api/trading/webull/accounts", isAuthenticated, async (req: any, res) => {
