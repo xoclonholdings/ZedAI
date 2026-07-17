@@ -41,6 +41,14 @@ def normalize_accounts(data):
 
 
 def import_webull_sdk():
+    version = sys.version_info
+    if version.major != 3 or version.minor < 8 or version.minor > 13:
+        return None, None, (
+            "Webull OpenAPI Python SDK cannot run on this Python runtime. "
+            "Webull documents Python 3.8-3.13 for this SDK. "
+            f"Runtime: {sys.version.split()[0]}. "
+            "Set Render PYTHON_VERSION or .python-version to 3.13.5 and redeploy."
+        )
     try:
         from webull.core.client import ApiClient
         from webull.trade.trade_client import TradeClient
