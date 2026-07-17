@@ -737,16 +737,20 @@ export function registerTradingRoutes(app: Express): void {
   });
 
   app.post("/api/trading/webull/credentials", isAuthenticated, async (req: any, res) => {
-    const b = req.body || {};
-    const status = await saveWebullCredentials(userIdFrom(req), {
-      appKey: b.appKey ? String(b.appKey) : undefined,
-      appSecret: b.appSecret ? String(b.appSecret) : undefined,
-      endpoint: b.endpoint ? String(b.endpoint) : undefined,
-      accountId: b.accountId ? String(b.accountId) : undefined,
-      environment: b.environment ? String(b.environment) : undefined,
-      accessToken: b.accessToken ? String(b.accessToken) : undefined,
-    });
-    res.json({ status });
+    try {
+      const b = req.body || {};
+      const status = await saveWebullCredentials(userIdFrom(req), {
+        appKey: b.appKey ? String(b.appKey) : undefined,
+        appSecret: b.appSecret ? String(b.appSecret) : undefined,
+        endpoint: b.endpoint ? String(b.endpoint) : undefined,
+        accountId: b.accountId ? String(b.accountId) : undefined,
+        environment: b.environment ? String(b.environment) : undefined,
+        accessToken: b.accessToken ? String(b.accessToken) : undefined,
+      });
+      res.json({ status });
+    } catch (error: any) {
+      res.status(400).json({ error: error?.message || "Could not save Webull connection." });
+    }
   });
 
   app.post("/api/trading/webull/test", isAuthenticated, async (req: any, res) => {
@@ -764,6 +768,108 @@ export function registerTradingRoutes(app: Express): void {
 
   app.get("/api/trading/webull/orders", isAuthenticated, async (req: any, res) => {
     res.json(await listWebullOrders(userIdFrom(req)));
+  });
+
+  app.post("/api/trading/webull/propose", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = userIdFrom(req);
+      const status = await getWebullStatus(userId);
+      if (!status.connected) {
+        return res.status(409).json({
+          error: status.note || "Webull paper account is not connected.",
+          status,
+        });
+      }
+
+      const asset = req.body.asset || req.body.assetClass || "stock";
+      const market = req.body.market ? String(req.body.market) : "US";
+      let symbol = String(req.body.symbol || "").trim();
+      let directionPreference = req.body.directionPreference || "auto";
+      let recommendation: Awaited<ReturnType<typeof recommendSymbol>> = null;
+
+      if (!symbol) {
+        const recentTrades = await TradingStore.listPaperTrades(userId);
+        recommendation = await recommendSymbol(asset, market, {
+          avoidSymbols: recentTrades
+            .filter((trade) => trade.executionMode === "external_paper")
+            .slice(0, 12)
+            .map((trade) => trade.symbol),
+          preferDirection: directionPreference,
+        });
+        if (!recommendation) {
+          return res.status(422).json({
+            action: "no_trade",
+            error: "ZAR could not reach live market data to pick a Webull paper trade.",
+          });
+        }
+        symbol = recommendation.symbol;
+        if (directionPreference === "auto") directionPreference = recommendation.direction;
+      }
+
+      const quote = await getMarketQuote(symbol, asset);
+      if (quote?.signal?.signal === "neutral") {
+        return res.json({
+          action: "no_trade",
+          symbol,
+          marketData: { live: true, source: quote.source, price: quote.price, asOf: quote.asOf, atr: quote.atr ?? null },
+          signal: quote.signal,
+          reason: `No Webull paper trade proposed for ${symbol}: live signal is neutral (${quote.signal.bullish} bullish / ${quote.signal.bearish} bearish).`,
+          status,
+        });
+      }
+      if (directionPreference === "auto" && quote?.signal) {
+        directionPreference = quote.signal.signal === "buy" ? "long" : "short";
+      }
+
+      const strategy = await generateTradeStrategy({
+        userId,
+        symbol,
+        asset,
+        market,
+        directionPreference,
+        timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
+        referencePrice: quote?.price,
+        stopDistance: quote?.atr,
+        signal: quote?.signal ?? null,
+      });
+
+      const thesis = await createTradeThesis({
+        userId,
+        market,
+        assetClass: asset,
+        symbol: strategy.symbol,
+        direction: strategy.direction,
+        reason: strategy.thesis,
+        marketStructure: strategy.marketStructure,
+        liquidityAnalysis: strategy.liquidityAnalysis,
+        timeframeAlignment: strategy.timeframeAlignment,
+        primaryTimeframe: strategy.timeframe,
+        entryPlan: strategy.entryPlan,
+        stopPlan: strategy.stopPlan,
+        targetPlan: strategy.targetPlan,
+        riskReward: strategy.riskReward,
+        invalidationConditions: strategy.invalidation.split("\n").map((s) => s.trim()).filter(Boolean),
+        confidenceScore: strategy.confidence,
+        notes: `Webull external paper proposal. ${strategy.basis}`,
+      });
+
+      res.json({
+        action: strategy.direction === "long" ? "buy" : "sell",
+        ...strategy,
+        thesisId: thesis.id,
+        managementStyle: "bracket",
+        marketData: quote
+          ? { live: true, source: quote.source, price: quote.price, asOf: quote.asOf, atr: quote.atr ?? null }
+          : { live: false, source: null, price: null, asOf: null, atr: null },
+        signal: quote?.signal ?? null,
+        recommendedSymbol: recommendation
+          ? { symbol: recommendation.symbol, reason: recommendation.reason }
+          : null,
+        status,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error?.message || "Webull trade proposal failed" });
+    }
   });
 
   app.post("/api/trading/webull/paper-orders", isAuthenticated, async (req: any, res) => {

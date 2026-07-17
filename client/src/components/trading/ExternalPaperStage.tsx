@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 
-import type { ExternalPaperReport } from "@shared/trading-training-types";
+import type { ExternalPaperReport, TradingSignal } from "@shared/trading-training-types";
+import type { PaperTrade } from "@shared/trading-types";
 
 import { EmptyBox, NoticeBanner, StageShell } from "./stage-atoms";
 
@@ -29,15 +30,19 @@ interface WebullForm {
 }
 
 interface WebullOrderForm {
+  thesisId: string;
   symbol: string;
   direction: "long" | "short";
   market: string;
   assetClass: string;
+  timeframe: string;
+  setupName: string;
   entry: string;
   stop: string;
   target: string;
   size: string;
   riskAmount: string;
+  managementStyle: NonNullable<PaperTrade["managementStyle"]>;
   entryReason: string;
 }
 
@@ -53,20 +58,27 @@ export default function ExternalPaperStage() {
     environment: "sandbox",
   });
   const [orderForm, setOrderForm] = useState<WebullOrderForm>({
+    thesisId: "",
     symbol: "",
     direction: "long",
     market: "US",
     assetClass: "stock",
+    timeframe: "",
+    setupName: "",
     entry: "",
     stop: "",
     target: "",
     size: "1",
     riskAmount: "",
+    managementStyle: "bracket",
     entryReason: "",
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [proposing, setProposing] = useState(false);
+  const [proposalSignal, setProposalSignal] = useState<TradingSignal | null>(null);
+  const [proposalSummary, setProposalSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -153,6 +165,64 @@ export default function ExternalPaperStage() {
     }
   };
 
+  const proposeWebullPaperOrder = async () => {
+    setProposing(true);
+    setError(null);
+    setNotice(null);
+    setProposalSummary(null);
+    try {
+      const res = await fetch("/api/trading/webull/propose", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: orderForm.symbol,
+          market: orderForm.market,
+          assetClass: orderForm.assetClass,
+          asset: orderForm.assetClass,
+          directionPreference: "auto",
+          timeframe: orderForm.timeframe || undefined,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      setProposalSignal(body.signal || null);
+      if (body.action === "no_trade") {
+        setProposalSummary(body.reason || "ZAR found no trade worth staging right now.");
+        setNotice(body.reason || "No Webull paper trade proposed.");
+        return;
+      }
+      setProposalSummary(
+        body.recommendedSymbol?.reason ||
+          (body.marketData?.source
+            ? `Live data: ${body.marketData.source} at ${body.marketData?.price ?? "n/a"}.`
+            : body.basis || null),
+      );
+      setOrderForm((current) => ({
+        ...current,
+        thesisId: body.thesisId || "",
+        symbol: body.symbol || current.symbol,
+        direction: body.direction || current.direction,
+        market: body.market || current.market,
+        assetClass: body.asset || current.assetClass,
+        timeframe: body.timeframe || current.timeframe,
+        setupName: body.setupType || current.setupName,
+        entry: String(body.entry ?? ""),
+        stop: String(body.stop ?? ""),
+        target: String(body.target ?? ""),
+        size: String(body.size ?? "1"),
+        riskAmount: String(body.riskAmount ?? ""),
+        managementStyle: body.managementStyle || "bracket",
+        entryReason: body.thesis || body.entryPlan || "",
+      }));
+      setNotice(`ZAR proposed a Webull ${body.action?.toUpperCase() || body.direction} setup for ${body.symbol}. Review and stage it.`);
+    } catch (err: any) {
+      setError(err?.message || "Could not build Webull paper proposal");
+    } finally {
+      setProposing(false);
+    }
+  };
+
   const submitWebullPaperOrder = async () => {
     setSaving(true);
     setError(null);
@@ -169,13 +239,17 @@ export default function ExternalPaperStage() {
       setNotice(`Webull paper order staged: ${body.trade?.symbol || orderForm.symbol.toUpperCase()}.`);
       setOrderForm((current) => ({
         ...current,
+        thesisId: "",
         symbol: "",
         entry: "",
         stop: "",
         target: "",
         riskAmount: "",
+        setupName: "",
         entryReason: "",
       }));
+      setProposalSignal(null);
+      setProposalSummary(null);
       await refresh();
     } catch (err: any) {
       setError(err?.message || "Could not stage Webull paper order");
@@ -213,6 +287,10 @@ export default function ExternalPaperStage() {
             form={orderForm}
             setForm={setOrderForm}
             saving={saving}
+            proposing={proposing}
+            signal={proposalSignal}
+            summary={proposalSummary}
+            onPropose={() => void proposeWebullPaperOrder()}
             onSubmit={() => void submitWebullPaperOrder()}
           />
 
@@ -350,26 +428,47 @@ function WebullPaperOrderCard({
   form,
   setForm,
   saving,
+  proposing,
+  signal,
+  summary,
+  onPropose,
   onSubmit,
 }: {
   connected: boolean;
   form: WebullOrderForm;
   setForm: Dispatch<SetStateAction<WebullOrderForm>>;
   saving: boolean;
+  proposing: boolean;
+  signal: TradingSignal | null;
+  summary: string | null;
+  onPropose: () => void;
   onSubmit: () => void;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <div className="text-[13px] font-semibold text-white">Webull paper order</div>
+          <div className="text-[13px] font-semibold text-white">Webull paper proposal</div>
           <p className="mt-1 text-[11.5px] leading-snug text-white/50">
-            Create a governed external paper trade tied to the connected Webull account.
+            ZAR builds the full Webull paper setup from live data. You review, then stage it.
           </p>
         </div>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.06em] ${connected ? "bg-emerald-400/15 text-emerald-300" : "bg-white/10 text-white/40"}`}>
           {connected ? "ready" : "connect first"}
         </span>
+      </div>
+
+      <div className="mt-3 rounded-lg border border-cyan-400/15 bg-cyan-400/[0.04] p-3">
+        <button
+          type="button"
+          onClick={onPropose}
+          disabled={!connected || proposing}
+          className="rounded-lg bg-cyan-400 px-3 py-1.5 text-[12.5px] font-medium text-black hover:bg-cyan-300 disabled:opacity-40"
+        >
+          {proposing ? "ZAR is building..." : form.symbol.trim() ? "ZAR, build this Webull trade" : "ZAR, pick & build a Webull trade"}
+        </button>
+        {summary && <p className="mt-2 text-[11.5px] leading-snug text-white/60">{summary}</p>}
+        {signal && <div className="mt-2"><SignalPanel signal={signal} /></div>}
       </div>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -391,8 +490,23 @@ function WebullPaperOrderCard({
         <Input label="Size" value={form.size} onChange={(size) => setForm((v) => ({ ...v, size }))} />
         <Input label="Risk amount" value={form.riskAmount} onChange={(riskAmount) => setForm((v) => ({ ...v, riskAmount }))} />
         <Input label="Asset class" value={form.assetClass} onChange={(assetClass) => setForm((v) => ({ ...v, assetClass }))} />
+        <Input label="Timeframe" value={form.timeframe} onChange={(timeframe) => setForm((v) => ({ ...v, timeframe }))} />
+        <Input label="Setup" value={form.setupName} onChange={(setupName) => setForm((v) => ({ ...v, setupName }))} />
         <label className="block sm:col-span-2">
-          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Reason</div>
+          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">ZAR manages</div>
+          <select
+            value={form.managementStyle}
+            onChange={(event) => setForm((v) => ({ ...v, managementStyle: event.target.value as NonNullable<PaperTrade["managementStyle"]> }))}
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none focus:border-cyan-400/50"
+          >
+            <option value="bracket" className="bg-neutral-900">Bracket: target + stop</option>
+            <option value="stop_only" className="bg-neutral-900">Stop only</option>
+            <option value="target_only" className="bg-neutral-900">Target only</option>
+            <option value="manual" className="bg-neutral-900">Manual close</option>
+          </select>
+        </label>
+        <label className="block sm:col-span-2">
+          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">ZAR thesis</div>
           <textarea
             value={form.entryReason}
             onChange={(event) => setForm((v) => ({ ...v, entryReason: event.target.value }))}
@@ -412,6 +526,23 @@ function WebullPaperOrderCard({
           {saving ? "Staging..." : "Stage Webull paper order"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function SignalPanel({ signal }: { signal: TradingSignal }) {
+  const cls =
+    signal.signal === "buy"
+      ? "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-100"
+      : signal.signal === "sell"
+        ? "border-red-400/30 bg-red-400/[0.08] text-red-100"
+        : "border-amber-400/30 bg-amber-400/[0.08] text-amber-100";
+  return (
+    <div className={`rounded-lg border p-2 ${cls}`}>
+      <div className="text-[12px] font-semibold uppercase tracking-[0.06em]">
+        Signal: {signal.signal} · {signal.strength}%
+      </div>
+      <p className="mt-1 text-[11.5px] leading-snug opacity-90">{signal.summary}</p>
     </div>
   );
 }

@@ -100,6 +100,15 @@ export async function saveWebullCredentials(
     accessToken?: string;
   },
 ): Promise<ExecutionAdapterStatus> {
+  const existing = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
+  const existingAppKey = resolvedValue(existing, "appKey", "WEBULL_APP_KEY");
+  const nextAppKey = String(input.appKey || "").trim();
+  const nextSecret = String(input.appSecret || "").trim();
+  if (nextAppKey && existingAppKey && nextAppKey !== existingAppKey && !nextSecret) {
+    throw new Error(
+      "Webull App Key changed, but no matching App Secret was entered. Re-enter the App Secret for this App Key, then save again.",
+    );
+  }
   await TradingIntegrationsStore.connect({
     userId,
     provider: PROVIDER,
@@ -170,6 +179,19 @@ function webullPercentEncode(value: string): string {
   return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
     `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
   );
+}
+
+function webullAuthMessage(status: number, text: string, appKey: string, endpoint: string): string {
+  const lower = text.toLowerCase();
+  if (status === 401 && lower.includes("x-signature")) {
+    return [
+      `Webull rejected x-signature for App Key ending ${appKey.slice(-4)} at ${endpoint}.`,
+      "Most likely cause: the saved App Secret does not match that App Key.",
+      "Enter the matching App Secret and save the Webull connection, then test again.",
+      `Raw Webull response: ${text.slice(0, 180)}`,
+    ].join(" ");
+  }
+  return `Webull account-list test failed with HTTP ${status}: ${text.slice(0, 240) || "no response body"}`;
 }
 
 function signWebullRequest(input: {
@@ -299,7 +321,7 @@ export async function testWebullConnection(userId: string): Promise<{
         ? selectedAccountId
           ? `Webull account-list test succeeded. Paper account ${selectedAccountId} is selected.`
           : "Webull account-list test succeeded, but Webull returned no accounts. Add the paper account ID manually."
-        : `Webull account-list test failed with HTTP ${res.status}: ${text.slice(0, 240) || res.statusText}`,
+        : webullAuthMessage(res.status, text || res.statusText, appKey, endpoint),
     };
   } catch (err: any) {
     return {
