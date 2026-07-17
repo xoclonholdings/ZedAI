@@ -23,7 +23,6 @@ import {
 } from "../zcos/trading/TradingCurriculum";
 import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
 import { TradingStore } from "../zcos/trading/TradingStore";
-import { importTradingViewSnapshot } from "../zcos/trading/TradingViewBridge";
 import { getMarketQuote, getMarketDataStatus } from "../zcos/trading/MarketDataService";
 import { resolveOpenPaperTrades } from "../zcos/trading/TradeAutoResolver";
 import { recommendSymbol } from "../zcos/trading/SymbolRecommender";
@@ -157,58 +156,6 @@ export function registerTradingRoutes(app: Express): void {
       tags: toArray(req.body.tags),
     });
     res.json({ entry });
-  });
-
-  app.post("/api/trading/tradingview/snapshot", isAuthenticated, async (req: any, res) => {
-    const missing = requireFields(req.body || {}, ["symbol", "assetClass", "timeframe", "notes"]);
-    if (missing) return res.status(400).json({ error: `${missing} is required` });
-
-    const entry = await importTradingViewSnapshot({
-      userId: userIdFrom(req),
-      symbol: String(req.body.symbol),
-      assetClass: req.body.assetClass,
-      timeframe: String(req.body.timeframe),
-      chartUrl: req.body.chartUrl,
-      indicators: toArray(req.body.indicators),
-      notes: String(req.body.notes),
-      tags: toArray(req.body.tags),
-    });
-    res.json({ entry });
-  });
-
-  app.get("/api/trading/tradingview/records", isAuthenticated, async (req: any, res) => {
-    const records = await TradingStore.listTradingViewRecords(userIdFrom(req));
-    res.json({ records });
-  });
-
-  app.post("/api/trading/tradingview/records", isAuthenticated, async (req: any, res) => {
-    const missing = requireFields(req.body || {}, ["type", "symbol", "assetClass", "title", "notes"]);
-    if (missing) return res.status(400).json({ error: `${missing} is required` });
-
-    const record = await TradingStore.addTradingViewRecord({
-      userId: userIdFrom(req),
-      type: req.body.type,
-      symbol: String(req.body.symbol).toUpperCase(),
-      assetClass: req.body.assetClass,
-      timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
-      title: String(req.body.title),
-      status: req.body.status || "active",
-      chartUrl: req.body.chartUrl,
-      trigger: req.body.trigger,
-      notes: String(req.body.notes),
-      tags: toArray(req.body.tags),
-    });
-    res.json({ record });
-  });
-
-  app.patch("/api/trading/tradingview/records/:id", isAuthenticated, async (req: any, res) => {
-    const record = await TradingStore.updateTradingViewRecord({
-      id: req.params.id,
-      userId: userIdFrom(req),
-      patch: req.body || {},
-    });
-    if (!record) return res.status(404).json({ error: "TradingView record not found" });
-    res.json({ record });
   });
 
   app.post("/api/trading/scanner/evaluate", isAuthenticated, async (req, res) => {

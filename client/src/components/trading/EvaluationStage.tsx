@@ -133,7 +133,7 @@ export default function EvaluationStage() {
           {!report.providerConnected && (
             <p className="text-[11px] text-white/40 leading-snug">
               No evaluation provider bridge is live yet, so this runs on Zed's own trade engine.
-              Connect Lucid / Tradovate / TopStep in Train Zed to run it under a real provider.
+              Connect a supported evaluation bridge when it is available to run it under a real provider.
             </p>
           )}
         </div>

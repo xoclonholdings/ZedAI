@@ -18,7 +18,7 @@
       "assignedAgent": "finance",
       "requiresApproval": false,
       "steps": [
-        { "id": "step-source", "order": 1, "label": "Identify the source: Trades By Sci, TopStep, TradingView Education, or manual notes." },
+        { "id": "step-source", "order": 1, "label": "Identify the source: strategy notes, market education, rulebooks, or manual notes." },
         { "id": "step-area", "order": 2, "label": "Map the lesson to the required trading curriculum area." }
       ],
       "outputs": ["recommendation"]

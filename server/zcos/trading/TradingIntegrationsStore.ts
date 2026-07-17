@@ -15,8 +15,8 @@ import {
 } from "../../../shared/trading-training-types";
 
 /**
- * Per-user trading provider connections (TopStep, TradingView, Lucid,
- * Tradovate, Kalshi, Polymarket, custom).
+ * Per-user trading provider connections (Webull, Tradovate, Lucid,
+ * Kalshi, Polymarket, custom).
  *
  * This is the real connection/credential layer that live sync will
  * use. Secrets are stored server-side and NEVER returned to the

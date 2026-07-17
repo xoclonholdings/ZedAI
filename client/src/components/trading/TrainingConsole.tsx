@@ -20,8 +20,8 @@ const STATUS_LABEL: Record<string, string> = {
 /**
  * How you feed and connect Zed for training:
  *   - Upload material (files) so Zed ingests it into its knowledge.
- *   - Connect providers (TopStep, TradingView, Lucid, Tradovate,
- *     custom) — the real connection layer live sync will use.
+ *   - Connect providers (Webull, Tradovate, Polymarket, and custom)
+ *     that the trading stages can use.
  *
  * The paste-a-note flow and the "what Zed has learned" library live
  * in LearnStage; this console adds file ingestion and connections.
@@ -125,7 +125,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
               type="text"
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              placeholder="Trades By Sci / TopStep rulebook"
+              placeholder="Strategy rulebook / market notes"
               className={inputClass}
             />
           </label>
@@ -177,10 +177,10 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       <div className="mt-5">
         <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
           <Plug size={13} className="text-cyan-300" />
-          Accounts Zed can sign into
+          Trading connections
         </div>
         <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
-          Just your username and password — the same way you log in. Zed signs in and works in the account for you. No API keys or setup.
+          Connect only the services that have an explicit bridge. Webull is the primary paper-trading connection.
         </p>
         {providers.length === 0 ? (
           <EmptyBox>Loading providers…</EmptyBox>
@@ -564,7 +564,7 @@ function ProviderCard({
           </div>
           <p className="mt-1 text-[11.5px] text-white/50 leading-snug">{info.purpose}</p>
           <p className="mt-1 text-[10.5px] text-white/35">
-            Your login stays private — Zed uses it to sign in for you.
+            Credentials stay server-side and are never shown again.
           </p>
           {integration?.lastResult && (
             <p className="mt-1 text-[11px] text-white/55">{integration.lastResult}</p>

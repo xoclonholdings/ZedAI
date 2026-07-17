@@ -15,14 +15,12 @@ import type {
   TradingKnowledgeEntry,
   TradingPatternAnalytics,
   TradingPerformanceReport,
-  TradingViewRecord,
 } from "../../../shared/trading-types";
 
 const TRADING_DIR = path.resolve(HUB_DIR, "trading");
 const KNOWLEDGE_PATH = path.resolve(TRADING_DIR, "knowledge.json");
 const THESES_PATH = path.resolve(TRADING_DIR, "trade-theses.json");
 const PAPER_TRADES_PATH = path.resolve(TRADING_DIR, "paper-trades.json");
-const TRADINGVIEW_PATH = path.resolve(TRADING_DIR, "tradingview-records.json");
 const GOVERNANCE_DECISIONS_PATH = path.resolve(TRADING_DIR, "governance-decisions.json");
 const GOVERNANCE_SETTINGS_PATH = path.resolve(TRADING_DIR, "governance-settings.json");
 const INCIDENT_REPORTS_PATH = path.resolve(TRADING_DIR, "incident-reports.json");
@@ -461,45 +459,6 @@ export const TradingStore = {
     trades[index] = updated;
     await writeJsonArray(PAPER_TRADES_PATH, trades);
     await this.appendMemory(`Paper trade closed: ${updated.symbol} ${updated.direction} exit ${input.exitPrice}, P&L ${realizedPnl}. Review: ${updated.reviewReport?.executionQuality}, compliance ${updated.reviewReport?.ruleCompliance}.`);
-    return updated;
-  },
-
-  async listTradingViewRecords(userId?: string): Promise<TradingViewRecord[]> {
-    await ensureTradingDirs();
-    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
-    return records
-      .filter((record) => !userId || record.userId === userId)
-      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  },
-
-  async addTradingViewRecord(input: Omit<TradingViewRecord, "id" | "createdAt" | "updatedAt">): Promise<TradingViewRecord> {
-    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
-    const timestamp = now();
-    const record: TradingViewRecord = {
-      ...input,
-      id: randomUUID(),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    await writeJsonArray(TRADINGVIEW_PATH, [record, ...records]);
-    await this.appendMemory(`TradingView ${record.type} added: ${record.symbol} ${record.title}.`);
-    return record;
-  },
-
-  async updateTradingViewRecord(input: { id: string; userId: string; patch: Partial<TradingViewRecord> }): Promise<TradingViewRecord | null> {
-    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
-    const index = records.findIndex((record) => record.id === input.id && record.userId === input.userId);
-    if (index === -1) return null;
-    const updated: TradingViewRecord = {
-      ...records[index],
-      ...input.patch,
-      id: records[index].id,
-      userId: records[index].userId,
-      updatedAt: now(),
-    };
-    records[index] = updated;
-    await writeJsonArray(TRADINGVIEW_PATH, records);
-    await this.appendMemory(`TradingView ${updated.type} updated: ${updated.symbol} ${updated.title}.`);
     return updated;
   },
 

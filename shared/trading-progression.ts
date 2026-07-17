@@ -63,7 +63,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     shortLabel: "Learn",
     purpose: "Train Zed's foundational market knowledge before it builds strategy.",
     yourMove:
-      "Feed Zed sources — TopStep, Trades By Sci, TradingView Education, Investopedia, Babypips, PDFs, videos, your own notes. That's your whole job here.",
+      "Feed Zed sources — strategy notes, rulebooks, market education, PDFs, videos, and your own examples. That's your whole job here.",
     whatZedDoes:
       "Ingests each source and structures it into concepts, rules, examples, mistakes, and a glossary it reuses in every later stage.",
     readyWhen: [
@@ -151,7 +151,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose:
       "Zed proves the same strategy on a real broker's paper/demo account — real platform mechanics and live data, no money — before any funded risk.",
     yourMove:
-      "Connect Webull paper trading, Tradovate demo, TradingView paper, or Lucid so Zed trades on real platform rails.",
+      "Connect Webull paper trading so Zed can trade on real platform rails.",
     whatZedDoes:
       "Runs the governed strategy on the connected paper account against live data, tracks the external sample, and compares it to the internal results to confirm the edge holds off Zed's own simulator.",
     readyWhen: [
@@ -173,7 +173,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     shortLabel: "Funded",
     purpose: "Zed runs a funded-account evaluation — the challenge with real payout stakes.",
     yourMove:
-      "Connect a funded-account provider (Lucid, TopStep, or Tradovate) so Zed can run the challenge under real evaluation rules.",
+      "Connect a funded-account provider when that bridge is available so Zed can run the challenge under real evaluation rules.",
     whatZedDoes:
       "Tracks the funded objective (profit target, daily-loss and drawdown limits, minimum trading days), imports trades when a provider bridge is live or runs on its own engine when it isn't, and reports how far you are from passing.",
     readyWhen: [

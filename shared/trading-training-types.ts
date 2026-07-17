@@ -200,8 +200,6 @@ export interface MaterialUploadResult {
 }
 
 export type IntegrationProvider =
-  | "topstep"
-  | "tradingview"
   | "lucid"
   | "webull"
   | "tradovate"
@@ -248,9 +246,8 @@ export interface TradingIntegration {
 }
 
 /**
- * Connecting an account is the same everywhere: the username/email you
- * log in with and your password. No API keys, developer accounts, or
- * technical setup — Zed signs in and works in the account for you.
+ * Providers define their own connection fields. Webull and event-market
+ * bridges use API credentials; generic/custom accounts may use login fields.
  */
 const LOGIN_FIELDS = [
   { key: "username", label: "Username or email" },
@@ -263,20 +260,6 @@ const API_KEY_FIELDS = [
 ];
 
 export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
-  {
-    provider: "topstep",
-    label: "TopStep",
-    purpose: "Zed signs in to your TopStep account and works in it for you.",
-    fields: LOGIN_FIELDS,
-    liveBridge: false,
-  },
-  {
-    provider: "tradingview",
-    label: "TradingView",
-    purpose: "Zed signs in to TradingView to use your charts, watchlists, and alerts.",
-    fields: LOGIN_FIELDS,
-    liveBridge: false,
-  },
   {
     provider: "lucid",
     label: "Lucid",

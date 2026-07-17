@@ -36,7 +36,6 @@ export interface PaperTradingGovernanceCheckSetting {
   enabled: boolean;
   blocking: boolean;
 }
-
 export interface PaperTradingGovernanceSettings {
   userId: string;
   updatedAt: string;
@@ -110,7 +109,7 @@ export interface TradingKnowledgeEntry {
   createdAt: string;
   updatedAt: string;
   source: string;
-  sourceType: "manual" | "tradingview" | "trades_by_sci" | "topstep" | "journal" | "backtest" | "other";
+  sourceType: "manual" | "trades_by_sci" | "journal" | "backtest" | "other";
   category: TradingKnowledgeCategory;
   title: string;
   concepts: string[];
@@ -235,23 +234,4 @@ export interface TradingPerformanceReport {
   leastSuccessfulSetups: string[];
   patternAnalytics: TradingPatternAnalytics;
   notes: string[];
-}
-
-export type TradingViewRecordType = "watchlist" | "alert" | "screener_result" | "note";
-
-export interface TradingViewRecord {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-  type: TradingViewRecordType;
-  symbol: string;
-  assetClass: TradingAssetClass;
-  timeframe?: string;
-  title: string;
-  status: "active" | "resolved" | "archived";
-  chartUrl?: string;
-  trigger?: string;
-  notes: string;
-  tags: string[];
 }

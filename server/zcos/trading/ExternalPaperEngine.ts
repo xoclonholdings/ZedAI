@@ -20,7 +20,7 @@ import { tradovateConfigured } from "./TradovateBridge";
  * own simulator to a funded challenge.
  */
 
-const PAPER_PROVIDERS = ["webull", "tradovate", "tradingview", "lucid"];
+const PAPER_PROVIDERS = ["webull", "tradovate", "lucid"];
 const REQUIRED_TRADES = 30;
 
 export async function getExternalPaperReport(userId: string): Promise<ExternalPaperReport> {
@@ -46,7 +46,7 @@ export async function getExternalPaperReport(userId: string): Promise<ExternalPa
     providerConnected && closedTrades >= REQUIRED_TRADES && expectancy > 0 && ruleViolations === 0;
 
   const summary = !providerConnected
-    ? "Connect a paper/demo provider (Webull paper, Tradovate demo, TradingView paper, or Lucid) so Zed can prove the strategy on real platform rails."
+    ? "Connect Webull paper trading so Zed can prove the strategy on real platform rails."
     : passed
       ? `External paper proven: ${closedTrades} trades with positive expectancy on ${providerLabel}. Funded account is next.`
       : closedTrades < REQUIRED_TRADES

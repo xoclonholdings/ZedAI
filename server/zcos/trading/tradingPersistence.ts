@@ -6,7 +6,7 @@ import { db, isDatabaseRequired } from "../../db";
  * Durable persistence for the Trading module.
  *
  * Everything Trading stores (learned knowledge, stage progression,
- * theses, paper trades, governance history, TradingView records) used to
+ * theses, paper trades, and governance history) used to
  * live only in flat JSON files under hub/trading/. On an ephemeral host
  * that directory is wiped on every restart/redeploy, so Zed forgot what
  * it learned and lost its progress.

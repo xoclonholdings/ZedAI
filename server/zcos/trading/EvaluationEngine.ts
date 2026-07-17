@@ -14,8 +14,8 @@ import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
  * the same auto-resolving engine that proved the sandbox — so the run is
  * real, not fabricated.
  *
- * When a real evaluation provider (Lucid / Tradovate / TopStep /
- * TradingView) is connected it is reported as the source; until a live
+ * When a real evaluation provider is connected it is reported as the
+ * source; until a live
  * provider bridge exists, the run is transparently labelled as running on
  * Zed's own engine. It never invents a provider result.
  */
@@ -23,7 +23,7 @@ import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
 const CONFIG_SCOPE = "evaluation-config";
 const STATE_SCOPE = "evaluation-state";
 
-const EVALUATION_PROVIDERS = ["webull", "topstep", "tradovate", "lucid", "tradingview"];
+const EVALUATION_PROVIDERS = ["webull", "tradovate", "lucid"];
 
 export const DEFAULT_EVALUATION_CONFIG: EvaluationConfig = {
   provider: "auto",

@@ -24,7 +24,7 @@ import { loadProgression } from "../../services/TradingProgressionStore";
  */
 
 const CONFIG_SCOPE = "live-config";
-const BROKER_PROVIDERS = ["webull", "tradovate", "topstep"];
+const BROKER_PROVIDERS = ["webull", "tradovate"];
 
 export const DEFAULT_LIVE_CONFIG: LiveTradingConfig = {
   maxRiskPerTrade: 100,

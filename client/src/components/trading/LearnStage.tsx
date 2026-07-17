@@ -14,8 +14,8 @@ import {
 } from "./stage-atoms";
 
 /**
- * The Learn stage — turns real sources (TopStep, TradingView Ed,
- * Investopedia, Babypips, PDFs, videos, books) into structured
+ * The Learn stage turns real sources (market education, rulebooks,
+ * PDFs, videos, books) into structured
  * knowledge Zed can pull into every later stage.
  *
  * The user pastes what they read; Zed's TradingKnowledgeBase
@@ -25,8 +25,6 @@ import {
 
 const SOURCE_OPTIONS = [
   { value: "Trades By Sci", type: "trades_by_sci" },
-  { value: "TopStep", type: "topstep" },
-  { value: "TradingView Education", type: "tradingview_education" },
   { value: "Investopedia", type: "investopedia" },
   { value: "Babypips", type: "babypips" },
   { value: "Book", type: "book" },
