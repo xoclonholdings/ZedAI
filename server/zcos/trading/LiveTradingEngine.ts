@@ -79,7 +79,7 @@ export async function getLiveState(userId: string): Promise<LiveTradingState> {
 
   const blockers: string[] = [];
   if (!qualPassed) blockers.push("Qualification is not passed yet.");
-  if (!brokerInfo.connected) blockers.push("No broker is connected for order routing (connect Webull or Tradovate).");
+  if (!brokerInfo.connected) blockers.push("No broker is connected for order routing (connect Webull).");
   if (!config.killSwitchArmed) blockers.push("Kill switch is not armed.");
 
   const canExecute = qualPassed && brokerInfo.connected && config.killSwitchArmed;
@@ -92,7 +92,7 @@ export async function getLiveState(userId: string): Promise<LiveTradingState> {
   const summary = canExecute
     ? "All gates satisfied and the kill switch is armed. Live execution runs through the broker bridge once it is enabled."
     : status === "ready_pending_broker"
-      ? "Zed is qualified and governed — connect Webull or Tradovate to enable live order routing."
+      ? "Zed is qualified and governed — connect Webull to enable live order routing."
       : `Live is blocked: ${blockers.join(" ")}`;
 
   return {

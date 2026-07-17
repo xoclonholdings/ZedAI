@@ -45,15 +45,23 @@ export async function getWebullStatus(userId: string): Promise<ExecutionAdapterS
       assets: ["stock", "option", "future", "crypto", "event_contract"],
       readAccounts: true,
       readPositions: true,
-      placeOrders: false,
+      placeOrders: true,
       streamOrders: false,
     },
     accounts,
     note: configured
       ? accountId
-        ? `Webull ${mode} credentials are saved with a default account. Order routing remains disabled until approval wiring is added.`
+        ? `Webull ${mode} credentials are saved with a default paper account. Governed paper order tickets are enabled.`
         : `Webull ${mode} credentials are saved. Add an account ID after retrieving accounts through the SDK/API.`
       : `Add Webull OpenAPI credentials${endpoint ? ` for ${endpoint}` : ""}.`,
+    saved: {
+      appKey: Boolean(appKey),
+      appKeyLast4: appKey ? appKey.slice(-4) : undefined,
+      appSecret: Boolean(appSecret),
+      endpoint: endpoint || undefined,
+      accountId: accountId || undefined,
+      environment: mode,
+    },
   };
 }
 

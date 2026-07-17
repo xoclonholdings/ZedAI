@@ -27,5 +27,12 @@ export interface ExecutionAdapterStatus {
   };
   accounts: ExecutionAccountSummary[];
   note: string;
+  saved?: {
+    appKey?: boolean;
+    appKeyLast4?: string;
+    appSecret?: boolean;
+    endpoint?: string;
+    accountId?: string;
+    environment?: string;
+  };
 }
-

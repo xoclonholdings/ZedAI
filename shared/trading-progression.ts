@@ -268,7 +268,7 @@ export interface TradingProgression {
  * bridge exists, Qualification scores a readiness card from that
  * performance, and Live wires the full risk framework + kill switch and
  * unlocks when qualified with a broker connected. Live *order routing*
- * still requires a broker bridge (Webull/Tradovate) — Zed reports "ready,
+ * still requires a broker bridge such as Webull — Zed reports "ready,
  * pending broker" rather than faking execution.
  */
 export const DEFAULT_PROGRESSION: TradingProgression = {

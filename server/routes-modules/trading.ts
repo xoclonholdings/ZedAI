@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { randomUUID } from "crypto";
 
 import { isAuthenticated } from "../localAuth";
 import type {
@@ -756,6 +757,95 @@ export function registerTradingRoutes(app: Express): void {
 
   app.get("/api/trading/webull/orders", isAuthenticated, async (req: any, res) => {
     res.json(await listWebullOrders(userIdFrom(req)));
+  });
+
+  app.post("/api/trading/webull/paper-orders", isAuthenticated, async (req: any, res) => {
+    const userId = userIdFrom(req);
+    const status = await getWebullStatus(userId);
+    if (!status.connected) {
+      return res.status(409).json({
+        error: status.note || "Webull paper account is not connected.",
+        status,
+      });
+    }
+
+    const missing = requireFields(req.body || {}, [
+      "market",
+      "assetClass",
+      "symbol",
+      "direction",
+      "entry",
+      "stop",
+      "target",
+      "size",
+      "riskAmount",
+      "entryReason",
+    ]);
+    if (missing) return res.status(400).json({ error: `${missing} is required` });
+
+    const thesis = await findUserThesis(userId, req.body.thesisId);
+    const authorization = await authorizePaperTrade({
+      userId,
+      thesis,
+      market: String(req.body.market),
+      assetClass: req.body.assetClass,
+      symbol: String(req.body.symbol),
+      direction: req.body.direction,
+      timeframe: req.body.timeframe,
+      setupName: req.body.setupName,
+      entry: toNumber(req.body.entry),
+      stop: toNumber(req.body.stop),
+      target: toNumber(req.body.target),
+      size: toNumber(req.body.size),
+      riskAmount: toNumber(req.body.riskAmount),
+      entryReason: String(req.body.entryReason),
+      session: req.body.session ? String(req.body.session) : undefined,
+      newsContext: req.body.newsContext ? String(req.body.newsContext) : undefined,
+      correlationNotes: req.body.correlationNotes ? String(req.body.correlationNotes) : undefined,
+    });
+
+    if (!authorization.authorized) {
+      const errorDetail = classifyGovernanceError(authorization.decision.checklist);
+      return res.status(409).json({
+        error: zedErrorMessage(errorDetail, "Webull paper order not authorized by governance layer"),
+        errorDetail,
+        authorization: authorization.decision,
+      });
+    }
+
+    const trade = await TradingStore.openPaperTrade({
+      userId,
+      thesisId: req.body.thesisId,
+      market: String(req.body.market),
+      assetClass: req.body.assetClass,
+      symbol: String(req.body.symbol).toUpperCase(),
+      direction: req.body.direction,
+      timeframe: req.body.timeframe,
+      setupName: req.body.setupName || "Webull paper order",
+      entry: toNumber(req.body.entry),
+      stop: toNumber(req.body.stop),
+      target: toNumber(req.body.target),
+      size: toNumber(req.body.size),
+      riskAmount: toNumber(req.body.riskAmount),
+      managementStyle: toManagementStyle(req.body.managementStyle),
+      entryReason: String(req.body.entryReason),
+      screenshots: toArray(req.body.screenshots),
+      lessonsLearned: toArray(req.body.lessonsLearned),
+      ruleViolations: toArray(req.body.ruleViolations),
+      authorizationDecisionId: authorization.decision.id,
+      authorizationDecision: authorization.decision.decision as AuthorizationDecision,
+      executionMode: "external_paper",
+      executionProvider: "webull",
+      externalOrderId: `webull-paper-${randomUUID()}`,
+      externalOrderStatus: "staged",
+    });
+
+    res.json({
+      trade,
+      authorization: authorization.decision,
+      status: await getWebullStatus(userId),
+      report: await getExternalPaperReport(userId),
+    });
   });
 
   app.get("/api/trading/execution/polymarket/status", isAuthenticated, async (req: any, res) => {

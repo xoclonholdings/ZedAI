@@ -1,8 +1,7 @@
 import type { ExternalPaperReport } from "../../../shared/trading-training-types";
 
 import { TradingStore } from "./TradingStore";
-import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
-import { tradovateConfigured } from "./TradovateBridge";
+import { getWebullStatus } from "./WebullBridge";
 
 /**
  * Stage 5 — External paper trading.
@@ -20,27 +19,19 @@ import { tradovateConfigured } from "./TradovateBridge";
  * own simulator to a funded challenge.
  */
 
-const PAPER_PROVIDERS = ["webull", "tradovate", "lucid"];
 const REQUIRED_TRADES = 30;
 
 export async function getExternalPaperReport(userId: string): Promise<ExternalPaperReport> {
-  // A configured Tradovate DEMO bridge counts as a real paper account.
-  const tv = await tradovateConfigured(userId).catch(() => ({ configured: false, environment: "demo" as const }));
-  const tradovateDemo = tv.configured && tv.environment === "demo";
+  const webull = await getWebullStatus(userId).catch(() => null);
+  const providerConnected = Boolean(webull?.connected);
+  const providerLabel = providerConnected ? "Webull" : "No Webull paper account connected";
 
-  const integrations = await TradingIntegrationsStore.list(userId).catch(() => []);
-  const provider = integrations.find(
-    (i) =>
-      PAPER_PROVIDERS.includes(i.provider) &&
-      (i.status === "connected" || i.status === "configured"),
-  );
-  const providerConnected = tradovateDemo || Boolean(provider);
-  const providerLabel = tradovateDemo ? "Tradovate (demo)" : provider?.label || "No paper/demo provider connected";
-
-  const perf = await TradingStore.getPerformance(userId).catch(() => null);
-  const closedTrades = perf?.closedTrades || 0;
-  const expectancy = perf?.expectancy || 0;
-  const ruleViolations = perf?.patternAnalytics?.mostCommonRuleViolations?.length || 0;
+  const closed = (await TradingStore.listPaperTrades(userId, "closed").catch(() => []))
+    .filter((trade) => trade.executionMode === "external_paper" && trade.executionProvider === "webull");
+  const closedTrades = closed.length;
+  const totalPnl = closed.reduce((sum, trade) => sum + Number(trade.realizedPnl || 0), 0);
+  const expectancy = closedTrades ? Math.round((totalPnl / closedTrades) * 10000) / 10000 : 0;
+  const ruleViolations = closed.reduce((sum, trade) => sum + (trade.ruleViolations?.length || 0), 0);
 
   const passed =
     providerConnected && closedTrades >= REQUIRED_TRADES && expectancy > 0 && ruleViolations === 0;
@@ -48,9 +39,9 @@ export async function getExternalPaperReport(userId: string): Promise<ExternalPa
   const summary = !providerConnected
     ? "Connect Webull paper trading so Zed can prove the strategy on real platform rails."
     : passed
-      ? `External paper proven: ${closedTrades} trades with positive expectancy on ${providerLabel}. Funded account is next.`
+      ? `External paper proven: ${closedTrades} Webull paper trades with positive expectancy. Funded account is next.`
       : closedTrades < REQUIRED_TRADES
-        ? `On ${providerLabel}: ${closedTrades}/${REQUIRED_TRADES} external paper trades. Keep Zed trading.`
+        ? `On ${providerLabel}: ${closedTrades}/${REQUIRED_TRADES} Webull external paper trades. Keep Zed trading.`
         : ruleViolations > 0
           ? `On ${providerLabel}: sample size met, but ${ruleViolations} rule-violation type(s) must clear first.`
           : `On ${providerLabel}: expectancy is ${expectancy} — it needs to be positive.`;

@@ -8,6 +8,14 @@ interface WebullStatus {
   configured?: boolean;
   connected?: boolean;
   note?: string;
+  saved?: {
+    appKey?: boolean;
+    appKeyLast4?: string;
+    appSecret?: boolean;
+    endpoint?: string;
+    accountId?: string;
+    environment?: string;
+  };
 }
 
 interface WebullForm {
@@ -16,6 +24,19 @@ interface WebullForm {
   endpoint: string;
   accountId: string;
   environment: string;
+}
+
+interface WebullOrderForm {
+  symbol: string;
+  direction: "long" | "short";
+  market: string;
+  assetClass: string;
+  entry: string;
+  stop: string;
+  target: string;
+  size: string;
+  riskAmount: string;
+  entryReason: string;
 }
 
 export default function ExternalPaperStage() {
@@ -27,6 +48,18 @@ export default function ExternalPaperStage() {
     endpoint: "",
     accountId: "",
     environment: "sandbox",
+  });
+  const [orderForm, setOrderForm] = useState<WebullOrderForm>({
+    symbol: "",
+    direction: "long",
+    market: "US",
+    assetClass: "stock",
+    entry: "",
+    stop: "",
+    target: "",
+    size: "1",
+    riskAmount: "",
+    entryReason: "",
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -41,7 +74,16 @@ export default function ExternalPaperStage() {
         fetch("/api/trading/webull/status", { credentials: "include" }),
       ]);
       if (reportRes.ok) setReport((await reportRes.json()).report);
-      if (statusRes.ok) setStatus((await statusRes.json()).status);
+      if (statusRes.ok) {
+        const nextStatus = (await statusRes.json()).status;
+        setStatus(nextStatus);
+        setForm((current) => ({
+          ...current,
+          endpoint: nextStatus?.saved?.endpoint || "",
+          accountId: nextStatus?.saved?.accountId || "",
+          environment: nextStatus?.saved?.environment || "sandbox",
+        }));
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to load external paper");
     } finally {
@@ -81,6 +123,37 @@ export default function ExternalPaperStage() {
     }
   };
 
+  const submitWebullPaperOrder = async () => {
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch("/api/trading/webull/paper-orders", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderForm),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      setNotice(`Webull paper order staged: ${body.trade?.symbol || orderForm.symbol.toUpperCase()}.`);
+      setOrderForm((current) => ({
+        ...current,
+        symbol: "",
+        entry: "",
+        stop: "",
+        target: "",
+        riskAmount: "",
+        entryReason: "",
+      }));
+      await refresh();
+    } catch (err: any) {
+      setError(err?.message || "Could not stage Webull paper order");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <StageShell
       eyebrow="External paper"
@@ -101,6 +174,14 @@ export default function ExternalPaperStage() {
             setForm={setForm}
             saving={saving}
             onSave={() => void saveWebull()}
+          />
+
+          <WebullPaperOrderCard
+            connected={Boolean(status?.connected)}
+            form={orderForm}
+            setForm={setOrderForm}
+            saving={saving}
+            onSubmit={() => void submitWebullPaperOrder()}
           />
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -164,6 +245,14 @@ function WebullConnectCard({
           <p className="mt-1 text-[11.5px] leading-snug text-white/50">
             {status?.note || "Add Webull OpenAPI credentials and the paper account ID."}
           </p>
+          {status?.saved && (
+            <div className="mt-2 flex flex-wrap gap-1.5 text-[10.5px] text-white/45">
+              {status.saved.appKey && <span className="rounded-full bg-white/10 px-2 py-0.5">App key saved {status.saved.appKeyLast4 ? `...${status.saved.appKeyLast4}` : ""}</span>}
+              {status.saved.appSecret && <span className="rounded-full bg-white/10 px-2 py-0.5">Secret saved</span>}
+              {status.saved.accountId && <span className="rounded-full bg-white/10 px-2 py-0.5">Account {status.saved.accountId}</span>}
+              {status.saved.environment && <span className="rounded-full bg-white/10 px-2 py-0.5">{status.saved.environment}</span>}
+            </div>
+          )}
         </div>
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.06em] ${
@@ -204,6 +293,77 @@ function WebullConnectCard({
           className="rounded-lg bg-cyan-400 px-3 py-1.5 text-[12.5px] font-medium text-black hover:bg-cyan-300 disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save Webull connection"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function WebullPaperOrderCard({
+  connected,
+  form,
+  setForm,
+  saving,
+  onSubmit,
+}: {
+  connected: boolean;
+  form: WebullOrderForm;
+  setForm: Dispatch<SetStateAction<WebullOrderForm>>;
+  saving: boolean;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="text-[13px] font-semibold text-white">Webull paper order</div>
+          <p className="mt-1 text-[11.5px] leading-snug text-white/50">
+            Create a governed external paper trade tied to the connected Webull account.
+          </p>
+        </div>
+        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.06em] ${connected ? "bg-emerald-400/15 text-emerald-300" : "bg-white/10 text-white/40"}`}>
+          {connected ? "ready" : "connect first"}
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <Input label="Symbol" value={form.symbol} onChange={(symbol) => setForm((v) => ({ ...v, symbol }))} placeholder="AAPL" />
+        <label className="block">
+          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Direction</div>
+          <select
+            value={form.direction}
+            onChange={(event) => setForm((v) => ({ ...v, direction: event.target.value as "long" | "short" }))}
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none focus:border-cyan-400/50"
+          >
+            <option value="long" className="bg-neutral-900">Long</option>
+            <option value="short" className="bg-neutral-900">Short</option>
+          </select>
+        </label>
+        <Input label="Entry" value={form.entry} onChange={(entry) => setForm((v) => ({ ...v, entry }))} />
+        <Input label="Stop" value={form.stop} onChange={(stop) => setForm((v) => ({ ...v, stop }))} />
+        <Input label="Target" value={form.target} onChange={(target) => setForm((v) => ({ ...v, target }))} />
+        <Input label="Size" value={form.size} onChange={(size) => setForm((v) => ({ ...v, size }))} />
+        <Input label="Risk amount" value={form.riskAmount} onChange={(riskAmount) => setForm((v) => ({ ...v, riskAmount }))} />
+        <Input label="Asset class" value={form.assetClass} onChange={(assetClass) => setForm((v) => ({ ...v, assetClass }))} />
+        <label className="block sm:col-span-2">
+          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Reason</div>
+          <textarea
+            value={form.entryReason}
+            onChange={(event) => setForm((v) => ({ ...v, entryReason: event.target.value }))}
+            placeholder="Why ZAR is taking this Webull paper trade"
+            className="min-h-20 w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-cyan-400/50"
+          />
+        </label>
+      </div>
+
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={!connected || saving}
+          className="rounded-lg bg-cyan-400 px-3 py-1.5 text-[12.5px] font-medium text-black hover:bg-cyan-300 disabled:opacity-40"
+        >
+          {saving ? "Staging..." : "Stage Webull paper order"}
         </button>
       </div>
     </div>

@@ -201,6 +201,10 @@ export interface PaperTrade {
   reviewReport?: TradeReviewReport;
   authorizationDecisionId?: string;
   authorizationDecision?: AuthorizationDecision;
+  executionMode?: "internal" | "external_paper";
+  executionProvider?: "webull" | "tradovate" | "lucid" | "custom";
+  externalOrderId?: string;
+  externalOrderStatus?: "staged" | "submitted" | "filled" | "rejected" | "cancelled";
 }
 
 export interface TradingPatternAnalytics {

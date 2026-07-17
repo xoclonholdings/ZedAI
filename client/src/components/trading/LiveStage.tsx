@@ -8,7 +8,7 @@ import { EmptyBox, NoticeBanner, StageShell } from "./stage-atoms";
  * Stage 7 — Live trading (governed). Wires the full risk framework and
  * kill switch and shows the hard gates before anything can execute:
  * qualification passed, a broker connected, and the kill switch armed.
- * Order routing itself runs through the broker bridge (Tradovate) once it
+ * Order routing itself runs through the broker bridge once it
  * exists — this never fakes a live fill.
  */
 
@@ -112,7 +112,7 @@ export default function LiveStage() {
           </button>
 
           <p className="text-[11px] text-white/40 leading-snug">
-            Live order routing requires a broker execution bridge (Tradovate). Until it's enabled,
+            Live order routing requires a broker execution bridge such as Webull. Until it's enabled,
             Zed stays in a governed, ready state and does not place real orders.
           </p>
         </div>
