@@ -3,16 +3,36 @@ import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 
+import type { TradingAssetClass, TradeDirection } from "../../../shared/trading-types";
 import type { ExecutionAccountSummary, ExecutionAdapterStatus } from "./ExecutionAdapterTypes";
+import { averageTrueRange, type MarketBar, type MarketQuote } from "./MarketDataService";
+import { computeSignal } from "./TechnicalIndicators";
 import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
 
 const PROVIDER: IntegrationProvider = "webull";
 const DEFAULT_SANDBOX_ENDPOINT = "api.sandbox.webull.com";
 const DEFAULT_PRODUCTION_ENDPOINT = "api.webull.com";
-const WEBULL_SDK_PROBE = path.resolve(
+const WEBULL_SDK_ACCOUNT_LIST = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../scripts/webull_sdk_account_list.py",
 );
+const WEBULL_SDK_QUOTE = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../scripts/webull_sdk_quote.py",
+);
+
+const WEBULL_SCAN_UNIVERSE: Record<TradingAssetClass, string[]> = {
+  stock: ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", "AMD"],
+  etf: ["SPY", "QQQ", "IWM", "DIA"],
+  option: ["SPY", "QQQ", "AAPL", "NVDA"],
+  future: ["ES", "NQ", "YM", "CL", "GC"],
+  crypto: ["BTCUSD", "ETHUSD", "SOLUSD"],
+  forex: [],
+};
+
+function defaultPythonBin(): string {
+  return process.platform === "win32" ? "python" : "python3";
+}
 
 function value(record: Awaited<ReturnType<typeof TradingIntegrationsStore.getConnection>>, key: string): string {
   return String(record?.fields?.[key] || record?.secrets?.[key] || "").trim();
@@ -187,9 +207,9 @@ async function runWebullSdkAccountList(input: {
   accounts: ExecutionAccountSummary[];
   message: string;
 }> {
-  const python = envValue("WEBULL_PYTHON_BIN") || "python";
+  const python = envValue("WEBULL_PYTHON_BIN") || defaultPythonBin();
   return new Promise((resolve) => {
-    const child = spawn(python, [WEBULL_SDK_PROBE], {
+    const child = spawn(python, [WEBULL_SDK_ACCOUNT_LIST], {
       env: {
         ...process.env,
         WEBULL_APP_KEY: input.appKey,
@@ -256,6 +276,179 @@ async function runWebullSdkAccountList(input: {
       }
     });
   });
+}
+
+async function runWebullSdkQuote(input: {
+  appKey: string;
+  appSecret: string;
+  endpoint: string;
+  symbol: string;
+  asset: TradingAssetClass;
+}): Promise<{ ok: boolean; quote?: MarketQuote; message: string }> {
+  const python = envValue("WEBULL_PYTHON_BIN") || defaultPythonBin();
+  return new Promise((resolve) => {
+    const child = spawn(python, [WEBULL_SDK_QUOTE], {
+      env: {
+        ...process.env,
+        WEBULL_APP_KEY: input.appKey,
+        WEBULL_APP_SECRET: input.appSecret,
+        WEBULL_API_ENDPOINT: input.endpoint,
+        WEBULL_REGION: "us",
+        WEBULL_SYMBOL: input.symbol,
+        WEBULL_ASSET: input.asset,
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true,
+    });
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      resolve({
+        ok: false,
+        message: `Webull SDK quote request timed out for ${input.symbol}.`,
+      });
+    }, 20000);
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({
+        ok: false,
+        message: `Could not start Python for Webull market data. Set WEBULL_PYTHON_BIN to Python 3.8-3.13 with webull-openapi-python-sdk installed. ${err.message}`,
+      });
+    });
+    child.on("close", () => {
+      clearTimeout(timer);
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        const rawQuote = parsed.quote || null;
+        const bars: MarketBar[] = Array.isArray(rawQuote?.bars)
+          ? rawQuote.bars
+              .map((bar: any) => ({
+                o: Number(bar.o),
+                h: Number(bar.h),
+                l: Number(bar.l),
+                c: Number(bar.c),
+              }))
+              .filter((bar: MarketBar) => bar.o > 0 && bar.h > 0 && bar.l > 0 && bar.c > 0)
+          : [];
+        const price = Number(rawQuote?.price);
+        if (!parsed.ok || !(price > 0)) {
+          resolve({
+            ok: false,
+            message: parsed.message || `Webull returned no usable quote for ${input.symbol}.${stderr ? ` ${stderr.slice(0, 180)}` : ""}`,
+          });
+          return;
+        }
+        resolve({
+          ok: true,
+          quote: {
+            symbol: String(rawQuote.symbol || input.symbol).toUpperCase(),
+            price: Math.round(price * 100) / 100,
+            asOf: rawQuote.asOf || new Date().toISOString(),
+            source: "Webull OpenAPI",
+            atr: averageTrueRange(bars),
+            bars,
+            signal: computeSignal(bars) ?? undefined,
+          },
+          message: "Webull quote received.",
+        });
+      } catch {
+        resolve({
+          ok: false,
+          message: `Webull SDK quote did not return valid JSON. stdout=${stdout.slice(0, 180)} stderr=${stderr.slice(0, 180)}`,
+        });
+      }
+    });
+  });
+}
+
+export async function getWebullMarketQuote(
+  userId: string,
+  symbol: string,
+  asset: TradingAssetClass = "stock",
+): Promise<MarketQuote | null> {
+  const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
+  const appKey = resolvedValue(connection, "appKey", "WEBULL_APP_KEY");
+  const appSecret = resolvedValue(connection, "appSecret", "WEBULL_APP_SECRET");
+  const mode = environmentMode(resolvedValue(connection, "environment", "WEBULL_ENVIRONMENT"));
+  const endpoint = endpointFor(resolvedValue(connection, "endpoint", "WEBULL_API_ENDPOINT"), mode);
+  if (!appKey || !appSecret) {
+    throw new Error("Webull market data requires WEBULL_APP_KEY and WEBULL_APP_SECRET.");
+  }
+  const result = await runWebullSdkQuote({
+    appKey,
+    appSecret,
+    endpoint,
+    symbol: symbol.trim().toUpperCase(),
+    asset,
+  });
+  if (!result.ok || !result.quote) throw new Error(result.message);
+  return result.quote;
+}
+
+function webullScoreQuote(quote: MarketQuote): { score: number; direction: TradeDirection } | null {
+  if (quote.signal && quote.signal.signal !== "neutral") {
+    return {
+      score: 100 + quote.signal.strength,
+      direction: quote.signal.signal === "buy" ? "long" : "short",
+    };
+  }
+  const closes = (quote.bars || []).map((bar) => bar.c).filter((close) => Number.isFinite(close) && close > 0);
+  if (closes.length < 10) return null;
+  const last = closes[closes.length - 1];
+  const ref = closes[closes.length - 10];
+  if (!(ref > 0)) return null;
+  const momentum = (last - ref) / ref;
+  return {
+    score: Math.abs(momentum),
+    direction: momentum >= 0 ? "long" : "short",
+  };
+}
+
+export async function recommendWebullSymbol(
+  userId: string,
+  asset: TradingAssetClass,
+  _market = "US",
+  opts: { avoidSymbols?: string[]; preferDirection?: TradeDirection | "auto" } = {},
+): Promise<{ symbol: string; direction: TradeDirection; reason: string; quote: MarketQuote } | null> {
+  const universe = WEBULL_SCAN_UNIVERSE[asset] || WEBULL_SCAN_UNIVERSE.stock;
+  if (!universe.length) return null;
+  const avoid = new Set((opts.avoidSymbols || []).map((symbol) => symbol.toUpperCase()));
+  const scored: Array<{ symbol: string; direction: TradeDirection; score: number; quote: MarketQuote }> = [];
+  for (const symbol of universe) {
+    if (avoid.has(symbol.toUpperCase())) continue;
+    try {
+      const quote = await getWebullMarketQuote(userId, symbol, asset);
+      if (!quote) continue;
+      const scoredQuote = webullScoreQuote(quote);
+      if (!scoredQuote) continue;
+      let score = scoredQuote.score;
+      if (opts.preferDirection && opts.preferDirection !== "auto" && scoredQuote.direction !== opts.preferDirection) {
+        score *= 0.82;
+      }
+      scored.push({ symbol: quote.symbol || symbol, direction: scoredQuote.direction, score, quote });
+    } catch {
+      // Skip symbols Webull does not return. A total miss is handled below.
+    }
+  }
+  if (!scored.length) return null;
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored[0];
+  const signal = top.quote.signal;
+  return {
+    symbol: top.symbol,
+    direction: top.direction,
+    quote: top.quote,
+    reason: signal
+      ? `ZAR scanned ${scored.length} Webull ${asset} symbol(s) and picked ${top.symbol}: ${signal.signal.toUpperCase()} signal with ${signal.strength}% conviction.`
+      : `ZAR scanned ${scored.length} Webull ${asset} symbol(s) and picked ${top.symbol}: strongest Webull momentum from available bars.`,
+  };
 }
 
 export async function testWebullConnection(userId: string): Promise<{

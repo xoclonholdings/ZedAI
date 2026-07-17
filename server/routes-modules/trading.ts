@@ -41,9 +41,11 @@ import { getLiveState, saveLiveConfig, setKillSwitch } from "../zcos/trading/Liv
 import { getPolymarketUsStatus, searchPolymarketUsMarkets } from "../zcos/trading/PolymarketUsBridge";
 import {
   getWebullStatus,
+  getWebullMarketQuote,
   listWebullAccounts,
   listWebullOrders,
   listWebullPositions,
+  recommendWebullSymbol,
   saveWebullCredentials,
   testWebullConnection,
 } from "../zcos/trading/WebullBridge";
@@ -785,11 +787,12 @@ export function registerTradingRoutes(app: Express): void {
       const market = req.body.market ? String(req.body.market) : "US";
       let symbol = String(req.body.symbol || "").trim();
       let directionPreference = req.body.directionPreference || "auto";
-      let recommendation: Awaited<ReturnType<typeof recommendSymbol>> = null;
+      let recommendation: Awaited<ReturnType<typeof recommendWebullSymbol>> = null;
+      let quote: Awaited<ReturnType<typeof getWebullMarketQuote>> | null = null;
 
       if (!symbol) {
         const recentTrades = await TradingStore.listPaperTrades(userId);
-        recommendation = await recommendSymbol(asset, market, {
+        recommendation = await recommendWebullSymbol(userId, asset, market, {
           avoidSymbols: recentTrades
             .filter((trade) => trade.executionMode === "external_paper")
             .slice(0, 12)
@@ -799,14 +802,15 @@ export function registerTradingRoutes(app: Express): void {
         if (!recommendation) {
           return res.status(422).json({
             action: "no_trade",
-            error: "ZAR could not reach live market data to pick a Webull paper trade.",
+            error: "ZAR could not reach Webull market data to pick a Webull paper trade.",
           });
         }
         symbol = recommendation.symbol;
+        quote = recommendation.quote;
         if (directionPreference === "auto") directionPreference = recommendation.direction;
       }
 
-      const quote = await getMarketQuote(symbol, asset);
+      quote = quote || await getWebullMarketQuote(userId, symbol, asset);
       if (quote?.signal?.signal === "neutral") {
         return res.json({
           action: "no_trade",
@@ -868,7 +872,9 @@ export function registerTradingRoutes(app: Express): void {
         status,
       });
     } catch (error: any) {
-      res.status(500).json({ error: error?.message || "Webull trade proposal failed" });
+      const message = error?.message || "Webull trade proposal failed";
+      const statusCode = String(message).toLowerCase().includes("webull") ? 422 : 500;
+      res.status(statusCode).json({ error: message });
     }
   });
 
