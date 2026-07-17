@@ -166,6 +166,12 @@ function compactBody(body: unknown): string | undefined {
   return body ? JSON.stringify(body) : undefined;
 }
 
+function webullPercentEncode(value: string): string {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+}
+
 function signWebullRequest(input: {
   appKey: string;
   appSecret: string;
@@ -193,7 +199,7 @@ function signWebullRequest(input: {
   const str3 = bodyString
     ? `${input.path}&${str1}&${crypto.createHash("md5").update(bodyString).digest("hex").toUpperCase()}`
     : `${input.path}&${str1}`;
-  const encoded = encodeURIComponent(str3);
+  const encoded = webullPercentEncode(str3);
   const signature = crypto
     .createHmac("sha1", `${input.appSecret}&`)
     .update(encoded)
