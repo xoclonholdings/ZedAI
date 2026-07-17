@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import sys
 
 
@@ -39,6 +40,44 @@ def normalize_accounts(data):
     return accounts
 
 
+def import_webull_sdk():
+    try:
+        from webull.core.client import ApiClient
+        from webull.trade.trade_client import TradeClient
+
+        return ApiClient, TradeClient, None
+    except Exception as first_exc:
+        try:
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--user",
+                    "--upgrade",
+                    "webull-openapi-python-sdk",
+                ],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=90,
+            )
+            from webull.core.client import ApiClient
+            from webull.trade.trade_client import TradeClient
+
+            return ApiClient, TradeClient, None
+        except Exception as second_exc:
+            return None, None, (
+                "Official Webull Python SDK is not installed or cannot load. "
+                "Tried to install webull-openapi-python-sdk into the active Python interpreter and import again. "
+                "Webull documents Python 3.8-3.13 for this SDK. "
+                f"Runtime: {sys.version.split()[0]}. First import error: {first_exc}. "
+                f"Install/import error: {second_exc}"
+            )
+
+
 def main():
     app_key = os.environ.get("WEBULL_APP_KEY", "").strip()
     app_secret = os.environ.get("WEBULL_APP_SECRET", "").strip()
@@ -49,20 +88,13 @@ def main():
         emit({"ok": False, "accounts": [], "message": "Missing WEBULL_APP_KEY or WEBULL_APP_SECRET."})
         return
 
-    try:
-        from webull.core.client import ApiClient
-        from webull.trade.trade_client import TradeClient
-    except Exception as exc:
+    ApiClient, TradeClient, sdk_error = import_webull_sdk()
+    if sdk_error:
         emit(
             {
                 "ok": False,
                 "accounts": [],
-                "message": (
-                    "Official Webull Python SDK is not installed or cannot load. "
-                    "Install with: pip3 install --upgrade webull-openapi-python-sdk. "
-                    "Webull documents Python 3.8-3.13 for this SDK. "
-                    f"Runtime: {sys.version.split()[0]}. Error: {exc}"
-                ),
+                "message": sdk_error,
             }
         )
         return

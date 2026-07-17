@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -111,6 +112,48 @@ def response_json(response):
         return None
 
 
+def import_webull_sdk():
+    try:
+        from webull.core.client import ApiClient
+        from webull.data.common.category import Category
+        from webull.data.common.timespan import Timespan
+        from webull.data.data_client import DataClient
+
+        return ApiClient, Category, Timespan, DataClient, None
+    except Exception as first_exc:
+        try:
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "--user",
+                    "--upgrade",
+                    "webull-openapi-python-sdk",
+                ],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=90,
+            )
+            from webull.core.client import ApiClient
+            from webull.data.common.category import Category
+            from webull.data.common.timespan import Timespan
+            from webull.data.data_client import DataClient
+
+            return ApiClient, Category, Timespan, DataClient, None
+        except Exception as second_exc:
+            return None, None, None, None, (
+                "Official Webull Python SDK is not installed or cannot load. "
+                "Tried to install webull-openapi-python-sdk into the active Python interpreter and import again. "
+                "Webull documents Python 3.8-3.13 for this SDK. "
+                f"Runtime: {sys.version.split()[0]}. First import error: {first_exc}. "
+                f"Install/import error: {second_exc}"
+            )
+
+
 def main():
     app_key = os.environ.get("WEBULL_APP_KEY", "").strip()
     app_secret = os.environ.get("WEBULL_APP_SECRET", "").strip()
@@ -126,20 +169,12 @@ def main():
         emit({"ok": False, "message": "Missing WEBULL_SYMBOL."})
         return
 
-    try:
-        from webull.core.client import ApiClient
-        from webull.data.common.category import Category
-        from webull.data.common.timespan import Timespan
-        from webull.data.data_client import DataClient
-    except Exception as exc:
+    ApiClient, Category, Timespan, DataClient, sdk_error = import_webull_sdk()
+    if sdk_error:
         emit(
             {
                 "ok": False,
-                "message": (
-                    "Official Webull Python SDK is not installed or cannot load. "
-                    "Install with: pip3 install --upgrade webull-openapi-python-sdk. "
-                    f"Runtime: {sys.version.split()[0]}. Error: {exc}"
-                ),
+                "message": sdk_error,
             }
         )
         return
