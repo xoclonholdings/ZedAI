@@ -54,6 +54,16 @@ function parseHelperJson(stdout: string): any {
   }
 }
 
+function explainWebullAuthFailure(message: string, endpoint: string): string {
+  if (!/x-signature is invalid|unauthorized|401/i.test(message)) return message;
+  const environment = /sandbox/i.test(endpoint) ? "sandbox" : "production";
+  return [
+    `Webull rejected the signed ${environment} request: ${message}`,
+    "Most likely cause: the App Key and App Secret do not belong to the same Webull OpenAPI app, or the key pair is for the other environment.",
+    "Zed now prefers WEBULL_APP_KEY and WEBULL_APP_SECRET from Render env over any saved UI credentials.",
+  ].join(" ");
+}
+
 function value(record: Awaited<ReturnType<typeof TradingIntegrationsStore.getConnection>>, key: string): string {
   return String(record?.fields?.[key] || record?.secrets?.[key] || "").trim();
 }
@@ -68,6 +78,14 @@ function resolvedValue(
   envKey: string,
 ): string {
   return value(record, key) || envValue(envKey);
+}
+
+function resolvedSecretValue(
+  record: Awaited<ReturnType<typeof TradingIntegrationsStore.getConnection>>,
+  key: string,
+  envKey: string,
+): string {
+  return envValue(envKey) || value(record, key);
 }
 
 function environmentMode(raw: string): ExecutionAdapterStatus["mode"] {
@@ -85,8 +103,8 @@ function endpointFor(rawEndpoint: string, mode: ExecutionAdapterStatus["mode"]):
 
 export async function getWebullStatus(userId: string): Promise<ExecutionAdapterStatus> {
   const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
-  const appKey = resolvedValue(connection, "appKey", "WEBULL_APP_KEY");
-  const appSecret = resolvedValue(connection, "appSecret", "WEBULL_APP_SECRET");
+  const appKey = resolvedSecretValue(connection, "appKey", "WEBULL_APP_KEY");
+  const appSecret = resolvedSecretValue(connection, "appSecret", "WEBULL_APP_SECRET");
   const accessToken = resolvedValue(connection, "accessToken", "WEBULL_ACCESS_TOKEN");
   const endpoint = resolvedValue(connection, "endpoint", "WEBULL_API_ENDPOINT");
   const accountId = resolvedValue(connection, "accountId", "WEBULL_ACCOUNT_ID");
@@ -147,7 +165,7 @@ export async function saveWebullCredentials(
   },
 ): Promise<ExecutionAdapterStatus> {
   const existing = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
-  const existingAppKey = resolvedValue(existing, "appKey", "WEBULL_APP_KEY");
+  const existingAppKey = resolvedSecretValue(existing, "appKey", "WEBULL_APP_KEY");
   const nextAppKey = String(input.appKey || "").trim();
   const nextSecret = String(input.appSecret || "").trim();
   if (nextAppKey && existingAppKey && nextAppKey !== existingAppKey && !nextSecret) {
@@ -394,8 +412,8 @@ export async function getWebullMarketQuote(
   asset: TradingAssetClass = "stock",
 ): Promise<MarketQuote | null> {
   const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
-  const appKey = resolvedValue(connection, "appKey", "WEBULL_APP_KEY");
-  const appSecret = resolvedValue(connection, "appSecret", "WEBULL_APP_SECRET");
+  const appKey = resolvedSecretValue(connection, "appKey", "WEBULL_APP_KEY");
+  const appSecret = resolvedSecretValue(connection, "appSecret", "WEBULL_APP_SECRET");
   const mode = environmentMode(resolvedValue(connection, "environment", "WEBULL_ENVIRONMENT"));
   const endpoint = endpointFor(resolvedValue(connection, "endpoint", "WEBULL_API_ENDPOINT"), mode);
   if (!appKey || !appSecret) {
@@ -481,8 +499,8 @@ export async function testWebullConnection(userId: string): Promise<{
   message: string;
 }> {
   const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
-  const appKey = resolvedValue(connection, "appKey", "WEBULL_APP_KEY");
-  const appSecret = resolvedValue(connection, "appSecret", "WEBULL_APP_SECRET");
+  const appKey = resolvedSecretValue(connection, "appKey", "WEBULL_APP_KEY");
+  const appSecret = resolvedSecretValue(connection, "appSecret", "WEBULL_APP_SECRET");
   const mode = environmentMode(resolvedValue(connection, "environment", "WEBULL_ENVIRONMENT"));
   const endpoint = endpointFor(resolvedValue(connection, "endpoint", "WEBULL_API_ENDPOINT"), mode);
   const savedAccountId = resolvedValue(connection, "accountId", "WEBULL_ACCOUNT_ID");
@@ -517,6 +535,6 @@ export async function testWebullConnection(userId: string): Promise<{
       ? selectedAccountId
         ? `Webull SDK account-list test succeeded. Paper account ${selectedAccountId} is selected.`
         : "Webull SDK account-list test succeeded, but Webull returned no accounts. Add the paper account ID manually."
-      : result.message,
+      : explainWebullAuthFailure(result.message, endpoint),
   };
 }
