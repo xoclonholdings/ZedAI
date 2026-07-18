@@ -1,8 +1,13 @@
 import json
+import logging
 import os
 import subprocess
 import sys
+from contextlib import redirect_stdout
 from datetime import datetime, timezone
+
+
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 
 def emit(payload):
@@ -190,25 +195,26 @@ def main():
         return
 
     try:
-        api_client = ApiClient(app_key, app_secret, region)
-        api_client.add_endpoint(region, endpoint)
-        data_client = DataClient(api_client)
-        category = getattr(Category, category_for(asset)).name
+        with redirect_stdout(sys.stderr):
+            api_client = ApiClient(app_key, app_secret, region)
+            api_client.add_endpoint(region, endpoint)
+            data_client = DataClient(api_client)
+            category = getattr(Category, category_for(asset)).name
 
-        snapshot = None
-        history = None
-        if asset == "crypto":
-            snapshot_res = data_client.crypto_market_data.get_crypto_snapshot(symbol)
-            history_res = data_client.crypto_market_data.get_crypto_history_bar(symbol, category, Timespan.D.name)
-        elif asset == "future":
-            snapshot_res = data_client.futures_market_data.get_futures_snapshot(symbol, category)
-            history_res = data_client.futures_market_data.get_futures_history_bars(symbol, category, Timespan.D.name)
-        elif asset == "option":
-            snapshot_res = data_client.option_market_data.get_option_snapshot(symbol, category)
-            history_res = data_client.option_market_data.get_option_history_bars(symbol, category, Timespan.D.name)
-        else:
-            snapshot_res = data_client.market_data.get_snapshot(symbol, category, extend_hour_required=True, overnight_required=True)
-            history_res = data_client.market_data.get_history_bar(symbol, category, Timespan.D.name, count="60")
+            snapshot = None
+            history = None
+            if asset == "crypto":
+                snapshot_res = data_client.crypto_market_data.get_crypto_snapshot(symbol)
+                history_res = data_client.crypto_market_data.get_crypto_history_bar(symbol, category, Timespan.D.name)
+            elif asset == "future":
+                snapshot_res = data_client.futures_market_data.get_futures_snapshot(symbol, category)
+                history_res = data_client.futures_market_data.get_futures_history_bars(symbol, category, Timespan.D.name)
+            elif asset == "option":
+                snapshot_res = data_client.option_market_data.get_option_snapshot(symbol, category)
+                history_res = data_client.option_market_data.get_option_history_bars(symbol, category, Timespan.D.name)
+            else:
+                snapshot_res = data_client.market_data.get_snapshot(symbol, category, extend_hour_required=True, overnight_required=True)
+                history_res = data_client.market_data.get_history_bar(symbol, category, Timespan.D.name, count="60")
 
         snapshot = response_json(snapshot_res)
         history = response_json(history_res)

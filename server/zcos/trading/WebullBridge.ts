@@ -34,6 +34,26 @@ function defaultPythonBin(): string {
   return process.platform === "win32" ? "python" : "python3";
 }
 
+function parseHelperJson(stdout: string): any {
+  const trimmed = stdout.trim();
+  if (!trimmed) throw new Error("empty stdout");
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    for (let i = lines.length - 1; i >= 0; i -= 1) {
+      const line = lines[i];
+      if (!line.startsWith("{") || !line.endsWith("}")) continue;
+      try {
+        return JSON.parse(line);
+      } catch {
+        // Keep scanning earlier lines.
+      }
+    }
+    throw new Error("no JSON object found in helper stdout");
+  }
+}
+
 function value(record: Awaited<ReturnType<typeof TradingIntegrationsStore.getConnection>>, key: string): string {
   return String(record?.fields?.[key] || record?.secrets?.[key] || "").trim();
 }
@@ -248,7 +268,7 @@ async function runWebullSdkAccountList(input: {
     child.on("close", () => {
       clearTimeout(timer);
       try {
-        const parsed = JSON.parse(stdout.trim());
+        const parsed = parseHelperJson(stdout);
         const accounts: ExecutionAccountSummary[] = Array.isArray(parsed.accounts)
           ? parsed.accounts.map((account: any, index: number) => ({
               id: String(account.id || account.account_id || account.accountId || `account-${index + 1}`),
@@ -325,7 +345,7 @@ async function runWebullSdkQuote(input: {
     child.on("close", () => {
       clearTimeout(timer);
       try {
-        const parsed = JSON.parse(stdout.trim());
+        const parsed = parseHelperJson(stdout);
         const rawQuote = parsed.quote || null;
         const bars: MarketBar[] = Array.isArray(rawQuote?.bars)
           ? rawQuote.bars

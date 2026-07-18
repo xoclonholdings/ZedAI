@@ -1,7 +1,12 @@
 import json
+import logging
 import os
 import subprocess
 import sys
+from contextlib import redirect_stdout
+
+
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 
 def emit(payload):
@@ -110,10 +115,11 @@ def main():
         return
 
     try:
-        api_client = ApiClient(app_key, app_secret, region)
-        api_client.add_endpoint(region, endpoint)
-        trade_client = TradeClient(api_client)
-        res = trade_client.account_v2.get_account_list()
+        with redirect_stdout(sys.stderr):
+            api_client = ApiClient(app_key, app_secret, region)
+            api_client.add_endpoint(region, endpoint)
+            trade_client = TradeClient(api_client)
+            res = trade_client.account_v2.get_account_list()
         status_code = getattr(res, "status_code", None)
         text = getattr(res, "text", "")
         data = res.json()
