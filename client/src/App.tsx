@@ -14,6 +14,8 @@ import Chat from "@/pages/chat";
 import Login from "@/pages/login";
 import Admin from "@/pages/admin";
 import HomePage from "@/pages/home";
+import NexusRootPage from "@/nexus/pages/NexusRootPage";
+import { NexusProvider } from "@/nexus";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
@@ -78,7 +80,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        {isAuthenticated ? <HomePage /> : <Login />}
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
       </Route>
 
       <Route path="/chat/:id?">
@@ -86,6 +88,18 @@ function Router() {
       </Route>
 
       <Route path="/home">
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/nexus">
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/nexus/:nodeId/:view?">
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/knowledge-map">
         {isAuthenticated ? <HomePage /> : <Login />}
       </Route>
 
@@ -230,9 +244,11 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>
-            <GlobalErrorHooks />
-            <Toaster />
-            <Router />
+            <NexusProvider>
+              <GlobalErrorHooks />
+              <Toaster />
+              <Router />
+            </NexusProvider>
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>

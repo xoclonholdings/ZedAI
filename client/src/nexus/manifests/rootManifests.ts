@@ -1,0 +1,373 @@
+import type { NexusApplicationBoundary } from "../apps/types";
+import type {
+  NexusCapabilityAction,
+  NexusCapabilityDefinition,
+  NexusCapabilityDependency,
+  NexusCapabilityPermission,
+  NexusCapabilityStatus,
+} from "../capabilities/types";
+import type { NexusNodeId } from "../graph/types";
+import { NexusManifestRegistry } from "./NexusManifestRegistry";
+import type { NexusNodeManifest } from "./types";
+
+export const NEXUS_ROOT_NODE_IDS = [
+  "identity",
+  "memory",
+  "knowledge",
+  "workspaces",
+  "projects",
+  "tools",
+  "connect",
+  "settings",
+] as const;
+
+export type NexusRootNodeId = (typeof NEXUS_ROOT_NODE_IDS)[number];
+
+export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
+  rootManifest({
+    id: "identity",
+    label: "Identity",
+    summary: "The user's relationship-owned identity and confirmed Personal Constitution surface.",
+    icon: "Fingerprint",
+    color: "#f472b6",
+    currentSurfacePath: null,
+    consumes: ["constitution", "identity", "reflection"],
+    tags: ["constitution", "self-understanding", "ownership"],
+    capabilities: [
+      capability("identity", "current-principal", "Current Principal", "Use the trusted authenticated identity supplied by ZAR Core.", {
+        actionKind: "read",
+        actionRoute: null,
+        terms: ["identity", "user", "principal", "owner"],
+      }),
+      capability("identity", "constitution-review", "Constitution Review", "Review user-controlled understanding without confirming it automatically.", {
+        actionKind: "review",
+        actionRoute: "/nexus/identity",
+        dependencies: [dependency("identity.current-principal", "Personal understanding must be owned by the current user.")],
+        terms: ["constitution", "review", "understanding", "reflection"],
+      }),
+      capability("identity", "collaboration-context", "Collaboration Context", "Expose confirmed understanding as non-duplicated ZAR Core context.", {
+        actionKind: "read",
+        actionRoute: null,
+        dependencies: [
+          dependency("identity.constitution-review", "Confirmed understanding originates from the Constitution boundary."),
+          dependency("memory.policy", "Memory policy constrains retained relationship context."),
+        ],
+        terms: ["collaboration", "context", "confirmed", "working style"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "memory",
+    label: "Memory",
+    summary: "The governed memory surface for retained, revisable, evidence-backed context.",
+    icon: "Brain",
+    color: "#34d399",
+    currentSurfacePath: "/learning",
+    consumes: ["memory_policy", "retained_memory", "evidence"],
+    tags: ["memory", "retention", "evidence"],
+    capabilities: [
+      capability("memory", "policy", "Memory Policy", "Represent user-controlled retention rules from ZAR Core.", {
+        actionKind: "configure",
+        actionRoute: "/nexus/memory",
+        dependencies: [dependency("identity.current-principal", "Memory policy belongs to the current user.")],
+        terms: ["memory", "policy", "privacy", "retention"],
+      }),
+      capability("memory", "relevant-context", "Relevant Memory Context", "Expose retained authoritative memory as context without making retrieval authoritative.", {
+        actionKind: "read",
+        actionRoute: "/learning",
+        dependencies: [dependency("memory.policy", "Relevant memory must honor the user's policy.")],
+        terms: ["memory", "context", "continuity", "evidence"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "knowledge",
+    label: "Knowledge",
+    summary: "The source-backed knowledge and relationship graph surface.",
+    icon: "Network",
+    color: "#22d3ee",
+    currentSurfacePath: "/learning",
+    consumes: ["knowledge_authority", "retrieval_context"],
+    tags: ["knowledge", "sources", "graph"],
+    capabilities: [
+      capability("knowledge", "source-library", "Source Library", "Represent authoritative knowledge records and source references.", {
+        actionKind: "read",
+        actionRoute: "/learning",
+        dependencies: [dependency("identity.current-principal", "Knowledge access remains owner-aware.")],
+        terms: ["knowledge", "source", "library", "record"],
+      }),
+      capability("knowledge", "relevant-sources", "Relevant Sources", "Expose source-backed knowledge references for scoped work.", {
+        actionKind: "read",
+        actionRoute: null,
+        dependencies: [dependency("knowledge.source-library", "Relevant source context derives from the source library.")],
+        terms: ["retrieval", "source", "context", "evidence"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "workspaces",
+    label: "Workspaces",
+    summary: "Domain operating spaces that receive ZAR Core context without owning it.",
+    icon: "PanelsTopLeft",
+    color: "#a78bfa",
+    currentSurfacePath: "/workspace",
+    consumes: ["relationship_contract", "scope"],
+    tags: ["domains", "scope", "operating-spaces"],
+    capabilities: [
+      capability("workspaces", "scope", "Workspace Scope", "Hold the active domain scope for contextual navigation.", {
+        actionKind: "read",
+        actionRoute: "/workspace",
+        dependencies: [dependency("identity.collaboration-context", "Workspace behavior consumes confirmed relationship context.")],
+        terms: ["workspace", "domain", "scope", "mode"],
+      }),
+      capability("workspaces", "switcher", "Workspace Switcher", "Reserve navigation between domain operating spaces.", {
+        actionKind: "navigate",
+        actionRoute: "/workspace",
+        dependencies: [dependency("workspaces.scope", "Switching operates over workspace scope.")],
+        status: "scaffolded",
+        terms: ["workspace", "switch", "domain", "navigation"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "projects",
+    label: "Projects",
+    summary: "User-owned project context, evidence, and execution continuity.",
+    icon: "FolderKanban",
+    color: "#fbbf24",
+    currentSurfacePath: "/projects",
+    consumes: ["ownership", "project_context"],
+    tags: ["projects", "execution", "context"],
+    capabilities: [
+      capability("projects", "current-context", "Current Project Context", "Expose selected user-owned project context to Nexus consumers.", {
+        actionKind: "read",
+        actionRoute: "/projects",
+        dependencies: [
+          dependency("identity.current-principal", "Projects are user-owned."),
+          dependency("workspaces.scope", "Projects may be scoped by workspace."),
+        ],
+        terms: ["project", "context", "ownership", "continuity"],
+      }),
+      capability("projects", "navigation", "Project Navigation", "Navigate existing project surfaces without moving project authority.", {
+        actionKind: "navigate",
+        actionRoute: "/projects",
+        dependencies: [dependency("projects.current-context", "Project navigation uses the project context boundary.")],
+        terms: ["project", "navigate", "execution", "detail"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "tools",
+    label: "Tools",
+    summary: "Capability and workflow entry points governed by permissions and execution policy.",
+    icon: "Wrench",
+    color: "#fb7185",
+    currentSurfacePath: "/flows",
+    consumes: ["permissions", "execution_context"],
+    tags: ["tools", "automation", "workflow"],
+    capabilities: [
+      capability("tools", "execution-policy", "Execution Policy", "Represent permission-aware tool execution boundaries.", {
+        actionKind: "execute",
+        actionRoute: null,
+        dependencies: [
+          dependency("identity.current-principal", "Tool execution must be tied to a trusted user."),
+          dependency("settings.permissions", "Execution depends on permission settings."),
+        ],
+        terms: ["tools", "execution", "permission", "policy"],
+      }),
+      capability("tools", "workflow-catalog", "Workflow Catalog", "Navigate current workflow and flow surfaces through the Tools root.", {
+        actionKind: "navigate",
+        actionRoute: "/flows",
+        dependencies: [dependency("tools.execution-policy", "Workflow actions require execution policy.")],
+        terms: ["tools", "flows", "workflow", "automation"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "connect",
+    label: "Connect",
+    summary: "External accounts, channels, providers, and future ecosystem connections.",
+    icon: "Cable",
+    color: "#38bdf8",
+    currentSurfacePath: null,
+    consumes: ["authorization", "provider_context"],
+    tags: ["providers", "channels", "integration"],
+    capabilities: [
+      capability("connect", "provider-accounts", "Provider Accounts", "Reserve provider account connections behind explicit authorization.", {
+        actionKind: "connect",
+        actionRoute: "/nexus/connect",
+        dependencies: [
+          dependency("identity.current-principal", "Connections belong to the current user."),
+          dependency("settings.permissions", "Provider access must honor user permissions."),
+        ],
+        status: "scaffolded",
+        terms: ["connect", "provider", "account", "authorization"],
+      }),
+      capability("connect", "channels", "Connection Channels", "Reserve channel routing for future ecosystem communication surfaces.", {
+        actionKind: "connect",
+        actionRoute: null,
+        dependencies: [dependency("connect.provider-accounts", "Channels depend on authorized provider accounts.")],
+        status: "scaffolded",
+        terms: ["connect", "channel", "integration", "external"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "settings",
+    label: "Settings",
+    summary: "User-controlled preferences, privacy boundaries, and administrative configuration.",
+    icon: "Settings",
+    color: "#cbd5e1",
+    currentSurfacePath: null,
+    consumes: ["configuration", "privacy", "permissions"],
+    tags: ["settings", "privacy", "configuration"],
+    capabilities: [
+      capability("settings", "privacy", "Privacy Settings", "Reserve user-controlled privacy and retention boundaries.", {
+        actionKind: "configure",
+        actionRoute: "/nexus/settings",
+        dependencies: [dependency("identity.current-principal", "Privacy settings belong to the current user.")],
+        terms: ["settings", "privacy", "retention", "control"],
+      }),
+      capability("settings", "permissions", "Permission Settings", "Reserve permission settings consumed by tools and provider connections.", {
+        actionKind: "configure",
+        actionRoute: "/nexus/settings",
+        dependencies: [dependency("identity.current-principal", "Permission settings are owned by the current user.")],
+        terms: ["settings", "permissions", "authorization", "access"],
+      }),
+    ],
+  }),
+];
+
+export const nexusRootManifestRegistry = new NexusManifestRegistry(NEXUS_ROOT_MANIFESTS);
+
+export function isNexusRootNodeId(value: string | undefined | null): value is NexusRootNodeId {
+  return Boolean(value && (NEXUS_ROOT_NODE_IDS as readonly string[]).includes(value));
+}
+
+function rootManifest(input: {
+  readonly id: NexusRootNodeId;
+  readonly label: string;
+  readonly summary: string;
+  readonly icon: string;
+  readonly color: string;
+  readonly currentSurfacePath: string | null;
+  readonly consumes: readonly string[];
+  readonly tags: readonly string[];
+  readonly capabilities: readonly NexusCapabilityDefinition[];
+}): NexusNodeManifest {
+  return {
+    id: input.id,
+    label: input.label,
+    kind: "root",
+    parentId: null,
+    application: application(input.id, input.label, input.currentSurfacePath, input.consumes),
+    discovery: {
+      summary: input.summary,
+      tags: input.tags,
+      searchableTerms: [input.id, input.label.toLowerCase(), ...input.tags],
+    },
+    visual: {
+      icon: input.icon,
+      color: input.color,
+      orbit: 1,
+    },
+    defaultExpanded: input.id === "identity",
+    capabilities: input.capabilities,
+    metadata: {
+      permanentRoot: true,
+    },
+  };
+}
+
+function application(
+  nodeId: NexusRootNodeId,
+  label: string,
+  currentSurfacePath: string | null,
+  consumes: readonly string[],
+): NexusApplicationBoundary {
+  return {
+    id: `${nodeId}-application`,
+    nodeId,
+    label,
+    basePath: `/nexus/${nodeId}`,
+    routePattern: `/nexus/${nodeId}/:view?`,
+    stateNamespace: `nexus.${nodeId}`,
+    ownsState: true,
+    status: "scaffolded",
+    consumes: ["zar-core", ...consumes],
+    currentSurfacePath,
+    notes: [
+      "Application boundary reserved.",
+      "State ownership is isolated to this namespace.",
+      "ZAR Core remains the source for relationship intelligence.",
+    ],
+  };
+}
+
+function capability(
+  nodeId: NexusRootNodeId,
+  capabilityName: string,
+  label: string,
+  summary: string,
+  options: {
+    readonly actionKind: NexusCapabilityAction["kind"];
+    readonly actionRoute: string | null;
+    readonly dependencies?: readonly NexusCapabilityDependency[];
+    readonly status?: NexusCapabilityStatus;
+    readonly terms: readonly string[];
+  },
+): NexusCapabilityDefinition {
+  const id = `${nodeId}.${capabilityName}`;
+  return {
+    id,
+    owner: {
+      kind: "node",
+      id: nodeId,
+    },
+    owningNodeId: nodeId,
+    label,
+    category: nodeId,
+    status: options.status ?? "available",
+    actions: [
+      {
+        id: `${id}.primary`,
+        label,
+        kind: options.actionKind,
+        route: options.actionRoute,
+        enabled: Boolean(options.actionRoute),
+      },
+    ],
+    dependencies: options.dependencies ?? [],
+    permissions: [authenticatedPermission()],
+    searchable: {
+      summary,
+      terms: [...options.terms],
+      aliases: [],
+    },
+    metadata: {
+      permanentRootCapability: true,
+      ownerNode: nodeId,
+    },
+  };
+}
+
+function dependency(capabilityId: string, reason: string): NexusCapabilityDependency {
+  return {
+    capabilityId,
+    required: true,
+    reason,
+  };
+}
+
+function authenticatedPermission(): NexusCapabilityPermission {
+  return {
+    id: "kernel.authenticated",
+    label: "Authenticated user",
+    source: "kernel",
+    required: true,
+  };
+}
+
+export function isNexusManifestNodeId(value: NexusNodeId): value is NexusRootNodeId {
+  return isNexusRootNodeId(value);
+}
