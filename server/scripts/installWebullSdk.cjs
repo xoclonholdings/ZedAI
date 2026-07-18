@@ -33,7 +33,7 @@ if (!selected) {
   process.exit(0);
 }
 
-const install = run(selected.cmd, ["-m", "pip", "install", "--user", "-r", req]);
+const install = run(selected.cmd, ["-m", "pip", "install", "-r", req]);
 if (install.status !== 0) {
   console.warn(`[webull-sdk] Install failed on ${selected.cmd} ${selected.version.raw}.`);
   if (install.stderr) console.warn(install.stderr.trim());

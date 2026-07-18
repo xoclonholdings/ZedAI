@@ -9,7 +9,7 @@ services:
       npm run build --prefix client
       npm install --prefix server
       python3 -m pip install --upgrade pip
-      python3 -m pip install --user -r server/requirements.txt
+      python3 -m pip install -r server/requirements.txt
     startCommand: cd server && npm run start
     envVars:
       - key: NODE_VERSION

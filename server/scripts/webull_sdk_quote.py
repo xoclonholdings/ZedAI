@@ -136,7 +136,6 @@ def import_webull_sdk():
                     "-m",
                     "pip",
                     "install",
-                    "--user",
                     "--upgrade",
                     "webull-openapi-python-sdk",
                 ],
@@ -153,12 +152,15 @@ def import_webull_sdk():
 
             return ApiClient, Category, Timespan, DataClient, None
         except Exception as second_exc:
+            detail = ""
+            if hasattr(second_exc, "stderr") and second_exc.stderr:
+                detail = f" Pip stderr: {str(second_exc.stderr).strip()[:500]}"
             return None, None, None, None, (
                 "Official Webull Python SDK is not installed or cannot load. "
                 "Tried to install webull-openapi-python-sdk into the active Python interpreter and import again. "
                 "Webull documents Python 3.8-3.13 for this SDK. "
                 f"Runtime: {sys.version.split()[0]}. First import error: {first_exc}. "
-                f"Install/import error: {second_exc}"
+                f"Install/import error: {second_exc}.{detail}"
             )
 
 
