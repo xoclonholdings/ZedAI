@@ -68,7 +68,7 @@ function explainWebullAuthFailure(message: string, endpoint: string): string {
   return [
     `Webull rejected the signed ${environment} request: ${message}`,
     "Most likely cause: the App Key and App Secret do not belong to the same Webull OpenAPI app, or the key pair is for the other environment.",
-    "Zed tests Render env credentials first, then saved UI credentials if they are different.",
+    "Zed tests each credential pair against sandbox and production before giving up.",
   ].join(" ");
 }
 
@@ -100,15 +100,33 @@ function webullCredentialCandidates(
   record: Awaited<ReturnType<typeof TradingIntegrationsStore.getConnection>>,
 ): WebullCredentialCandidate[] {
   const mode = environmentMode(resolvedValue(record, "environment", "WEBULL_ENVIRONMENT"));
-  const endpoint = endpointFor(resolvedValue(record, "endpoint", "WEBULL_API_ENDPOINT"), mode);
+  const configuredEndpoint = endpointFor(resolvedValue(record, "endpoint", "WEBULL_API_ENDPOINT"), mode);
+  const endpoints: Array<{ endpoint: string; mode: ExecutionAdapterStatus["mode"] }> = [];
+  const addEndpoint = (endpoint: string, endpointMode: ExecutionAdapterStatus["mode"]) => {
+    const clean = endpointFor(endpoint, endpointMode);
+    if (endpoints.some((entry) => entry.endpoint === clean)) return;
+    endpoints.push({ endpoint: clean, mode: endpointMode });
+  };
+  addEndpoint(configuredEndpoint, mode);
+  addEndpoint(DEFAULT_SANDBOX_ENDPOINT, "sandbox");
+  addEndpoint(DEFAULT_PRODUCTION_ENDPOINT, "production");
+
   const candidates: WebullCredentialCandidate[] = [];
   const seen = new Set<string>();
   const add = (source: WebullCredentialCandidate["source"], appKey: string, appSecret: string) => {
     if (!appKey || !appSecret) return;
-    const signature = `${appKey}\n${appSecret}\n${endpoint}`;
-    if (seen.has(signature)) return;
-    seen.add(signature);
-    candidates.push({ source, appKey, appSecret, endpoint, mode });
+    for (const endpointCandidate of endpoints) {
+      const signature = `${appKey}\n${appSecret}\n${endpointCandidate.endpoint}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      candidates.push({
+        source,
+        appKey,
+        appSecret,
+        endpoint: endpointCandidate.endpoint,
+        mode: endpointCandidate.mode,
+      });
+    }
   };
   add("Render env", envValue("WEBULL_APP_KEY"), envValue("WEBULL_APP_SECRET"));
   add("saved UI", value(record, "appKey"), value(record, "appSecret"));
@@ -569,11 +587,11 @@ export async function testWebullConnection(userId: string): Promise<{
         accountCount: result.accounts.length,
         selectedAccountId,
         message: selectedAccountId
-          ? `Webull SDK account-list test succeeded using ${candidate.source}. Paper account ${selectedAccountId} is selected.`
-          : `Webull SDK account-list test succeeded using ${candidate.source}, but Webull returned no accounts. Add the paper account ID manually.`,
+          ? `Webull SDK account-list test succeeded using ${candidate.source} on ${candidate.endpoint}. Paper account ${selectedAccountId} is selected.`
+          : `Webull SDK account-list test succeeded using ${candidate.source} on ${candidate.endpoint}, but Webull returned no accounts. Add the paper account ID manually.`,
       };
     }
-    failures.push(`${candidate.source}: ${explainWebullAuthFailure(result.message, candidate.endpoint)}`);
+    failures.push(`${candidate.source} on ${candidate.endpoint}: ${explainWebullAuthFailure(result.message, candidate.endpoint)}`);
   }
   return {
     ok: false,
