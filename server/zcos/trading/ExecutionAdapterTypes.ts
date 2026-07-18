@@ -35,5 +35,6 @@ export interface ExecutionAdapterStatus {
     endpoint?: string;
     accountId?: string;
     environment?: string;
+    credentialSource?: string;
   };
 }
