@@ -46,6 +46,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
   const [providers, setProviders] = useState<IntegrationProviderInfo[]>([]);
   const [integrations, setIntegrations] = useState<TradingIntegration[]>([]);
   const [selected, setSelected] = useState<string>("");
+  const [tab, setTab] = useState<"feed" | "accounts" | "data" | "execution">("feed");
 
   const loadIntegrations = useCallback(async () => {
     try {
@@ -112,7 +113,32 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       {notice && <NoticeBanner kind="success">{notice}</NoticeBanner>}
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
 
-      {/* Feed Zed material (files) */}
+      {/* One section at a time — tabs instead of five stacked panels. */}
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {(
+          [
+            ["feed", "Feed Zed"],
+            ["accounts", "Accounts"],
+            ["data", "Data keys"],
+            ["execution", "Execution"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-full px-3 py-1.5 text-[12px] transition-colors ${
+              tab === id
+                ? "bg-cyan-400 text-black font-medium"
+                : "bg-white/[0.05] text-white/60 hover:text-white"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "feed" && (
       <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-4">
         <div className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-white">
           <Upload size={15} className="text-cyan-300" />
@@ -172,9 +198,11 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
           </div>
         )}
       </div>
+      )}
 
       {/* Connections */}
-      <div className="mt-5">
+      {tab === "accounts" && (
+      <div>
         <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
           <Plug size={13} className="text-cyan-300" />
           Trading connections
@@ -224,10 +252,15 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
           </>
         )}
       </div>
+      )}
 
-      <MarketDataKeysPanel />
-      <ExecutionAdaptersPanel />
-      <TradovateConnect />
+      {tab === "data" && <MarketDataKeysPanel />}
+      {tab === "execution" && (
+        <>
+          <ExecutionAdaptersPanel />
+          <TradovateConnect />
+        </>
+      )}
     </StageShell>
   );
 }
