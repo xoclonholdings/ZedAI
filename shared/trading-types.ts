@@ -183,6 +183,8 @@ export interface PaperTrade {
   status: PaperTradeStatus;
   timeframe?: string;
   setupName?: string;
+  /** External platform's response for the entry order (accepted or why not). */
+  externalNote?: string;
   entry: number;
   stop: number;
   target: number;

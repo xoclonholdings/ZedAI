@@ -45,6 +45,7 @@ import {
   listWebullAccounts,
   listWebullOrders,
   listWebullPositions,
+  placeWebullOrder,
   recommendWebullSymbol,
   saveWebullCredentials,
   testWebullConnection,
@@ -618,7 +619,19 @@ export function registerTradingRoutes(app: Express): void {
       ruleViolations: toArray(req.body.ruleViolations),
     });
     if (!trade) return res.status(404).json({ error: "Paper trade not found" });
-    res.json({ trade });
+
+    // If the entry filled on Webull, flatten the position there too.
+    let webullOrder;
+    if (trade.executionProvider === "webull" && trade.externalOrderStatus === "submitted") {
+      webullOrder = await placeWebullOrder(userIdFrom(req), {
+        symbol: trade.symbol,
+        side: trade.direction === "short" ? "BUY" : "SELL",
+        quantity: trade.size || 1,
+        orderType: "LIMIT",
+        limitPrice: toNumber(req.body.exitPrice),
+      });
+    }
+    res.json({ trade, webullOrder });
   });
 
   app.get("/api/trading/performance", isAuthenticated, async (req: any, res) => {
@@ -932,6 +945,22 @@ export function registerTradingRoutes(app: Express): void {
       });
     }
 
+    // Place the REAL order on Webull — a trade is only logged with the
+    // platform's actual response; a rejection is surfaced, never staged.
+    const order = await placeWebullOrder(userId, {
+      symbol: String(req.body.symbol).toUpperCase(),
+      side: req.body.direction === "short" ? "SELL" : "BUY",
+      quantity: toNumber(req.body.size) || 1,
+      orderType: "LIMIT",
+      limitPrice: toNumber(req.body.entry),
+    });
+    if (!order.ok) {
+      return res.status(502).json({
+        error: `Webull did not accept the order: ${order.message}`,
+        webullOrder: order,
+      });
+    }
+
     const trade = await TradingStore.openPaperTrade({
       userId,
       thesisId: req.body.thesisId,
@@ -955,12 +984,14 @@ export function registerTradingRoutes(app: Express): void {
       authorizationDecision: authorization.decision.decision as AuthorizationDecision,
       executionMode: "external_paper",
       executionProvider: "webull",
-      externalOrderId: `webull-paper-${randomUUID()}`,
-      externalOrderStatus: "staged",
+      externalOrderId: order.orderId || order.clientOrderId,
+      externalOrderStatus: order.ok ? "submitted" : "rejected",
+      externalNote: order.message,
     });
 
     res.json({
       trade,
+      webullOrder: order,
       authorization: authorization.decision,
       status: await getWebullStatus(userId),
       report: await getExternalPaperReport(userId),

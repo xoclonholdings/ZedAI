@@ -20,6 +20,10 @@ const WEBULL_SDK_QUOTE = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../scripts/webull_sdk_quote.py",
 );
+const WEBULL_SDK_PLACE_ORDER = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../scripts/webull_sdk_place_order.py",
+);
 
 const WEBULL_SCAN_UNIVERSE: Record<TradingAssetClass, string[]> = {
   stock: ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "TSLA", "AMD"],
@@ -294,6 +298,103 @@ export async function saveWebullCredentials(
     },
   });
   return getWebullStatus(userId);
+}
+
+export interface WebullOrderInput {
+  symbol: string;
+  side: "BUY" | "SELL";
+  quantity: number;
+  orderType?: "LIMIT" | "MARKET";
+  limitPrice?: number;
+  clientOrderId?: string;
+}
+
+export interface WebullOrderResult {
+  ok: boolean;
+  orderId?: string;
+  clientOrderId?: string;
+  environment: ExecutionAdapterStatus["mode"];
+  message: string;
+}
+
+/**
+ * Place a real order on the connected Webull account through the official
+ * SDK. Uses the same credential resolution as the connection test; the
+ * saved default account is the destination. Never fabricates a fill — the
+ * exact SDK/Webull response is returned either way.
+ */
+export async function placeWebullOrder(
+  userId: string,
+  input: WebullOrderInput,
+): Promise<WebullOrderResult> {
+  const status = await getWebullStatus(userId);
+  if (!status.connected || !status.saved?.accountId) {
+    return {
+      ok: false,
+      environment: status.mode,
+      message: status.note || "Webull is not connected with a saved account id.",
+    };
+  }
+  const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
+  const candidate = webullCredentialCandidates(connection)[0];
+  if (!candidate) {
+    return { ok: false, environment: status.mode, message: "No Webull credentials available." };
+  }
+  const python = await resolvePythonBin();
+  return new Promise((resolve) => {
+    let stdout = "";
+    let stderr = "";
+    const child = spawn(python, [WEBULL_SDK_PLACE_ORDER], {
+      env: {
+        ...process.env,
+        WEBULL_APP_KEY: candidate.appKey,
+        WEBULL_APP_SECRET: candidate.appSecret,
+        WEBULL_API_ENDPOINT: candidate.endpoint,
+        WEBULL_REGION: envValue("WEBULL_REGION") || "us",
+        WEBULL_ORDER_ACCOUNT_ID: String(status.saved.accountId),
+        WEBULL_ORDER_SYMBOL: input.symbol.toUpperCase(),
+        WEBULL_ORDER_SIDE: input.side,
+        WEBULL_ORDER_QTY: String(Math.max(1, Math.floor(input.quantity))),
+        WEBULL_ORDER_TYPE: input.orderType || "LIMIT",
+        WEBULL_ORDER_LIMIT_PRICE: input.limitPrice != null ? String(input.limitPrice) : "",
+        WEBULL_ORDER_CLIENT_ID: input.clientOrderId || "",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    child.stdout.on("data", (d) => (stdout += String(d)));
+    child.stderr.on("data", (d) => (stderr += String(d)));
+    const timer = setTimeout(() => {
+      child.kill();
+      resolve({ ok: false, environment: status.mode, message: "Webull order request timed out." });
+    }, 45_000);
+    child.on("error", (err) => {
+      clearTimeout(timer);
+      resolve({
+        ok: false,
+        environment: status.mode,
+        message: `Could not start Python for the Webull order: ${err.message}`,
+      });
+    });
+    child.on("close", () => {
+      clearTimeout(timer);
+      try {
+        const parsed = parseHelperJson(stdout);
+        resolve({
+          ok: Boolean(parsed.ok),
+          orderId: parsed.orderId ? String(parsed.orderId) : undefined,
+          clientOrderId: parsed.clientOrderId ? String(parsed.clientOrderId) : undefined,
+          environment: status.mode,
+          message: explainWebullAuthFailure(String(parsed.message || "No message."), candidate.endpoint),
+        });
+      } catch {
+        resolve({
+          ok: false,
+          environment: status.mode,
+          message: `Webull order helper returned no result. ${stderr.trim().slice(0, 300)}`,
+        });
+      }
+    });
+  });
 }
 
 export async function listWebullAccounts(userId: string): Promise<{
