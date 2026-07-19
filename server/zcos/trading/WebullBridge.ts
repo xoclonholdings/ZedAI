@@ -42,6 +42,64 @@ function defaultPythonBin(): string {
   return process.platform === "win32" ? "python" : "python3";
 }
 
+/**
+ * Webull's official SDK supports Python 3.8-3.13 only. The host default
+ * `python3` can be newer (Render currently ships 3.14), which makes both
+ * the import and the pip install fail. Probe candidate interpreters and
+ * pick the first compatible one; cache the answer for the process.
+ */
+let resolvedPython: string | null = null;
+
+function pythonVersionOf(bin: string): Promise<{ major: number; minor: number } | null> {
+  return new Promise((resolve) => {
+    try {
+      const child = spawn(bin, ["--version"], { stdio: ["ignore", "pipe", "pipe"] });
+      let out = "";
+      child.stdout?.on("data", (d) => (out += String(d)));
+      child.stderr?.on("data", (d) => (out += String(d)));
+      const timer = setTimeout(() => {
+        child.kill();
+        resolve(null);
+      }, 4000);
+      child.on("error", () => {
+        clearTimeout(timer);
+        resolve(null);
+      });
+      child.on("close", () => {
+        clearTimeout(timer);
+        const m = out.match(/Python\s+(\d+)\.(\d+)/i);
+        resolve(m ? { major: Number(m[1]), minor: Number(m[2]) } : null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function resolvePythonBin(): Promise<string> {
+  if (resolvedPython) return resolvedPython;
+  const candidates = [
+    envValue("WEBULL_PYTHON_BIN"),
+    "python3.13",
+    "python3.12",
+    "python3.11",
+    "python3.10",
+    "python3.9",
+    defaultPythonBin(),
+  ].filter(Boolean) as string[];
+  for (const bin of candidates) {
+    const v = await pythonVersionOf(bin);
+    if (v && v.major === 3 && v.minor >= 8 && v.minor <= 13) {
+      resolvedPython = bin;
+      return bin;
+    }
+  }
+  // Nothing compatible found — fall back so the helper script reports the
+  // clear version error instead of a spawn failure.
+  resolvedPython = envValue("WEBULL_PYTHON_BIN") || defaultPythonBin();
+  return resolvedPython;
+}
+
 function parseHelperJson(stdout: string): any {
   const trimmed = stdout.trim();
   if (!trimmed) throw new Error("empty stdout");
@@ -293,7 +351,7 @@ async function runWebullSdkAccountList(input: {
   accounts: ExecutionAccountSummary[];
   message: string;
 }> {
-  const python = envValue("WEBULL_PYTHON_BIN") || defaultPythonBin();
+  const python = await resolvePythonBin();
   return new Promise((resolve) => {
     const child = spawn(python, [WEBULL_SDK_ACCOUNT_LIST], {
       env: {
@@ -371,7 +429,7 @@ async function runWebullSdkQuote(input: {
   symbol: string;
   asset: TradingAssetClass;
 }): Promise<{ ok: boolean; quote?: MarketQuote; message: string }> {
-  const python = envValue("WEBULL_PYTHON_BIN") || defaultPythonBin();
+  const python = await resolvePythonBin();
   return new Promise((resolve) => {
     const child = spawn(python, [WEBULL_SDK_QUOTE], {
       env: {
