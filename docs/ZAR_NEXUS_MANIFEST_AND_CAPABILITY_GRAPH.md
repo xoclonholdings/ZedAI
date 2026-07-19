@@ -6,6 +6,25 @@ Nexus is the root navigation architecture for ZAR. It presents permanent root ap
 
 The Nexus layer does not own ZAR Core identity, memory, knowledge, Constitution, response policy, or learning behavior. Nexus consumes ZAR Core through declared metadata and capability contracts.
 
+## Signed-In Nexus Home
+
+The signed-in home route renders the Nexus as a user-facing constellation viewport, not a registry inspector.
+
+The home page is composed from existing Nexus authorities:
+
+- root nodes from `NexusManifestRegistry`
+- graph relationships from `NexusConstellationEngine`
+- focused-node state from `NexusProvider`
+- visible-node selection from the viewport model
+- actions from `NexusCapabilityRegistry`
+- communication modes from `PersistentCommunicationManifest`
+
+The normal user experience must not duplicate the root application list or expose route values, state namespaces, scaffold statuses, graph counts, registry details, or application-boundary contracts.
+
+The viewport intentionally shows only the focused node, nearby nodes, and edge nodes. The remaining registered nodes stay outside the visible field and are reached through touch, keyboard controls, direct routes, or ZAR-directed navigation.
+
+Developer graph diagnostics are preserved only through a development-gated inspector. The default signed-in route must remain the user-facing Nexus home.
+
 ## Permanent Root Applications
 
 The permanent Nexus root applications are:
@@ -92,6 +111,20 @@ Its responsibilities are:
 
 Navigation nodes are generated from root manifests through `NexusManifestRegistry.toNavigationNodes(...)`. The communication layer is not passed to the navigation engine.
 
+## Viewport Model
+
+The constellation viewport is separate from the navigation graph. It does not create nodes or own applications.
+
+The viewport model tracks:
+
+- focused node
+- previous node
+- viewport offset from touch movement
+- navigation source, such as route, touch, keyboard, ZAR, or programmatic
+- transition serial for deterministic visual updates
+
+Visible nodes are derived from the graph and current focus. The current implementation renders the focused node, adjacent nodes, and partial edge nodes. This keeps the home extensible when more Nexus nodes are registered later.
+
 ## Capability Graph
 
 The capability graph is separate from the navigation graph.
@@ -158,6 +191,20 @@ The existing chat route remains separate:
 - `/chat/:id?`
 
 That route is an existing communication surface, not a Nexus root application.
+
+## ZAR-Directed Navigation
+
+The home exposes a programmatic navigation contract through the viewport model and Nexus provider.
+
+ZAR-directed navigation may resolve:
+
+- a root node by manifest ID, label, tags, or description
+- a node-owned capability through the central capability registry
+- a communication capability through the persistent communication layer
+
+Resolution focuses the node and uses the existing Nexus route. Communication capability resolution opens the existing communication surface, currently `/chat`.
+
+The resolver does not create AI intent logic, does not implement root applications, and does not make provider adapters aware of Nexus internals.
 
 ## Extension Model
 

@@ -395,6 +395,16 @@
   .zed-button:hover::before {
     left: 100%;
   }
+
+  @keyframes nexus-drift {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 38px 38px, 38px 38px; }
+  }
+
+  @keyframes nexus-pulse {
+    0%, 100% { opacity: 0.58; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.04); }
+  }
 }
 
 /* Prose styling for chat messages */

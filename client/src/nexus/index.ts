@@ -12,3 +12,4 @@ export * from "./manifests/NexusManifestRegistry";
 export * from "./manifests/rootManifests";
 export * from "./manifests/types";
 export * from "./state/NexusProvider";
+export * from "./viewport/NexusViewportModel";
