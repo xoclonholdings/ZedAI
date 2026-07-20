@@ -300,6 +300,68 @@ export async function saveWebullCredentials(
   return getWebullStatus(userId);
 }
 
+/**
+ * Native (no-Python) Webull account-list call. Signs with WebullSigner
+ * and hits GET /openapi/account/list directly. Proves native signing
+ * against real Webull without disturbing the working SDK path.
+ */
+export async function nativeWebullAccountList(userId: string): Promise<{
+  ok: boolean;
+  statusCode?: number;
+  accounts: ExecutionAccountSummary[];
+  message: string;
+}> {
+  const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
+  const candidates = webullCredentialCandidates(connection);
+  if (!candidates.length) {
+    return { ok: false, accounts: [], message: "No Webull credentials available." };
+  }
+  const { webullSign } = await import("./WebullSigner");
+  const path = "/openapi/account/list";
+  const results: string[] = [];
+
+  for (const cand of candidates) {
+    const host = cand.endpoint.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    const { headers } = webullSign({ path, host, appKey: cand.appKey, appSecret: cand.appSecret });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12_000);
+    try {
+      const res = await fetch(`https://${host}${path}`, {
+        method: "GET",
+        headers,
+        signal: controller.signal,
+      });
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        /* leave null */
+      }
+      if (res.ok) {
+        const rawList = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        const accounts: ExecutionAccountSummary[] = rawList.map((a: any, i: number) => ({
+          id: String(a?.account_id ?? a?.accountId ?? a?.id ?? `account-${i + 1}`),
+          label: String(a?.account_type ?? a?.accountType ?? a?.type ?? "account"),
+          type: String(a?.account_type ?? a?.accountType ?? a?.type ?? "account"),
+        }));
+        return {
+          ok: true,
+          statusCode: res.status,
+          accounts,
+          message: `Native signing OK on ${host} — ${accounts.length} account(s).`,
+        };
+      }
+      results.push(`${host}: HTTP ${res.status} ${text.slice(0, 200)}`);
+    } catch (err: any) {
+      results.push(`${host}: ${err?.message || "request failed"}`);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return { ok: false, accounts: [], message: `Native account-list failed. ${results.join(" | ")}` };
+}
+
 export interface WebullOrderInput {
   symbol: string;
   side: "BUY" | "SELL";

@@ -45,6 +45,7 @@ import {
   listWebullAccounts,
   listWebullOrders,
   listWebullPositions,
+  nativeWebullAccountList,
   placeWebullOrder,
   recommendWebullSymbol,
   saveWebullCredentials,
@@ -771,6 +772,12 @@ export function registerTradingRoutes(app: Express): void {
   app.post("/api/trading/webull/test", isAuthenticated, async (req: any, res) => {
     const result = await testWebullConnection(userIdFrom(req));
     res.status(result.ok ? 200 : 502).json({ result, status: await getWebullStatus(userIdFrom(req)) });
+  });
+
+  /** Native (no-Python) signing test — proves WebullSigner against real Webull. */
+  app.post("/api/trading/webull/test-native", isAuthenticated, async (req: any, res) => {
+    const result = await nativeWebullAccountList(userIdFrom(req));
+    res.status(result.ok ? 200 : 502).json({ result });
   });
 
   app.get("/api/trading/webull/accounts", isAuthenticated, async (req: any, res) => {
