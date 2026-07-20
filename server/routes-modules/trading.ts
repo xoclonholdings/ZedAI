@@ -812,25 +812,47 @@ export function registerTradingRoutes(app: Express): void {
 
       if (!symbol) {
         const recentTrades = await TradingStore.listPaperTrades(userId);
-        recommendation = await recommendWebullSymbol(userId, asset, market, {
-          avoidSymbols: recentTrades
-            .filter((trade) => trade.executionMode === "external_paper")
-            .slice(0, 12)
-            .map((trade) => trade.symbol),
-          preferDirection: directionPreference,
-        });
-        if (!recommendation) {
-          return res.status(422).json({
-            action: "no_trade",
-            error: "ZAR could not reach Webull market data to pick a Webull paper trade.",
+        const avoidSymbols = recentTrades
+          .filter((trade) => trade.executionMode === "external_paper")
+          .slice(0, 12)
+          .map((trade) => trade.symbol);
+        // Prefer Webull's own market data; fall back to the general live
+        // feed (Yahoo/Stooq) so a Webull data hiccup doesn't block the
+        // proposal — the order still routes through Webull.
+        try {
+          recommendation = await recommendWebullSymbol(userId, asset, market, {
+            avoidSymbols,
+            preferDirection: directionPreference,
           });
+        } catch {
+          recommendation = null;
         }
-        symbol = recommendation.symbol;
-        quote = recommendation.quote;
-        if (directionPreference === "auto") directionPreference = recommendation.direction;
+        if (recommendation) {
+          symbol = recommendation.symbol;
+          quote = recommendation.quote;
+          if (directionPreference === "auto") directionPreference = recommendation.direction;
+        } else {
+          const fallback = await recommendSymbol(asset, market);
+          if (!fallback) {
+            return res.status(422).json({
+              action: "no_trade",
+              error: "No live market data (Webull or fallback) was reachable to pick a paper trade.",
+            });
+          }
+          symbol = fallback.symbol;
+          if (directionPreference === "auto") directionPreference = fallback.direction;
+        }
       }
 
-      quote = quote || await getWebullMarketQuote(userId, symbol, asset);
+      if (!quote) {
+        try {
+          quote = await getWebullMarketQuote(userId, symbol, asset);
+        } catch {
+          quote = null;
+        }
+        // General live feed fallback when Webull market data is unavailable.
+        if (!quote) quote = await getMarketQuote(symbol, asset);
+      }
       if (quote?.signal?.signal === "neutral") {
         return res.json({
           action: "no_trade",
