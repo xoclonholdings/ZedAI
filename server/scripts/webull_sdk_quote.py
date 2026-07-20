@@ -172,7 +172,14 @@ def import_webull_sdk():
 def main():
     app_key = os.environ.get("WEBULL_APP_KEY", "").strip()
     app_secret = os.environ.get("WEBULL_APP_SECRET", "").strip()
-    endpoint = os.environ.get("WEBULL_API_ENDPOINT", "api.sandbox.webull.com").strip()
+    # Market data is served from Webull's dedicated data host, not the
+    # trading/sandbox host. The SDK routes every request to the single
+    # registered endpoint, so the DataClient must be pointed at the data
+    # host or snapshot/history calls hit a host that serves no market data.
+    endpoint = (
+        os.environ.get("WEBULL_DATA_ENDPOINT", "").strip()
+        or "data-api.webull.com"
+    )
     region = os.environ.get("WEBULL_REGION", "us").strip() or "us"
     symbol = os.environ.get("WEBULL_SYMBOL", "").strip().upper()
     asset = os.environ.get("WEBULL_ASSET", "stock").strip().lower()

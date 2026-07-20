@@ -47,6 +47,21 @@ function defaultPythonBin(): string {
 }
 
 /**
+ * Webull serves market data from a dedicated data host, separate from the
+ * trading host (per the SDK's regional endpoint map). There is no sandbox
+ * data host — market data is always production.
+ */
+function webullDataHost(region: string): string {
+  const map: Record<string, string> = {
+    us: "data-api.webull.com",
+    hk: "data-api.webull.hk",
+    jp: "data-api.webull.co.jp",
+    sg: "data-api.webull.com.sg",
+  };
+  return map[region.toLowerCase()] || "data-api.webull.com";
+}
+
+/**
  * Webull's official SDK supports Python 3.8-3.13 only. The host default
  * `python3` can be newer (Render currently ships 3.14), which makes both
  * the import and the pip install fail. Probe candidate interpreters and
@@ -611,6 +626,9 @@ async function runWebullSdkQuote(input: {
         WEBULL_APP_KEY: input.appKey,
         WEBULL_APP_SECRET: input.appSecret,
         WEBULL_API_ENDPOINT: input.endpoint,
+        // Market data lives on Webull's data host, NOT the trading/sandbox
+        // host. Route quotes there or they hit a host that serves no data.
+        WEBULL_DATA_ENDPOINT: envValue("WEBULL_DATA_ENDPOINT") || webullDataHost(envValue("WEBULL_REGION") || "us"),
         WEBULL_REGION: envValue("WEBULL_REGION") || "us",
         WEBULL_SYMBOL: input.symbol,
         WEBULL_ASSET: input.asset,
