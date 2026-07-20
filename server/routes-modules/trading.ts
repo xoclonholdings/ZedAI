@@ -816,42 +816,41 @@ export function registerTradingRoutes(app: Express): void {
           .filter((trade) => trade.executionMode === "external_paper")
           .slice(0, 12)
           .map((trade) => trade.symbol);
-        // Prefer Webull's own market data; fall back to the general live
-        // feed (Yahoo/Stooq) so a Webull data hiccup doesn't block the
-        // proposal — the order still routes through Webull.
+        // This is the Webull step — Webull is the data source. Surface
+        // Webull's real error (e.g. a missing market-data entitlement)
+        // rather than masking it with another feed.
         try {
           recommendation = await recommendWebullSymbol(userId, asset, market, {
             avoidSymbols,
             preferDirection: directionPreference,
           });
-        } catch {
-          recommendation = null;
+        } catch (err: any) {
+          return res.status(422).json({
+            action: "no_trade",
+            error: `Webull market data is unavailable: ${err?.message || "unknown error"}`,
+          });
         }
-        if (recommendation) {
-          symbol = recommendation.symbol;
-          quote = recommendation.quote;
-          if (directionPreference === "auto") directionPreference = recommendation.direction;
-        } else {
-          const fallback = await recommendSymbol(asset, market);
-          if (!fallback) {
-            return res.status(422).json({
-              action: "no_trade",
-              error: "No live market data (Webull or fallback) was reachable to pick a paper trade.",
-            });
-          }
-          symbol = fallback.symbol;
-          if (directionPreference === "auto") directionPreference = fallback.direction;
+        if (!recommendation) {
+          return res.status(422).json({
+            action: "no_trade",
+            error:
+              "Webull returned no usable market data for the scanned symbols. This is typically a market-data entitlement your Webull OpenAPI app hasn't enabled (separate from trading access).",
+          });
         }
+        symbol = recommendation.symbol;
+        quote = recommendation.quote;
+        if (directionPreference === "auto") directionPreference = recommendation.direction;
       }
 
       if (!quote) {
         try {
           quote = await getWebullMarketQuote(userId, symbol, asset);
-        } catch {
-          quote = null;
+        } catch (err: any) {
+          return res.status(422).json({
+            action: "no_trade",
+            error: `Webull market data is unavailable for ${symbol}: ${err?.message || "unknown error"}`,
+          });
         }
-        // General live feed fallback when Webull market data is unavailable.
-        if (!quote) quote = await getMarketQuote(symbol, asset);
       }
       if (quote?.signal?.signal === "neutral") {
         return res.json({
