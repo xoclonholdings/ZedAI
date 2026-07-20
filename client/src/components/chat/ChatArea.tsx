@@ -3,9 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useAuth } from "@/components/auth/UseAuth";
 
-import ChatBackground from "./ChatBackground";
 import ChatComposer from "./ChatComposer";
-import ChatHeader from "./ChatHeader";
 import ChatMessagesList from "./ChatMessagesList";
 import FileUpload from "./FileUpload";
 import FilesAttachedStrip from "./FilesAttachedStrip";
@@ -28,6 +26,9 @@ interface ChatAreaProps {
   workspaceSlug?: string | null;
   learningPathId?: string | null;
   lessonId?: string | null;
+  onBeforeSend?: (message: string) => boolean | Promise<boolean>;
+  onAgentResponse?: (data: unknown) => void;
+  onConversationIdChange?: (conversationId: string) => void;
 }
 
 export default function ChatArea({
@@ -43,6 +44,9 @@ export default function ChatArea({
   workspaceSlug,
   learningPathId,
   lessonId,
+  onBeforeSend,
+  onAgentResponse,
+  onConversationIdChange,
 }: ChatAreaProps) {
   const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
@@ -91,7 +95,7 @@ export default function ChatArea({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ title: title.trim().slice(0, 50) || "New Conversation", mode: "chat" }),
+      body: JSON.stringify({ title: title.trim().slice(0, 50) || "Conversation", mode: "chat" }),
     });
 
     const newConversation = await response.json().catch(() => null);
@@ -102,6 +106,7 @@ export default function ChatArea({
 
     const newConversationId = newConversation.id as string;
     navigate(`/chat/${newConversationId}`);
+    onConversationIdChange?.(newConversationId);
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
 
     return newConversationId;
@@ -109,6 +114,9 @@ export default function ChatArea({
 
   async function handleSend(message: string) {
     if (!message.trim() || isStreaming) return;
+    const handled = await onBeforeSend?.(message);
+    if (handled) return;
+
     setHasStartedTyping(true);
     setStreamingMessage("");
 
@@ -141,6 +149,7 @@ export default function ChatArea({
       setIsStreaming,
       setLocalMessages,
       queryClient,
+      onResponse: onAgentResponse,
     });
   }
 
@@ -162,7 +171,7 @@ export default function ChatArea({
     await queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     setUploadConversationId(null);
     setShowFileUpload(false);
-    navigate("/chat");
+    navigate("/nexus");
   }
 
   function handleFileUpload(_files?: File[], result?: { conversationId?: string }) {
@@ -179,6 +188,7 @@ export default function ChatArea({
       if (conversationId !== uploadedConversationId) {
         navigate(`/chat/${uploadedConversationId}`);
       }
+      onConversationIdChange?.(uploadedConversationId);
     }
     setShowFileUpload(false);
   }
@@ -215,18 +225,27 @@ export default function ChatArea({
   }
 
   return (
-    <div className="flex-1 flex h-safe-screen relative overflow-hidden">
-      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-        <ChatBackground />
-
-        <ChatHeader
-          isMobile={isMobile}
-          onOpenSidebar={onOpenSidebar}
-          canArchive={!!conversationId}
-          onArchiveConversation={handleArchiveConversation}
-          workspaceLabel={workspaceLabel}
-          workspaceSlug={workspaceSlug}
-        />
+    <div className="flex min-h-[520px] flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/45">
+      <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] bg-white/[0.025] px-3 py-2.5 md:px-4">
+          <div className="min-w-0">
+            <div className="text-[10.5px] font-semibold uppercase tracking-[0.18em] text-cyan-100/48">
+              Conversation
+            </div>
+            <div className="truncate text-sm font-medium text-white/78">
+              {workspaceLabel ? `In ${workspaceLabel}` : conversation?.title || "Nexus communication"}
+            </div>
+          </div>
+          {conversationId ? (
+            <button
+              type="button"
+              onClick={handleArchiveConversation}
+              className="rounded-lg border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[12px] text-white/62 transition hover:border-orange-200/30 hover:text-orange-100"
+            >
+              Archive
+            </button>
+          ) : null}
+        </div>
 
         <ChatMessagesList
           messages={localMessages}
@@ -239,7 +258,6 @@ export default function ChatArea({
           compact={compactMessages}
           fontSize={fontSize}
           showTimestamps={showTimestamps}
-          onSelectSuggestion={(prompt) => setComposerValue(prompt)}
         />
 
         {showFileUpload && activeUploadConversationId && (
@@ -270,6 +288,7 @@ export default function ChatArea({
                     }
                   : undefined
               }
+              placeholder="Ask ZAR"
             />
           </div>
         </div>

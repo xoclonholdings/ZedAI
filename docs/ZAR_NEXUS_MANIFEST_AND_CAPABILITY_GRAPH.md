@@ -66,6 +66,10 @@ Communication modes are not:
 
 They remain globally available regardless of the active root node. The current implementation points to existing chat, dictation, and file-upload surfaces where those surfaces already exist. Draw is represented as a scaffolded communication capability only; this slice does not implement drawing UI.
 
+The persistent communication layer now consumes the existing conversation system directly through the Nexus-owned communication surface. Text prompts, conversation creation, direct conversation loading, message dispatch, file upload, browser dictation, assistant responses, errors, aborts, and cache invalidation remain backed by the existing chat APIs and reusable chat operation components.
+
+The old chat page shell, sidebar, page header, and empty-state presentation are not Nexus authorities and are no longer routed as the signed-in experience.
+
 ## Node Manifests
 
 `NexusNodeManifest` is the reusable declaration for navigational applications. It includes:
@@ -190,11 +194,13 @@ The existing chat route remains separate:
 - `/chat`
 - `/chat/:id?`
 
-That route is an existing communication surface, not a Nexus root application.
+That route is a compatibility route into the Nexus persistent communication surface, not a separate application shell and not a Nexus root application. `/chat/:id` means "open this conversation inside Nexus communication state." It does not render legacy navigation, legacy branding, or a root application.
+
+Feature routes such as `/projects`, `/workspace`, `/learning`, `/flows`, and `/history` remain existing product surfaces. A Nexus root focus route such as `/nexus/projects` means "Projects is the current Nexus focus." It is not the same thing as the existing Projects feature route and does not imply that the native Projects root application has been implemented.
 
 ## ZAR-Directed Navigation
 
-The home exposes a programmatic navigation contract through the viewport model and Nexus provider.
+The home exposes a typed programmatic navigation contract through the viewport model, Nexus provider, and `NexusClientAction` validation boundary.
 
 ZAR-directed navigation may resolve:
 
@@ -202,7 +208,18 @@ ZAR-directed navigation may resolve:
 - a node-owned capability through the central capability registry
 - a communication capability through the persistent communication layer
 
-Resolution focuses the node and uses the existing Nexus route. Communication capability resolution opens the existing communication surface, currently `/chat`.
+Supported client actions are:
+
+- `focus-node`
+- `open-capability`
+- `open-communication`
+- `navigate-route`
+
+Each action is validated against the manifest registry, capability registry, communication manifest, and safe internal route rules before it can update Nexus state. Invalid or unavailable actions are ignored safely and do not discard the conversational response.
+
+Resolution focuses the node and uses the existing Nexus route. Communication capability resolution opens the Nexus-owned communication surface, currently `/chat`.
+
+The deterministic local resolver is intentionally narrow. It is only a shortcut for exact commands such as "Open Memory." Ambiguous or substantive requests go through the real conversation pipeline so the original prompt is preserved.
 
 The resolver does not create AI intent logic, does not implement root applications, and does not make provider adapters aware of Nexus internals.
 
@@ -218,7 +235,7 @@ This architecture does not:
 
 - implement root applications
 - redesign Nexus UI
-- implement a new composer
+- replace the existing conversation engine
 - add contextual composer behavior
 - duplicate ZAR Core
 - create backend persistence

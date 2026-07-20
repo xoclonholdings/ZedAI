@@ -10,7 +10,13 @@ import { isNexusRootNodeId } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
 import { shouldShowNexusDeveloperInspector } from "../viewport/NexusViewportModel";
 
-export default function NexusRootPage() {
+interface NexusRootPageProps {
+  readonly communicationConversationId?: string | null;
+}
+
+export default function NexusRootPage({
+  communicationConversationId,
+}: NexusRootPageProps = {}) {
   const params = useParams<{ nodeId?: string }>();
   const [location, navigate] = useLocation();
   const { user } = useAuth();
@@ -59,7 +65,7 @@ export default function NexusRootPage() {
           </div>
         </section>
 
-        <NexusCommunicationDock />
+        <NexusCommunicationDock conversationId={communicationConversationId} />
 
         {showInspector && <NexusDeveloperInspector />}
       </main>

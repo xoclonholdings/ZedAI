@@ -30,8 +30,8 @@ export default function FilesAttachedStrip({ files }: { files: DBFile[] }) {
   if (!files || files.length === 0) return null;
 
   const label = files.length === 1
-    ? "1 file attached to this chat — Zed can reference it in replies."
-    : `${files.length} files attached to this chat — Zed can reference them in replies.`;
+    ? "1 file attached to this chat - ZAR can reference it in replies."
+    : `${files.length} files attached to this chat - ZAR can reference them in replies.`;
 
   return (
     <div className="border-t border-white/[0.06] bg-white/[0.02] px-3 md:px-4 py-2">
@@ -48,7 +48,7 @@ export default function FilesAttachedStrip({ files }: { files: DBFile[] }) {
               <div
                 key={file.id}
                 className="shrink-0 flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[12.5px] text-white/80 max-w-[220px]"
-                title={`${displayName}${size ? ` · ${size}` : ""}`}
+                title={`${displayName}${size ? ` - ${size}` : ""}`}
               >
                 <Icon size={13} className="shrink-0 text-cyan-400/80" />
                 <span className="truncate">{displayName}</span>

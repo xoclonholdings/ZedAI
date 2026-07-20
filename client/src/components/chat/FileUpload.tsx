@@ -60,8 +60,8 @@ export default function FileUpload({ conversationId, onUpload, onClose }: FileUp
       toast({
         title: oneFile ? "File attached" : `${uploadedCount} files attached`,
         description: oneFile
-          ? "Attached to this chat. Ask Zed about it in your next message."
-          : `Attached to this chat. Ask Zed about them in your next message.`,
+          ? "Attached to this chat. Ask ZAR about it in your next message."
+          : `Attached to this chat. Ask ZAR about them in your next message.`,
       });
       
       // Refresh files list

@@ -19,6 +19,7 @@ interface ChatComposerProps {
 
   editModeLabel?: string | null;
   onCancelEdit?: () => void;
+  placeholder?: string;
 }
 
 export default function ChatComposer({
@@ -30,6 +31,7 @@ export default function ChatComposer({
   onOpenFileUpload,
   editModeLabel,
   onCancelEdit,
+  placeholder = "Ask ZAR",
 }: ChatComposerProps) {
   const { user } = useAuth();
   const compact = !!user?.personalization?.compactMessages;
@@ -94,7 +96,7 @@ export default function ChatComposer({
             value={value}
             onChange={(e) => onValueChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={dictation.isDictating ? "Listening..." : "Message Zed"}
+            placeholder={dictation.isDictating ? "Listening..." : placeholder}
             rows={1}
             style={{ minHeight: minTextareaHeight, maxHeight: maxTextareaHeight }}
             className={`block w-full resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-left shadow-none outline-none placeholder:text-left focus-visible:ring-0 focus-visible:ring-offset-0 ${textClass}`}

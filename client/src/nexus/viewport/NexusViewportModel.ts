@@ -1,5 +1,6 @@
 import type { NexusCapabilityRegistry } from "../capabilities/NexusCapabilityRegistry";
 import type { NexusCapabilityDefinition } from "../capabilities/types";
+import { isNexusCapabilityActionAvailable } from "../capabilities/capabilityAvailability";
 import type { PersistentCommunicationManifest } from "../communication/types";
 import type {
   NexusConnectionDefinition,
@@ -59,6 +60,7 @@ export interface NexusNodeActionView {
   readonly summary: string;
   readonly route: string | null;
   readonly enabled: boolean;
+  readonly status: NexusCapabilityDefinition["status"];
 }
 
 export interface NexusFocusedNodeView {
@@ -253,11 +255,13 @@ export function createFocusedNodeView(
 ): NexusFocusedNodeView {
   const actions = capabilities
     .byOwner(node.id)
+    .filter(isNexusCapabilityActionAvailable)
     .flatMap((capability) => capability.actions.map((action) => ({
       label: action.label,
       summary: capability.searchable.summary,
       route: action.route,
       enabled: action.enabled,
+      status: capability.status,
     })))
     .filter((action) => action.enabled)
     .slice(0, 3);

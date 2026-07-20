@@ -2,10 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { nexusCapabilityRegistry } from "../capabilities/centralCapabilityRegistry";
+import { isNexusCapabilityActionAvailable } from "../capabilities/capabilityAvailability";
 import {
   NEXUS_COMMUNICATION_MODE_IDS,
   PERSISTENT_COMMUNICATION_MANIFEST,
 } from "../communication/persistentCommunication";
+import {
+  extractNexusClientActions,
+  parseNexusClientActions,
+  resolveDeterministicNexusClientAction,
+  resolveNexusClientAction,
+} from "../actions/NexusClientActions";
 import { NexusConstellationEngine } from "../graph/NexusConstellationEngine";
 import {
   NEXUS_ROOT_CONNECTIONS,
@@ -157,4 +164,85 @@ test("direct Nexus routes and chat communication route remain stable", () => {
   assert.equal(routeForNexusNode("identity"), "/nexus/identity");
   assert.equal(routeForNexusNode("settings"), "/nexus/settings");
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.route, "/chat");
+});
+
+test("exact deterministic navigation is narrow and does not intercept substantive prompts", () => {
+  const engine = new NexusConstellationEngine(NEXUS_ROOT_NODES, NEXUS_ROOT_CONNECTIONS);
+  const graph = engine.snapshot(engine.createInitialState());
+
+  const exact = resolveDeterministicNexusClientAction(
+    "Open Memory",
+    graph,
+    nexusCapabilityRegistry,
+    PERSISTENT_COMMUNICATION_MANIFEST,
+  );
+  const substantive = resolveDeterministicNexusClientAction(
+    "Take me to Memory and show me what you retained from yesterday.",
+    graph,
+    nexusCapabilityRegistry,
+    PERSISTENT_COMMUNICATION_MANIFEST,
+  );
+
+  assert.deepEqual(exact, { type: "focus-node", nodeId: "memory" });
+  assert.equal(substantive, null);
+});
+
+test("typed Nexus client actions validate and resolve against Nexus authorities", () => {
+  const engine = new NexusConstellationEngine(NEXUS_ROOT_NODES, NEXUS_ROOT_CONNECTIONS);
+  const graph = engine.snapshot(engine.createInitialState());
+  const actions = extractNexusClientActions({
+    reply: "Opening Memory.",
+    metadata: {
+      nexusClientActions: [
+        { type: "focus-node", nodeId: "memory" },
+        { type: "navigate-route", route: "https://example.test" },
+        { type: "open-capability", capabilityId: "connect.provider-accounts" },
+      ],
+    },
+  });
+
+  assert.equal(actions.length, 3);
+  assert.equal(Object.isFrozen(actions), true);
+
+  const focus = resolveNexusClientAction(actions[0], graph, nexusCapabilityRegistry, PERSISTENT_COMMUNICATION_MANIFEST);
+  const externalRoute = resolveNexusClientAction(actions[1], graph, nexusCapabilityRegistry, PERSISTENT_COMMUNICATION_MANIFEST);
+  const scaffoldedCapability = resolveNexusClientAction(actions[2], graph, nexusCapabilityRegistry, PERSISTENT_COMMUNICATION_MANIFEST);
+
+  assert.equal(focus.accepted, true);
+  assert.equal(focus.resolution?.route, "/nexus/memory");
+  assert.equal(externalRoute.accepted, false);
+  assert.equal(externalRoute.reasonCode, "unsafe_route");
+  assert.equal(scaffoldedCapability.accepted, false);
+  assert.equal(scaffoldedCapability.reasonCode, "capability_unavailable");
+});
+
+test("capability status controls user-facing focused-node actions", () => {
+  const connect = nexusCapabilityRegistry.get("connect.provider-accounts");
+  const projectNavigation = nexusCapabilityRegistry.get("projects.navigation");
+  assert.ok(connect);
+  assert.ok(projectNavigation);
+
+  assert.equal(isNexusCapabilityActionAvailable(connect), false);
+  assert.equal(isNexusCapabilityActionAvailable(projectNavigation), true);
+
+  const engine = new NexusConstellationEngine(NEXUS_ROOT_NODES, NEXUS_ROOT_CONNECTIONS);
+  const graph = engine.snapshot(engine.createInitialState("connect"));
+  const view = createFocusedNodeView(graph.activeNode!, nexusCapabilityRegistry);
+
+  assert.equal(view.actions.some((action) => action.label === "Provider Accounts"), false);
+});
+
+test("invalid action payloads are ignored during parsing", () => {
+  const parsed = parseNexusClientActions([
+    { type: "focus-node", nodeId: "identity" },
+    { type: "focus-node" },
+    { type: "navigate-route", route: "/nexus/projects" },
+    { type: "navigate-route", route: 1 },
+    { type: "unknown", nodeId: "memory" },
+  ]);
+
+  assert.deepEqual(parsed, [
+    { type: "focus-node", nodeId: "identity" },
+    { type: "navigate-route", route: "/nexus/projects" },
+  ]);
 });

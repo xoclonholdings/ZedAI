@@ -1,5 +1,7 @@
 export * from "./apps/rootApplications";
 export * from "./apps/types";
+export * from "./actions/NexusClientActions";
+export * from "./capabilities/capabilityAvailability";
 export * from "./capabilities/centralCapabilityRegistry";
 export * from "./capabilities/NexusCapabilityRegistry";
 export * from "./capabilities/types";

@@ -37,7 +37,7 @@ function getFileIcon(mimeType: string) {
  * Chat message — operator layout, not chatbot bubbles.
  *
  * User turns: right-aligned text with a subtle rail on the right.
- * ZED turns: left-aligned text with a small cyan rail on the left.
+ * ZAR turns: left-aligned text with a small cyan rail on the left.
  * No avatars, no name badges, no gradient bubbles. The message IS
  * the message — chrome shows up on hover only.
  */

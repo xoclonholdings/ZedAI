@@ -1,4 +1,3 @@
-import ChatEmptyState from "./ChatEmptyState";
 import ChatMessage from "./ChatMessage";
 import type { Message } from "@shared/schema";
 
@@ -13,7 +12,7 @@ interface ChatMessagesListProps {
   compact?: boolean;
   fontSize?: "small" | "medium" | "large";
   showTimestamps?: boolean;
-  onSelectSuggestion: (prompt: string) => void;
+  onSelectSuggestion?: (prompt: string) => void;
 }
 
 function buildStreamingMessage(content: string, messages: Message[]): Message {
@@ -38,7 +37,6 @@ export default function ChatMessagesList({
   compact = false,
   fontSize = "medium",
   showTimestamps = false,
-  onSelectSuggestion,
 }: ChatMessagesListProps) {
   const hasStreamingContent = Boolean(isStreaming && streamingMessage?.trim());
   const streamMessage = hasStreamingContent
@@ -52,7 +50,19 @@ export default function ChatMessagesList({
       }`}
     >
       {messages.length === 0 && !isStreaming && !hasStartedTyping ? (
-        <ChatEmptyState onSelectSuggestion={onSelectSuggestion} />
+        <div className="flex min-h-[38vh] items-center justify-center px-4">
+          <div className="w-full max-w-xl text-center">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">
+              ZAR
+            </div>
+            <div className="mt-2 text-xl font-semibold tracking-tight text-white">
+              Ask from anywhere in Nexus.
+            </div>
+            <p className="mt-2 text-sm leading-6 text-white/55">
+              Your conversation stays available while you move through the constellation.
+            </p>
+          </div>
+        </div>
       ) : messages.length === 0 && !isStreaming ? (
         <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 zed-glass p-4 text-center text-xs text-muted-foreground md:text-sm">
           Sent. Waiting for the assistant to respond. If nothing arrives in a few seconds,
@@ -84,7 +94,7 @@ export default function ChatMessagesList({
             </div>
           ) : isStreaming ? (
             <div className="sr-only" aria-live="polite">
-              ZED is preparing a response.
+              ZAR is preparing a response.
             </div>
           ) : null}
         </div>
