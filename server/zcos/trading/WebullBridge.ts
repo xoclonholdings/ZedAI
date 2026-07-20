@@ -247,7 +247,7 @@ export async function getWebullStatus(userId: string): Promise<ExecutionAdapterS
     accounts,
     note: configured
       ? accountId
-        ? `Webull ${mode} credentials are saved with a default paper account. Governed paper order tickets are enabled.`
+        ? `Webull ${mode} connected. Using the live account ${accountId} returned by Webull. Governed paper order tickets are enabled.`
         : `Webull ${mode} credentials are available. Run the Webull test to retrieve accounts, then save the paper account ID.`
       : `Add Webull OpenAPI credentials${effectiveEndpoint ? ` for ${effectiveEndpoint}` : ""}.`,
     saved: {
@@ -464,14 +464,25 @@ export async function listWebullAccounts(userId: string): Promise<{
   accounts: ExecutionAccountSummary[];
   note: string;
 }> {
+  // Return the live accounts Webull actually reports, not a saved value.
+  const connection = await TradingIntegrationsStore.getConnection(userId, PROVIDER);
+  const credentials = webullCredentialCandidates(connection);
+  for (const candidate of credentials) {
+    const result = await runWebullSdkAccountList({
+      appKey: candidate.appKey,
+      appSecret: candidate.appSecret,
+      endpoint: candidate.endpoint,
+    });
+    if (result.ok) {
+      return {
+        connected: true,
+        accounts: result.accounts,
+        note: `${result.accounts.length} live Webull account(s) on ${candidate.endpoint}.`,
+      };
+    }
+  }
   const status = await getWebullStatus(userId);
-  return {
-    connected: status.connected,
-    accounts: status.accounts,
-    note: status.accounts.length
-      ? "Using the saved Webull default account. Full account discovery is next in the Webull SDK bridge."
-      : status.note,
-  };
+  return { connected: status.connected, accounts: status.accounts, note: status.note };
 }
 
 export async function listWebullPositions(userId: string): Promise<{
@@ -789,9 +800,15 @@ export async function testWebullConnection(userId: string): Promise<{
       appSecret: candidate.appSecret,
       endpoint: candidate.endpoint,
     });
-    const selectedAccountId = savedAccountId || result.accounts[0]?.id;
+    // Always source the account from Webull's live account list. Keep a
+    // saved id only if Webull still returns it; otherwise adopt the first
+    // live account. The account is never a pinned value divorced from what
+    // Webull actually reports.
+    const liveIds = result.accounts.map((account) => account.id);
+    const selectedAccountId =
+      savedAccountId && liveIds.includes(savedAccountId) ? savedAccountId : result.accounts[0]?.id;
     if (result.ok) {
-      if (selectedAccountId && !savedAccountId) {
+      if (selectedAccountId && selectedAccountId !== savedAccountId) {
         await TradingIntegrationsStore.connect({
           userId,
           provider: PROVIDER,
