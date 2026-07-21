@@ -24,35 +24,28 @@ export function NexusFocusedNodePanel({ variant = "panel", className }: NexusFoc
     const primaryAction = view.actions[0] ?? null;
     return (
       <section
-        className={cn(
-          "flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.035] px-3 py-2.5 backdrop-blur-xl",
-          className,
-        )}
+        className={cn("flex items-center gap-2.5 px-1 py-1", className)}
         aria-labelledby="nexus-focused-node-title-compact"
       >
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10"
-          style={{ color: view.accentColor, backgroundColor: `${view.accentColor}14` }}
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+          style={{ color: view.accentColor, backgroundColor: `${view.accentColor}16` }}
           aria-hidden="true"
         >
-          <NexusIcon name={view.icon} size={16} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100/55">
-            In Focus
-          </div>
-          <h2 id="nexus-focused-node-title-compact" className="truncate text-[13px] font-semibold text-white">
-            {view.title}
-          </h2>
-        </div>
+          <NexusIcon name={view.icon} size={14} />
+        </span>
+        <h2 id="nexus-focused-node-title-compact" className="min-w-0 flex-1 truncate text-[13px] font-medium text-white/80">
+          {view.title}
+        </h2>
         {primaryAction && (
           <button
             type="button"
             onClick={() => primaryAction.route && navigate(primaryAction.route)}
-            className="flex shrink-0 items-center gap-1 rounded-xl border border-white/[0.08] bg-black/25 px-2.5 py-1.5 text-[12px] font-medium text-white/80 transition hover:border-cyan-200/35 hover:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
+            aria-label={primaryAction.label}
+            title={primaryAction.label}
           >
-            {primaryAction.label}
-            <ArrowUpRight size={13} className="shrink-0 text-cyan-100/65" aria-hidden="true" />
+            <ArrowUpRight size={14} aria-hidden="true" />
           </button>
         )}
       </section>

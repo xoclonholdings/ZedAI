@@ -204,16 +204,17 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
       aria-label="Persistent ZAR communication"
     >
-      <div className="mb-3 flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
+      <div className="mb-2 flex shrink-0 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none" aria-hidden="true" />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
             ZAR
-          </div>
-          <div className="truncate text-sm text-white/70">
-            {status} - Focused on {focusedLabel}
-          </div>
+          </span>
+          {status !== "Ready" && (
+            <span className="truncate text-[12px] text-white/55">{status}</span>
+          )}
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+        <div className="flex shrink-0 items-center gap-0.5 overflow-x-auto" aria-label={`${focusedLabel} communication modes`}>
           {modes.map((mode) => (
             <CommunicationModeButton
               key={mode.id}
@@ -304,8 +305,8 @@ function CommunicationModeButton({
       onClick={onSelect}
       disabled={!mode.enabled}
       className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-white/62 transition hover:border-cyan-200/30 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none",
-        !mode.enabled && "cursor-not-allowed opacity-40 hover:border-white/[0.08] hover:text-white/62",
+        "flex h-8 w-8 items-center justify-center rounded-lg text-white/48 transition hover:bg-white/[0.06] hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none",
+        !mode.enabled && "cursor-not-allowed opacity-35 hover:bg-transparent hover:text-white/48",
       )}
       title={mode.label}
       aria-label={`${mode.label} communication`}

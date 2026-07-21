@@ -16,11 +16,13 @@ export function NexusConversationRuntime({
       className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/30"
     >
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-        <NexusConversationHeader
-          title={controller.title}
-          conversationId={controller.conversationId}
-          onArchive={() => void controller.archiveConversation()}
-        />
+        {controller.conversationId && (
+          <NexusConversationHeader
+            title={controller.title}
+            conversationId={controller.conversationId}
+            onArchive={() => void controller.archiveConversation()}
+          />
+        )}
 
         <NexusMessageList
           messages={controller.messages}

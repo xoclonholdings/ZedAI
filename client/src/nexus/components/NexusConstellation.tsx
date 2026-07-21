@@ -91,10 +91,6 @@ export function NexusConstellation() {
       />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.16),rgba(2,3,10,0)_42%),radial-gradient(circle_at_30%_18%,rgba(244,114,182,0.12),rgba(2,3,10,0)_36%)]" />
 
-      <div className="absolute left-4 top-4 z-20 rounded-full border border-white/10 bg-black/35 px-3 py-1.5 text-[11px] font-medium text-white/58 backdrop-blur-md">
-        Explore
-      </div>
-
       <button
         type="button"
         onClick={() => moveFocus("previous", "keyboard")}
