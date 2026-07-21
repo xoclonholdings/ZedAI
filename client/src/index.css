@@ -405,6 +405,51 @@
     0%, 100% { opacity: 0.58; transform: translate(-50%, -50%) scale(1); }
     50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.04); }
   }
+
+  @keyframes nexus-twinkle {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.75; }
+  }
+
+  @keyframes nexus-orbit-glow {
+    0%, 100% { opacity: 0.85; }
+    50% { opacity: 1; }
+  }
+
+  /*
+    Mobile keeps document order (header -> constellation -> communication -> focused
+    context), matching the required mobile hierarchy. From lg upward, named areas
+    reflow the same three regions into a two-column layout without touching DOM order.
+  */
+  .nexus-home-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @media (min-width: 1024px) {
+    .nexus-home-grid {
+      grid-template-columns: minmax(0, 1fr) 340px;
+      grid-template-areas:
+        "constellation focused"
+        "communication communication";
+      align-items: start;
+    }
+
+    .nexus-home-grid > [data-nexus-region="constellation"] { grid-area: constellation; }
+    .nexus-home-grid > [data-nexus-region="communication"] { grid-area: communication; }
+    .nexus-home-grid > [data-nexus-region="focused"] { grid-area: focused; }
+  }
+
+  .nexus-particle-field {
+    background-image:
+      radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,0.55), transparent 60%),
+      radial-gradient(1px 1px at 82% 14%, rgba(125,211,252,0.55), transparent 60%),
+      radial-gradient(1.5px 1.5px at 68% 78%, rgba(244,114,182,0.5), transparent 60%),
+      radial-gradient(1px 1px at 30% 86%, rgba(255,255,255,0.4), transparent 60%),
+      radial-gradient(1px 1px at 92% 62%, rgba(196,181,253,0.5), transparent 60%),
+      radial-gradient(1px 1px at 48% 8%, rgba(255,255,255,0.35), transparent 60%);
+    background-repeat: no-repeat;
+  }
 }
 
 /* Prose styling for chat messages */

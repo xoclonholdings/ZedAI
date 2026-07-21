@@ -25,7 +25,7 @@ export default function NexusRootPage({
   const hasUnknownRouteNode = Boolean(params.nodeId && !routeNodeId);
   const displayName = user?.personalization?.displayName ?? user?.displayName ?? user?.firstName ?? user?.username ?? "there";
   const showInspector = useMemo(() => shouldShowNexusDeveloperInspector({
-    isDevelopment: import.meta.env.DEV,
+    isDevelopment: Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV),
     queryString: typeof window === "undefined" ? "" : window.location.search,
   }), [location]);
 
@@ -58,14 +58,17 @@ export default function NexusRootPage({
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-4 px-4 pb-safe sm:px-6">
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <NexusConstellation />
-          <div className="lg:pt-8">
+        <div className="nexus-home-grid">
+          <div data-nexus-region="constellation">
+            <NexusConstellation />
+          </div>
+          <div data-nexus-region="communication">
+            <NexusCommunicationDock conversationId={communicationConversationId} />
+          </div>
+          <div data-nexus-region="focused" className="lg:pt-8">
             <NexusFocusedNodePanel />
           </div>
-        </section>
-
-        <NexusCommunicationDock conversationId={communicationConversationId} />
+        </div>
 
         {showInspector && <NexusDeveloperInspector />}
       </main>
