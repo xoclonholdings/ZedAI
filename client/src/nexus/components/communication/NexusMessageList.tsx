@@ -1,21 +1,22 @@
-import ChatMessage from "./ChatMessage";
 import type { Message } from "@shared/schema";
 
-interface ChatMessagesListProps {
-  messages: Message[];
-  isStreaming: boolean;
-  streamingMessage?: string;
-  hasStartedTyping: boolean;
-  messagesEndRef: React.RefObject<HTMLDivElement>;
-  onCopyMessage?: (message: Message) => void;
-  onEditMessage?: (message: Message) => void;
-  compact?: boolean;
-  fontSize?: "small" | "medium" | "large";
-  showTimestamps?: boolean;
-  onSelectSuggestion?: (prompt: string) => void;
+import { NexusConversationEmptyState } from "./NexusConversationEmptyState";
+import { NexusMessageItem } from "./NexusMessageItem";
+
+interface NexusMessageListProps {
+  readonly messages: readonly Message[];
+  readonly isStreaming: boolean;
+  readonly streamingMessage?: string;
+  readonly hasStartedTyping: boolean;
+  readonly messagesEndRef: React.RefObject<HTMLDivElement>;
+  readonly onCopyMessage?: (message: Message) => void;
+  readonly onEditMessage?: (message: Message) => void;
+  readonly compact?: boolean;
+  readonly fontSize?: "small" | "medium" | "large";
+  readonly showTimestamps?: boolean;
 }
 
-function buildStreamingMessage(content: string, messages: Message[]): Message {
+function buildStreamingMessage(content: string, messages: readonly Message[]): Message {
   return {
     id: "streaming-assistant",
     conversationId: messages[messages.length - 1]?.conversationId || "streaming",
@@ -26,7 +27,7 @@ function buildStreamingMessage(content: string, messages: Message[]): Message {
   } as Message;
 }
 
-export default function ChatMessagesList({
+export function NexusMessageList({
   messages,
   isStreaming,
   streamingMessage,
@@ -37,7 +38,7 @@ export default function ChatMessagesList({
   compact = false,
   fontSize = "medium",
   showTimestamps = false,
-}: ChatMessagesListProps) {
+}: NexusMessageListProps) {
   const hasStreamingContent = Boolean(isStreaming && streamingMessage?.trim());
   const streamMessage = hasStreamingContent
     ? buildStreamingMessage(streamingMessage || "", messages)
@@ -45,33 +46,20 @@ export default function ChatMessagesList({
 
   return (
     <div
-      className={`relative z-10 flex-1 overflow-y-auto px-3 pb-28 sm:px-4 md:px-6 md:pb-32 ${
+      className={`relative z-10 flex-1 overflow-y-auto px-3 pb-8 sm:px-4 md:px-6 ${
         compact ? "pt-2 md:pt-3" : "pt-3 md:pt-4"
       }`}
     >
       {messages.length === 0 && !isStreaming && !hasStartedTyping ? (
-        <div className="flex min-h-[38vh] items-center justify-center px-4">
-          <div className="w-full max-w-xl text-center">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">
-              ZAR
-            </div>
-            <div className="mt-2 text-xl font-semibold tracking-tight text-white">
-              Ask from anywhere in Nexus.
-            </div>
-            <p className="mt-2 text-sm leading-6 text-white/55">
-              Your conversation stays available while you move through the constellation.
-            </p>
-          </div>
-        </div>
+        <NexusConversationEmptyState />
       ) : messages.length === 0 && !isStreaming ? (
-        <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 zed-glass p-4 text-center text-xs text-muted-foreground md:text-sm">
-          Sent. Waiting for the assistant to respond. If nothing arrives in a few seconds,
-          the provider call probably failed. Refresh or open Admin Logs to see the error.
+        <div className="mx-auto max-w-3xl rounded-xl border border-white/[0.08] bg-white/[0.025] p-4 text-center text-xs text-white/55 md:text-sm">
+          Sent. Waiting for ZAR to respond. If nothing arrives in a few seconds, refresh or check logs.
         </div>
       ) : (
         <div className={`mx-auto w-full max-w-4xl ${compact ? "space-y-1" : "space-y-2"}`}>
           {messages.map((message) => (
-            <ChatMessage
+            <NexusMessageItem
               key={message.id}
               message={message}
               onCopy={onCopyMessage}
@@ -84,7 +72,7 @@ export default function ChatMessagesList({
 
           {streamMessage ? (
             <div aria-live="polite">
-              <ChatMessage
+              <NexusMessageItem
                 message={streamMessage}
                 onCopy={onCopyMessage}
                 compact={compact}

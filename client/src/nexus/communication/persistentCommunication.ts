@@ -29,24 +29,24 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
   stateNamespace: "nexus.communication",
   modes: [
     mode("text", "Text", "create.text", "available", "/chat", [
-      "client/src/components/chat/ChatComposer.tsx",
-      "client/src/components/chat/ChatArea.tsx",
+      "client/src/nexus/components/communication/NexusMessageComposer.tsx",
+      "client/src/nexus/components/communication/NexusConversationRuntime.tsx",
     ]),
     mode("talk", "Talk", "create.talk", "available", "/chat", [
-      "client/src/components/chat/ChatComposer.tsx",
-      "client/src/components/chat/chat-composer/useDictation.ts",
+      "client/src/nexus/components/communication/NexusMessageComposer.tsx",
+      "client/src/nexus/communication/useNexusDictation.ts",
     ]),
     mode("image", "Image", "create.image", "available", "/chat", [
-      "client/src/components/chat/FileUpload.tsx",
-      "client/src/components/chat/FilesAttachedStrip.tsx",
+      "client/src/nexus/components/communication/NexusFileUpload.tsx",
+      "client/src/nexus/components/communication/NexusAttachmentTray.tsx",
     ]),
     mode("draw", "Draw", "create.draw", "scaffolded", null, []),
     mode("doc", "Doc", "create.document", "available", "/chat", [
-      "client/src/components/chat/FileUpload.tsx",
-      "client/src/components/chat/FilesAttachedStrip.tsx",
+      "client/src/nexus/components/communication/NexusFileUpload.tsx",
+      "client/src/nexus/components/communication/NexusAttachmentTray.tsx",
     ]),
     mode("upload", "Upload", "create.upload", "available", "/chat", [
-      "client/src/components/chat/FileUpload.tsx",
+      "client/src/nexus/components/communication/NexusFileUpload.tsx",
     ]),
   ],
   capabilities: [

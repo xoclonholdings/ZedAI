@@ -64,11 +64,19 @@ Communication modes are not:
 - workspace nodes
 - application shells
 
-They remain globally available regardless of the active root node. The current implementation points to existing chat, dictation, and file-upload surfaces where those surfaces already exist. Draw is represented as a scaffolded communication capability only; this slice does not implement drawing UI.
+They remain globally available regardless of the active root node. The current implementation points to Nexus-native communication primitives for text, browser dictation, and file upload. Draw is represented as a scaffolded communication capability only; this slice does not implement drawing UI.
 
-The persistent communication layer now consumes the existing conversation system directly through the Nexus-owned communication surface. Text prompts, conversation creation, direct conversation loading, message dispatch, file upload, browser dictation, assistant responses, errors, aborts, and cache invalidation remain backed by the existing chat APIs and reusable chat operation components.
+The persistent communication layer now consumes the existing conversation system directly through the Nexus-owned communication surface. Text prompts, conversation creation, direct conversation loading, message dispatch, file upload, browser dictation, assistant responses, errors, aborts, and cache invalidation remain backed by the existing chat APIs and reusable operational chat utilities.
 
-The old chat page shell, sidebar, page header, and empty-state presentation are not Nexus authorities and are no longer routed as the signed-in experience.
+The visible communication body is owned by Nexus:
+
+- `NexusConversationSurface` owns the communication shell and ZAR-directed action handling.
+- `useNexusConversationController` owns runtime conversation mechanics without JSX.
+- `NexusConversationRuntime` and its message, composer, upload, attachment, and header primitives own presentation.
+
+Nexus routes must not render the legacy `ChatArea` presentation. The old chat page shell, sidebar, page header, empty-state presentation, legacy composer shell, and legacy framed chat body are not Nexus authorities and are no longer routed as the signed-in experience.
+
+The retained files under `client/src/components/chat/chat-area` are operational utilities, not user-facing shells.
 
 ## Node Manifests
 

@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { FileText, Image, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
-import ChatArea from "@/components/chat/ChatArea";
 import { cn } from "@/lib/utils";
 import { useLocationSearch } from "@/lib/useLocationSearch";
 import {
@@ -15,12 +14,14 @@ import {
 } from "@/lib/workspaceContext";
 import type { AgentTarget, Conversation, Message, File as DBFile } from "@shared/schema";
 import type { FilingProject } from "@/types/conversation";
+import { useNexusConversationController } from "../communication/useNexusConversationController";
 import {
   extractNexusClientActions,
   resolveDeterministicNexusClientAction,
   resolveNexusClientAction,
   type NexusClientAction,
 } from "../actions/NexusClientActions";
+import { NexusConversationRuntime } from "./communication/NexusConversationRuntime";
 import { routeForNexusNode } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
 import {
@@ -182,6 +183,22 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     navigate(`/chat/${id}`);
   }
 
+  const conversationController = useNexusConversationController({
+    conversation: currentConversation,
+    messages,
+    files,
+    conversationId: activeConversationId,
+    selectedProjectId,
+    workspaceContext,
+    workspaceLabel,
+    workspaceSlug,
+    learningPathId: learningContext.learningPathId,
+    lessonId: learningContext.lessonId,
+    onBeforeSend: handleBeforeSend,
+    onAgentResponse: handleAgentResponse,
+    onConversationIdChange: setActiveConversationId,
+  });
+
   return (
     <section
       className="rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
@@ -268,22 +285,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         </div>
       )}
 
-      <ChatArea
-        conversation={currentConversation}
-        messages={messages}
-        files={files}
-        conversationId={activeConversationId}
-        selectedProjectId={selectedProjectId}
-        onAssignProject={handleAssignProject}
-        workspaceContext={workspaceContext}
-        workspaceLabel={workspaceLabel}
-        workspaceSlug={workspaceSlug}
-        learningPathId={learningContext.learningPathId}
-        lessonId={learningContext.lessonId}
-        onBeforeSend={handleBeforeSend}
-        onAgentResponse={handleAgentResponse}
-        onConversationIdChange={(id) => setActiveConversationId(id)}
-      />
+      <NexusConversationRuntime controller={conversationController} />
     </section>
   );
 }
