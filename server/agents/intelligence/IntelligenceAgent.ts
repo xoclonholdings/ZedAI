@@ -7,6 +7,9 @@ import {
   fetchWebTargetsFromText,
   formatWebPagesForPrompt,
   hasWebsiteReferenceWithoutTarget,
+  extractWebTargets,
+  crawlSite,
+  formatCrawlForPrompt,
   type WebFetchResponse,
 } from "../../services/WebContentService";
 import { storeResearchBrief, querySimilarResearch } from "../../services/ChromaService";
@@ -95,11 +98,43 @@ export class IntelligenceAgent {
     return this.skill;
   }
 
+  private static isCrawlIntent(query: string): boolean {
+    return /\b(crawl|whole site|entire site|whole website|entire website|every page|all pages|across the site)\b/i.test(
+      query,
+    );
+  }
+
   static async research(request: ResearchRequest): Promise<ResearchBrief> {
     const skill = await this.loadSkill();
 
-    const directWeb = await fetchWebTargetsFromText(request.query);
-    const directWebBlock = formatWebPagesForPrompt(directWeb);
+    const crawlTarget = this.isCrawlIntent(request.query) ? extractWebTargets(request.query)[0] : undefined;
+    let directWeb: WebFetchResponse;
+    let directWebBlock: string;
+    if (crawlTarget) {
+      try {
+        const crawl = await crawlSite(crawlTarget.url, { maxPages: 8, maxDepth: 2 });
+        directWeb = {
+          targets: [crawlTarget],
+          pages: crawl.pages.map((p) => ({
+            url: p.url,
+            title: p.title,
+            text: p.text,
+            status: p.status,
+            contentType: p.contentType,
+            links: p.links,
+            fetchedAt: p.fetchedAt,
+          })),
+          errors: crawl.errors,
+        };
+        directWebBlock = formatCrawlForPrompt(crawl);
+      } catch (err: any) {
+        directWeb = { targets: [crawlTarget], pages: [], errors: [{ url: crawlTarget.url, error: err?.message || String(err) }] };
+        directWebBlock = `Crawl of ${crawlTarget.url} failed: ${err?.message || String(err)}`;
+      }
+    } else {
+      directWeb = await fetchWebTargetsFromText(request.query);
+      directWebBlock = formatWebPagesForPrompt(directWeb);
+    }
     const expandedQueries = this.expandKeywords(request.query);
     const searchResponses = await Promise.all(expandedQueries.map((query) => webSearch(query, 4)));
     const primarySearch = searchResponses[0];

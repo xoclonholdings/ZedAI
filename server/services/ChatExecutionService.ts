@@ -565,6 +565,38 @@ export class ChatExecutionService {
         trace.documentCitations = documentKnowledge.citations;
       }
 
+      // Documentation Context — version-aware current docs through the
+      // Context7 adapter when the user asks for package/library docs.
+      // Provider-unavailable is surfaced honestly, never fabricated.
+      let documentationBlock = "";
+      const docsIntent = effectiveMessage.match(
+        /\b(?:current\s+|latest\s+)?(?:docs|documentation|api\s+reference)\s+(?:for|of|on)\s+["'`]?([@a-z0-9][@a-z0-9._/-]{1,60})["'`]?/i,
+      );
+      if (docsIntent?.[1]) {
+        trace.servicesInvoked.push("DocumentationContextService.retrieveDocsForPackage");
+        trace.toolsInvoked.push("retrieve_library_docs");
+        const { DocumentationContextService, formatDocsForPrompt } = await import(
+          "./documentation/DocumentationContextService"
+        );
+        const docsResult = await DocumentationContextService.retrieveDocsForPackage({
+          packageName: docsIntent[1],
+          topic: effectiveMessage.slice(0, 200),
+        }).catch(() => null);
+        if (docsResult?.docs) {
+          documentationBlock = formatDocsForPrompt(docsResult.docs);
+          if (docsResult.docs.state === "ok") {
+            trace.externalCalls.push("context7_docs");
+            trace.documentCitations = [
+              ...(trace.documentCitations || []),
+              docsResult.docs.source,
+            ];
+          }
+        } else if (docsResult?.resolution.state === "provider_unavailable") {
+          documentationBlock =
+            "The documentation provider is currently unavailable. Say so if asked for current docs; do not invent documentation.";
+        }
+      }
+
       // Intelligence Core — Deep Thinking (staged reasoning), Self-
       // Orchestration (capability plan), and Adaptive Response
       // (response-form directive). Deterministic, synchronous, no I/O.
@@ -595,6 +627,7 @@ export class ChatExecutionService {
         { label: "files", text: fileContext.prompt, pinned: true, basePriority: 0.9 },
         { label: "learning", text: learningContext.prompt, pinned: true, basePriority: 0.95 },
         { label: "documents", text: documentKnowledge.block, basePriority: 0.75 },
+        { label: "documentation", text: documentationBlock, pinned: true, basePriority: 0.85 },
         { label: "knowledge", text: knowledge.prompt, basePriority: 0.5 },
       ]);
       trace.contextCompressionRatio = rankedContext.compressionRatio;
@@ -602,7 +635,7 @@ export class ChatExecutionService {
       const knowledgeBlock =
         rankedContext.prompt.trim().length > 0
           ? rankedContext.prompt
-          : [adminContext.text, fileContext.prompt, documentKnowledge.block, knowledge.prompt]
+          : [adminContext.text, fileContext.prompt, documentKnowledge.block, documentationBlock, knowledge.prompt]
               .concat(learningContext.prompt ? [learningContext.prompt] : [])
               .filter(Boolean)
               .join("\n\n");

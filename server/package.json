@@ -31,8 +31,11 @@
     "multer": "^2.1.1",
     "nanoid": "^5.1.7",
     "nodemailer": "^8.0.5",
+    "pdf-parse": "^2.4.5",
+    "playwright-core": "^1.61.1",
     "vite": "^8.0.7",
     "ws": "^8.20.0",
+    "xlsx": "^0.18.5",
     "yauzl": "^3.3.0"
   },
   "devDependencies": {

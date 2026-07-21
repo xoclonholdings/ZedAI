@@ -138,6 +138,10 @@ class DatabaseStorage implements IStorage {
     return this.files.getFilesByConversation(conversationId);
   }
 
+  async findFileByChecksum(conversationId: string, checksum: string): Promise<File | undefined> {
+    return this.files.findFileByChecksum(conversationId, checksum);
+  }
+
   async createFile(data: InsertFile): Promise<File> {
     return this.files.createFile(data);
   }

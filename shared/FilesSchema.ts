@@ -14,6 +14,11 @@ export const files = pgTable("files", {
   status: text("status").notNull().default("processing"),
   extractedContent: text("extracted_content"),
   analysis: jsonb("analysis"),
+  checksum: text("checksum"),
+  parserUsed: text("parser_used"),
+  conversionStatus: text("conversion_status"),
+  structuralMeta: jsonb("structural_meta"),
+  duplicateOfFileId: varchar("duplicate_of_file_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

@@ -8,6 +8,9 @@ hub/logs/
 hub/shared-memory/curation/
 hub/shared-memory/foundation-reparse/
 hub/shared-memory/execution/
+hub/shared-memory/browser/
+hub/shared-memory/research/
+uploads/
 hub/shared-memory/knowledge-graph/
 hub/shared-memory/working/trading-intelligence.md
 hub/sessions/

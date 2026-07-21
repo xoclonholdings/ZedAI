@@ -92,6 +92,21 @@ export async function runMigrations(): Promise<void> {
       );
     `);
 
+    // Files — document intelligence columns (checksum-based dedup,
+    // parser/conversion honesty, recoverable structure for citations).
+    await db.execute(sql`
+      ALTER TABLE files
+        ADD COLUMN IF NOT EXISTS checksum text,
+        ADD COLUMN IF NOT EXISTS parser_used text,
+        ADD COLUMN IF NOT EXISTS conversion_status text,
+        ADD COLUMN IF NOT EXISTS structural_meta jsonb,
+        ADD COLUMN IF NOT EXISTS duplicate_of_file_id varchar;
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_files_conversation_checksum
+        ON files (conversation_id, checksum);
+    `);
+
     // Chat sessions (analytics)
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS chat_sessions (

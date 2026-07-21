@@ -1,4 +1,4 @@
-import { eq, desc, asc } from "drizzle-orm";
+import { eq, desc, asc, and } from "drizzle-orm";
 import { createHash, randomUUID } from "crypto";
 
 import {
@@ -66,6 +66,25 @@ export class FileDatabaseStorage {
     } catch (error) {
       console.warn("[FILE STORAGE] getFilesByConversation failed:", error);
       return [];
+    }
+  }
+
+  async findFileByChecksum(conversationId: string, checksum: string): Promise<File | undefined> {
+    if (!checksum) return undefined;
+    if (!db) {
+      const list = await this.getFilesByConversation(conversationId);
+      return list.find((f: any) => f.checksum === checksum);
+    }
+    try {
+      const [file] = await db
+        .select()
+        .from(files)
+        .where(and(eq(files.conversationId, conversationId), eq(files.checksum, checksum)))
+        .limit(1);
+      return file;
+    } catch (error) {
+      console.warn("[FILE STORAGE] findFileByChecksum failed:", error);
+      return undefined;
     }
   }
 

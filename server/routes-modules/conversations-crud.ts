@@ -290,6 +290,19 @@ export function registerConversationCrudRoutes(app: Express): void {
           try {
             const processed = await processFile(file.path, file.mimetype);
 
+            // Checksum dedup — an identical file already in this
+            // conversation is returned as-is instead of re-ingested.
+            if (processed.checksum) {
+              const existing = await storage
+                .findFileByChecksum(conversationId, processed.checksum)
+                .catch(() => undefined);
+              if (existing) {
+                processedFiles.push({ ...existing, duplicateOfFileId: existing.id });
+                await cleanupFile(file.path);
+                continue;
+              }
+            }
+
             // Document Intelligence — push the extracted content through
             // the Knowledge Ingestion pipeline so the upload becomes
             // connected, queryable graph knowledge instead of one-shot
@@ -319,6 +332,10 @@ export function registerConversationCrudRoutes(app: Express): void {
                 analysis: documentIntelligence
                   ? { ...(processed.analysis || {}), documentIntelligence }
                   : processed.analysis,
+                checksum: processed.checksum,
+                parserUsed: processed.parserUsed,
+                conversionStatus: processed.conversionStatus,
+                structuralMeta: processed.structuralMeta,
               }),
             );
             processedFiles.push(saved);

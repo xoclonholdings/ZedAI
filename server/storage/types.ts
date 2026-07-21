@@ -39,6 +39,7 @@ export interface IStorage {
 
   getFile(id: string): Promise<File | undefined>;
   getFilesByConversation(conversationId: string): Promise<File[]>;
+  findFileByChecksum(conversationId: string, checksum: string): Promise<File | undefined>;
   createFile(file: InsertFile): Promise<File>;
   updateFile(id: string, updates: Partial<File>): Promise<File | undefined>;
   deleteFile(id: string): Promise<boolean>;
