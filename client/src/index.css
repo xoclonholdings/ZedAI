@@ -416,6 +416,30 @@
     50% { opacity: 1; }
   }
 
+  @keyframes nexus-rotate-slow {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @keyframes nexus-rotate-slow-reverse {
+    from { transform: translate(-50%, -50%) rotate(360deg); }
+    to { transform: translate(-50%, -50%) rotate(0deg); }
+  }
+
+  @keyframes nexus-flow {
+    to { stroke-dashoffset: -24; }
+  }
+
+  @keyframes nexus-breathe {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(103, 232, 249, 0.28), 0 0 26px rgba(103, 232, 249, 0.35); }
+    50% { transform: scale(1.045); box-shadow: 0 0 0 10px rgba(103, 232, 249, 0), 0 0 42px rgba(103, 232, 249, 0.5); }
+  }
+
+  @keyframes nexus-orbit-drift {
+    from { transform: rotate(0deg) translateX(var(--nexus-orbit-radius, 40px)) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(var(--nexus-orbit-radius, 40px)) rotate(-360deg); }
+  }
+
   /*
     Nexus home is a fixed one-screen app shell, not a scrolling page: the mockup and
     PWA usage both expect everything (header, constellation, communication, focused

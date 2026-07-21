@@ -201,7 +201,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
 
   return (
     <section
-      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
+      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-black/40 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-4"
       aria-label="Persistent ZAR communication"
     >
       <div className="mb-2 flex shrink-0 items-center justify-between gap-3">

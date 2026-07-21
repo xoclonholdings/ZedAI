@@ -39,15 +39,19 @@ export default function NexusRootPage({
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#02030a] text-white">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,rgba(8,13,28,0.82),rgba(0,0,0,1)_58%),linear-gradient(120deg,rgba(34,211,238,0.11),transparent_32%,rgba(244,114,182,0.08)_72%,transparent)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,rgba(8,13,28,0.85),rgba(0,0,0,1)_60%),radial-gradient(circle_at_20%_0%,rgba(167,139,250,0.1),transparent_40%),radial-gradient(circle_at_85%_10%,rgba(34,211,238,0.1),transparent_38%),radial-gradient(circle_at_75%_90%,rgba(251,146,60,0.05),transparent_32%)]" />
+      <div
+        className="nexus-particle-field pointer-events-none fixed inset-0 -z-10 opacity-40 motion-safe:animate-[nexus-twinkle_9s_ease-in-out_infinite] motion-reduce:animate-none"
+        aria-hidden="true"
+      />
 
       <header className="shrink-0 px-4 pt-safe-sm sm:px-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 py-4 sm:py-5">
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/58">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100/55">
               ZAR
             </div>
-            <h1 className="mt-1 truncate text-xl font-semibold text-white sm:text-2xl">
+            <h1 className="mt-1.5 truncate text-xl font-medium tracking-tight text-white sm:text-2xl">
               Welcome back, {displayName}
             </h1>
           </div>

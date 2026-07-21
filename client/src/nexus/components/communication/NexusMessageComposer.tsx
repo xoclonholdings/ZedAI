@@ -132,13 +132,13 @@ export function NexusMessageComposer({
                   : "Dictate"
                 : "Voice input unavailable"
             }
-            className={`h-8 w-8 shrink-0 rounded-xl ${
+            className={`h-9 w-9 shrink-0 rounded-full transition-all motion-reduce:animate-none ${
               dictation.isDictating
                 ? "bg-red-500/15 text-red-300 hover:bg-red-500/25"
-                : "text-white/48 hover:bg-white/[0.06] hover:text-cyan-200"
-            } disabled:pointer-events-none disabled:opacity-35`}
+                : "text-cyan-100/85 hover:bg-white/[0.06] hover:text-cyan-100 motion-safe:animate-[nexus-breathe_4.5s_ease-in-out_infinite]"
+            } disabled:pointer-events-none disabled:opacity-35 disabled:animate-none`}
           >
-            {dictation.isDictating ? <MicOff size={14} /> : <Mic size={14} />}
+            {dictation.isDictating ? <MicOff size={15} /> : <Mic size={15} />}
           </Button>
 
           {isStreaming && onAbort ? (

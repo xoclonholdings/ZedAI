@@ -13,7 +13,7 @@ export function NexusConversationRuntime({
   return (
     <div
       data-nexus-conversation-runtime="true"
-      className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/30"
+      className="flex min-h-0 flex-1 overflow-hidden rounded-2xl bg-black/20"
     >
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         {controller.conversationId && (
@@ -53,7 +53,7 @@ export function NexusConversationRuntime({
 
         <NexusAttachmentTray files={controller.files} />
 
-        <div className="z-10 flex-shrink-0 border-t border-white/10 px-3 pb-safe pt-3 md:px-4 md:pt-4">
+        <div className="z-10 flex-shrink-0 border-t border-white/[0.06] px-3 pb-safe pt-3 md:px-4 md:pt-4">
           <div className="mx-auto max-w-4xl">
             <NexusMessageComposer
               value={controller.composerValue}

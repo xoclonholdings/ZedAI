@@ -31,7 +31,8 @@ export function NexusConstellation() {
         className="nexus-particle-field pointer-events-none absolute inset-0 motion-safe:animate-[nexus-twinkle_7s_ease-in-out_infinite] motion-reduce:animate-none motion-reduce:opacity-60"
         aria-hidden="true"
       />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.16),rgba(2,3,10,0)_42%),radial-gradient(circle_at_30%_18%,rgba(244,114,182,0.12),rgba(2,3,10,0)_36%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.18),rgba(2,3,10,0)_44%),radial-gradient(circle_at_18%_14%,rgba(167,139,250,0.14),rgba(2,3,10,0)_38%),radial-gradient(circle_at_84%_20%,rgba(244,114,182,0.12),rgba(2,3,10,0)_34%),radial-gradient(circle_at_78%_86%,rgba(251,146,60,0.07),rgba(2,3,10,0)_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_38%,rgba(0,0,0,0.55)_100%)]" />
 
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"
@@ -67,10 +68,14 @@ export function NexusConstellation() {
               y1={sourcePos.y}
               x2={targetPos.x}
               y2={targetPos.y}
-              stroke={active ? "url(#nexus-line-energy)" : "rgba(148,163,184,0.14)"}
-              strokeWidth={active ? 0.55 : 0.3}
+              stroke={active ? "url(#nexus-line-energy)" : "rgba(148,163,184,0.12)"}
+              strokeWidth={active ? 0.55 : 0.28}
+              strokeDasharray={active ? "3 2" : undefined}
+              className={cn(
+                "motion-safe:transition-[stroke,stroke-width] motion-reduce:transition-none",
+                active && "motion-safe:animate-[nexus-flow_1.8s_linear_infinite] motion-reduce:animate-none",
+              )}
               vectorEffect="non-scaling-stroke"
-              className="motion-safe:transition-all motion-reduce:transition-none"
             />
           );
         })}
@@ -85,22 +90,42 @@ export function NexusConstellation() {
               y1={50}
               x2={pos.x}
               y2={pos.y}
-              stroke={active ? "url(#nexus-line-energy)" : "rgba(148,163,184,0.14)"}
-              strokeWidth={active ? 0.55 : 0.26}
+              stroke={active ? "url(#nexus-line-energy)" : "rgba(148,163,184,0.12)"}
+              strokeWidth={active ? 0.6 : 0.24}
+              strokeDasharray={active ? "3 2" : undefined}
+              className={cn(
+                "motion-safe:transition-[stroke,stroke-width] motion-reduce:transition-none",
+                active && "motion-safe:animate-[nexus-flow_1.8s_linear_infinite] motion-reduce:animate-none",
+              )}
               vectorEffect="non-scaling-stroke"
-              className="motion-safe:transition-all motion-reduce:transition-none"
             />
           );
         })}
       </svg>
 
       <div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.06] motion-safe:animate-[nexus-orbit-glow_6s_ease-in-out_infinite] motion-reduce:animate-none sm:h-24 sm:w-24"
-        style={{ borderImage: "conic-gradient(from 0deg, rgba(34,211,238,0.3), rgba(244,114,182,0.22), rgba(167,139,250,0.28), rgba(34,211,238,0.3)) 1" }}
+        className="pointer-events-none absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-cyan-200/70 shadow-[0_0_8px_2px_rgba(103,232,249,0.6)] motion-safe:animate-[nexus-orbit-drift_18s_linear_infinite] motion-reduce:hidden"
+        style={{ "--nexus-orbit-radius": "72px" } as React.CSSProperties}
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-200/15 bg-black/30 shadow-[0_0_60px_rgba(56,189,248,0.2)] motion-safe:animate-[nexus-pulse_8s_ease-in-out_infinite] motion-reduce:animate-none sm:h-16 sm:w-16"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[3px] w-[3px] rounded-full bg-fuchsia-200/60 shadow-[0_0_8px_2px_rgba(232,121,249,0.55)] motion-safe:animate-[nexus-orbit-drift_26s_linear_infinite_reverse] motion-reduce:hidden"
+        style={{ "--nexus-orbit-radius": "58px" } as React.CSSProperties}
+        aria-hidden="true"
+      />
+
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.05] motion-safe:animate-[nexus-rotate-slow_38s_linear_infinite] motion-reduce:animate-none sm:h-32 sm:w-32"
+        style={{ borderImage: "conic-gradient(from 0deg, rgba(34,211,238,0.32), transparent 22%, rgba(167,139,250,0.28), transparent 55%, rgba(244,114,182,0.24), transparent 88%, rgba(34,211,238,0.32)) 1" }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.05] motion-safe:animate-[nexus-rotate-slow-reverse_26s_linear_infinite] motion-reduce:animate-none sm:h-24 sm:w-24"
+        style={{ borderImage: "conic-gradient(from 90deg, rgba(244,114,182,0.22), transparent 30%, rgba(34,211,238,0.26), transparent 70%, rgba(244,114,182,0.22)) 1" }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-200/15 bg-black/40 shadow-[0_0_70px_rgba(56,189,248,0.28),inset_0_0_20px_rgba(167,139,250,0.12)] backdrop-blur-sm motion-safe:animate-[nexus-pulse_8s_ease-in-out_infinite] motion-reduce:animate-none sm:h-16 sm:w-16"
         aria-hidden="true"
       >
         <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-cyan-100/60 sm:text-[10px]">
