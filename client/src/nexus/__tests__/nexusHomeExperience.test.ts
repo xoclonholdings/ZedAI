@@ -126,7 +126,7 @@ test("persistent communication modes are derived from the communication manifest
 
   assert.deepEqual(modes.map((mode) => mode.id), [...NEXUS_COMMUNICATION_MODE_IDS]);
   assert.deepEqual(modes.map((mode) => mode.label), ["Text", "Talk", "Image", "Draw", "Doc", "Upload"]);
-  assert.equal(modes.some((mode) => mode.id === "draw" && mode.enabled), false);
+  assert.equal(modes.some((mode) => mode.id === "draw" && mode.enabled), true);
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.route, "/chat");
 });
 

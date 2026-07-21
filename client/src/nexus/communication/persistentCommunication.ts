@@ -40,7 +40,9 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       "client/src/nexus/components/communication/NexusFileUpload.tsx",
       "client/src/nexus/components/communication/NexusAttachmentTray.tsx",
     ]),
-    mode("draw", "Draw", "create.draw", "scaffolded", null, []),
+    mode("draw", "Draw", "create.draw", "available", "/chat", [
+      "client/src/nexus/components/communication/NexusAdaptiveComposer.tsx",
+    ]),
     mode("doc", "Doc", "create.document", "available", "/chat", [
       "client/src/nexus/components/communication/NexusFileUpload.tsx",
       "client/src/nexus/components/communication/NexusAttachmentTray.tsx",
@@ -69,11 +71,10 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       dependencies: [dependency("create.upload", "Image communication uses the upload surface.")],
       terms: ["create", "image", "picture", "visual", "attach"],
     }),
-    communicationCapability("draw", "create.draw", "Draw Communication", "Reserve drawing input as a future global communication mode.", {
+    communicationCapability("draw", "create.draw", "Draw Communication", "Sketch on the drawing canvas; the drawing attaches to the conversation as an image.", {
       actionKind: "write",
-      actionRoute: null,
-      dependencies: [dependency("create.image", "Future drawing output should behave as visual input.")],
-      status: "scaffolded",
+      actionRoute: "/chat",
+      dependencies: [dependency("create.image", "Drawing output behaves as visual input.")],
       terms: ["create", "draw", "sketch", "canvas"],
     }),
     communicationCapability("doc", "create.document", "Document Communication", "Attach document files through the existing conversation upload surface.", {

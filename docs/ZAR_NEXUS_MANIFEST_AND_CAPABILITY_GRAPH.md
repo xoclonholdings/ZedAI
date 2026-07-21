@@ -23,6 +23,10 @@ The normal user experience must not duplicate the root application list or expos
 
 The viewport intentionally shows only the focused node, nearby nodes, and edge nodes. The remaining registered nodes stay outside the visible field and are reached through touch, keyboard controls, direct routes, or ZAR-directed navigation.
 
+The landing route `/nexus` is a portal, not a dashboard: constellation plus one mode-adaptive communication composer, nothing else. Application content is progressive disclosure — `/nexus/:nodeId` (an intentional tap) opens that root application's surface (`NexusApplicationSurface`), which loads real state from the existing APIs (identity from `/api/me`, memory from `/api/knowledge/scratchpad`, knowledge from `/api/knowledge/project-memory`, projects from `/api/projects`, tools and connections from `/api/capabilities[/health]`, settings from `/api/settings/personalization`) alongside the node's registry-owned actions. `/chat` opens the full communication room. The current Nexus focus travels with every message as `context.nexusFocus`, and the backend Kernel grounds the reply in that application's frame.
+
+The persistent communication composer is mode-adaptive (`NexusAdaptiveComposer`): Text shows the multiline composer; Talk shows a large microphone with waveform and dictation; Image shows a drop zone with camera/gallery; Draw shows a real drawing canvas whose output attaches as an image (Draw is now an available mode, no longer scaffolded); Doc and Upload show purpose-built upload targets with live progress. Only the selected mode's controls exist on screen.
+
 Developer graph diagnostics are preserved only through a development-gated inspector. The default signed-in route must remain the user-facing Nexus home.
 
 ## Permanent Root Applications

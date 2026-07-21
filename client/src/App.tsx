@@ -206,7 +206,7 @@ function Router() {
 function NexusChatRoute() {
   const { id } = useParams<{ id?: string }>();
   const conversationId = !id || id === "undefined" || id === "null" ? null : id;
-  return <NexusRootPage communicationConversationId={conversationId} />;
+  return <NexusRootPage communicationConversationId={conversationId} communicationOpen />;
 }
 
 function GlobalErrorHooks() {

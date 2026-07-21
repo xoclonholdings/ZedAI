@@ -565,6 +565,30 @@ export class ChatExecutionService {
         trace.documentCitations = documentKnowledge.citations;
       }
 
+      // Nexus focus — where the user currently is in the application.
+      // Focus shifts ZAR's default frame of reference (Memory questions
+      // answer from memory, Projects questions from projects) without
+      // restricting what the user can ask.
+      const NEXUS_FOCUS_FRAMES: Record<string, string> = {
+        identity: "Identity — the user's constitution, confirmed understanding, relationship, goals, and values. Default to identity/relationship context when the request is ambiguous.",
+        memory: "Memory — what ZAR retains: recent memory, retention policy, evidence, and history. Default to answering from retained memory context.",
+        knowledge: "Knowledge — the source library, ingested documents, and the knowledge graph. Default to source-backed, cited answers.",
+        workspaces: "Workspaces — the active domain workspace and its library. Default to the workspace frame.",
+        projects: "Projects — the user's projects and project-linked files. Default to the active project context.",
+        tools: "Tools — ZAR's executable capabilities (documentation, files, web research, browser). Default to explaining or invoking capabilities.",
+        connect: "Connect — connected accounts and external services. Default to integration and connection context.",
+        settings: "Settings — preferences, personalization, and controls. Default to configuration context.",
+      };
+      const nexusFocus = String(input.context?.nexusFocus || "").trim().toLowerCase();
+      const nexusFocusPrompt = NEXUS_FOCUS_FRAMES[nexusFocus]
+        ? [
+            "## Current Nexus Focus",
+            `The user is currently inside: ${NEXUS_FOCUS_FRAMES[nexusFocus]}`,
+            "Ground the reply in this application context first; step outside it only when the request clearly asks for something else.",
+          ].join("\n")
+        : "";
+      if (nexusFocusPrompt) trace.memorySources.push(`nexus_focus:${nexusFocus}`);
+
       // Documentation Context — version-aware current docs through the
       // Context7 adapter when the user asks for package/library docs.
       // Provider-unavailable is surfaced honestly, never fabricated.
@@ -649,6 +673,7 @@ export class ChatExecutionService {
       // pinned first; response policy is pinned last so style wins ties.
       const cognitiveKnowledgePrompt = [
         governancePrompt,
+        nexusFocusPrompt,
         contextInquiryPrompt,
         // Workspace memory sits ahead of general knowledge so Zed always
         // works from the workspace's own library first.

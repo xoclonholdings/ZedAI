@@ -7,8 +7,11 @@ import { NexusMessageList } from "./NexusMessageList";
 
 export function NexusConversationRuntime({
   controller,
+  composer,
 }: {
   readonly controller: NexusConversationController;
+  /** Optional replacement for the default composer (e.g. the mode-adaptive surface). */
+  readonly composer?: React.ReactNode;
 }) {
   return (
     <div
@@ -53,18 +56,20 @@ export function NexusConversationRuntime({
 
         <div className="z-10 flex-shrink-0 border-t border-white/10 px-3 pb-safe pt-3 md:px-4 md:pt-4">
           <div className="mx-auto max-w-4xl">
-            <NexusMessageComposer
-              value={controller.composerValue}
-              onValueChange={controller.setComposerValue}
-              onSend={(message) => void controller.sendMessage(message)}
-              onAbort={controller.abort}
-              isStreaming={controller.isStreaming}
-              onOpenFileUpload={() => void controller.openFileUpload()}
-              editModeLabel={controller.editingMessageId ? "Editing message draft" : null}
-              onCancelEdit={controller.editingMessageId ? controller.cancelEdit : undefined}
-              compact={controller.compactMessages}
-              fontSize={controller.fontSize}
-            />
+            {composer ?? (
+              <NexusMessageComposer
+                value={controller.composerValue}
+                onValueChange={controller.setComposerValue}
+                onSend={(message) => void controller.sendMessage(message)}
+                onAbort={controller.abort}
+                isStreaming={controller.isStreaming}
+                onOpenFileUpload={() => void controller.openFileUpload()}
+                editModeLabel={controller.editingMessageId ? "Editing message draft" : null}
+                onCancelEdit={controller.editingMessageId ? controller.cancelEdit : undefined}
+                compact={controller.compactMessages}
+                fontSize={controller.fontSize}
+              />
+            )}
           </div>
         </div>
       </div>

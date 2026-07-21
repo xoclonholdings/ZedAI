@@ -44,6 +44,7 @@ function renderRuntime(overrides: Partial<NexusConversationController> = {}) {
     sendMessage: async () => undefined,
     abort: () => undefined,
     openFileUpload: async () => undefined,
+    ensureUploadConversationId: async () => null,
     closeFileUpload: () => undefined,
     handleFileUpload: () => undefined,
     archiveConversation: async () => undefined,

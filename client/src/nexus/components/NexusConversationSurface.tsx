@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, Image, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
@@ -21,19 +20,23 @@ import {
   resolveNexusClientAction,
   type NexusClientAction,
 } from "../actions/NexusClientActions";
+import { NexusAdaptiveComposer } from "./communication/NexusAdaptiveComposer";
 import { NexusConversationRuntime } from "./communication/NexusConversationRuntime";
 import { routeForNexusNode } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
-import {
-  communicationModeViews,
-  type NexusCommunicationModeView,
-} from "../viewport/NexusViewportModel";
+import type { NexusCommunicationModeId } from "../communication/types";
+import { communicationModeViews } from "../viewport/NexusViewportModel";
 
 export interface NexusConversationSurfaceProps {
   readonly conversationId?: string | null;
+  /**
+   * portal — the near-empty landing dock: mode-adaptive composer only,
+   * no history, no chips. full — the opened communication room.
+   */
+  readonly variant?: "portal" | "full";
 }
 
-export function NexusConversationSurface({ conversationId }: NexusConversationSurfaceProps) {
+export function NexusConversationSurface({ conversationId, variant = "full" }: NexusConversationSurfaceProps) {
   const [, navigate] = useLocation();
   const {
     capabilityRegistry,
@@ -47,6 +50,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
   );
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [status, setStatus] = useState("Ready");
+  const [activeMode, setActiveMode] = useState<NexusCommunicationModeId>("text");
   const search = useLocationSearch();
   const workspaceSlug = useMemo<WorkspaceSlug | null>(
     () => resolveWorkspace(search),
@@ -78,6 +82,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
     refetchInterval: 30000,
+    enabled: variant === "full",
   });
 
   const { data: projects = [], refetch: refetchProjects } = useQuery<FilingProject[]>({
@@ -88,6 +93,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       const data = await res.json();
       return data.projects || [];
     },
+    enabled: variant === "full",
   });
 
   const { data: currentConversation } = useQuery<Conversation>({
@@ -131,6 +137,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     }
 
     if (action.type === "open-communication" && result.resolution) {
+      setActiveMode(action.modeId as NexusCommunicationModeId);
       navigate(result.resolution.route);
       setStatus(`Opened ${result.resolution.label}`);
       return result;
@@ -194,36 +201,58 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     workspaceSlug,
     learningPathId: learningContext.learningPathId,
     lessonId: learningContext.lessonId,
+    nexusFocus: viewportSnapshot.focusedNode?.id ?? null,
     onBeforeSend: handleBeforeSend,
     onAgentResponse: handleAgentResponse,
     onConversationIdChange: setActiveConversationId,
   });
+
+  const adaptiveComposer = (
+    <NexusAdaptiveComposer
+      modes={modes}
+      activeMode={activeMode}
+      onModeChange={setActiveMode}
+      composerValue={conversationController.composerValue}
+      onComposerValueChange={conversationController.setComposerValue}
+      onSend={(message) => void conversationController.sendMessage(message)}
+      onAbort={conversationController.abort}
+      isStreaming={conversationController.isStreaming}
+      onOpenFileUpload={() => void conversationController.openFileUpload()}
+      editModeLabel={conversationController.editingMessageId ? "Editing message draft" : null}
+      onCancelEdit={conversationController.editingMessageId ? conversationController.cancelEdit : undefined}
+      ensureUploadConversationId={conversationController.ensureUploadConversationId}
+      onUploaded={(uploadedFiles, result) => conversationController.handleFileUpload(uploadedFiles, result)}
+    />
+  );
+
+  // Portal: the doorway, not the room. One adaptive composer, nothing else.
+  if (variant === "portal") {
+    return (
+      <section
+        className="rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
+        aria-label="Talk to ZAR"
+      >
+        {adaptiveComposer}
+        {conversationController.runtimeError ? (
+          <div className="mt-2 rounded-xl border border-red-300/20 bg-red-500/[0.08] px-3 py-2 text-sm text-red-100">
+            {conversationController.runtimeError}
+          </div>
+        ) : null}
+      </section>
+    );
+  }
 
   return (
     <section
       className="rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
       aria-label="Persistent ZAR communication"
     >
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
-            ZAR
-          </div>
-          <div className="truncate text-sm text-white/70">
-            {status} - Focused on {focusedLabel}
-          </div>
+      <div className="mb-3 min-w-0">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
+          ZAR
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
-          {modes.map((mode) => (
-            <CommunicationModeButton
-              key={mode.id}
-              mode={mode}
-              onSelect={() => {
-                const result = applyClientAction({ type: "open-communication", modeId: mode.id });
-                if (!result.accepted) setStatus(`${mode.label} is not available yet`);
-              }}
-            />
-          ))}
+        <div className="truncate text-sm text-white/70">
+          {status} - Focused on {focusedLabel}
         </div>
       </div>
 
@@ -285,52 +314,9 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         </div>
       )}
 
-      <NexusConversationRuntime controller={conversationController} />
+      <NexusConversationRuntime controller={conversationController} composer={adaptiveComposer} />
     </section>
   );
-}
-
-function CommunicationModeButton({
-  mode,
-  onSelect,
-}: {
-  readonly mode: NexusCommunicationModeView;
-  readonly onSelect: () => void;
-}) {
-  const Icon = iconForMode(mode.id);
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={!mode.enabled}
-      className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-white/62 transition hover:border-cyan-200/30 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none",
-        !mode.enabled && "cursor-not-allowed opacity-40 hover:border-white/[0.08] hover:text-white/62",
-      )}
-      title={mode.label}
-      aria-label={`${mode.label} communication`}
-    >
-      <Icon size={15} />
-    </button>
-  );
-}
-
-function iconForMode(modeId: string) {
-  switch (modeId) {
-    case "talk":
-      return Mic;
-    case "image":
-      return Image;
-    case "draw":
-      return PenTool;
-    case "doc":
-      return FileText;
-    case "upload":
-      return Upload;
-    case "text":
-    default:
-      return MessageCircle;
-  }
 }
 
 function normalizeConversationId(value: string | null | undefined): string | undefined {

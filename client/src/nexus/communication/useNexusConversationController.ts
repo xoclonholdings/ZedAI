@@ -18,6 +18,8 @@ export interface UseNexusConversationControllerArgs {
   readonly workspaceSlug?: string | null;
   readonly learningPathId?: string | null;
   readonly lessonId?: string | null;
+  /** Currently focused Nexus root node — carried into the model context so ZAR answers from where the user is. */
+  readonly nexusFocus?: string | null;
   readonly onBeforeSend?: (message: string) => boolean | Promise<boolean>;
   readonly onAgentResponse?: (data: unknown) => void;
   readonly onConversationIdChange?: (conversationId: string) => void;
@@ -45,6 +47,7 @@ export interface NexusConversationController {
   readonly sendMessage: (message: string) => Promise<void>;
   readonly abort: () => void;
   readonly openFileUpload: () => Promise<void>;
+  readonly ensureUploadConversationId: () => Promise<string | null>;
   readonly closeFileUpload: () => void;
   readonly handleFileUpload: (files?: File[], result?: { conversationId?: string }) => void;
   readonly archiveConversation: () => Promise<void>;
@@ -64,6 +67,7 @@ export function useNexusConversationController({
   workspaceSlug,
   learningPathId,
   lessonId,
+  nexusFocus,
   onBeforeSend,
   onAgentResponse,
   onConversationIdChange,
@@ -171,6 +175,7 @@ export function useNexusConversationController({
       context: {
         ...(learningPathId ? { learningPathId } : {}),
         ...(lessonId ? { lessonId } : {}),
+        ...(nexusFocus ? { nexusFocus } : {}),
       },
       abortRef,
       setIsStreaming,
@@ -239,6 +244,24 @@ export function useNexusConversationController({
     setShowFileUpload(true);
   }
 
+  /**
+   * Resolve (creating if needed) the conversation that mode-specific
+   * upload surfaces (image, doc, upload, draw) should attach files to —
+   * without toggling the legacy upload panel.
+   */
+  async function ensureUploadConversationId(): Promise<string | null> {
+    if (activeUploadConversationId) return activeUploadConversationId;
+    try {
+      const created = await createConversation("File upload");
+      setUploadConversationId(created);
+      return created;
+    } catch (error) {
+      console.error("Failed to create conversation for upload:", error);
+      setRuntimeError("Could not start a conversation for this upload.");
+      return null;
+    }
+  }
+
   async function copyMessage(message: Message) {
     await navigator.clipboard.writeText(message.content);
   }
@@ -275,6 +298,7 @@ export function useNexusConversationController({
     sendMessage,
     abort: () => abortRef.current?.abort(),
     openFileUpload,
+    ensureUploadConversationId,
     closeFileUpload: () => setShowFileUpload(false),
     handleFileUpload,
     archiveConversation,
