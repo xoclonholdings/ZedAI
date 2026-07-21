@@ -1,11 +1,18 @@
 import { ArrowUpRight } from "lucide-react";
 import { useLocation } from "wouter";
 
+import { cn } from "@/lib/utils";
 import { useNexus } from "../state/NexusProvider";
 import { createFocusedNodeView } from "../viewport/NexusViewportModel";
 import { NexusIcon } from "./NexusIcon";
 
-export function NexusFocusedNodePanel() {
+export interface NexusFocusedNodePanelProps {
+  /** "panel" is the full card (desktop aside). "compact" is a single-row strip that fits the mobile one-screen shell without adding scroll. */
+  readonly variant?: "panel" | "compact";
+  readonly className?: string;
+}
+
+export function NexusFocusedNodePanel({ variant = "panel", className }: NexusFocusedNodePanelProps) {
   const [, navigate] = useLocation();
   const { capabilityRegistry, viewportSnapshot } = useNexus();
   const focusedNode = viewportSnapshot.focusedNode;
@@ -13,9 +20,48 @@ export function NexusFocusedNodePanel() {
 
   const view = createFocusedNodeView(focusedNode, capabilityRegistry);
 
+  if (variant === "compact") {
+    const primaryAction = view.actions[0] ?? null;
+    return (
+      <section
+        className={cn(
+          "flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.035] px-3 py-2.5 backdrop-blur-xl",
+          className,
+        )}
+        aria-labelledby="nexus-focused-node-title-compact"
+      >
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10"
+          style={{ color: view.accentColor, backgroundColor: `${view.accentColor}14` }}
+          aria-hidden="true"
+        >
+          <NexusIcon name={view.icon} size={16} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100/55">
+            In Focus
+          </div>
+          <h2 id="nexus-focused-node-title-compact" className="truncate text-[13px] font-semibold text-white">
+            {view.title}
+          </h2>
+        </div>
+        {primaryAction && (
+          <button
+            type="button"
+            onClick={() => primaryAction.route && navigate(primaryAction.route)}
+            className="flex shrink-0 items-center gap-1 rounded-xl border border-white/[0.08] bg-black/25 px-2.5 py-1.5 text-[12px] font-medium text-white/80 transition hover:border-cyan-200/35 hover:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
+          >
+            {primaryAction.label}
+            <ArrowUpRight size={13} className="shrink-0 text-cyan-100/65" aria-hidden="true" />
+          </button>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section
-      className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl sm:p-5"
+      className={cn("rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 backdrop-blur-xl sm:p-5", className)}
       aria-labelledby="nexus-focused-node-title"
     >
       <div className="flex items-start gap-3">
@@ -30,9 +76,9 @@ export function NexusFocusedNodePanel() {
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
             In Focus
           </div>
-          <h1 id="nexus-focused-node-title" className="mt-1 text-2xl font-semibold text-white">
+          <h2 id="nexus-focused-node-title" className="mt-1 text-2xl font-semibold text-white">
             {view.title}
-          </h1>
+          </h2>
         </div>
       </div>
 

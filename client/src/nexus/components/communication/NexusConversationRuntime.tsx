@@ -13,7 +13,7 @@ export function NexusConversationRuntime({
   return (
     <div
       data-nexus-conversation-runtime="true"
-      className="flex min-h-[480px] flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/30"
+      className="flex min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-black/30"
     >
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         <NexusConversationHeader

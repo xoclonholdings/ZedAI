@@ -61,3 +61,25 @@ test("Nexus constellation only labels focused and near nodes, not edge nodes", (
   const buttons = html.match(edgeButtonPattern) ?? [];
   assert.ok(buttons.length > 0, "at least one focusable Nexus node rendered");
 });
+
+test("Nexus home is a fixed one-screen shell, not a scrolling page", () => {
+  const html = renderNexusHome();
+
+  assert.match(
+    html,
+    /class="flex h-\[100dvh\] flex-col overflow-hidden[^"]*"/,
+    "root shell must be viewport-locked with no outer scroll, matching the mockup's single-screen layout",
+  );
+  assert.doesNotMatch(
+    html,
+    /min-h-\[480px\]/,
+    "the conversation runtime must not force a fixed minimum height that can overflow a short viewport",
+  );
+});
+
+test("Nexus home renders a compact mobile focused-context strip alongside the full desktop panel", () => {
+  const html = renderNexusHome();
+
+  assert.match(html, /id="nexus-focused-node-title-compact"/, "compact focused strip renders on mobile");
+  assert.match(html, /id="nexus-focused-node-title"/, "full focused panel renders for the desktop aside");
+});

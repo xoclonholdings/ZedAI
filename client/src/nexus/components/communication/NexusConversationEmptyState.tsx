@@ -1,6 +1,6 @@
 export function NexusConversationEmptyState() {
   return (
-    <div className="flex min-h-[34vh] items-center justify-center px-4">
+    <div className="flex h-full min-h-[96px] items-center justify-center px-4">
       <div className="w-full max-w-lg text-center">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-100/50">
           ZAR

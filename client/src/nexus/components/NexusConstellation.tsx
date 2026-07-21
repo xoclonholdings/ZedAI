@@ -81,7 +81,7 @@ export function NexusConstellation() {
 
   return (
     <section
-      className="relative min-h-[430px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#02030a] shadow-[0_28px_90px_rgba(0,0,0,0.34)] sm:min-h-[520px]"
+      className="relative min-h-[200px] w-full flex-1 overflow-hidden rounded-2xl border border-white/[0.08] bg-[#02030a] shadow-[0_28px_90px_rgba(0,0,0,0.34)]"
       aria-label="ZAR Nexus constellation"
     >
       <div className="pointer-events-none absolute inset-0 opacity-80 [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:38px_38px] motion-safe:animate-[nexus-drift_24s_linear_infinite] motion-reduce:animate-none" />

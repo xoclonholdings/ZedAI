@@ -417,27 +417,69 @@
   }
 
   /*
-    Mobile keeps document order (header -> constellation -> communication -> focused
-    context), matching the required mobile hierarchy. From lg upward, named areas
-    reflow the same three regions into a two-column layout without touching DOM order.
+    Nexus home is a fixed one-screen app shell, not a scrolling page: the mockup and
+    PWA usage both expect everything (header, constellation, communication, focused
+    context) to fit in one viewport with no outer scroll. Mobile stacks the three
+    regions as flex rows in document order (constellation -> communication -> focused
+    context) sharing the available height; only the message list inside communication
+    scrolls internally. From lg upward the same regions reflow into a two-column grid
+    via named areas, without touching DOM order.
   */
   .nexus-home-grid {
-    display: grid;
-    gap: 1rem;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .nexus-home-grid > [data-nexus-region="constellation"] {
+    flex: 1.15 1 0%;
+    min-height: 200px;
+    display: flex;
+  }
+
+  .nexus-home-grid > [data-nexus-region="communication"] {
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+  }
+
+  .nexus-home-grid > [data-nexus-region="focused"] {
+    flex: 0 0 auto;
   }
 
   @media (min-width: 1024px) {
     .nexus-home-grid {
+      display: grid;
+      flex: 1 1 auto;
+      min-height: 0;
+      gap: 1rem;
       grid-template-columns: minmax(0, 1fr) 340px;
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
         "constellation focused"
         "communication communication";
-      align-items: start;
     }
 
-    .nexus-home-grid > [data-nexus-region="constellation"] { grid-area: constellation; }
-    .nexus-home-grid > [data-nexus-region="communication"] { grid-area: communication; }
-    .nexus-home-grid > [data-nexus-region="focused"] { grid-area: focused; }
+    .nexus-home-grid > [data-nexus-region="constellation"] {
+      grid-area: constellation;
+      flex: none;
+      min-height: 0;
+    }
+
+    .nexus-home-grid > [data-nexus-region="communication"] {
+      grid-area: communication;
+      flex: none;
+      min-height: 0;
+    }
+
+    .nexus-home-grid > [data-nexus-region="focused"] {
+      grid-area: focused;
+      flex: none;
+      min-height: 0;
+      overflow-y: auto;
+    }
   }
 
   .nexus-particle-field {

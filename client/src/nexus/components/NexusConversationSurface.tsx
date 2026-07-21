@@ -201,10 +201,10 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
 
   return (
     <section
-      className="rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
+      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
       aria-label="Persistent ZAR communication"
     >
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-3 flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
             ZAR
@@ -228,7 +228,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       </div>
 
       {conversations.length > 0 && (
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
+        <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
           {conversations.slice(0, 6).map((conversation) => (
             <button
               key={conversation.id}
@@ -248,7 +248,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       )}
 
       {projects.length > 0 && (
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1" aria-label="Project context">
+        <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Project context">
           <button
             type="button"
             onClick={() => {
