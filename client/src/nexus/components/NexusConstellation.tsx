@@ -1,82 +1,24 @@
-import { useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
 import { routeForNexusNode } from "../graph/rootConstellation";
-import type { NexusNodeId } from "../graph/types";
+import type { NexusNodeDefinition, NexusNodeId } from "../graph/types";
 import { useNexus } from "../state/NexusProvider";
 import { NexusIcon } from "./NexusIcon";
 
-const DRAG_THRESHOLD_PX = 44;
+/** Pulls the 42-radius ring in slightly so orbs never clip the rounded frame edge. */
+const RENDER_INSET = 0.86;
 
 export function NexusConstellation() {
   const [, navigate] = useLocation();
-  const {
-    snapshot,
-    viewport,
-    viewportSnapshot,
-    focusNode,
-    focusAdjacentNode,
-    panViewport,
-  } = useNexus();
-  const dragRef = useRef<{
-    readonly pointerId: number;
-    readonly startX: number;
-    readonly startY: number;
-    readonly lastX: number;
-    readonly lastY: number;
-  } | null>(null);
-  const [dragging, setDragging] = useState(false);
+  const { snapshot, viewportSnapshot, focusNode } = useNexus();
   const activeId = viewportSnapshot.focusedNode?.id ?? snapshot.activeNode?.id ?? null;
+  const nodesById = new Map(snapshot.rootNodes.map((node) => [node.id, node]));
+  const ringConnections = snapshot.connections.filter((connection) => connection.kind === "orbit");
 
-  function focusAndRoute(nodeId: NexusNodeId, source: "touch" | "keyboard" | "zar" | "programmatic") {
-    focusNode(nodeId, source);
+  function focusAndRoute(nodeId: NexusNodeId) {
+    focusNode(nodeId, "touch");
     navigate(routeForNexusNode(nodeId));
-  }
-
-  function moveFocus(direction: "previous" | "next", source: "touch" | "keyboard") {
-    const nextNodeId = focusAdjacentNode(direction, source);
-    if (nextNodeId) navigate(routeForNexusNode(nextNodeId));
-  }
-
-  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      lastX: event.clientX,
-      lastY: event.clientY,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragging(true);
-  }
-
-  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    panViewport((event.clientX - drag.lastX) / 18, (event.clientY - drag.lastY) / 22, "touch");
-    dragRef.current = {
-      ...drag,
-      lastX: event.clientX,
-      lastY: event.clientY,
-    };
-  }
-
-  function handlePointerEnd(event: React.PointerEvent<HTMLDivElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    dragRef.current = null;
-    setDragging(false);
-
-    if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < DRAG_THRESHOLD_PX) return;
-    const direction = Math.abs(deltaX) >= Math.abs(deltaY)
-      ? deltaX < 0 ? "next" : "previous"
-      : deltaY < 0 ? "next" : "previous";
-    moveFocus(direction, "touch");
   }
 
   return (
@@ -91,171 +33,142 @@ export function NexusConstellation() {
       />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.16),rgba(2,3,10,0)_42%),radial-gradient(circle_at_30%_18%,rgba(244,114,182,0.12),rgba(2,3,10,0)_36%)]" />
 
-      <button
-        type="button"
-        onClick={() => moveFocus("previous", "keyboard")}
-        className="absolute left-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/65 backdrop-blur-md transition hover:border-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/60 motion-reduce:transition-none"
-        aria-label="Focus previous Nexus space"
+      <svg
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        viewBox="0 0 100 100"
+        role="img"
+        aria-label="Nexus connections"
+        preserveAspectRatio="none"
       >
-        <ChevronLeft size={18} />
-      </button>
+        <defs>
+          {/*
+            userSpaceOnUse + fixed center avoids the degenerate objectBoundingBox
+            case a linearGradient hits on perfectly horizontal/vertical lines (the
+            four cardinal spokes), which otherwise renders as a stray rectangle.
+          */}
+          <radialGradient id="nexus-line-energy" gradientUnits="userSpaceOnUse" cx="50" cy="50" r="45">
+            <stop offset="0%" stopColor="rgba(125,211,252,0.55)" />
+            <stop offset="65%" stopColor="rgba(125,211,252,0.32)" />
+            <stop offset="100%" stopColor="rgba(244,114,182,0.14)" />
+          </radialGradient>
+        </defs>
 
-      <button
-        type="button"
-        onClick={() => moveFocus("next", "keyboard")}
-        className="absolute right-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-black/45 text-white/65 backdrop-blur-md transition hover:border-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/60 motion-reduce:transition-none"
-        aria-label="Focus next Nexus space"
-      >
-        <ChevronRight size={18} />
-      </button>
-
-      <div
-        className={cn(
-          "absolute inset-0 cursor-grab touch-pan-y select-none",
-          dragging && "cursor-grabbing",
-        )}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerCancel={handlePointerEnd}
-        onPointerUp={handlePointerEnd}
-      >
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox="0 0 100 100"
-          role="img"
-          aria-label="Visible Nexus connections"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="nexus-line-energy" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgba(125,211,252,0.05)" />
-              <stop offset="50%" stopColor="rgba(125,211,252,0.5)" />
-              <stop offset="100%" stopColor="rgba(244,114,182,0.08)" />
-            </linearGradient>
-          </defs>
-          {viewportSnapshot.visibleConnections.map((connection) => (
+        {ringConnections.map((connection) => {
+          const source = nodesById.get(connection.sourceId);
+          const target = nodesById.get(connection.targetId);
+          if (!source || !target) return null;
+          const sourcePos = renderPosition(source);
+          const targetPos = renderPosition(target);
+          const active = activeId === source.id || activeId === target.id;
+          return (
             <line
               key={connection.id}
-              x1={connection.source.x}
-              y1={connection.source.y}
-              x2={connection.target.x}
-              y2={connection.target.y}
-              stroke={connection.active ? "url(#nexus-line-energy)" : "rgba(148,163,184,0.18)"}
-              strokeWidth={connection.active ? 0.7 : 0.38}
+              x1={sourcePos.x}
+              y1={sourcePos.y}
+              x2={targetPos.x}
+              y2={targetPos.y}
+              stroke={active ? "url(#nexus-line-energy)" : "rgba(148,163,184,0.14)"}
+              strokeWidth={active ? 0.55 : 0.3}
               vectorEffect="non-scaling-stroke"
               className="motion-safe:transition-all motion-reduce:transition-none"
             />
-          ))}
-          {viewportSnapshot.hasMoreBefore && (
-            <path
-              d="M 0 70 C 16 57, 22 44, 32 37"
-              fill="none"
-              stroke="rgba(148,163,184,0.16)"
-              strokeDasharray="1.6 2"
-              strokeWidth="0.45"
-            />
-          )}
-          {viewportSnapshot.hasMoreAfter && (
-            <path
-              d="M 100 72 C 86 57, 80 44, 70 38"
-              fill="none"
-              stroke="rgba(148,163,184,0.16)"
-              strokeDasharray="1.6 2"
-              strokeWidth="0.45"
-            />
-          )}
-        </svg>
-
-        <div
-          className="pointer-events-none absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.06] motion-safe:animate-[nexus-orbit-glow_6s_ease-in-out_infinite] motion-reduce:animate-none"
-          style={{ borderImage: "conic-gradient(from 0deg, rgba(34,211,238,0.28), rgba(244,114,182,0.2), rgba(167,139,250,0.26), rgba(34,211,238,0.28)) 1" }}
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute left-1/2 top-1/2 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-200/10 bg-black/20 shadow-[0_0_70px_rgba(56,189,248,0.18)] motion-safe:animate-[nexus-pulse_8s_ease-in-out_infinite] motion-reduce:animate-none"
-          aria-hidden="true"
-        />
-
-        {viewportSnapshot.visibleNodes.map(({ node, position, presence, relativeIndex }) => {
-          const visual = node.metadata.visual;
-          const focused = node.id === activeId;
-          const edge = presence === "edge";
-          const orbSize = focused ? "h-[104px] w-[104px]" : edge ? "h-11 w-11" : "h-[74px] w-[74px]";
-          const iconWrapSize = focused ? "h-11 w-11" : edge ? "h-5 w-5" : "h-8 w-8";
-
-          return (
-            <div
-              key={`${node.id}:${viewport.transitionSerial}`}
-              className="absolute flex flex-col items-center gap-2 motion-safe:transition-[left,top,opacity] motion-safe:duration-500 motion-safe:ease-out motion-reduce:transition-none"
-              style={{
-                left: `${position.x}%`,
-                top: `${position.y}%`,
-                transform: "translate(-50%, -50%)",
-                opacity: edge ? 0.6 : focused ? 1 : 0.88,
-                zIndex: focused ? 18 : edge ? 8 : 12,
-              }}
-            >
-              <button
-                type="button"
-                aria-current={focused ? "page" : undefined}
-                aria-label={`${focused ? "Focused" : "Focus"} ${node.label}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  focusAndRoute(node.id, "touch");
-                }}
-                className={cn(
-                  "group relative flex items-center justify-center rounded-full border bg-black/70 backdrop-blur-md transition focus:outline-none focus:ring-2 focus:ring-cyan-200/60 focus:ring-offset-2 focus:ring-offset-black motion-reduce:transition-none",
-                  orbSize,
-                  focused ? "border-[1.5px]" : "border",
-                  !edge && "hover:scale-[1.05]",
-                )}
-                style={{
-                  borderColor: focused ? `${visual.color}80` : `${visual.color}40`,
-                  boxShadow: focused
-                    ? `0 0 0 1px ${visual.color}26, 0 0 46px ${visual.color}55, 0 0 96px ${visual.color}22`
-                    : edge
-                      ? `0 0 14px ${visual.color}30`
-                      : `0 0 26px ${visual.color}2e`,
-                }}
-              >
-                {focused && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -inset-2.5 rounded-full border motion-safe:animate-[nexus-orbit-glow_5s_ease-in-out_infinite] motion-reduce:animate-none"
-                    style={{ borderColor: `${visual.color}35` }}
-                  />
-                )}
-                <span
-                  className={cn("flex items-center justify-center rounded-full", iconWrapSize)}
-                  style={{ color: visual.color, backgroundColor: `${visual.color}18` }}
-                >
-                  <NexusIcon name={visual.icon} size={focused ? 22 : edge ? 12 : 16} />
-                </span>
-                <span className="sr-only">
-                  {node.label} -{" "}
-                  {relativeIndex < 0 ? "previous constellation space" : relativeIndex > 0 ? "next constellation space" : "current constellation space"}
-                </span>
-              </button>
-
-              {!edge && (
-                <span
-                  className={cn(
-                    "pointer-events-none max-w-[112px] truncate text-center font-semibold",
-                    focused ? "text-[13.5px] text-white" : "text-[11px] text-white/72",
-                  )}
-                >
-                  {node.label}
-                </span>
-              )}
-              {focused && (
-                <span className="pointer-events-none -mt-1 text-[10px] leading-3 text-white/45">
-                  In focus
-                </span>
-              )}
-            </div>
           );
         })}
+
+        {snapshot.rootNodes.map((node) => {
+          const pos = renderPosition(node);
+          const active = activeId === node.id;
+          return (
+            <line
+              key={`spoke:${node.id}`}
+              x1={50}
+              y1={50}
+              x2={pos.x}
+              y2={pos.y}
+              stroke={active ? "url(#nexus-line-energy)" : "rgba(148,163,184,0.14)"}
+              strokeWidth={active ? 0.55 : 0.26}
+              vectorEffect="non-scaling-stroke"
+              className="motion-safe:transition-all motion-reduce:transition-none"
+            />
+          );
+        })}
+      </svg>
+
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.06] motion-safe:animate-[nexus-orbit-glow_6s_ease-in-out_infinite] motion-reduce:animate-none sm:h-24 sm:w-24"
+        style={{ borderImage: "conic-gradient(from 0deg, rgba(34,211,238,0.3), rgba(244,114,182,0.22), rgba(167,139,250,0.28), rgba(34,211,238,0.3)) 1" }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-200/15 bg-black/30 shadow-[0_0_60px_rgba(56,189,248,0.2)] motion-safe:animate-[nexus-pulse_8s_ease-in-out_infinite] motion-reduce:animate-none sm:h-16 sm:w-16"
+        aria-hidden="true"
+      >
+        <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-cyan-100/60 sm:text-[10px]">
+          Nexus
+        </span>
       </div>
+
+      {snapshot.rootNodes.map((node) => {
+        const visual = node.metadata.visual;
+        const pos = renderPosition(node);
+        const focused = node.id === activeId;
+
+        return (
+          <div
+            key={node.id}
+            className="absolute flex flex-col items-center gap-1.5 motion-safe:transition-[opacity] motion-reduce:transition-none"
+            style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: "translate(-50%, -50%)", zIndex: focused ? 15 : 10 }}
+          >
+            <button
+              type="button"
+              aria-current={focused ? "page" : undefined}
+              aria-label={`${focused ? "Focused" : "Focus"} ${node.label}`}
+              onClick={() => focusAndRoute(node.id)}
+              className={cn(
+                "group relative flex items-center justify-center rounded-full border bg-black/70 backdrop-blur-md transition hover:scale-[1.06] focus:outline-none focus:ring-2 focus:ring-cyan-200/60 focus:ring-offset-2 focus:ring-offset-black motion-reduce:transition-none",
+                focused ? "h-16 w-16 border-[1.5px] sm:h-[72px] sm:w-[72px]" : "h-14 w-14 border sm:h-16 sm:w-16",
+              )}
+              style={{
+                borderColor: focused ? `${visual.color}80` : `${visual.color}45`,
+                boxShadow: focused
+                  ? `0 0 0 1px ${visual.color}30, 0 0 34px ${visual.color}55`
+                  : `0 0 18px ${visual.color}28`,
+              }}
+            >
+              {focused && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -inset-2 rounded-full border motion-safe:animate-[nexus-orbit-glow_5s_ease-in-out_infinite] motion-reduce:animate-none"
+                  style={{ borderColor: `${visual.color}35` }}
+                />
+              )}
+              <span
+                className={cn("flex items-center justify-center rounded-full", focused ? "h-7 w-7" : "h-6 w-6")}
+                style={{ color: visual.color, backgroundColor: `${visual.color}18` }}
+              >
+                <NexusIcon name={visual.icon} size={focused ? 16 : 14} />
+              </span>
+            </button>
+
+            <span
+              className={cn(
+                "pointer-events-none max-w-[80px] truncate text-center font-medium",
+                focused ? "text-[11px] text-white" : "text-[10px] text-white/70",
+              )}
+            >
+              {node.label}
+            </span>
+          </div>
+        );
+      })}
     </section>
   );
+}
+
+function renderPosition(node: NexusNodeDefinition) {
+  const { x, y } = node.metadata.visual.coordinates2d;
+  return {
+    x: 50 + (x - 50) * RENDER_INSET,
+    y: 50 + (y - 50) * RENDER_INSET,
+  };
 }

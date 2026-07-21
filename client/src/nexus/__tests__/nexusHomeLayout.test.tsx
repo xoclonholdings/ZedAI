@@ -51,15 +51,18 @@ test("Nexus home keeps document order header -> constellation -> communication -
   );
 });
 
-test("Nexus constellation only labels focused and near nodes, not edge nodes", () => {
+test("Nexus constellation shows all eight root nodes at once, matching the mockup", () => {
   const html = renderNexusHome();
 
   assert.match(html, /aria-label="ZAR Nexus constellation"/);
-  assert.match(html, /In focus/);
 
-  const edgeButtonPattern = /aria-label="Focus [^"]+"[^>]*>(?:(?!<\/button>).)*?<\/button>/gs;
-  const buttons = html.match(edgeButtonPattern) ?? [];
-  assert.ok(buttons.length > 0, "at least one focusable Nexus node rendered");
+  for (const label of ["Identity", "Memory", "Knowledge", "Workspaces", "Projects", "Tools", "Connect", "Settings"]) {
+    assert.match(html, new RegExp(`>${label}<`), `${label} node label should always be visible`);
+  }
+
+  const focusableButtonPattern = /aria-label="(?:Focus|Focused) [^"]+"[^>]*>/g;
+  const buttons = html.match(focusableButtonPattern) ?? [];
+  assert.equal(buttons.length, 8, "all eight root nodes should be focusable buttons");
 });
 
 test("Nexus home is a fixed one-screen shell, not a scrolling page", () => {
