@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
 import { routeForNexusNode } from "../graph/rootConstellation";
 import type { NexusNodeDefinition, NexusNodeId } from "../graph/types";
+import NexusScene from "../scene/NexusScene";
 import {
   canUseNexusWebgl,
   createNexusDriftState,
@@ -12,8 +13,6 @@ import {
 } from "../scene/nexusSceneContract";
 import { useNexus } from "../state/NexusProvider";
 import { NexusIcon } from "./NexusIcon";
-
-const NexusScene = lazy(() => import("../scene/NexusScene"));
 
 /** Pulls the 42-radius ring in slightly so orbs never clip the region edge. */
 const RENDER_INSET = 0.86;
@@ -117,9 +116,7 @@ export function NexusConstellation() {
           className="absolute -inset-x-6 -inset-y-8 [mask-image:radial-gradient(ellipse_at_center,black_58%,transparent_96%)]"
           aria-hidden="true"
         >
-          <Suspense fallback={<FallbackField nodes={sceneNodes} />}>
-            <NexusScene nodes={sceneNodes} drift={drift} reducedMotion={reducedMotion} />
-          </Suspense>
+          <NexusScene nodes={sceneNodes} drift={drift} reducedMotion={reducedMotion} />
         </div>
       ) : (
         <FallbackField nodes={sceneNodes} />
