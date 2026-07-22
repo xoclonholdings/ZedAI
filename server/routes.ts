@@ -25,6 +25,7 @@ import { registerMeRoutes } from "./routes-modules/me";
 import { registerMemoryUploadRoutes } from "./routes-modules/memory-upload";
 import { registerKnowledgeRoutes } from "./routes-modules/knowledge";
 import { registerKnowledgeIngestionRoutes } from "./routes-modules/knowledge-ingestion";
+import { registerLexiconRoutes } from "./routes-modules/lexicon";
 import { registerLearningRoutes } from "./routes-modules/learning";
 import { registerEmailInboxRoutes } from "./routes-modules/email-inbox";
 import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-and-misc";
@@ -68,6 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerConversationCrudRoutes(app);
   registerKnowledgeRoutes(app);
   registerKnowledgeIngestionRoutes(app);
+  registerLexiconRoutes(app);
   registerLearningRoutes(app);
   registerEmailInboxRoutes(app);
   registerProjectRoutes(app);

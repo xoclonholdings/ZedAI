@@ -9,6 +9,7 @@ import { IntelligenceCore } from "./intelligence-core";
 import { ContextIntelligenceEngine } from "./intelligence-core/ContextIntelligenceEngine";
 import { DocumentIntelligenceService } from "./intelligence-core/DocumentIntelligenceService";
 import { ContextInquiryEngine } from "./knowledge-ingestion/ContextInquiryEngine";
+import { LexiconAuthorityService } from "./lexicon-authority/LexiconAuthorityService";
 import { ZedPrincipleEngine } from "./ZedPrincipleEngine";
 import { ZedStrategicReasoningEngine } from "./ZedStrategicReasoningEngine";
 import { ZedReflectionEngine } from "./ZedReflectionEngine";
@@ -87,6 +88,7 @@ export interface ChatExecutionTrace {
   intelligencePlan?: import("./intelligence-core/types").IntelligenceCorePlan;
   contextCompressionRatio?: number;
   documentCitations?: string[];
+  lexiconResolutions?: string[];
 }
 
 export interface ChatExecutionTestHooks {
@@ -319,6 +321,36 @@ export class ChatExecutionService {
       const effectiveMessage = resolveReferencedWebpageForTest(input.message, history);
       const webLookupIntent = isWebLookupIntent(effectiveMessage) || isWebLookupIntent(input.message);
       trace.detectedIntent = webLookupIntent ? "web_research" : "manager";
+
+      // Lexicon Authority runs first, ahead of Context Inquiry, per
+      // SPEC.md § Reasoning Pipeline: User Input -> Lexicon Authority ->
+      // Intent Interpretation -> Knowledge Assembly -> Reasoning ->
+      // Response. It interprets slang, community language, acronyms,
+      // and project/product terminology in the raw message so the rest
+      // of the Cognitive Core reasons over meaning, not just text.
+      trace.servicesInvoked.push("LexiconAuthorityService.resolveText");
+      const lexiconResolution = await LexiconAuthorityService.resolveText(effectiveMessage, {
+        userId: input.userId,
+        workspaceId: input.workspaceId || input.context?.workspaceId,
+      }).catch(() => ({ prompt: "", resolutions: [], unresolvedSignals: [] as string[] }));
+      if (lexiconResolution.resolutions.length > 0) {
+        trace.memorySources.push("LexiconAuthority");
+        trace.lexiconResolutions = lexiconResolution.resolutions.map((resolution) => resolution.term);
+      }
+      // Discovery: quote/definition-style signals ("what does X mean",
+      // 'X') that the lexicon doesn't recognize become low-confidence
+      // candidates with this turn as evidence. Never promoted on one
+      // occurrence — see LexiconAuthorityService.registerCandidate.
+      for (const term of lexiconResolution.unresolvedSignals.slice(0, 3)) {
+        LexiconAuthorityService.registerCandidate({
+          term,
+          evidenceExcerpt: effectiveMessage.slice(0, 480),
+          sourceLabel: "chat_unresolved_signal",
+          userId: input.userId,
+          conversationId: input.conversationId,
+        }).catch(() => null);
+      }
+
       let contextInquiryPrompt = "";
       let contextMaterialUncertainty = false;
 
@@ -608,14 +640,16 @@ export class ChatExecutionService {
               .join("\n\n");
 
       // Cognitive Core order per SPEC.md § Cognitive Core:
-      //   1. Context Inquiry   2. Principle   3. Strategic
-      //   4. Knowledge         5. Voice        6. Reflection (post-response)
+      //   0. Lexicon Authority 1. Context Inquiry   2. Principle
+      //   3. Strategic          4. Knowledge         5. Voice
+      //   6. Reflection (post-response)
       // Intelligence Core reasoning stages (deep thinking + self-
       // orchestration) sit with Strategic Reasoning before knowledge; the
       // adaptive response directive sits just before Voice. Governance is
       // pinned first; response policy is pinned last so style wins ties.
       const cognitiveKnowledgePrompt = [
         governancePrompt,
+        lexiconResolution.prompt,
         contextInquiryPrompt,
         // Workspace memory sits ahead of general knowledge so Zed always
         // works from the workspace's own library first.
@@ -695,6 +729,7 @@ export class ChatExecutionService {
         reasoningEffort: trace.reasoningEffort,
         contextCompressionRatio: trace.contextCompressionRatio,
         documentCitations: trace.documentCitations,
+        lexiconResolutions: trace.lexiconResolutions,
         providerUsed: trace.providerUsed,
         providerTarget: trace.providerTarget,
         projectContextUsed: trace.projectContextUsed,
