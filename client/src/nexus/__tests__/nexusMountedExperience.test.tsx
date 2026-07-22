@@ -41,6 +41,8 @@ test("mounted Nexus communication surface is ZAR-facing and omits the legacy she
   assert.match(html, /Ask ZAR/);
   assert.match(html, /Persistent ZAR communication/);
   assert.match(html, /data-nexus-conversation-runtime="true"/);
+  assert.match(html, /data-nexus-voice=/, "voice dock (waveform + mic) is part of the communication surface");
+  assert.match(html, /Voice input unavailable|Talk to ZAR/);
   assert.doesNotMatch(html, /Message Zed/);
   assert.doesNotMatch(html, /What are we doing/);
   assert.doesNotMatch(html, /Enhanced AI Assistant/);

@@ -441,6 +441,16 @@
     100% { transform: scale(1.9); opacity: 0; }
   }
 
+  @keyframes nexus-wave-idle {
+    0%, 100% { transform: scaleY(1); opacity: 0.5; }
+    50% { transform: scaleY(2.2); opacity: 0.8; }
+  }
+
+  @keyframes nexus-wave-active {
+    0%, 100% { transform: scaleY(0.5); }
+    50% { transform: scaleY(3.4); }
+  }
+
   @keyframes nexus-flow {
     to { stroke-dashoffset: -24; }
   }

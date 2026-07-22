@@ -22,6 +22,7 @@ import {
   type NexusClientAction,
 } from "../actions/NexusClientActions";
 import { NexusConversationRuntime } from "./communication/NexusConversationRuntime";
+import { NexusVoiceDock } from "./communication/NexusVoiceDock";
 import { routeForNexusNode } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
 import {
@@ -32,6 +33,9 @@ import {
 export interface NexusConversationSurfaceProps {
   readonly conversationId?: string | null;
 }
+
+/** Stable identity so a data-less query doesn't feed a new [] into effects every render. */
+const EMPTY_MESSAGES: Message[] = [];
 
 export function NexusConversationSurface({ conversationId }: NexusConversationSurfaceProps) {
   const [, navigate] = useLocation();
@@ -95,7 +99,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     enabled: !!activeConversationId,
   });
 
-  const { data: messages = [] } = useQuery<Message[]>({
+  const { data: messages = EMPTY_MESSAGES } = useQuery<Message[]>({
     queryKey: ["/api/conversations", activeConversationId, "messages"],
     enabled: !!activeConversationId,
     refetchInterval: 5000,
@@ -201,7 +205,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
 
   return (
     <section
-      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-black/40 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:p-4"
+      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-white/[0.09] border-t-white/[0.14] bg-gradient-to-b from-indigo-300/[0.05] via-black/30 to-black/45 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl sm:p-4"
       aria-label="Persistent ZAR communication"
     >
       <div className="mb-2 flex shrink-0 items-center gap-2">
@@ -288,6 +292,11 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       )}
 
       <NexusConversationRuntime controller={conversationController} />
+
+      <NexusVoiceDock
+        onTranscript={conversationController.setComposerValue}
+        isResponding={conversationController.isStreaming}
+      />
     </section>
   );
 }

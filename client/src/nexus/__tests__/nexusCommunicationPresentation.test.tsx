@@ -63,7 +63,6 @@ test("Nexus conversation runtime renders native communication primitives", () =>
   assert.match(html, /Existing conversation/);
   assert.match(html, /Ask ZAR/);
   assert.match(html, /Attach a file/);
-  assert.match(html, /Voice input unavailable/);
   assert.match(html, /Copy/);
   assert.match(html, /Edit/);
   assert.match(html, /Editing message draft/);
