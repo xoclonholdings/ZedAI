@@ -1,25 +1,40 @@
 /**
- * NexusCore — self-contained 3D cosmic core component.
+ * NexusCore V2 — living celestial navigation system.
  *
  * Default export renders its own R3F <Canvas> (transparent, fills container).
  * Named export <NexusCoreScene /> can be dropped into an existing Canvas.
  *
- * Usage:
- *   <NexusCore onRotate={(angle) => ...} />
+ * V2: domains are planets (unique scale/color/orbit/inclination), no graph
+ * lines, snap-to-nearest-domain on release, expanded universe (distant stars,
+ * nebulae, dust), NEXUS core tap = home, planet tap = domain select.
  */
 import {
   useEffect,
   useMemo,
   useRef,
+  useState,
+  type ComponentType,
   type CSSProperties,
+  type ElementType,
   type MutableRefObject,
 } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import * as THREE from "three";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Billboard, Text } from "@react-three/drei";
+import {
+  BookOpen,
+  Brain,
+  Fingerprint,
+  FolderOpen,
+  LayoutGrid,
+  Plug,
+  Settings as SettingsIcon,
+  Wrench,
+} from "lucide-react";
 
 /* ------------------------------------------------------------------ */
-/* Palette                                                             */
+/* Palette & domains                                                    */
 /* ------------------------------------------------------------------ */
 
 const CYAN = "#22d3ee";
@@ -27,7 +42,45 @@ const PURPLE = "#a855f7";
 const MAGENTA = "#ff3ec8";
 const CORE_HOT = "#ffe9fb";
 
-const LINE_COLORS = [CYAN, PURPLE, MAGENTA, "#6ea8ff", MAGENTA, CYAN, PURPLE, "#6ea8ff"];
+export interface NexusDomain {
+  id: string;
+  label: string;
+  color: string;
+  size: number;
+  radius: number;
+  inclination: number;
+  angle: number;
+  ring?: boolean;
+  moon?: boolean;
+  icon?: ComponentType<{ color?: string; size?: number | string; strokeWidth?: number | string }> | ElementType;
+}
+
+export const DEFAULT_DOMAINS: NexusDomain[] = [
+  { id: "identity", label: "IDENTITY", color: "#22d3ee", size: 0.22, radius: 2.65, inclination: 0.19, angle: 0.42, icon: Fingerprint },
+  { id: "memory", label: "MEMORY", color: "#a855f7", size: 0.31, radius: 3.45, inclination: -0.13, angle: 1.28, icon: Brain, ring: true },
+  { id: "knowledge", label: "KNOWLEDGE", color: "#6ea8ff", size: 0.26, radius: 4.35, inclination: 0.09, angle: 2.02, ring: true, icon: BookOpen },
+  { id: "projects", label: "PROJECTS", color: "#f59e0b", size: 0.18, radius: 2.95, inclination: -0.23, angle: 2.88, icon: FolderOpen },
+  { id: "workspaces", label: "WORKSPACES", color: "#2dd4bf", size: 0.24, radius: 3.85, inclination: 0.16, angle: 3.52, moon: true, icon: LayoutGrid },
+  { id: "connect", label: "CONNECT", color: "#ff3ec8", size: 0.28, radius: 4.62, inclination: -0.08, angle: 4.46, icon: Plug },
+  { id: "tools", label: "TOOLS", color: "#fb7185", size: 0.16, radius: 2.32, inclination: 0.26, angle: 5.02, moon: true, icon: Wrench },
+  { id: "settings", label: "SETTINGS", color: "#94a3b8", size: 0.2, radius: 3.15, inclination: -0.19, angle: 5.86, ring: true, icon: SettingsIcon },
+];
+
+const wrapAngle = (x: number) => Math.atan2(Math.sin(x), Math.cos(x));
+
+function domainPosition(d: NexusDomain): THREE.Vector3 {
+  return new THREE.Vector3(
+    Math.cos(d.angle) * d.radius,
+    Math.sin(d.angle) * Math.sin(d.inclination) * d.radius,
+    Math.sin(d.angle) * Math.cos(d.inclination) * d.radius,
+  );
+}
+
+function domainSnapTarget(d: NexusDomain): number {
+  const az = Math.atan2(Math.sin(d.angle) * Math.cos(d.inclination), Math.cos(d.angle));
+  // settle the focused planet front-right of the core, not dead-center at the camera
+  return wrapAngle(Math.PI / 2 - 0.85 - az);
+}
 
 /* ------------------------------------------------------------------ */
 /* Shaders                                                             */
@@ -89,8 +142,40 @@ const coreFragment = /* glsl */ `
   }
 `;
 
+const planetVertex = /* glsl */ `
+  varying vec3 vNormal;
+  varying vec3 vView;
+  varying vec3 vUnit;
+  void main() {
+    vNormal = normalize(normalMatrix * normal);
+    vUnit = normalize(position);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vView = normalize(-mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+
+const planetFragment = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uTime;
+  uniform float uFocus;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  varying vec3 vUnit;
+  void main() {
+    vec3 n = normalize(vNormal);
+    vec3 lightDir = normalize(vec3(0.55, 0.5, 0.72));
+    float diff = clamp(dot(n, lightDir), 0.0, 1.0);
+    float fresnel = pow(1.0 - abs(dot(n, normalize(vView))), 2.3);
+    float bands = 0.5 + 0.5 * sin(vUnit.y * 9.0 + uTime * 0.25 + vUnit.x * 2.0);
+    vec3 base = uColor * (0.14 + 0.72 * diff) * (0.86 + bands * 0.14);
+    vec3 col = base + uColor * fresnel * (1.05 + uFocus * 0.9) + vec3(1.0) * fresnel * 0.1;
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
 /* ------------------------------------------------------------------ */
-/* Helpers                                                             */
+/* Texture helpers                                                     */
 /* ------------------------------------------------------------------ */
 
 function makeGlowTexture(inner: string, mid: string): THREE.CanvasTexture {
@@ -106,6 +191,29 @@ function makeGlowTexture(inner: string, mid: string): THREE.CanvasTexture {
   ctx.fillRect(0, 0, size, size);
   return new THREE.CanvasTexture(canvas);
 }
+
+function makeNebulaTexture(hue: number): THREE.CanvasTexture {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  for (let i = 0; i < 9; i++) {
+    const x = size * (0.22 + Math.random() * 0.56);
+    const y = size * (0.22 + Math.random() * 0.56);
+    const r = size * (0.12 + Math.random() * 0.24);
+    const h = hue + (Math.random() - 0.5) * 40;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `hsla(${h}, 85%, ${55 + Math.random() * 15}%, ${0.16 + Math.random() * 0.14})`);
+    g.addColorStop(1, "hsla(0, 0%, 0%, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+  }
+  return new THREE.CanvasTexture(canvas);
+}
+
+/* ------------------------------------------------------------------ */
+/* Geometry builders                                                   */
+/* ------------------------------------------------------------------ */
 
 interface GalaxyOptions {
   count: number;
@@ -165,12 +273,18 @@ function buildGalaxyGeometry(opts: GalaxyOptions): THREE.BufferGeometry {
   return geo;
 }
 
-function buildStardustGeometry(count: number, spread: number): THREE.BufferGeometry {
+function buildScatterGeometry(
+  count: number,
+  minR: number,
+  maxR: number,
+  yFlatten: number,
+  palette: string[],
+): THREE.BufferGeometry {
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const scales = new Float32Array(count);
   const rands = new Float32Array(count);
-  const palette = [new THREE.Color(CYAN), new THREE.Color(PURPLE), new THREE.Color("#ffffff")];
+  const cols = palette.map((p) => new THREE.Color(p));
 
   for (let i = 0; i < count; i++) {
     const i3 = i * 3;
@@ -179,11 +293,11 @@ function buildStardustGeometry(count: number, spread: number): THREE.BufferGeome
       Math.random() * 2 - 1,
       Math.random() * 2 - 1,
     ).normalize();
-    const r = 1.5 + Math.pow(Math.random(), 0.5) * spread;
+    const r = minR + Math.pow(Math.random(), 0.5) * (maxR - minR);
     positions[i3] = dir.x * r;
-    positions[i3 + 1] = dir.y * r * 0.7;
+    positions[i3 + 1] = dir.y * r * yFlatten;
     positions[i3 + 2] = dir.z * r;
-    const c = palette[Math.floor(Math.random() * palette.length)];
+    const c = cols[Math.floor(Math.random() * cols.length)];
     colors[i3] = c.r;
     colors[i3 + 1] = c.g;
     colors[i3 + 2] = c.b;
@@ -211,10 +325,82 @@ function makePointsMaterial(size: number): THREE.ShaderMaterial {
 }
 
 /* ------------------------------------------------------------------ */
-/* Sub-components                                                      */
+/* Interaction state shared between rig and clickable objects           */
+/* ------------------------------------------------------------------ */
+
+interface InteractionState {
+  active: boolean;
+  lastX: number;
+  lastY: number;
+  velocity: number;
+  tilt: number;
+  moved: number;
+  overrideIndex: number | null;
+}
+
+type InteractionRef = MutableRefObject<InteractionState>;
+
+const isTap = (d: InteractionState) => d.moved < 8;
+
+/* ------------------------------------------------------------------ */
+/* Universe environment (outside the rig)                              */
+/* ------------------------------------------------------------------ */
+
+function Universe({ starCount }: { starCount: number }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const starGeo = useMemo(
+    () => buildScatterGeometry(starCount, 18, 36, 1, ["#ffffff", "#bfe8ff", "#d9c8ff", CYAN]),
+    [starCount],
+  );
+  const starMat = useMemo(() => makePointsMaterial(5), []);
+  const nebulae = useMemo(
+    () => [
+      { tex: makeNebulaTexture(275), pos: [-9, 4, -14], scale: 22, opacity: 0.5 },
+      { tex: makeNebulaTexture(190), pos: [11, -3, -16], scale: 26, opacity: 0.42 },
+      { tex: makeNebulaTexture(315), pos: [4, 7, -18], scale: 20, opacity: 0.38 },
+      { tex: makeNebulaTexture(230), pos: [-12, -6, -20], scale: 24, opacity: 0.34 },
+    ],
+    [],
+  );
+
+  useEffect(
+    () => () => {
+      starGeo.dispose();
+      starMat.dispose();
+      nebulae.forEach((n) => n.tex.dispose());
+    },
+    [starGeo, starMat, nebulae],
+  );
+
+  useFrame(({ clock }, delta) => {
+    starMat.uniforms.uTime.value = clock.elapsedTime;
+    if (groupRef.current) groupRef.current.rotation.y += delta * 0.006;
+  });
+
+  return (
+    <group ref={groupRef}>
+      <points geometry={starGeo} material={starMat} />
+      {nebulae.map((n, i) => (
+        <sprite key={i} position={n.pos as [number, number, number]} scale={[n.scale, n.scale, 1]}>
+          <spriteMaterial
+            map={n.tex}
+            transparent
+            opacity={n.opacity}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </sprite>
+      ))}
+    </group>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Galaxy (self-spinning, keeps the system alive)                       */
 /* ------------------------------------------------------------------ */
 
 function GalaxyField({ count }: { count: number }) {
+  const spinRef = useRef<THREE.Group>(null);
   const geometry = useMemo(
     () =>
       buildGalaxyGeometry({
@@ -228,7 +414,10 @@ function GalaxyField({ count }: { count: number }) {
     [count],
   );
   const material = useMemo(() => makePointsMaterial(9), []);
-  const dustGeometry = useMemo(() => buildStardustGeometry(Math.floor(count * 0.05), 5.5), [count]);
+  const dustGeometry = useMemo(
+    () => buildScatterGeometry(Math.floor(count * 0.05), 1.5, 7, 0.7, [CYAN, PURPLE, "#ffffff"]),
+    [count],
+  );
   const dustMaterial = useMemo(() => makePointsMaterial(6), []);
 
   useEffect(
@@ -241,138 +430,192 @@ function GalaxyField({ count }: { count: number }) {
     [geometry, material, dustGeometry, dustMaterial],
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     material.uniforms.uTime.value = clock.elapsedTime;
     dustMaterial.uniforms.uTime.value = clock.elapsedTime;
+    if (spinRef.current) spinRef.current.rotation.y += delta * 0.03;
   });
 
   return (
-    <>
+    <group ref={spinRef}>
       <points geometry={geometry} material={material} />
       <points geometry={dustGeometry} material={dustMaterial} />
-    </>
-  );
-}
-
-function RadialLines({ count, innerRadius, outerRadius }: {
-  count: number;
-  innerRadius: number;
-  outerRadius: number;
-}) {
-  const groupRef = useRef<THREE.Group>(null);
-  const nodeTexture = useMemo(() => makeGlowTexture("rgba(255,255,255,1)", "rgba(120,220,255,0.55)"), []);
-
-  const lines = useMemo(() => {
-    const segments = 24;
-    return Array.from({ length: count }, (_, i) => {
-      const angle = (i / count) * Math.PI * 2;
-      const color = new THREE.Color(LINE_COLORS[i % LINE_COLORS.length]);
-      const positions = new Float32Array((segments + 1) * 3);
-      const colors = new Float32Array((segments + 1) * 3);
-      for (let s = 0; s <= segments; s++) {
-        const t = s / segments;
-        const r = innerRadius + (outerRadius - innerRadius) * t;
-        positions[s * 3] = Math.cos(angle) * r;
-        positions[s * 3 + 1] = Math.sin(t * Math.PI) * 0.12;
-        positions[s * 3 + 2] = Math.sin(angle) * r;
-        const fade = 0.85 - t * 0.45;
-        colors[s * 3] = color.r * fade;
-        colors[s * 3 + 1] = color.g * fade;
-        colors[s * 3 + 2] = color.b * fade;
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-      geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-      const end = new THREE.Vector3(
-        Math.cos(angle) * outerRadius,
-        0,
-        Math.sin(angle) * outerRadius,
-      );
-      const midDots = [0.3, 0.55, 0.8].map((t) =>
-        new THREE.Vector3(
-          Math.cos(angle) * (innerRadius + (outerRadius - innerRadius) * t),
-          Math.sin(t * Math.PI) * 0.12,
-          Math.sin(angle) * (innerRadius + (outerRadius - innerRadius) * t),
-        ),
-      );
-      const object = new THREE.Line(
-        geo,
-        new THREE.LineBasicMaterial({
-          vertexColors: true,
-          transparent: true,
-          opacity: 0.5,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        }),
-      );
-      return { geo, color, end, midDots, object, phase: i * 0.7 };
-    });
-  }, [count, innerRadius, outerRadius]);
-
-  useEffect(
-    () => () => {
-      lines.forEach((l) => {
-        l.geo.dispose();
-        (l.object.material as THREE.Material).dispose();
-      });
-      nodeTexture.dispose();
-    },
-    [lines, nodeTexture],
-  );
-
-  useFrame(({ clock }) => {
-    const g = groupRef.current;
-    if (!g) return;
-    const t = clock.elapsedTime;
-    g.children.forEach((child, idx) => {
-      const line = lines[Math.floor(idx / 2)];
-      if (!line) return;
-      const pulse = 0.6 + 0.4 * Math.sin(t * 1.8 + line.phase);
-      if (child instanceof THREE.Line) {
-        (child.material as THREE.LineBasicMaterial).opacity = 0.28 + pulse * 0.35;
-      } else if (child instanceof THREE.Group) {
-        const node = child.children[0];
-        if (node) node.scale.setScalar(0.5 + pulse * 0.28);
-      }
-    });
-  });
-
-  return (
-    <group ref={groupRef}>
-      {lines.flatMap((line, i) => [
-        <primitive key={`line-${i}`} object={line.object} />,
-        <group key={`node-${i}`} position={line.end.toArray() as [number, number, number]}>
-          <sprite scale={[0.6, 0.6, 0.6]}>
-            <spriteMaterial
-              map={nodeTexture}
-              color={line.color}
-              transparent
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </sprite>
-          {line.midDots.map((p, j) => (
-            <sprite
-              key={j}
-              position={p.clone().sub(line.end).toArray() as [number, number, number]}
-              scale={[0.16, 0.16, 0.16]}
-            >
-              <spriteMaterial
-                map={nodeTexture}
-                color={line.color}
-                transparent
-                depthWrite={false}
-                blending={THREE.AdditiveBlending}
-              />
-            </sprite>
-          ))}
-        </group>,
-      ])}
     </group>
   );
 }
 
-function CoreOrb({ label }: { label: string }) {
+/* ------------------------------------------------------------------ */
+/* Domain icon rendered onto the planet face                            */
+/* ------------------------------------------------------------------ */
+
+function IconSprite({ domain }: { domain: NexusDomain }) {
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
+
+  useEffect(() => {
+    if (!domain.icon) return;
+    const Icon = domain.icon;
+    const svg = renderToStaticMarkup(<Icon color={domain.color} size={96} strokeWidth={1.4} />);
+    const img = new Image();
+    let tex: THREE.CanvasTexture | null = null;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 128;
+      const ctx = canvas.getContext("2d")!;
+      ctx.shadowColor = domain.color;
+      ctx.shadowBlur = 14;
+      ctx.drawImage(img, 16, 16, 96, 96);
+      tex = new THREE.CanvasTexture(canvas);
+      setTexture(tex);
+    };
+    img.src = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    return () => {
+      tex?.dispose();
+    };
+  }, [domain]);
+
+  if (!texture) return null;
+  return (
+    <sprite scale={[domain.size * 1.35, domain.size * 1.35, 1]} renderOrder={10}>
+      <spriteMaterial map={texture} transparent depthTest={false} opacity={0.95} />
+    </sprite>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Planet                                                              */
+/* ------------------------------------------------------------------ */
+
+function Planet({
+  domain,
+  index,
+  interaction,
+  focusedIndexRef,
+  onSelect,
+}: {
+  domain: NexusDomain;
+  index: number;
+  interaction: InteractionRef;
+  focusedIndexRef: MutableRefObject<number>;
+  onSelect: (domain: NexusDomain, index: number) => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const moonRef = useRef<THREE.Group>(null);
+  const glowRef = useRef<THREE.Sprite>(null);
+  const position = useMemo(() => domainPosition(domain), [domain]);
+
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: planetVertex,
+        fragmentShader: planetFragment,
+        uniforms: {
+          uColor: { value: new THREE.Color(domain.color) },
+          uTime: { value: 0 },
+          uFocus: { value: 0 },
+        },
+      }),
+    [domain.color],
+  );
+  const glowTexture = useMemo(
+    () => makeGlowTexture("rgba(255,255,255,0.9)", `${domain.color}66`),
+    [domain.color],
+  );
+
+  useEffect(
+    () => () => {
+      material.dispose();
+      glowTexture.dispose();
+    },
+    [material, glowTexture],
+  );
+
+  useFrame(({ clock }, delta) => {
+    const g = groupRef.current;
+    if (!g) return;
+    const t = clock.elapsedTime;
+    material.uniforms.uTime.value = t;
+
+    const focused = focusedIndexRef.current === index;
+    const target = focused ? 1 : 0;
+    material.uniforms.uFocus.value +=
+      (target - material.uniforms.uFocus.value) * Math.min(1, 5 * delta);
+
+    const scale = 1 + material.uniforms.uFocus.value * 0.22;
+    g.scale.setScalar(scale);
+    g.position.y = position.y + Math.sin(t * 0.5 + index * 1.7) * 0.06;
+    g.rotation.y += delta * (0.15 + index * 0.02);
+
+    if (glowRef.current) {
+      const m = glowRef.current.material as THREE.SpriteMaterial;
+      m.opacity = 0.55 + material.uniforms.uFocus.value * 0.35 + Math.sin(t * 1.4 + index) * 0.06;
+    }
+    if (moonRef.current) moonRef.current.rotation.y += delta * 0.9;
+  });
+
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (isTap(interaction.current)) onSelect(domain, index);
+  };
+
+  return (
+    <group ref={groupRef} position={position}>
+      <mesh
+        material={material}
+        onClick={handleClick}
+        onPointerOver={() => (document.body.style.cursor = "pointer")}
+        onPointerOut={() => (document.body.style.cursor = "")}
+      >
+        <sphereGeometry args={[domain.size, 32, 32]} />
+      </mesh>
+      <sprite ref={glowRef} scale={[domain.size * 5.2, domain.size * 5.2, 1]}>
+        <spriteMaterial
+          map={glowTexture}
+          color={domain.color}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          opacity={0.55}
+        />
+      </sprite>
+      {domain.ring && (
+        <mesh rotation={[1.25, 0.3, 0]}>
+          <ringGeometry args={[domain.size * 1.55, domain.size * 2.25, 48]} />
+          <meshBasicMaterial
+            color={domain.color}
+            transparent
+            opacity={0.3}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      )}
+      {domain.moon && (
+        <group ref={moonRef}>
+          <mesh position={[domain.size * 2.4, domain.size * 0.5, 0]}>
+            <sphereGeometry args={[domain.size * 0.26, 16, 16]} />
+            <meshBasicMaterial color="#cbd5e1" transparent opacity={0.85} />
+          </mesh>
+        </group>
+      )}
+      <IconSprite domain={domain} />
+    </group>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* NEXUS core (the star / home anchor)                                  */
+/* ------------------------------------------------------------------ */
+
+function CoreOrb({
+  label,
+  interaction,
+  onCoreTap,
+}: {
+  label: string;
+  interaction: InteractionRef;
+  onCoreTap?: () => void;
+}) {
   const coreMaterial = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -412,9 +655,19 @@ function CoreOrb({ label }: { label: string }) {
     }
   });
 
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (isTap(interaction.current)) onCoreTap?.();
+  };
+
   return (
     <group>
-      <mesh material={coreMaterial}>
+      <mesh
+        material={coreMaterial}
+        onClick={handleClick}
+        onPointerOver={() => (document.body.style.cursor = "pointer")}
+        onPointerOut={() => (document.body.style.cursor = "")}
+      >
         <sphereGeometry args={[0.62, 48, 48]} />
       </mesh>
       <sprite ref={haloRef} scale={[3.1, 3.1, 3.1]}>
@@ -447,40 +700,52 @@ function CoreOrb({ label }: { label: string }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Rotation rig: auto-rotate + drag with inertia                       */
+/* Rotation rig: drag + inertia + snap-to-nearest-domain               */
 /* ------------------------------------------------------------------ */
 
-interface RotationRigProps {
-  autoRotateSpeed: number;
+function RotationRig({
+  domains,
+  interactive,
+  interaction,
+  focusedIndexRef,
+  onRotate,
+  onFocusChange,
+  tilt,
+  zoom,
+  children,
+}: {
+  domains: NexusDomain[];
   interactive: boolean;
+  interaction: InteractionRef;
+  focusedIndexRef: MutableRefObject<number>;
   onRotate?: (angle: number) => void;
+  onFocusChange?: (domain: NexusDomain, index: number) => void;
   tilt: number;
+  zoom: number;
   children: React.ReactNode;
-}
-
-function RotationRig({ autoRotateSpeed, interactive, onRotate, tilt, children }: RotationRigProps) {
+}) {
   const rigRef = useRef<THREE.Group>(null);
   const tiltRef = useRef<THREE.Group>(null);
   const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
+  const lastFocusRef = useRef(-1);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
 
-  const drag: MutableRefObject<{
-    active: boolean;
-    lastX: number;
-    lastY: number;
-    velocity: number;
-    tilt: number;
-  }> = useRef({ active: false, lastX: 0, lastY: 0, velocity: 0, tilt });
+  const snapTargets = useMemo(() => domains.map(domainSnapTarget), [domains]);
 
   useEffect(() => {
     if (!interactive) return;
     const el = gl.domElement;
-    const d = drag.current;
+    const d = interaction.current;
 
     const onDown = (e: PointerEvent) => {
       d.active = true;
       d.lastX = e.clientX;
       d.lastY = e.clientY;
       d.velocity = 0;
+      d.moved = 0;
+      d.overrideIndex = null;
       el.setPointerCapture?.(e.pointerId);
     };
     const onMove = (e: PointerEvent) => {
@@ -489,6 +754,7 @@ function RotationRig({ autoRotateSpeed, interactive, onRotate, tilt, children }:
       const dy = e.clientY - d.lastY;
       d.lastX = e.clientX;
       d.lastY = e.clientY;
+      d.moved += Math.abs(dx) + Math.abs(dy);
       rigRef.current.rotation.y += dx * 0.0055;
       d.velocity = dx * 0.0055;
       d.tilt = THREE.MathUtils.clamp(d.tilt + dy * 0.003, 0.12, 0.95);
@@ -510,22 +776,56 @@ function RotationRig({ autoRotateSpeed, interactive, onRotate, tilt, children }:
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, [gl, interactive]);
+  }, [gl, interactive, interaction]);
 
   useFrame((_, delta) => {
     const rig = rigRef.current;
     const tiltGroup = tiltRef.current;
     if (!rig) return;
-    const d = drag.current;
+    const d = interaction.current;
+    const ry = rig.rotation.y;
+
+    // nearest domain by current orientation
+    let nearest = 0;
+    let best = Infinity;
+    for (let i = 0; i < snapTargets.length; i++) {
+      const dist = Math.abs(wrapAngle(ry - snapTargets[i]));
+      if (dist < best) {
+        best = dist;
+        nearest = i;
+      }
+    }
+
+    const focusIdx = d.overrideIndex ?? nearest;
+    focusedIndexRef.current = focusIdx;
+    if (focusIdx !== lastFocusRef.current) {
+      lastFocusRef.current = focusIdx;
+      onFocusChange?.(domains[focusIdx], focusIdx);
+    }
 
     if (!d.active) {
-      rig.rotation.y += d.velocity + autoRotateSpeed * delta;
-      d.velocity *= Math.pow(0.06, delta); // frame-rate independent decay
-      if (Math.abs(d.velocity) < 0.00005) d.velocity = 0;
+      if (Math.abs(d.velocity) > 0.0018) {
+        rig.rotation.y += d.velocity;
+        d.velocity *= Math.pow(0.06, delta);
+      } else {
+        d.velocity = 0;
+        // ease to the focused domain — no meaningless orientations
+        const target = snapTargets[focusIdx];
+        rig.rotation.y += wrapAngle(target - ry) * Math.min(1, 3.2 * delta);
+      }
     }
+
     if (tiltGroup) {
       tiltGroup.rotation.x = THREE.MathUtils.lerp(tiltGroup.rotation.x, d.tilt, 0.12);
     }
+
+    // camera dolly for domain-entry zoom
+    const targetZ = 8.8 / zoomRef.current;
+    const targetY = zoomRef.current > 1.05 ? 0.6 : 1.4;
+    camera.position.z += (targetZ - camera.position.z) * Math.min(1, 3 * delta);
+    camera.position.y += (targetY - camera.position.y) * Math.min(1, 3 * delta);
+    camera.lookAt(0, -0.3, 0);
+
     onRotate?.(rig.rotation.y);
   });
 
@@ -542,34 +842,73 @@ function RotationRig({ autoRotateSpeed, interactive, onRotate, tilt, children }:
 
 export interface NexusCoreSceneProps {
   onRotate?: (angle: number) => void;
-  autoRotateSpeed?: number;
+  onFocusChange?: (domain: NexusDomain, index: number) => void;
+  onDomainSelect?: (domain: NexusDomain, index: number) => void;
+  onCoreTap?: () => void;
+  domains?: NexusDomain[];
   interactive?: boolean;
   particleCount?: number;
-  lineCount?: number;
   label?: string;
   tilt?: number;
+  zoom?: number;
 }
 
 export function NexusCoreScene({
   onRotate,
-  autoRotateSpeed = 0.12,
+  onFocusChange,
+  onDomainSelect,
+  onCoreTap,
+  domains = DEFAULT_DOMAINS,
   interactive = true,
   particleCount = 42000,
-  lineCount = 8,
   label = "NEXUS",
-  tilt = 0.5,
+  tilt = 0.44,
+  zoom = 1,
 }: NexusCoreSceneProps) {
+  const interaction = useRef<InteractionState>({
+    active: false,
+    lastX: 0,
+    lastY: 0,
+    velocity: 0,
+    tilt,
+    moved: 0,
+    overrideIndex: null,
+  });
+  const focusedIndexRef = useRef(0);
+
+  const handleSelect = (domain: NexusDomain, index: number) => {
+    interaction.current.overrideIndex = index;
+    interaction.current.velocity = 0;
+    onDomainSelect?.(domain, index);
+  };
+
   return (
-    <RotationRig
-      autoRotateSpeed={autoRotateSpeed}
-      interactive={interactive}
-      onRotate={onRotate}
-      tilt={tilt}
-    >
-      <GalaxyField count={particleCount} />
-      <RadialLines count={lineCount} innerRadius={1.15} outerRadius={4.7} />
-      <CoreOrb label={label} />
-    </RotationRig>
+    <>
+      <Universe starCount={Math.max(600, Math.floor(particleCount * 0.05))} />
+      <RotationRig
+        domains={domains}
+        interactive={interactive}
+        interaction={interaction}
+        focusedIndexRef={focusedIndexRef}
+        onRotate={onRotate}
+        onFocusChange={onFocusChange}
+        tilt={tilt}
+        zoom={zoom}
+      >
+        <GalaxyField count={particleCount} />
+        {domains.map((d, i) => (
+          <Planet
+            key={d.id}
+            domain={d}
+            index={i}
+            interaction={interaction}
+            focusedIndexRef={focusedIndexRef}
+            onSelect={handleSelect}
+          />
+        ))}
+        <CoreOrb label={label} interaction={interaction} onCoreTap={onCoreTap} />
+      </RotationRig>
+    </>
   );
 }
 
@@ -604,7 +943,7 @@ export default function NexusCore({
       <Canvas
         dpr={[1, 2]}
         gl={{ alpha: transparent, antialias: true, powerPreference: "high-performance" }}
-        camera={{ position: [0, 1.4, 7.4], fov: 45, near: 0.1, far: 60 }}
+        camera={{ position: [0, 1.4, 8.8], fov: 45, near: 0.1, far: 80 }}
         style={{ background: "transparent" }}
       >
         <NexusCoreScene {...sceneProps} />
