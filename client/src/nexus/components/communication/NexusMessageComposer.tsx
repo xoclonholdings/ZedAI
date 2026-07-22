@@ -112,34 +112,42 @@ export function NexusMessageComposer({
 
           <div className="flex-1" />
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={dictation.toggle}
-            disabled={isStreaming || !dictation.speechSupported}
-            title={
-              dictation.speechSupported
-                ? dictation.isDictating
-                  ? "Stop dictation"
-                  : "Dictate"
-                : "Voice input unavailable"
-            }
-            aria-label={
-              dictation.speechSupported
-                ? dictation.isDictating
-                  ? "Stop dictation"
-                  : "Dictate"
-                : "Voice input unavailable"
-            }
-            className={`h-9 w-9 shrink-0 rounded-full transition-all motion-reduce:animate-none ${
-              dictation.isDictating
-                ? "bg-red-500/15 text-red-300 hover:bg-red-500/25"
-                : "text-cyan-100/85 hover:bg-white/[0.06] hover:text-cyan-100 motion-safe:animate-[nexus-breathe_4.5s_ease-in-out_infinite]"
-            } disabled:pointer-events-none disabled:opacity-35 disabled:animate-none`}
-          >
-            {dictation.isDictating ? <MicOff size={15} /> : <Mic size={15} />}
-          </Button>
+          <div className="relative shrink-0">
+            {!dictation.isDictating && (
+              <>
+                <span className="pointer-events-none absolute inset-0 rounded-full border border-cyan-300/40 motion-safe:animate-[nexus-sonar_3s_ease-out_infinite] motion-reduce:hidden" aria-hidden="true" />
+                <span className="pointer-events-none absolute inset-0 rounded-full border border-violet-300/40 motion-safe:animate-[nexus-sonar_3s_ease-out_1.5s_infinite] motion-reduce:hidden" aria-hidden="true" />
+              </>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={dictation.toggle}
+              disabled={isStreaming || !dictation.speechSupported}
+              title={
+                dictation.speechSupported
+                  ? dictation.isDictating
+                    ? "Stop dictation"
+                    : "Dictate"
+                  : "Voice input unavailable"
+              }
+              aria-label={
+                dictation.speechSupported
+                  ? dictation.isDictating
+                    ? "Stop dictation"
+                    : "Dictate"
+                  : "Voice input unavailable"
+              }
+              className={`relative h-12 w-12 shrink-0 rounded-full border-[1.5px] transition-all motion-reduce:animate-none ${
+                dictation.isDictating
+                  ? "border-red-300/50 bg-red-500/15 text-red-300 hover:bg-red-500/25"
+                  : "border-violet-300/50 bg-gradient-to-b from-violet-500/10 to-cyan-500/10 text-cyan-100 hover:bg-white/[0.06] hover:text-white motion-safe:animate-[nexus-breathe_4.5s_ease-in-out_infinite]"
+              } disabled:pointer-events-none disabled:opacity-35 disabled:animate-none`}
+            >
+              {dictation.isDictating ? <MicOff size={19} /> : <Mic size={19} />}
+            </Button>
+          </div>
 
           {isStreaming && onAbort ? (
             <Button

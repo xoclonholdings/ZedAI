@@ -101,7 +101,48 @@ export function NexusConstellation() {
             />
           );
         })}
+
+        {snapshot.rootNodes.map((node) => {
+          const pos = renderPosition(node);
+          const mid = { x: 50 + (pos.x - 50) * 0.55, y: 50 + (pos.y - 50) * 0.55 };
+          const color = node.metadata.visual.color;
+          return (
+            <g key={`bead:${node.id}`}>
+              <circle cx={mid.x} cy={mid.y} r={1.6} fill={color} opacity={0.22} />
+              <circle cx={mid.x} cy={mid.y} r={0.85} fill={color} opacity={0.95} />
+            </g>
+          );
+        })}
+
       </svg>
+
+      {/*
+        Hub rings are plain HTML circles (real px width/height via rounded-full),
+        not SVG: the connections <svg> above uses preserveAspectRatio="none" to
+        match percentage node positions, which would stretch true SVG circles
+        into ellipses on any non-square container. Ring color comes from
+        mask-image (radial-gradient) punching a ring out of a solid conic-gradient
+        disc - border-image was tried first but does not reliably clip to
+        border-radius, and rendered as a rotated square artifact instead of a ring.
+      */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full motion-safe:animate-[nexus-rotate-slow_38s_linear_infinite] motion-reduce:animate-none sm:h-32 sm:w-32"
+        style={{
+          background: "conic-gradient(from 0deg, rgba(34,211,238,0.55), transparent 22%, rgba(167,139,250,0.5), transparent 55%, rgba(244,114,182,0.45), transparent 88%, rgba(34,211,238,0.55))",
+          WebkitMaskImage: "radial-gradient(circle, transparent 63%, black 65%, black 100%)",
+          maskImage: "radial-gradient(circle, transparent 63%, black 65%, black 100%)",
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full motion-safe:animate-[nexus-rotate-slow-reverse_26s_linear_infinite] motion-reduce:animate-none sm:h-24 sm:w-24"
+        style={{
+          background: "conic-gradient(from 90deg, rgba(244,114,182,0.4), transparent 30%, rgba(34,211,238,0.45), transparent 70%, rgba(244,114,182,0.4))",
+          WebkitMaskImage: "radial-gradient(circle, transparent 60%, black 62%, black 100%)",
+          maskImage: "radial-gradient(circle, transparent 60%, black 62%, black 100%)",
+        }}
+        aria-hidden="true"
+      />
 
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-1 w-1 rounded-full bg-cyan-200/70 shadow-[0_0_8px_2px_rgba(103,232,249,0.6)] motion-safe:animate-[nexus-orbit-drift_18s_linear_infinite] motion-reduce:hidden"
@@ -115,20 +156,12 @@ export function NexusConstellation() {
       />
 
       <div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.05] motion-safe:animate-[nexus-rotate-slow_38s_linear_infinite] motion-reduce:animate-none sm:h-32 sm:w-32"
-        style={{ borderImage: "conic-gradient(from 0deg, rgba(34,211,238,0.32), transparent 22%, rgba(167,139,250,0.28), transparent 55%, rgba(244,114,182,0.24), transparent 88%, rgba(34,211,238,0.32)) 1" }}
+        className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full motion-safe:animate-[nexus-pulse_8s_ease-in-out_infinite] motion-reduce:animate-none sm:h-28 sm:w-28"
+        style={{ background: "radial-gradient(circle, rgba(251,146,60,0.28), rgba(217,70,239,0.2) 38%, rgba(56,189,248,0.16) 64%, transparent 80%)" }}
         aria-hidden="true"
       />
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.05] motion-safe:animate-[nexus-rotate-slow-reverse_26s_linear_infinite] motion-reduce:animate-none sm:h-24 sm:w-24"
-        style={{ borderImage: "conic-gradient(from 90deg, rgba(244,114,182,0.22), transparent 30%, rgba(34,211,238,0.26), transparent 70%, rgba(244,114,182,0.22)) 1" }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-cyan-200/15 bg-black/40 shadow-[0_0_70px_rgba(56,189,248,0.28),inset_0_0_20px_rgba(167,139,250,0.12)] backdrop-blur-sm motion-safe:animate-[nexus-pulse_8s_ease-in-out_infinite] motion-reduce:animate-none sm:h-16 sm:w-16"
-        aria-hidden="true"
-      >
-        <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-cyan-100/60 sm:text-[10px]">
+      <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center" aria-hidden="true">
+        <span className="text-lg font-bold uppercase tracking-[0.28em] text-white drop-shadow-[0_0_18px_rgba(125,211,252,0.55)] sm:text-xl">
           Nexus
         </span>
       </div>
@@ -150,14 +183,14 @@ export function NexusConstellation() {
               aria-label={`${focused ? "Focused" : "Focus"} ${node.label}`}
               onClick={() => focusAndRoute(node.id)}
               className={cn(
-                "group relative flex items-center justify-center rounded-full border bg-black/70 backdrop-blur-md transition hover:scale-[1.06] focus:outline-none focus:ring-2 focus:ring-cyan-200/60 focus:ring-offset-2 focus:ring-offset-black motion-reduce:transition-none",
-                focused ? "h-16 w-16 border-[1.5px] sm:h-[72px] sm:w-[72px]" : "h-14 w-14 border sm:h-16 sm:w-16",
+                "group relative flex items-center justify-center rounded-full bg-black/55 backdrop-blur-md transition hover:scale-[1.06] focus:outline-none focus:ring-2 focus:ring-cyan-200/60 focus:ring-offset-2 focus:ring-offset-black motion-reduce:transition-none",
+                focused ? "h-[72px] w-[72px] border-2 sm:h-20 sm:w-20" : "h-16 w-16 border-[1.5px] sm:h-[72px] sm:w-[72px]",
               )}
               style={{
-                borderColor: focused ? `${visual.color}80` : `${visual.color}45`,
+                borderColor: focused ? visual.color : `${visual.color}90`,
                 boxShadow: focused
-                  ? `0 0 0 1px ${visual.color}30, 0 0 34px ${visual.color}55`
-                  : `0 0 18px ${visual.color}28`,
+                  ? `0 0 0 1px ${visual.color}30, 0 0 34px ${visual.color}55, inset 0 0 16px ${visual.color}1a`
+                  : `0 0 18px ${visual.color}28, inset 0 0 12px ${visual.color}14`,
               }}
             >
               {focused && (
@@ -168,17 +201,17 @@ export function NexusConstellation() {
                 />
               )}
               <span
-                className={cn("flex items-center justify-center rounded-full", focused ? "h-7 w-7" : "h-6 w-6")}
-                style={{ color: visual.color, backgroundColor: `${visual.color}18` }}
+                className="flex items-center justify-center"
+                style={{ color: visual.color, filter: `drop-shadow(0 0 6px ${visual.color}70)` }}
               >
-                <NexusIcon name={visual.icon} size={focused ? 16 : 14} />
+                <NexusIcon name={visual.icon} size={focused ? 26 : 22} />
               </span>
             </button>
 
             <span
               className={cn(
-                "pointer-events-none max-w-[80px] truncate text-center font-medium",
-                focused ? "text-[11px] text-white" : "text-[10px] text-white/70",
+                "pointer-events-none max-w-[84px] truncate text-center font-semibold uppercase tracking-[0.1em]",
+                focused ? "text-[10.5px] text-white" : "text-[9.5px] text-white/72",
               )}
             >
               {node.label}

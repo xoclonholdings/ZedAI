@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { Sparkles } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 
 import { useAuth } from "@/components/auth/UseAuth";
@@ -24,6 +25,7 @@ export default function NexusRootPage({
   const routeNodeId = isNexusRootNodeId(params.nodeId) ? params.nodeId : null;
   const hasUnknownRouteNode = Boolean(params.nodeId && !routeNodeId);
   const displayName = user?.personalization?.displayName ?? user?.displayName ?? user?.firstName ?? user?.username ?? "there";
+  const greeting = useMemo(() => timeOfDayGreeting(new Date().getHours()), []);
   const showInspector = useMemo(() => shouldShowNexusDeveloperInspector({
     isDevelopment: Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV),
     queryString: typeof window === "undefined" ? "" : window.location.search,
@@ -48,13 +50,21 @@ export default function NexusRootPage({
       <header className="shrink-0 px-4 pt-safe-sm sm:px-6">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 py-4 sm:py-5">
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100/55">
+            <div className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
               ZAR
             </div>
-            <h1 className="mt-1.5 truncate text-xl font-medium tracking-tight text-white sm:text-2xl">
-              Welcome back, {displayName}
+            <h1 className="mt-1 truncate text-base font-medium text-white sm:text-lg">
+              {greeting}, {displayName}
             </h1>
+            <p className="truncate text-[13px] text-white/45">How can I assist you today?</p>
           </div>
+          <button
+            type="button"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-violet-200 shadow-[0_0_18px_rgba(167,139,250,0.25)] transition hover:border-violet-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
+            aria-label="Ask ZAR"
+          >
+            <Sparkles size={18} />
+          </button>
         </div>
       </header>
 
@@ -76,4 +86,11 @@ export default function NexusRootPage({
       {showInspector && <NexusDeveloperInspector />}
     </div>
   );
+}
+
+function timeOfDayGreeting(hour: number): string {
+  if (hour < 5) return "Good night";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
