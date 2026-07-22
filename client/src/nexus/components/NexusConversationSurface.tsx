@@ -22,6 +22,7 @@ import {
   type NexusClientAction,
 } from "../actions/NexusClientActions";
 import { NexusConversationRuntime } from "./communication/NexusConversationRuntime";
+import { NexusVoiceDock } from "./communication/NexusVoiceDock";
 import { routeForNexusNode } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
 import {
@@ -32,6 +33,9 @@ import {
 export interface NexusConversationSurfaceProps {
   readonly conversationId?: string | null;
 }
+
+/** Stable identity so a data-less query doesn't feed a new [] into effects every render. */
+const EMPTY_MESSAGES: Message[] = [];
 
 export function NexusConversationSurface({ conversationId }: NexusConversationSurfaceProps) {
   const [, navigate] = useLocation();
@@ -95,7 +99,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     enabled: !!activeConversationId,
   });
 
-  const { data: messages = [] } = useQuery<Message[]>({
+  const { data: messages = EMPTY_MESSAGES } = useQuery<Message[]>({
     queryKey: ["/api/conversations", activeConversationId, "messages"],
     enabled: !!activeConversationId,
     refetchInterval: 5000,
@@ -201,19 +205,21 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
 
   return (
     <section
-      className="rounded-2xl border border-white/[0.08] bg-black/55 p-3 shadow-[0_20px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-4"
+      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-white/[0.09] border-t-white/[0.14] bg-gradient-to-b from-indigo-300/[0.05] via-black/30 to-black/45 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl sm:p-4"
       aria-label="Persistent ZAR communication"
     >
-      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
-            ZAR
-          </div>
-          <div className="truncate text-sm text-white/70">
-            {status} - Focused on {focusedLabel}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+      <div className="mb-2 flex shrink-0 items-center gap-2">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none" aria-hidden="true" />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
+          ZAR
+        </span>
+        {status !== "Ready" && (
+          <span className="truncate text-[12px] text-white/55">{status}</span>
+        )}
+      </div>
+
+      <div className="mb-2.5 shrink-0">
+        <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} communication modes`}>
           {modes.map((mode) => (
             <CommunicationModeButton
               key={mode.id}
@@ -228,7 +234,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       </div>
 
       {conversations.length > 0 && (
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
+        <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
           {conversations.slice(0, 6).map((conversation) => (
             <button
               key={conversation.id}
@@ -248,7 +254,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       )}
 
       {projects.length > 0 && (
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1" aria-label="Project context">
+        <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Project context">
           <button
             type="button"
             onClick={() => {
@@ -286,6 +292,11 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       )}
 
       <NexusConversationRuntime controller={conversationController} />
+
+      <NexusVoiceDock
+        onTranscript={conversationController.setComposerValue}
+        isResponding={conversationController.isStreaming}
+      />
     </section>
   );
 }
@@ -304,13 +315,14 @@ function CommunicationModeButton({
       onClick={onSelect}
       disabled={!mode.enabled}
       className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-white/62 transition hover:border-cyan-200/30 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none",
-        !mode.enabled && "cursor-not-allowed opacity-40 hover:border-white/[0.08] hover:text-white/62",
+        "flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1 text-white/58 transition hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none",
+        !mode.enabled && "cursor-not-allowed opacity-35 hover:text-white/58",
       )}
       title={mode.label}
       aria-label={`${mode.label} communication`}
     >
-      <Icon size={15} />
+      <Icon size={17} />
+      <span className="max-w-[52px] truncate text-[9px] font-medium">{mode.label}</span>
     </button>
   );
 }

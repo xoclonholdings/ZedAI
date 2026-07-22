@@ -6,7 +6,7 @@ export function NexusDeveloperInspector() {
   const { snapshot, viewport } = useNexus();
 
   return (
-    <section className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.04] p-4 text-white">
+    <section className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 max-h-[40vh] overflow-y-auto rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.5)] backdrop-blur-xl sm:inset-x-auto sm:right-4 sm:w-80">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-md border border-amber-200/20 bg-amber-200/[0.07] text-amber-100">
           <Layers size={18} />

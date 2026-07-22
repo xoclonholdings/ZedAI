@@ -95,7 +95,13 @@ export function useNexusConversationController({
     : conversation?.title || "Nexus communication";
 
   useEffect(() => {
-    if (!isStreaming) setLocalMessages([...messages]);
+    if (isStreaming) return;
+    // Keep the previous array when nothing changed - the incoming list can be a
+    // fresh [] identity on every render while the query has no data, and
+    // unconditionally cloning it re-triggers this effect in a render loop.
+    setLocalMessages((previous) =>
+      previous.length === 0 && messages.length === 0 ? previous : [...messages],
+    );
   }, [messages, isStreaming]);
 
   useEffect(() => {

@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react";
-import { Mic, MicOff, Paperclip, Send, Square } from "lucide-react";
+import { Paperclip, Send, Square } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useNexusDictation } from "../../communication/useNexusDictation";
 
 interface NexusMessageComposerProps {
   readonly value: string;
@@ -31,7 +30,6 @@ export function NexusMessageComposer({
   fontSize = "medium",
 }: NexusMessageComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const dictation = useNexusDictation(onValueChange);
   const minTextareaHeight = compact ? 32 : 36;
   const maxTextareaHeight = 96;
   const textClass =
@@ -89,7 +87,7 @@ export function NexusMessageComposer({
           value={value}
           onChange={(event) => onValueChange(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={dictation.isDictating ? "Listening..." : "Ask ZAR"}
+          placeholder="Ask ZAR"
           rows={1}
           style={{ minHeight: minTextareaHeight, maxHeight: maxTextareaHeight }}
           className={`block w-full resize-none overflow-y-auto border-0 bg-transparent px-2 py-1.5 text-left text-white shadow-none outline-none placeholder:text-left placeholder:text-white/35 focus-visible:ring-0 focus-visible:ring-offset-0 ${textClass}`}
@@ -111,35 +109,6 @@ export function NexusMessageComposer({
           </Button>
 
           <div className="flex-1" />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={dictation.toggle}
-            disabled={isStreaming || !dictation.speechSupported}
-            title={
-              dictation.speechSupported
-                ? dictation.isDictating
-                  ? "Stop dictation"
-                  : "Dictate"
-                : "Voice input unavailable"
-            }
-            aria-label={
-              dictation.speechSupported
-                ? dictation.isDictating
-                  ? "Stop dictation"
-                  : "Dictate"
-                : "Voice input unavailable"
-            }
-            className={`h-8 w-8 shrink-0 rounded-xl ${
-              dictation.isDictating
-                ? "bg-red-500/15 text-red-300 hover:bg-red-500/25"
-                : "text-white/48 hover:bg-white/[0.06] hover:text-cyan-200"
-            } disabled:pointer-events-none disabled:opacity-35`}
-          >
-            {dictation.isDictating ? <MicOff size={14} /> : <Mic size={14} />}
-          </Button>
 
           {isStreaming && onAbort ? (
             <Button
