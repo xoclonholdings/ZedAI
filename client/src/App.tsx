@@ -30,6 +30,7 @@ import HistoryPage from "@/pages/history";
 import InboxPage from "@/pages/inbox";
 import LearningPage from "@/pages/learning";
 import LearningStudioPage from "@/pages/learning-studio";
+import NexusCoreDemoPage from "@/pages/nexus-core-demo";
 
 installApiFetchPatch();
 
@@ -80,6 +81,10 @@ function Router() {
     <Switch>
       <Route path="/">
         {isAuthenticated ? <NexusRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/nexus-core-demo">
+        <NexusCoreDemoPage />
       </Route>
 
       <Route path="/chat/:id?">
