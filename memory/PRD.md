@@ -37,6 +37,16 @@ Build a standalone, modular 3D React component `NexusCore` (Three.js + @react-th
 - Demo: `atmosphere-tint` CSS radial overlay in domain color (900ms fade), per-domain world taglines (DOMAIN_WORLDS map) shown in overlay via `domain-world-tagline`
 - Verified via screenshot: warp streaks + cyan identity atmosphere + themed overlay all working
 
+### V2.2 — FINAL VISUAL CONVERGENCE (2026-06) — VISUALS FROZEN
+- Chakra planet palette: identity=white #e8ecf4, memory=violet #8b5cf6 (crown), knowledge=cyan #22d3ee (throat), projects=gold #eab308 (solar), workspaces=green #34d399 (heart), connect=orange #fb923c (sacral), tools=red #ef4444 (root), settings=indigo #6366f1 (third eye)
+- Warp: premium 420ms entry (fast-in 9/s, smooth-out 5/s intensity lerp, shorter/subtler streaks, opacity 0.7)
+- World entry: modal overlay + flash + taglines REMOVED per final spec. Replaced with minimal top workspace bar (chevron back + colored dot + domain name; testids kept: domain-overlay, domain-overlay-title, domain-back-btn). Universe changes instead of pages.
+- NEXUS energy: CoreOrb `energyColor` prop — core shader colors + halo lerp toward active world color (2.5/s breathe), geometry unchanged
+- Console: layout identical; accents only (mic ring/glow, status dot, edge lights) follow active world color w/ 700ms CSS transitions; default accent cyan
+- Zoom softened 2.3→1.8, camera lerp 3→4.5/s for fast settle
+- Verified via scripted browser check: home state, world entry (IDENTITY), back-to-home all pass
+- STATUS: visual system feature-complete. Next phase = production integration into ZAR app (NOT visual iteration)
+
 ## Notes / Gotchas
 - Pod uses software WebGL (SwiftShader): automated tests must use `?particles=2500` and `domcontentloaded` waits
 - App's Express backend not running; `/api/me` 502s on demo page are expected and harmless

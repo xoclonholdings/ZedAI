@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ChevronLeft,
   Clock,
   FileText,
   Image as ImageIcon,
@@ -9,7 +10,6 @@ import {
   PenLine,
   Sparkles,
   Upload,
-  X,
 } from "lucide-react";
 import NexusCore, { type NexusDomain } from "@/nexus/components/NexusCore";
 
@@ -22,16 +22,7 @@ const CONSOLE_MODES = [
   { id: "upload", label: "Upload", Icon: Upload },
 ];
 
-const DOMAIN_WORLDS: Record<string, string> = {
-  identity: "Cyan stratosphere · biometric aurora fields",
-  memory: "Violet storm belts · archives drifting in deep cloud",
-  knowledge: "Blue oceanic glow · orbital libraries in the rings",
-  projects: "Amber dust plains · construction winds rising",
-  workspaces: "Teal terraces · orbital habitats in formation",
-  connect: "Magenta ion storms · signal relays crossing the dark",
-  tools: "Rose forge vents · machinery humming beneath the crust",
-  settings: "Slate calibration fields · quiet systems in alignment",
-};
+const DEFAULT_ACCENT = "#22d3ee";
 
 function Waveform({ colorFrom, colorTo, flip }: { colorFrom: string; colorTo: string; flip?: boolean }) {
   const bars = useMemo(
@@ -58,10 +49,10 @@ export default function NexusCoreDemoPage() {
   const angleRef = useRef<HTMLSpanElement>(null);
   const [focused, setFocused] = useState<NexusDomain | null>(null);
   const [selected, setSelected] = useState<NexusDomain | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [flash, setFlash] = useState(false);
-  const [themeColor, setThemeColor] = useState<string | null>(null);
-  const panelTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [inWorld, setInWorld] = useState(false);
+  const entryTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const accent = selected?.color ?? DEFAULT_ACCENT;
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -90,24 +81,17 @@ export default function NexusCoreDemoPage() {
 
   const handleDomainSelect = useCallback((domain: NexusDomain) => {
     setSelected(domain);
-    setThemeColor(domain.color);
-    setFlash(true);
-    clearTimeout(panelTimer.current);
-    panelTimer.current = setTimeout(() => {
-      setFlash(false);
-      setPanelOpen(true);
-    }, 1150);
+    clearTimeout(entryTimer.current);
+    entryTimer.current = setTimeout(() => setInWorld(true), 420);
   }, []);
 
   const returnHome = useCallback(() => {
-    clearTimeout(panelTimer.current);
-    setPanelOpen(false);
-    setFlash(false);
+    clearTimeout(entryTimer.current);
+    setInWorld(false);
     setSelected(null);
-    setThemeColor(null);
   }, []);
 
-  useEffect(() => () => clearTimeout(panelTimer.current), []);
+  useEffect(() => () => clearTimeout(entryTimer.current), []);
 
   return (
     <div
@@ -127,8 +111,8 @@ export default function NexusCoreDemoPage() {
           onFocusChange={handleFocusChange}
           onDomainSelect={handleDomainSelect}
           onCoreTap={returnHome}
-          zoom={selected ? 2.3 : 1}
-          warp={!!selected && !panelOpen}
+          zoom={selected ? 1.8 : 1}
+          warp={!!selected && !inWorld}
           atmosphere={selected?.color ?? null}
         />
       </div>
@@ -138,11 +122,11 @@ export default function NexusCoreDemoPage() {
         data-testid="atmosphere-tint"
         className="pointer-events-none absolute inset-0"
         style={{
-          background: themeColor
-            ? `radial-gradient(ellipse 85% 70% at 50% 45%, ${themeColor}2e 0%, ${themeColor}14 40%, transparent 75%)`
+          background: selected
+            ? `radial-gradient(ellipse 85% 70% at 50% 45%, ${accent}26 0%, ${accent}10 40%, transparent 75%)`
             : "transparent",
           opacity: selected ? 1 : 0,
-          transition: "opacity 900ms ease, background 900ms ease",
+          transition: "opacity 700ms ease",
         }}
       />
 
@@ -178,13 +162,46 @@ export default function NexusCoreDemoPage() {
         </div>
       </header>
 
+      {/* Workspace bar — you have arrived, not opened a screen */}
+      {inWorld && selected && (
+        <div
+          data-testid="domain-overlay"
+          className="absolute left-0 right-0 top-[92px] z-20 flex justify-center"
+          style={{ animation: "nexus-settle 500ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
+        >
+          <div
+            className="pointer-events-auto flex items-center gap-2 rounded-full border bg-black/40 py-1.5 pl-2 pr-5 backdrop-blur-md"
+            style={{ borderColor: `${selected.color}3a` }}
+          >
+            <button
+              data-testid="domain-back-btn"
+              onClick={returnHome}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span
+              className="block h-1.5 w-1.5 rounded-full"
+              style={{ background: selected.color, boxShadow: `0 0 8px 2px ${selected.color}88` }}
+            />
+            <span
+              data-testid="domain-overlay-title"
+              className="text-xs font-semibold tracking-[0.35em]"
+              style={{ color: selected.color }}
+            >
+              {selected.label}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Focused domain indicator */}
       <div className="pointer-events-none absolute bottom-[248px] left-0 right-0 flex justify-center">
         {focused && !selected && (
           <div
             data-testid="focused-domain-label"
             className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/35 px-5 py-2 backdrop-blur-md"
-            style={{ animation: "nexus-fade-in 400ms ease both" }}
+            style={{ animation: "nexus-settle 400ms ease both" }}
           >
             <span
               className="block h-2 w-2 rounded-full"
@@ -197,10 +214,9 @@ export default function NexusCoreDemoPage() {
         )}
       </div>
 
-      {/* Command console — spacecraft command deck */}
+      {/* Command console — the user's ship; accents follow the active world */}
       <div className="absolute bottom-0 left-0 right-0 flex justify-center">
         <div className="relative w-full max-w-[760px]" data-testid="command-console">
-          {/* chassis */}
           <div
             className="relative border border-b-0 border-indigo-400/25 bg-gradient-to-b from-[#0d0a1f] via-[#0a0718] to-[#070512] px-5 pb-4 pt-3 shadow-[0_-10px_60px_-15px_rgba(99,102,241,0.45)]"
             style={{
@@ -208,12 +224,21 @@ export default function NexusCoreDemoPage() {
             }}
           >
             {/* edge accent lights */}
-            <div className="pointer-events-none absolute left-0 top-1/2 h-16 w-[3px] -translate-y-1/2 rounded-r bg-gradient-to-b from-cyan-400/70 to-purple-500/70 blur-[1px]" />
-            <div className="pointer-events-none absolute right-0 top-1/2 h-16 w-[3px] -translate-y-1/2 rounded-l bg-gradient-to-b from-purple-500/70 to-cyan-400/70 blur-[1px]" />
+            <div
+              className="pointer-events-none absolute left-0 top-1/2 h-16 w-[3px] -translate-y-1/2 rounded-r blur-[1px]"
+              style={{ background: `linear-gradient(to bottom, ${accent}b0, #a855f7b0)`, transition: "background 700ms ease" }}
+            />
+            <div
+              className="pointer-events-none absolute right-0 top-1/2 h-16 w-[3px] -translate-y-1/2 rounded-l blur-[1px]"
+              style={{ background: `linear-gradient(to bottom, #a855f7b0, ${accent}b0)`, transition: "background 700ms ease" }}
+            />
 
             {/* status row */}
             <div className="mb-2 mt-5 flex items-center gap-2 px-1">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-300" />
+              <span
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{ background: accent, transition: "background 700ms ease" }}
+              />
               <span className="text-xs font-semibold tracking-wider text-gray-200">ZAR</span>
               <span className="text-[11px] text-emerald-400" data-testid="console-status">· Online</span>
             </div>
@@ -237,10 +262,18 @@ export default function NexusCoreDemoPage() {
               <div className="flex-1"><Waveform colorFrom="#a855f7" colorTo="#6d28d9" /></div>
               <button
                 data-testid="console-mic-btn"
-                className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-cyan-400/60 bg-[#0b0a1a] shadow-[0_0_22px_-2px_rgba(34,211,238,0.55)] transition-transform hover:scale-105"
+                className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 bg-[#0b0a1a] transition-transform hover:scale-105"
+                style={{
+                  borderColor: `${accent}99`,
+                  boxShadow: `0 0 22px -2px ${accent}8c`,
+                  transition: "border-color 700ms ease, box-shadow 700ms ease, transform 150ms ease",
+                }}
               >
                 <Mic className="h-5 w-5 text-gray-100" />
-                <span className="absolute inset-[-6px] rounded-full border border-cyan-400/20" />
+                <span
+                  className="absolute inset-[-6px] rounded-full border"
+                  style={{ borderColor: `${accent}33`, transition: "border-color 700ms ease" }}
+                />
               </button>
               <div className="flex-1"><Waveform colorFrom="#22d3ee" colorTo="#3b82f6" flip /></div>
             </div>
@@ -265,64 +298,8 @@ export default function NexusCoreDemoPage() {
         </div>
       </div>
 
-      {/* Domain entry flash */}
-      {flash && selected && (
-        <div
-          data-testid="domain-entry-flash"
-          className="pointer-events-none absolute inset-0 z-20"
-          style={{
-            background: `radial-gradient(circle at 50% 45%, ${selected.color}55 0%, transparent 65%)`,
-            animation: "nexus-flash 750ms ease both",
-          }}
-        />
-      )}
-
-      {/* Domain placeholder overlay */}
-      {panelOpen && selected && (
-        <div
-          data-testid="domain-overlay"
-          className="absolute inset-0 z-30 flex items-center justify-center bg-black/45 backdrop-blur-[3px]"
-          style={{ animation: "nexus-fade-in 500ms ease both" }}
-        >
-          <div
-            className="relative mx-4 w-full max-w-md rounded-2xl border bg-[#0a0618]/85 p-8 text-center backdrop-blur-xl"
-            style={{ borderColor: `${selected.color}44`, boxShadow: `0 0 60px -15px ${selected.color}99` }}
-          >
-            <button
-              data-testid="domain-back-btn"
-              onClick={returnHome}
-              className="absolute right-3.5 top-3.5 rounded-full p-1.5 text-gray-500 transition-colors hover:bg-white/10 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <span
-              className="mx-auto mb-5 block h-3 w-3 rounded-full"
-              style={{ background: selected.color, boxShadow: `0 0 18px 5px ${selected.color}77` }}
-            />
-            <h2
-              data-testid="domain-overlay-title"
-              className="text-2xl font-semibold tracking-[0.35em]"
-              style={{ color: selected.color }}
-            >
-              {selected.label}
-            </h2>
-            <p
-              data-testid="domain-world-tagline"
-              className="mt-2 text-[11px] tracking-[0.12em]"
-              style={{ color: `${selected.color}cc` }}
-            >
-              {DOMAIN_WORLDS[selected.id] ?? ""}
-            </p>
-            <p className="mt-3 text-sm text-gray-400">
-              Domain interface placeholder — this workspace opens here.
-            </p>
-          </div>
-        </div>
-      )}
-
       <style>{`
-        @keyframes nexus-fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-        @keyframes nexus-flash { 0% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 0.65; } }
+        @keyframes nexus-settle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
       `}</style>
     </div>
   );

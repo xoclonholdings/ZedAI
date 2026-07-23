@@ -55,15 +55,16 @@ export interface NexusDomain {
   icon?: ComponentType<{ color?: string; size?: number | string; strokeWidth?: number | string }> | ElementType;
 }
 
+// chakra-aligned domain identities
 export const DEFAULT_DOMAINS: NexusDomain[] = [
-  { id: "identity", label: "IDENTITY", color: "#22d3ee", size: 0.22, radius: 2.65, inclination: 0.19, angle: 0.42, icon: Fingerprint },
-  { id: "memory", label: "MEMORY", color: "#a855f7", size: 0.31, radius: 3.45, inclination: -0.13, angle: 1.28, icon: Brain, ring: true },
-  { id: "knowledge", label: "KNOWLEDGE", color: "#6ea8ff", size: 0.26, radius: 4.35, inclination: 0.09, angle: 2.02, ring: true, icon: BookOpen },
-  { id: "projects", label: "PROJECTS", color: "#f59e0b", size: 0.18, radius: 2.95, inclination: -0.23, angle: 2.88, icon: FolderOpen },
-  { id: "workspaces", label: "WORKSPACES", color: "#2dd4bf", size: 0.24, radius: 3.85, inclination: 0.16, angle: 3.52, moon: true, icon: LayoutGrid },
-  { id: "connect", label: "CONNECT", color: "#ff3ec8", size: 0.28, radius: 4.62, inclination: -0.08, angle: 4.46, icon: Plug },
-  { id: "tools", label: "TOOLS", color: "#fb7185", size: 0.16, radius: 2.32, inclination: 0.26, angle: 5.02, moon: true, icon: Wrench },
-  { id: "settings", label: "SETTINGS", color: "#94a3b8", size: 0.2, radius: 3.15, inclination: -0.19, angle: 5.86, ring: true, icon: SettingsIcon },
+  { id: "identity", label: "IDENTITY", color: "#e8ecf4", size: 0.22, radius: 2.65, inclination: 0.19, angle: 0.42, icon: Fingerprint },
+  { id: "memory", label: "MEMORY", color: "#8b5cf6", size: 0.31, radius: 3.45, inclination: -0.13, angle: 1.28, icon: Brain, ring: true },
+  { id: "knowledge", label: "KNOWLEDGE", color: "#22d3ee", size: 0.26, radius: 4.35, inclination: 0.09, angle: 2.02, ring: true, icon: BookOpen },
+  { id: "projects", label: "PROJECTS", color: "#eab308", size: 0.18, radius: 2.95, inclination: -0.23, angle: 2.88, icon: FolderOpen },
+  { id: "workspaces", label: "WORKSPACES", color: "#34d399", size: 0.24, radius: 3.85, inclination: 0.16, angle: 3.52, moon: true, icon: LayoutGrid },
+  { id: "connect", label: "CONNECT", color: "#fb923c", size: 0.28, radius: 4.62, inclination: -0.08, angle: 4.46, icon: Plug },
+  { id: "tools", label: "TOOLS", color: "#ef4444", size: 0.16, radius: 2.32, inclination: 0.26, angle: 5.02, moon: true, icon: Wrench },
+  { id: "settings", label: "SETTINGS", color: "#6366f1", size: 0.2, radius: 3.15, inclination: -0.19, angle: 5.86, ring: true, icon: SettingsIcon },
 ];
 
 const wrapAngle = (x: number) => Math.atan2(Math.sin(x), Math.cos(x));
@@ -611,10 +612,12 @@ function CoreOrb({
   label,
   interaction,
   onCoreTap,
+  energyColor,
 }: {
   label: string;
   interaction: InteractionRef;
   onCoreTap?: () => void;
+  energyColor?: string | null;
 }) {
   const coreMaterial = useMemo(
     () =>
@@ -638,6 +641,20 @@ function CoreOrb({
     [],
   );
   const haloRef = useRef<THREE.Sprite>(null);
+  const energyRef = useRef({ a: new THREE.Color(MAGENTA), b: new THREE.Color(CYAN), halo: new THREE.Color("#ffffff") });
+
+  useEffect(() => {
+    const e = energyRef.current;
+    if (energyColor) {
+      e.a.set(energyColor);
+      e.b.set(energyColor).lerp(new THREE.Color("#ffffff"), 0.35);
+      e.halo.set(energyColor);
+    } else {
+      e.a.set(MAGENTA);
+      e.b.set(CYAN);
+      e.halo.set("#ffffff");
+    }
+  }, [energyColor]);
 
   useEffect(
     () => () => {
@@ -647,11 +664,16 @@ function CoreOrb({
     [coreMaterial, haloTexture],
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     coreMaterial.uniforms.uTime.value = clock.elapsedTime;
+    const k = Math.min(1, 2.5 * delta); // the core's energy breathes toward the active world
+    const e = energyRef.current;
+    (coreMaterial.uniforms.uColorA.value as THREE.Color).lerp(e.a, k);
+    (coreMaterial.uniforms.uColorB.value as THREE.Color).lerp(e.b, k);
     if (haloRef.current) {
       const s = 3.1 + Math.sin(clock.elapsedTime * 1.6) * 0.22;
       haloRef.current.scale.setScalar(s);
+      (haloRef.current.material as THREE.SpriteMaterial).color.lerp(e.halo, k);
     }
   });
 
@@ -822,8 +844,8 @@ function RotationRig({
     // camera dolly for domain-entry zoom
     const targetZ = 8.8 / zoomRef.current;
     const targetY = zoomRef.current > 1.05 ? 0.6 : 1.4;
-    camera.position.z += (targetZ - camera.position.z) * Math.min(1, 3 * delta);
-    camera.position.y += (targetY - camera.position.y) * Math.min(1, 3 * delta);
+    camera.position.z += (targetZ - camera.position.z) * Math.min(1, 4.5 * delta);
+    camera.position.y += (targetY - camera.position.y) * Math.min(1, 4.5 * delta);
     camera.lookAt(0, -0.3, 0);
 
     onRotate?.(rig.rotation.y);
@@ -893,7 +915,8 @@ function WarpField({ active }: { active: boolean }) {
 
   useFrame((_, delta) => {
     const target = active ? 1 : 0;
-    intensity.current += (target - intensity.current) * Math.min(1, 3.5 * delta);
+    const rate = active ? 9 : 5; // fast in, smooth out — premium not cinematic
+    intensity.current += (target - intensity.current) * Math.min(1, rate * delta);
     const k = intensity.current;
     const line = lineRef.current;
     if (!line) return;
@@ -902,14 +925,14 @@ function WarpField({ active }: { active: boolean }) {
       return;
     }
     line.visible = true;
-    material.opacity = k * 0.9;
+    material.opacity = k * 0.7;
     const pos = geometry.getAttribute("position") as THREE.BufferAttribute;
     const arr = pos.array as Float32Array;
     for (let i = 0; i < WARP_COUNT; i++) {
       const s = stars[i];
       s.z += delta * s.speed * (0.15 + k);
       if (s.z > 14) s.z = -6;
-      const len = 0.12 + k * 2.4;
+      const len = 0.1 + k * 1.6;
       arr[i * 6] = s.x;
       arr[i * 6 + 1] = s.y;
       arr[i * 6 + 2] = s.z;
@@ -1041,7 +1064,7 @@ export function NexusCoreScene({
             onSelect={handleSelect}
           />
         ))}
-        <CoreOrb label={label} interaction={interaction} onCoreTap={onCoreTap} />
+        <CoreOrb label={label} interaction={interaction} onCoreTap={onCoreTap} energyColor={atmosphere} />
       </RotationRig>
     </>
   );
