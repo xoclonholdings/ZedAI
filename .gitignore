@@ -31,3 +31,10 @@ zed-memory/storage/
 zed-memory/**
 !zed-memory/
 !zed-memory/LEGACY_BACKUP_MANIFEST.md
+.env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials
