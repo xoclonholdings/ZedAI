@@ -47,6 +47,14 @@ Build a standalone, modular 3D React component `NexusCore` (Three.js + @react-th
 - Verified via scripted browser check: home state, world entry (IDENTITY), back-to-home all pass
 - STATUS: visual system feature-complete. Next phase = production integration into ZAR app (NOT visual iteration)
 
+### V2.3 — Mobile-first fixes (2026-06)
+- Portrait (aspect<0.8): orbitScale clamp(aspect*1.15, 0.52, 1), planet sizeScale 1.28, camera baseZ 10.6, lookAt y -1.05 (system lifted above console) — whole system now in frame on phones
+- Tap targets: invisible sphere (max(size*2.6, 0.5), opacity-0 material) around each planet — reliable mobile taps
+- Snap detents: velocity threshold 0.0018→0.004, ease 3.2→5.5/s — visibly locks onto each planet with focused label before tapping
+- Warp: rise 12/s, opacity 0.85, streaks k*2.2, entry 500ms — clearly visible on tap, then world UI
+- Core "NEXUS" text: dark outline (#1b0b33) so it stays legible over bright core on small screens; greeting fades while in-world; focus pill z-10 @ bottom-292px
+- Verified at 390x844: home framing, drag snap (IDENTITY→MEMORY), planet tap → MEMORY world, label visibility
+
 ## Notes / Gotchas
 - Pod uses software WebGL (SwiftShader): automated tests must use `?particles=2500` and `domcontentloaded` waits
 - App's Express backend not running; `/api/me` 502s on demo page are expected and harmless

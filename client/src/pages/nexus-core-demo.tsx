@@ -82,7 +82,7 @@ export default function NexusCoreDemoPage() {
   const handleDomainSelect = useCallback((domain: NexusDomain) => {
     setSelected(domain);
     clearTimeout(entryTimer.current);
-    entryTimer.current = setTimeout(() => setInWorld(true), 420);
+    entryTimer.current = setTimeout(() => setInWorld(true), 500);
   }, []);
 
   const returnHome = useCallback(() => {
@@ -143,8 +143,8 @@ export default function NexusCoreDemoPage() {
             <Sparkles className="h-3 w-3" /> Your Nexus. Your Universe.
             <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
           </p>
-          <p className="mt-4 text-lg font-semibold text-gray-100">{greeting}</p>
-          <p className="text-sm text-gray-400">How can I assist you today?</p>
+          <p className="mt-4 text-lg font-semibold text-gray-100" style={{ opacity: inWorld ? 0 : 1, transition: "opacity 400ms ease" }}>{greeting}</p>
+          <p className="text-sm text-gray-400" style={{ opacity: inWorld ? 0 : 1, transition: "opacity 400ms ease" }}>How can I assist you today?</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <button
@@ -196,7 +196,7 @@ export default function NexusCoreDemoPage() {
       )}
 
       {/* Focused domain indicator */}
-      <div className="pointer-events-none absolute bottom-[248px] left-0 right-0 flex justify-center">
+      <div className="pointer-events-none absolute bottom-[292px] left-0 right-0 z-10 flex justify-center">
         {focused && !selected && (
           <div
             data-testid="focused-domain-label"

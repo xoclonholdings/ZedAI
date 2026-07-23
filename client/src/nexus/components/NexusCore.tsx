@@ -492,17 +492,24 @@ function Planet({
   interaction,
   focusedIndexRef,
   onSelect,
+  orbitScale,
+  sizeScale,
 }: {
   domain: NexusDomain;
   index: number;
   interaction: InteractionRef;
   focusedIndexRef: MutableRefObject<number>;
   onSelect: (domain: NexusDomain, index: number) => void;
+  orbitScale: number;
+  sizeScale: number;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const moonRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Sprite>(null);
-  const position = useMemo(() => domainPosition(domain), [domain]);
+  const position = useMemo(
+    () => domainPosition(domain).multiplyScalar(orbitScale),
+    [domain, orbitScale],
+  );
 
   const material = useMemo(
     () =>
@@ -541,7 +548,7 @@ function Planet({
     material.uniforms.uFocus.value +=
       (target - material.uniforms.uFocus.value) * Math.min(1, 5 * delta);
 
-    const scale = 1 + material.uniforms.uFocus.value * 0.22;
+    const scale = sizeScale * (1 + material.uniforms.uFocus.value * 0.22);
     g.scale.setScalar(scale);
     g.position.y = position.y + Math.sin(t * 0.5 + index * 1.7) * 0.06;
     g.rotation.y += delta * (0.15 + index * 0.02);
@@ -560,12 +567,16 @@ function Planet({
 
   return (
     <group ref={groupRef} position={position}>
+      {/* generous invisible tap target (mobile-friendly) */}
       <mesh
-        material={material}
         onClick={handleClick}
         onPointerOver={() => (document.body.style.cursor = "pointer")}
         onPointerOut={() => (document.body.style.cursor = "")}
       >
+        <sphereGeometry args={[Math.max(domain.size * 2.6, 0.5), 12, 12]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <mesh material={material}>
         <sphereGeometry args={[domain.size, 32, 32]} />
       </mesh>
       <sprite ref={glowRef} scale={[domain.size * 5.2, domain.size * 5.2, 1]}>
@@ -709,9 +720,9 @@ function CoreOrb({
           color="#ffffff"
           anchorX="center"
           anchorY="middle"
-          outlineWidth={0.012}
-          outlineColor={PURPLE}
-          outlineBlur={0.09}
+          outlineWidth={0.02}
+          outlineColor="#1b0b33"
+          outlineBlur={0.06}
         >
           {label}
           <meshBasicMaterial color="#ffffff" toneMapped={false} transparent depthWrite={false} />
@@ -750,6 +761,7 @@ function RotationRig({
   const tiltRef = useRef<THREE.Group>(null);
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
   const lastFocusRef = useRef(-1);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
@@ -826,14 +838,14 @@ function RotationRig({
     }
 
     if (!d.active) {
-      if (Math.abs(d.velocity) > 0.0018) {
+      if (Math.abs(d.velocity) > 0.004) {
         rig.rotation.y += d.velocity;
-        d.velocity *= Math.pow(0.06, delta);
+        d.velocity *= Math.pow(0.05, delta);
       } else {
         d.velocity = 0;
         // ease to the focused domain — no meaningless orientations
         const target = snapTargets[focusIdx];
-        rig.rotation.y += wrapAngle(target - ry) * Math.min(1, 3.2 * delta);
+        rig.rotation.y += wrapAngle(target - ry) * Math.min(1, 5.5 * delta);
       }
     }
 
@@ -841,12 +853,15 @@ function RotationRig({
       tiltGroup.rotation.x = THREE.MathUtils.lerp(tiltGroup.rotation.x, d.tilt, 0.12);
     }
 
-    // camera dolly for domain-entry zoom
-    const targetZ = 8.8 / zoomRef.current;
+    // camera dolly for domain-entry zoom (portrait devices sit further back)
+    const aspect = size.width / Math.max(1, size.height);
+    const baseZ = aspect < 0.8 ? 10.6 : 8.8;
+    const targetZ = baseZ / zoomRef.current;
     const targetY = zoomRef.current > 1.05 ? 0.6 : 1.4;
     camera.position.z += (targetZ - camera.position.z) * Math.min(1, 4.5 * delta);
     camera.position.y += (targetY - camera.position.y) * Math.min(1, 4.5 * delta);
-    camera.lookAt(0, -0.3, 0);
+    // portrait: lift the system above the command console
+    camera.lookAt(0, aspect < 0.8 ? -1.05 : -0.3, 0);
 
     onRotate?.(rig.rotation.y);
   });
@@ -915,7 +930,7 @@ function WarpField({ active }: { active: boolean }) {
 
   useFrame((_, delta) => {
     const target = active ? 1 : 0;
-    const rate = active ? 9 : 5; // fast in, smooth out — premium not cinematic
+    const rate = active ? 12 : 5; // fast in, smooth out — premium not cinematic
     intensity.current += (target - intensity.current) * Math.min(1, rate * delta);
     const k = intensity.current;
     const line = lineRef.current;
@@ -925,14 +940,14 @@ function WarpField({ active }: { active: boolean }) {
       return;
     }
     line.visible = true;
-    material.opacity = k * 0.7;
+    material.opacity = k * 0.85;
     const pos = geometry.getAttribute("position") as THREE.BufferAttribute;
     const arr = pos.array as Float32Array;
     for (let i = 0; i < WARP_COUNT; i++) {
       const s = stars[i];
       s.z += delta * s.speed * (0.15 + k);
       if (s.z > 14) s.z = -6;
-      const len = 0.1 + k * 1.6;
+      const len = 0.1 + k * 2.2;
       arr[i * 6] = s.x;
       arr[i * 6 + 1] = s.y;
       arr[i * 6 + 2] = s.z;
@@ -1031,6 +1046,12 @@ export function NexusCoreScene({
     overrideIndex: null,
   });
   const focusedIndexRef = useRef(0);
+  const size = useThree((s) => s.size);
+  const aspect = size.width / Math.max(1, size.height);
+  const isPortrait = aspect < 0.8;
+  // mobile-first: compress orbits + enlarge planets so the system stays in frame
+  const orbitScale = isPortrait ? THREE.MathUtils.clamp(aspect * 1.15, 0.52, 1) : 1;
+  const sizeScale = isPortrait ? 1.28 : 1;
 
   const handleSelect = (domain: NexusDomain, index: number) => {
     interaction.current.overrideIndex = index;
@@ -1062,6 +1083,8 @@ export function NexusCoreScene({
             interaction={interaction}
             focusedIndexRef={focusedIndexRef}
             onSelect={handleSelect}
+            orbitScale={orbitScale}
+            sizeScale={sizeScale}
           />
         ))}
         <CoreOrb label={label} interaction={interaction} onCoreTap={onCoreTap} energyColor={atmosphere} />
