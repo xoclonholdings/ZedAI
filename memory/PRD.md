@@ -31,6 +31,12 @@ Build a standalone, modular 3D React component `NexusCore` (Three.js + @react-th
   - Command console per user mockups: angular chassis (clip-path), ZAR·Online, 6 modes (Text/Talk/Image/Draw/Doc/Upload), dual waveforms + central mic, "Tap to speak", History/Memory Context pills — VISUAL MOCK ONLY (non-functional by design, mockup provided by user)
 - Testing iteration_2: 100% pass (all V2 flows)
 
+### V2.1 — Warp + Atmospheric worlds (2026-06)
+- `WarpField` in NexusCore.tsx: 320 additive line-segment star streaks (grow/fade with intensity lerp), `warp` prop; demo activates during domain entry (select → 1150ms warp+flash → overlay)
+- `AtmosphereVeil` in NexusCore.tsx: two colored glow sprites (back z-11 / front z4.2) lerp opacity+color to the selected domain color — `atmosphere` prop
+- Demo: `atmosphere-tint` CSS radial overlay in domain color (900ms fade), per-domain world taglines (DOMAIN_WORLDS map) shown in overlay via `domain-world-tagline`
+- Verified via screenshot: warp streaks + cyan identity atmosphere + themed overlay all working
+
 ## Notes / Gotchas
 - Pod uses software WebGL (SwiftShader): automated tests must use `?particles=2500` and `domcontentloaded` waits
 - App's Express backend not running; `/api/me` 502s on demo page are expected and harmless

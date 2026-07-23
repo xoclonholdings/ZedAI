@@ -22,6 +22,17 @@ const CONSOLE_MODES = [
   { id: "upload", label: "Upload", Icon: Upload },
 ];
 
+const DOMAIN_WORLDS: Record<string, string> = {
+  identity: "Cyan stratosphere · biometric aurora fields",
+  memory: "Violet storm belts · archives drifting in deep cloud",
+  knowledge: "Blue oceanic glow · orbital libraries in the rings",
+  projects: "Amber dust plains · construction winds rising",
+  workspaces: "Teal terraces · orbital habitats in formation",
+  connect: "Magenta ion storms · signal relays crossing the dark",
+  tools: "Rose forge vents · machinery humming beneath the crust",
+  settings: "Slate calibration fields · quiet systems in alignment",
+};
+
 function Waveform({ colorFrom, colorTo, flip }: { colorFrom: string; colorTo: string; flip?: boolean }) {
   const bars = useMemo(
     () => Array.from({ length: 34 }, (_, i) => 3 + Math.abs(Math.sin(i * 1.7) * 14 + Math.sin(i * 0.6) * 6)),
@@ -49,6 +60,7 @@ export default function NexusCoreDemoPage() {
   const [selected, setSelected] = useState<NexusDomain | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [themeColor, setThemeColor] = useState<string | null>(null);
   const panelTimer = useRef<ReturnType<typeof setTimeout>>();
 
   const greeting = useMemo(() => {
@@ -78,12 +90,13 @@ export default function NexusCoreDemoPage() {
 
   const handleDomainSelect = useCallback((domain: NexusDomain) => {
     setSelected(domain);
+    setThemeColor(domain.color);
     setFlash(true);
     clearTimeout(panelTimer.current);
     panelTimer.current = setTimeout(() => {
       setFlash(false);
       setPanelOpen(true);
-    }, 750);
+    }, 1150);
   }, []);
 
   const returnHome = useCallback(() => {
@@ -91,6 +104,7 @@ export default function NexusCoreDemoPage() {
     setPanelOpen(false);
     setFlash(false);
     setSelected(null);
+    setThemeColor(null);
   }, []);
 
   useEffect(() => () => clearTimeout(panelTimer.current), []);
@@ -114,8 +128,23 @@ export default function NexusCoreDemoPage() {
           onDomainSelect={handleDomainSelect}
           onCoreTap={returnHome}
           zoom={selected ? 2.3 : 1}
+          warp={!!selected && !panelOpen}
+          atmosphere={selected?.color ?? null}
         />
       </div>
+
+      {/* Atmospheric tint — each world shifts the environment */}
+      <div
+        data-testid="atmosphere-tint"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: themeColor
+            ? `radial-gradient(ellipse 85% 70% at 50% 45%, ${themeColor}2e 0%, ${themeColor}14 40%, transparent 75%)`
+            : "transparent",
+          opacity: selected ? 1 : 0,
+          transition: "opacity 900ms ease, background 900ms ease",
+        }}
+      />
 
       {/* HUD — top */}
       <header className="pointer-events-none absolute left-0 right-0 top-0 flex items-start justify-between px-6 pt-5">
@@ -277,6 +306,13 @@ export default function NexusCoreDemoPage() {
             >
               {selected.label}
             </h2>
+            <p
+              data-testid="domain-world-tagline"
+              className="mt-2 text-[11px] tracking-[0.12em]"
+              style={{ color: `${selected.color}cc` }}
+            >
+              {DOMAIN_WORLDS[selected.id] ?? ""}
+            </p>
             <p className="mt-3 text-sm text-gray-400">
               Domain interface placeholder — this workspace opens here.
             </p>

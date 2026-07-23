@@ -837,6 +837,135 @@ function RotationRig({
 }
 
 /* ------------------------------------------------------------------ */
+/* Warp field — star streaks during domain entry                        */
+/* ------------------------------------------------------------------ */
+
+const WARP_COUNT = 320;
+
+function WarpField({ active }: { active: boolean }) {
+  const lineRef = useRef<THREE.LineSegments>(null);
+  const intensity = useRef(0);
+
+  const { geometry, material, stars } = useMemo(() => {
+    const positions = new Float32Array(WARP_COUNT * 2 * 3);
+    const colors = new Float32Array(WARP_COUNT * 2 * 3);
+    const stars = new Array(WARP_COUNT).fill(0).map(() => {
+      const r = 0.9 + Math.random() * 5.5;
+      const theta = Math.random() * Math.PI * 2;
+      return {
+        x: Math.cos(theta) * r,
+        y: Math.sin(theta) * r * 0.75,
+        z: -6 + Math.random() * 20,
+        speed: 9 + Math.random() * 16,
+      };
+    });
+    const palette = [new THREE.Color("#ffffff"), new THREE.Color(CYAN), new THREE.Color(PURPLE)];
+    for (let i = 0; i < WARP_COUNT; i++) {
+      const c = palette[i % palette.length];
+      colors[i * 6] = c.r;
+      colors[i * 6 + 1] = c.g;
+      colors[i * 6 + 2] = c.b;
+      // tail fades to black (additive = transparent)
+      colors[i * 6 + 3] = c.r * 0.05;
+      colors[i * 6 + 4] = c.g * 0.05;
+      colors[i * 6 + 5] = c.b * 0.05;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    const material = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    return { geometry, material, stars };
+  }, []);
+
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      material.dispose();
+    },
+    [geometry, material],
+  );
+
+  useFrame((_, delta) => {
+    const target = active ? 1 : 0;
+    intensity.current += (target - intensity.current) * Math.min(1, 3.5 * delta);
+    const k = intensity.current;
+    const line = lineRef.current;
+    if (!line) return;
+    if (k < 0.02) {
+      line.visible = false;
+      return;
+    }
+    line.visible = true;
+    material.opacity = k * 0.9;
+    const pos = geometry.getAttribute("position") as THREE.BufferAttribute;
+    const arr = pos.array as Float32Array;
+    for (let i = 0; i < WARP_COUNT; i++) {
+      const s = stars[i];
+      s.z += delta * s.speed * (0.15 + k);
+      if (s.z > 14) s.z = -6;
+      const len = 0.12 + k * 2.4;
+      arr[i * 6] = s.x;
+      arr[i * 6 + 1] = s.y;
+      arr[i * 6 + 2] = s.z;
+      arr[i * 6 + 3] = s.x;
+      arr[i * 6 + 4] = s.y;
+      arr[i * 6 + 5] = s.z - len;
+    }
+    pos.needsUpdate = true;
+  });
+
+  return <lineSegments ref={lineRef} geometry={geometry} material={material} visible={false} />;
+}
+
+/* ------------------------------------------------------------------ */
+/* Atmosphere veil — per-domain world tint on entry                     */
+/* ------------------------------------------------------------------ */
+
+function AtmosphereVeil({ color }: { color: string | null }) {
+  const tex = useMemo(
+    () => makeGlowTexture("rgba(255,255,255,0.9)", "rgba(255,255,255,0.35)"),
+    [],
+  );
+  const backRef = useRef<THREE.Sprite>(null);
+  const frontRef = useRef<THREE.Sprite>(null);
+  const colRef = useRef(new THREE.Color("#ffffff"));
+
+  useEffect(() => {
+    if (color) colRef.current.set(color);
+  }, [color]);
+  useEffect(() => () => tex.dispose(), [tex]);
+
+  useFrame((_, delta) => {
+    const target = color ? 1 : 0;
+    const refs = [backRef, frontRef];
+    const maxOpacity = [0.45, 0.14];
+    refs.forEach((r, i) => {
+      const m = r.current?.material as THREE.SpriteMaterial | undefined;
+      if (!m) return;
+      m.opacity += (target * maxOpacity[i] - m.opacity) * Math.min(1, 2.2 * delta);
+      m.color.lerp(colRef.current, Math.min(1, 3 * delta));
+    });
+  });
+
+  return (
+    <>
+      <sprite ref={backRef} position={[0, 0, -11]} scale={[36, 22, 1]}>
+        <spriteMaterial map={tex} transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </sprite>
+      <sprite ref={frontRef} position={[0, -1.2, 4.2]} scale={[17, 10, 1]}>
+        <spriteMaterial map={tex} transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </sprite>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Public scene (for embedding into an existing Canvas)                */
 /* ------------------------------------------------------------------ */
 
@@ -851,6 +980,8 @@ export interface NexusCoreSceneProps {
   label?: string;
   tilt?: number;
   zoom?: number;
+  warp?: boolean;
+  atmosphere?: string | null;
 }
 
 export function NexusCoreScene({
@@ -864,6 +995,8 @@ export function NexusCoreScene({
   label = "NEXUS",
   tilt = 0.44,
   zoom = 1,
+  warp = false,
+  atmosphere = null,
 }: NexusCoreSceneProps) {
   const interaction = useRef<InteractionState>({
     active: false,
@@ -885,6 +1018,8 @@ export function NexusCoreScene({
   return (
     <>
       <Universe starCount={Math.max(600, Math.floor(particleCount * 0.05))} />
+      <WarpField active={warp} />
+      <AtmosphereVeil color={atmosphere} />
       <RotationRig
         domains={domains}
         interactive={interactive}
