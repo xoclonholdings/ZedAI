@@ -16,16 +16,20 @@ Build a standalone, modular 3D React component `NexusCore` (Three.js + @react-th
 - New deps in client: `three@0.185`, `@react-three/fiber@8.18`, `@react-three/drei@9.122`, `@types/three`
 
 ## Implemented (2026-06)
-- `/app/client/src/nexus/components/NexusCore.tsx` — single-file component:
-  - Default export `NexusCore` (own transparent Canvas, props: width/height/transparent/background/className/style + scene props)
-  - Named export `NexusCoreScene` for embedding in an existing Canvas
-  - Scene props: `onRotate`, `autoRotateSpeed`, `interactive`, `particleCount` (42k default), `lineCount` (8), `label` ("NEXUS"), `tilt`
-  - Custom shader Points (galaxy spiral, 4 branches + stardust), twinkle in vertex shader, additive blending, no per-frame CPU attribute updates
-  - Fresnel-shader core orb + pulsing halo sprite + drei Billboard Text "NEXUS"
-  - 8 radial gradient lines + pulsing endpoint node sprites + mid dots
-  - RotationRig: auto-rotate, pointer drag (Y-rotation + clamped tilt), frame-rate-independent inertia decay, emits `onRotate(rig.rotation.y)` each frame
-- `/app/client/src/pages/nexus-core-demo.tsx` — demo page at public route `/nexus-core-demo` (registered in App.tsx): angle readout HUD, 8 HTML satellite labels anchored to rotation via onRotate (direct DOM transform updates), `?particles=N` query param for test environments
-- Testing: iteration_1 — 100% pass (load, canvas, auto-rotation, drag, inertia, satellite anchoring, no errors)
+### V1 (superseded)
+- Galaxy particle core + 8 radial constellation lines + HTML satellites demo. Testing iteration_1: 100% pass.
+
+### V2 — Celestial Navigation System (current)
+- `client/src/nexus/components/NexusCore.tsx` (single file, ~750 lines):
+  - Domains are PLANETS: unique size/color/orbital radius/inclination/irregular angles; some with rings (memory, knowledge, settings) and moons (workspaces, tools); lucide icon sprites rendered onto planet faces (renderToStaticMarkup → canvas texture)
+  - NO graph lines (removed RadialLines per behavior spec)
+  - Snap-to-domain: on release after inertia decay, rig eases to nearest domain (snap target offset 0.85 rad → focused planet settles front-right of core); never meaningless orientations; galaxy self-spins to stay alive
+  - `onFocusChange(domain, index)`, `onDomainSelect(domain, index)` (planet tap, with <8px tap guard), `onCoreTap` (NEXUS = home), `zoom` prop drives camera dolly (8.8/zoom), camera.lookAt(0,-0.3,0)
+  - Universe env: distant star shell (18-36 radius), 4 procedural nebula sprites, dust; DEFAULT_DOMAINS exported
+- `client/src/pages/nexus-core-demo.tsx`:
+  - Full-viewport celestial system; ZAR header w/ greeting + sparkle button; focused-domain pill; domain-entry flash → placeholder overlay (back btn or core tap returns home)
+  - Command console per user mockups: angular chassis (clip-path), ZAR·Online, 6 modes (Text/Talk/Image/Draw/Doc/Upload), dual waveforms + central mic, "Tap to speak", History/Memory Context pills — VISUAL MOCK ONLY (non-functional by design, mockup provided by user)
+- Testing iteration_2: 100% pass (all V2 flows)
 
 ## Notes / Gotchas
 - Pod uses software WebGL (SwiftShader): automated tests must use `?particles=2500` and `domcontentloaded` waits
@@ -33,6 +37,7 @@ Build a standalone, modular 3D React component `NexusCore` (Three.js + @react-th
 - Node modules/package.json were reverted once by a platform checkpoint — if `three` imports fail, re-run `yarn install` in `/app/client`
 
 ## Backlog
-- P1: Integrate NexusCore into the real NexusRootPage constellation UI (replace/augment NexusConstellation)
-- P2: Adaptive particle count based on `WEBGL_debug_renderer_info` (auto-lower on software rasterizers)
-- P2: Optional bloom postprocessing pass (@react-three/postprocessing) for stronger glow on capable GPUs
+- P1: Integrate NexusCore V2 into the real NexusRootPage (planets → real domain routes, console → NexusCommunicationDock)
+- P2: Adaptive particle count based on GPU detection (auto-lower on software rasterizers)
+- P2: Bloom postprocessing on capable GPUs; asteroid field edge details (per mockups)
+- User will send further console mockup refinements if needed
