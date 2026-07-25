@@ -12,6 +12,15 @@ export interface NexusSceneNode {
   readonly focused: boolean;
 }
 
+/**
+ * "home" - nothing targeted, camera holds the overview framing.
+ * "hub" - a celestial hub is targeted; camera orbits toward it and its
+ * gateway actions are revealed. Still inside Nexus - no workspace has
+ * loaded (see NexusRootPage, which derives this from the /nexus/:nodeId
+ * route rather than tracking separate client state).
+ */
+export type NexusSceneStage = "home" | "hub";
+
 export interface NexusDriftState {
   /** Current drift offset in CSS px (applied to both scene and label overlay). */
   x: number;

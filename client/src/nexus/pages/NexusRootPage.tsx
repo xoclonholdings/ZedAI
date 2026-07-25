@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 
@@ -31,6 +31,13 @@ export default function NexusRootPage({
     queryString: typeof window === "undefined" ? "" : window.location.search,
   }), [location]);
 
+  // STATE 0 (Home) vs STATE 2/3 (Orbit/Hub) is derived from the route itself -
+  // /nexus is Home, /nexus/:nodeId is Orbit/Hub for that node. No separate
+  // client state to drift out of sync, and it's what makes "workspace back ->
+  // resumes the Hub, not Home" fall out of ordinary browser back navigation.
+  const stage = routeNodeId ? "hub" : "home";
+  const [warping, setWarping] = useState(false);
+
   useEffect(() => {
     if (routeNodeId) focusNode(routeNodeId, "route");
   }, [focusNode, routeNodeId]);
@@ -38,6 +45,20 @@ export default function NexusRootPage({
   useEffect(() => {
     if (hasUnknownRouteNode) navigate("/nexus");
   }, [hasUnknownRouteNode, navigate]);
+
+  // STATE 4 (Enter): only trigger Warp when the action actually leaves Nexus for
+  // a real workspace. Some capability actions still route back into /nexus/...
+  // (their workspace isn't built yet) - those are internal, so skip the warp
+  // theater and just navigate; nothing to fabricate a transition for.
+  function enterWorkspace(route: string | null) {
+    if (!route) return;
+    if (route.startsWith("/nexus")) {
+      navigate(route);
+      return;
+    }
+    setWarping(true);
+    window.setTimeout(() => navigate(route), 380);
+  }
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#02030a] text-white">
@@ -71,15 +92,17 @@ export default function NexusRootPage({
       <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-hidden px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
         <div className="nexus-home-grid">
           <div data-nexus-region="constellation">
-            <NexusConstellation />
+            <NexusConstellation stage={stage} warping={warping} />
           </div>
           <div data-nexus-region="communication">
             <NexusCommunicationDock conversationId={communicationConversationId} />
           </div>
-          <div data-nexus-region="focused">
-            <NexusFocusedNodePanel variant="compact" className="lg:hidden" />
-            <NexusFocusedNodePanel variant="panel" className="hidden lg:block" />
-          </div>
+          {stage === "hub" && (
+            <div data-nexus-region="focused">
+              <NexusFocusedNodePanel variant="compact" className="lg:hidden" onEnterAction={enterWorkspace} onBack={() => navigate("/nexus")} />
+              <NexusFocusedNodePanel variant="panel" className="hidden lg:block" onEnterAction={enterWorkspace} onBack={() => navigate("/nexus")} />
+            </div>
+          )}
         </div>
       </main>
 

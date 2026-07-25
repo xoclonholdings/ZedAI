@@ -78,6 +78,9 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
   const workspaceLabel = workspaceSlug ? WORKSPACE_LABEL[workspaceSlug] : null;
   const modes = useMemo(() => communicationModeViews(communicationLayer), [communicationLayer]);
   const focusedLabel = viewportSnapshot.focusedNode?.label ?? "Nexus";
+  // Workspace selection subtly tints the console's accent (spec: "may influence
+  // accent colors ... contextual controls"); the surface itself stays persistent.
+  const accentColor = viewportSnapshot.focusedNode?.metadata.visual.color ?? "#22d3ee";
 
   const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
@@ -205,11 +208,16 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
 
   return (
     <section
-      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-white/[0.09] border-t-white/[0.14] bg-gradient-to-b from-indigo-300/[0.05] via-black/30 to-black/45 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl sm:p-4"
+      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-t-white/[0.14] bg-gradient-to-b from-indigo-300/[0.05] via-black/30 to-black/45 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl transition-colors duration-500 sm:p-4"
+      style={{ borderColor: `${accentColor}2e` }}
       aria-label="Persistent ZAR communication"
     >
       <div className="mb-2 flex shrink-0 items-center gap-2">
-        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none" aria-hidden="true" />
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none"
+          style={{ backgroundColor: accentColor }}
+          aria-hidden="true"
+        />
         <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
           ZAR
         </span>
