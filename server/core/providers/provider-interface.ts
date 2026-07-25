@@ -38,7 +38,8 @@ export type ProviderLane =
   | "business"
   | "finance"
   | "strategy"
-  | "admin";
+  | "admin"
+  | "education";
 
 /**
  * Reasoning effort is separate from lane. Lane answers "what kind of

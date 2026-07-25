@@ -1,11 +1,16 @@
 import { randomUUID } from "crypto";
 
 import { getProject } from "../ProjectFilingStore";
+import { generateChatFromProvider } from "../ModelProviderService";
+import { buildWorkspaceMemoryContext } from "../WorkspaceMemoryService";
+import { DocumentIntelligenceService } from "../intelligence-core/DocumentIntelligenceService";
 import { LearningStore } from "./LearningStore";
 import type {
   AssessmentAttempt,
   AssessmentAttemptAnswer,
+  BlueprintRevision,
   CourseSource,
+  CourseSourceIngestion,
   LearningAssessment,
   LearningBlueprint,
   LearningBlueprintLesson,
@@ -14,6 +19,7 @@ import type {
   LearningPath,
   LearningPathDetail,
   LearningUnit,
+  LessonCitation,
   MasteryRecord,
   QuizQuestion,
 } from "../../../shared/learning-types";
@@ -28,6 +34,7 @@ interface SourceInput {
 
 export interface CreateLearningBlueprintInput {
   userId: string;
+  isAdmin?: boolean;
   topic: string;
   assumedLevel?: string;
   workspaceId?: string;
@@ -43,6 +50,9 @@ const WORKSPACE_LABEL: Record<string, string> = {
   marketing: "Marketing",
   education: "Education",
 };
+
+const STORED_SOURCE_CHARS = 60_000;
+const GENERATION_LANE = "education";
 
 function now(): string {
   return new Date().toISOString();
@@ -68,185 +78,288 @@ function titleCase(value: string): string {
     .join(" ");
 }
 
-function excerpt(value: string, length = 900): string {
+function excerpt(value: string, length: number): string {
   const text = normalizeSpace(value || "");
   return text.length > length ? `${text.slice(0, length).trim()}...` : text;
 }
 
-function sentences(value: string): string[] {
-  return normalizeSpace(value)
-    .split(/(?<=[.!?])\s+|\n+/)
-    .map((item) => item.trim())
-    .filter((item) => item.length >= 24)
-    .slice(0, 10);
-}
-
-const STOP_WORDS = new Set([
-  "about",
-  "after",
-  "again",
-  "also",
-  "because",
-  "before",
-  "build",
-  "course",
-  "from",
-  "have",
-  "into",
-  "learn",
-  "lesson",
-  "material",
-  "more",
-  "need",
-  "should",
-  "source",
-  "that",
-  "their",
-  "there",
-  "these",
-  "this",
-  "through",
-  "topic",
-  "with",
-  "would",
-  "your",
-]);
-
-function keywords(text: string, limit = 10): string[] {
-  const counts = new Map<string, number>();
-  for (const match of text.toLowerCase().matchAll(/[a-z][a-z0-9-]{2,}/g)) {
-    const token = match[0];
-    if (STOP_WORDS.has(token)) continue;
-    counts.set(token, (counts.get(token) || 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, limit)
-    .map(([token]) => token);
-}
-
-function conceptLabel(value: string): string {
+function toStringArray(value: unknown, limit = 12): string[] {
+  if (!Array.isArray(value)) return [];
   return value
-    .split(/[-_]/g)
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
-    .join(" ");
+    .map((v) => (typeof v === "string" ? v : String(v ?? "")))
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, limit);
 }
 
-function conceptsFor(topic: string, sourceText: string): string[] {
-  const fromText = keywords(`${topic} ${sourceText}`, 12).map(conceptLabel);
-  const fallback = [
-    "Core Vocabulary",
-    "Mental Model",
-    "Decision Rules",
-    "Common Failure Modes",
-    "Applied Practice",
-    "Verification",
-  ];
-  return Array.from(new Set([...fromText, ...fallback])).slice(0, 8);
+/** Strips ```json fences and grabs the outermost JSON structure, matching the
+ *  convention already used by TradingAssessmentEngine / WorkspaceDeskEngine. */
+function extractJson(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const body = fenced ? fenced[1] : raw;
+  const start = body.search(/[[{]/);
+  const end = Math.max(body.lastIndexOf("]"), body.lastIndexOf("}"));
+  return start >= 0 && end > start ? body.slice(start, end + 1) : body.trim();
 }
 
-function buildBlueprint(pathId: string, topic: string, assumedLevel: string, sourceText: string): LearningBlueprint {
-  const generatedAt = now();
-  const concepts = conceptsFor(topic, sourceText);
-  const unitTemplates = [
-    {
-      title: `Foundations of ${titleCase(topic)}`,
-      objective: `Build the vocabulary and first mental model needed to reason about ${topic}.`,
-    },
-    {
-      title: `${titleCase(topic)} in Practice`,
-      objective: `Turn the core ideas into decisions, examples, and correction patterns.`,
-    },
-    {
-      title: `Apply and Verify ${titleCase(topic)}`,
-      objective: `Use ${topic} in a real task and prove what has been mastered.`,
-    },
-  ];
+function describeGenerationFailure(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error || "");
+  const lower = message.toLowerCase();
+  if (lower.includes("lightning_base_url") || lower.includes("lightning_ai_url")) {
+    return "the AI host is not configured";
+  }
+  if (lower.includes("timeout") || lower.includes("aborted")) {
+    return "the AI host timed out";
+  }
+  if (lower.includes("fetch failed") || lower.includes("econnrefused") || lower.includes("enotfound")) {
+    return "the AI host is unreachable";
+  }
+  if (/\b(401|403)\b/.test(message) || lower.includes("unauthorized") || lower.includes("forbidden")) {
+    return "the AI host rejected the request";
+  }
+  return message || "the AI host returned an error";
+}
 
-  const units: LearningBlueprintUnit[] = unitTemplates.map((unit, unitIndex) => {
-    const unitConcepts = concepts.slice(unitIndex * 2, unitIndex * 2 + 4);
-    const lessons: LearningBlueprintLesson[] = [0, 1].map((lessonOffset) => {
-      const concept = unitConcepts[lessonOffset] || concepts[(unitIndex + lessonOffset) % concepts.length];
-      return {
-        id: makeId("lesson"),
-        title:
-          lessonOffset === 0
-            ? `${concept}: working understanding`
-            : `${concept}: mistakes and application`,
-        objective:
-          lessonOffset === 0
-            ? `Explain ${concept.toLowerCase()} clearly and connect it to ${topic}.`
-            : `Use ${concept.toLowerCase()} in a realistic ${topic} scenario.`,
-        keyConcepts: Array.from(new Set([concept, ...unitConcepts])).slice(0, 4),
-        practice: `Answer a scenario question where ${concept.toLowerCase()} changes the decision.`,
-        verification: `Pass a short quiz and explain the answer without relying on notes.`,
-      };
-    });
-    return {
-      id: makeId("unit"),
-      title: unit.title,
-      objective: unit.objective,
-      lessons,
-    };
-  });
+async function askModelForJson(params: {
+  prompt: string;
+  systemPrompt: string;
+  failureContext: string;
+}): Promise<any> {
+  let raw: string;
+  try {
+    raw = await generateChatFromProvider(
+      [{ role: "user", content: params.prompt }],
+      params.systemPrompt,
+      { lane: GENERATION_LANE },
+    );
+  } catch (error) {
+    throw new Error(`${params.failureContext} failed because ${describeGenerationFailure(error)}.`);
+  }
+  try {
+    return JSON.parse(extractJson(raw));
+  } catch {
+    throw new Error(
+      `${params.failureContext} failed because the AI host returned a response Zed could not parse.`,
+    );
+  }
+}
 
+/**
+ * Push a source's full extracted text through the shared Knowledge
+ * Ingestion pipeline (same graph used by conversation uploads / Document
+ * Intelligence) instead of keeping Learning Studio as an isolated content
+ * store. Best-effort: ingestion failure must not fail blueprint creation.
+ */
+async function ingestSource(
+  userId: string,
+  pathId: string,
+  label: string,
+  content: string,
+): Promise<CourseSourceIngestion> {
+  const summary = await DocumentIntelligenceService.ingestUploadedFile({
+    originalName: label,
+    content,
+    userId,
+    createdAt: now(),
+  }).catch((error: any) => ({
+    ingested: false,
+    createdObjectIds: [],
+    updatedObjectIds: [],
+    topics: [],
+    conflictCount: 0,
+    skippedReason: `ingest_failed:${error?.message || String(error)}`,
+  }));
   return {
-    pathId,
-    objective: `Understand, practice, and apply ${topic} well enough to use it in Zed work without guessing.`,
-    assumedLevel,
-    estimatedDepth: "Focused first pass: 3 units, 6 lessons, one complete starter lesson now.",
-    units,
-    practiceActivities: [
-      `Explain ${topic} in plain language from memory.`,
-      `Classify examples into correct, risky, and incomplete uses of ${topic}.`,
-      `Apply ${topic} to one active Zed project or workspace task.`,
-    ],
-    completionCriteria: [
-      "Complete every lesson check with at least 80%.",
-      "Finish one applied task using the learned material.",
-      "Resolve all concepts marked needs_review in mastery.",
-    ],
-    generatedAt,
-    updatedAt: generatedAt,
+    ingested: summary.ingested,
+    topics: summary.topics || [],
+    objectIds: [...(summary.createdObjectIds || []), ...(summary.updatedObjectIds || [])],
+    conflictCount: summary.conflictCount || 0,
+    skippedReason: summary.skippedReason,
   };
 }
 
-function sourceSection(sources: CourseSource[]): string {
-  const selected = sources
-    .filter((source) => source.content.trim())
-    .slice(0, 4)
-    .map((source) => `Source: ${source.label}\n${excerpt(source.content, 700)}`);
-  return selected.length ? selected.join("\n\n") : "No supporting source text was provided beyond the topic.";
+/** Semantic retrieval grounded in the shared knowledge graph, falling back
+ *  to nothing (never to keyword-stuffed raw text) when nothing matches yet. */
+async function retrieveGrounding(query: string, limit: number): Promise<{ block: string; citations: string[] }> {
+  const result = await DocumentIntelligenceService.retrieveForQuery(query, limit).catch(() => ({
+    block: "",
+    objectIds: [],
+    citations: [],
+    conflictCount: 0,
+  }));
+  return { block: result.block, citations: result.citations };
 }
 
-function buildLesson(
+function rawSourceExcerpts(sources: CourseSource[], perSourceChars: number, maxSources: number): string {
+  const selected = sources
+    .filter((source) => source.content.trim() && source.kind !== "topic")
+    .slice(0, maxSources)
+    .map((source) => `### ${source.label} (${source.kind})\n${excerpt(source.content, perSourceChars)}`);
+  return selected.join("\n\n");
+}
+
+/** Flattens the blueprint's units/lessons in blueprint order — this is the
+ *  single source of truth for lesson/unit sequencing (never a hardcoded
+ *  constant like the old `order: 1` on every generated lesson). */
+function flattenedLessonList(
+  blueprint: LearningBlueprint,
+): Array<{ unit: LearningBlueprintUnit; lesson: LearningBlueprintLesson }> {
+  const list: Array<{ unit: LearningBlueprintUnit; lesson: LearningBlueprintLesson }> = [];
+  for (const unit of blueprint.units) {
+    for (const lesson of unit.lessons) list.push({ unit, lesson });
+  }
+  return list;
+}
+
+async function generateBlueprintFromModel(params: {
+  topic: string;
+  assumedLevel: string;
+  notes: string;
+  groundingBlock: string;
+  rawExcerpts: string;
+  workspacePrompt: string;
+  projectPrompt: string;
+}): Promise<{
+  objective: string;
+  assumedLevel: string;
+  estimatedDepth: string;
+  units: Array<{ title: string; objective: string; lessons: Array<Omit<LearningBlueprintLesson, "id">> }>;
+  practiceActivities: string[];
+  completionCriteria: string[];
+  gaps: string[];
+}> {
+  const prompt = [
+    `Design a mastery-based course blueprint on: "${params.topic}".`,
+    `Assumed learner level: ${params.assumedLevel}.`,
+    params.notes ? `\nUser notes / constraints:\n${params.notes}` : "",
+    params.workspacePrompt ? `\n${params.workspacePrompt}` : "",
+    params.projectPrompt ? `\n${params.projectPrompt}` : "",
+    params.groundingBlock ? `\n${params.groundingBlock}` : "",
+    params.rawExcerpts ? `\n## Raw source excerpts\n${params.rawExcerpts}` : "",
+    !params.groundingBlock && !params.rawExcerpts
+      ? "\nNo source material was supplied beyond the topic itself — design the blueprint from your own knowledge, and say so honestly in `gaps`."
+      : "",
+    `\nAnalyze the material: identify the real concepts it teaches, the dependencies between them (what must be understood before what), concrete learning objectives, and any gaps or missing information a learner should be warned about.`,
+    `Then produce a blueprint with 2-4 units, each with 2-4 lessons, sized to how much real material actually supports them — do not pad to a fixed count. Every lesson must be specific to this source material, not a generic template.`,
+    `Return ONLY JSON with this exact shape:`,
+    `{`,
+    `  "objective": "one paragraph: what mastery of this topic looks like",`,
+    `  "assumedLevel": "confirmed/adjusted assumed level",`,
+    `  "estimatedDepth": "one sentence describing scope (unit/lesson count and why)",`,
+    `  "units": [`,
+    `    {`,
+    `      "title": "...",`,
+    `      "objective": "...",`,
+    `      "lessons": [`,
+    `        { "title": "...", "objective": "...", "keyConcepts": ["..."], "practice": "a concrete practice task", "verification": "how mastery of this lesson is verified" }`,
+    `      ]`,
+    `    }`,
+    `  ],`,
+    `  "practiceActivities": ["2-4 activities that apply the whole course"],`,
+    `  "completionCriteria": ["2-4 concrete, checkable criteria"],`,
+    `  "gaps": ["gaps or missing information found in the source material, or [] if none"]`,
+    `}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const parsed = await askModelForJson({
+    prompt,
+    systemPrompt:
+      "You are Zed's Cognitive Core designing a course blueprint from real source material. Ground every unit and lesson in what was actually provided — never invent generic filler. Output only the JSON object requested, no commentary.",
+    failureContext: "Blueprint generation",
+  });
+
+  const parsedUnits = Array.isArray(parsed.units) ? parsed.units : [];
+  if (parsedUnits.length === 0) {
+    throw new Error("Blueprint generation failed because the AI host did not return any units.");
+  }
+
+  return {
+    objective: String(parsed.objective || "").trim() || `Understand and apply ${params.topic}.`,
+    assumedLevel: String(parsed.assumedLevel || params.assumedLevel).trim(),
+    estimatedDepth: String(parsed.estimatedDepth || "").trim() || `${parsedUnits.length} units.`,
+    units: parsedUnits.map((unit: any) => ({
+      title: String(unit?.title || "Untitled unit").trim(),
+      objective: String(unit?.objective || "").trim(),
+      lessons: (Array.isArray(unit?.lessons) ? unit.lessons : []).map((lesson: any) => ({
+        title: String(lesson?.title || "Untitled lesson").trim(),
+        objective: String(lesson?.objective || "").trim(),
+        keyConcepts: toStringArray(lesson?.keyConcepts, 6),
+        practice: String(lesson?.practice || "").trim(),
+        verification: String(lesson?.verification || "").trim(),
+      })),
+    })).filter((unit) => unit.lessons.length > 0),
+    practiceActivities: toStringArray(parsed.practiceActivities, 6),
+    completionCriteria: toStringArray(parsed.completionCriteria, 6),
+    gaps: toStringArray(parsed.gaps, 10),
+  };
+}
+
+async function generateLesson(
   userId: string,
   path: LearningPath,
   unit: LearningBlueprintUnit,
   lessonBlueprint: LearningBlueprintLesson,
+  order: number,
   sources: CourseSource[],
-): LearningLesson {
+): Promise<LearningLesson> {
   const createdAt = now();
-  const concepts = lessonBlueprint.keyConcepts.slice(0, 5);
-  const sourceText = sourceSection(sources);
-  const firstEvidence = sentences(sourceText).slice(0, 3);
-  const content = [
-    `# ${lessonBlueprint.title}`,
-    "",
-    `Objective: ${lessonBlueprint.objective}`,
-    "",
-    "## Core Explanation",
-    `${lessonBlueprint.title} is the first working frame for ${path.topic}. Treat it as a practical model: define the terms, connect them to decisions, then test the model against examples.`,
-    "",
-    "## Source-Grounded Notes",
-    ...(firstEvidence.length ? firstEvidence.map((item) => `- ${item}`) : ["- The current source set is thin. Use this lesson as a starting scaffold and attach stronger material when available."]),
-    "",
-    "## What To Watch For",
-    `The common mistake is recognizing the words around ${concepts[0] || path.topic} without knowing what decision changes because of it. When studying, keep asking: what would I do differently now?`,
-    "",
-    "## Worked Scenario",
-    `Imagine Zed needs to use ${path.topic} inside an active workspace. First name the concept, then identify the source evidence, then choose the smallest action that proves understanding.`,
-  ].join("\n");
+  const concepts = lessonBlueprint.keyConcepts.slice(0, 6);
+  const query = `${lessonBlueprint.title} ${lessonBlueprint.objective} ${concepts.join(" ")}`.trim();
+  const grounding = await retrieveGrounding(query || path.topic, 6);
+  const excerpts = rawSourceExcerpts(sources, 900, 5);
+
+  const prompt = [
+    `Course: ${path.title} — ${path.objective}`,
+    `Unit: ${unit.title} — ${unit.objective}`,
+    `Lesson to write: "${lessonBlueprint.title}"`,
+    `Lesson objective: ${lessonBlueprint.objective}`,
+    `Key concepts to cover: ${concepts.join(", ") || "(none listed — infer from the objective)"}`,
+    grounding.block ? `\n${grounding.block}` : "",
+    excerpts ? `\n## Raw source excerpts\n${excerpts}` : "",
+    !grounding.block && !excerpts
+      ? "\nNo grounded source material matched this lesson yet — write it from established knowledge and say so plainly instead of inventing citations."
+      : "",
+    `\nWrite the full lesson. Ground claims in the material above and reference sources by name inline (e.g. "According to <source>...") wherever you draw on them — never fabricate a citation.`,
+    `Return ONLY JSON with this exact shape:`,
+    `{`,
+    `  "content": "the full lesson body as markdown, with headings for explanation, source-grounded notes, common mistakes, and a worked scenario",`,
+    `  "summary": "1-2 sentence summary",`,
+    `  "flashcards": [{ "front": "...", "back": "..." }],`,
+    `  "practicePrompt": "a concrete practice task specific to this lesson",`,
+    `  "applyPrompt": "how to apply this lesson to a real, active task",`,
+    `  "reviewSummary": "what to recall before moving on",`,
+    `  "citations": [{ "sourceLabel": "exact source name used above", "note": "what claim it supports" }]`,
+    `}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const parsed = await askModelForJson({
+    prompt,
+    systemPrompt:
+      "You are Zed's Cognitive Core writing one lesson of a course, grounded strictly in the retrieved material provided. Output only the JSON object requested.",
+    failureContext: "Lesson generation",
+  });
+
+  const labelToId = new Map(sources.map((source) => [source.label, source.id]));
+  const citations: LessonCitation[] = (Array.isArray(parsed.citations) ? parsed.citations : [])
+    .map((c: any) => {
+      const sourceLabel = String(c?.sourceLabel || "").trim();
+      return {
+        sourceId: labelToId.get(sourceLabel) || "",
+        sourceLabel,
+        note: String(c?.note || "").trim(),
+      };
+    })
+    .filter((c: LessonCitation) => c.sourceLabel)
+    .slice(0, 8);
+
+  const content = String(parsed.content || "").trim();
+  if (!content) {
+    throw new Error("Lesson generation failed because the AI host returned an empty lesson body.");
+  }
 
   return {
     id: lessonBlueprint.id,
@@ -255,46 +368,75 @@ function buildLesson(
     unitId: unit.id,
     title: lessonBlueprint.title,
     objective: lessonBlueprint.objective,
-    order: 1,
-    summary: `${lessonBlueprint.title} introduces ${concepts.slice(0, 3).join(", ")} and turns them into a practical decision model.`,
+    order,
+    summary: String(parsed.summary || "").trim() || lessonBlueprint.objective,
     content,
     concepts,
-    sourceIds: sources.map((source) => source.id),
+    sourceIds: Array.from(new Set(citations.map((c) => c.sourceId).filter(Boolean))),
+    citations,
     modes: ["learn", "discuss", "recall", "check", "practice", "apply", "review"],
-    flashcards: concepts.slice(0, 5).map((concept) => ({
-      id: makeId("card"),
-      front: `What does ${concept} mean in this lesson?`,
-      back: `${concept} is part of the working model for ${path.topic}; explain it by naming the decision or action it changes.`,
-    })),
-    practicePrompt: lessonBlueprint.practice,
-    applyPrompt: `Apply this lesson to one real Zed context: ${path.projectId ? "the selected project" : path.workspaceId ? `${WORKSPACE_LABEL[path.workspaceId] || path.workspaceId} workspace` : "an active project or decision"}. Produce the smallest useful artifact that proves the concept.`,
-    reviewSummary: `${concepts.slice(0, 3).join(", ")} are the concepts to recall before moving on. Passing the quiz updates mastery.`,
+    flashcards: (Array.isArray(parsed.flashcards) ? parsed.flashcards : [])
+      .slice(0, 6)
+      .map((card: any) => ({
+        id: makeId("card"),
+        front: String(card?.front || "").trim(),
+        back: String(card?.back || "").trim(),
+      }))
+      .filter((card) => card.front && card.back),
+    practicePrompt: String(parsed.practicePrompt || "").trim() || lessonBlueprint.practice,
+    applyPrompt:
+      String(parsed.applyPrompt || "").trim() ||
+      `Apply this lesson to one real Zed context: ${path.projectId ? "the selected project" : path.workspaceId ? `${WORKSPACE_LABEL[path.workspaceId] || path.workspaceId} workspace` : "an active project or decision"}.`,
+    reviewSummary: String(parsed.reviewSummary || "").trim() || lessonBlueprint.verification,
     createdAt,
     updatedAt: createdAt,
   };
 }
 
-function buildAssessment(userId: string, path: LearningPath, lesson: LearningLesson): LearningAssessment {
+async function generateAssessment(
+  userId: string,
+  path: LearningPath,
+  lesson: LearningLesson,
+): Promise<LearningAssessment> {
   const createdAt = now();
-  const questions: QuizQuestion[] = lesson.concepts.slice(0, 5).map((concept, index) => {
-    const correct = `${concept} should be explained by the decision, action, or evidence it changes.`;
-    const distractors = [
-      `${concept} is complete once the term has been memorized.`,
-      `${concept} should be treated as separate from the source material.`,
-      `${concept} is only useful after the whole course is finished.`,
-    ];
-    const answerIndex = index % 4;
-    const choices = [...distractors];
-    choices.splice(answerIndex, 0, correct);
-    return {
-      id: makeId("question"),
-      prompt: `Which statement best matches ${concept} in this lesson?`,
-      choices,
-      answerIndex,
-      explanation: `The lesson is designed around usable understanding. ${concept} matters when it changes a decision or action.`,
-      concept,
-    };
+  const prompt = [
+    `Lesson: "${lesson.title}"`,
+    `Objective: ${lesson.objective}`,
+    `Concepts: ${lesson.concepts.join(", ")}`,
+    `\n## Lesson content\n${excerpt(lesson.content, 6000)}`,
+    `\nWrite a 5-question multiple-choice assessment that tests real understanding of THIS lesson's content — not generic recall. Each question must be derived from a specific claim, application, or common misconception in the lesson content above. Vary the question style across: a direct claim check, a scenario/decision question, a misconception trap, an application question, and a comparison/contrast question. Distractors must be plausible wrong answers specific to this material, not reused boilerplate.`,
+    `Return ONLY a JSON array of exactly 5 objects with this shape:`,
+    `[{ "prompt": "...", "choices": ["...", "...", "...", "..."], "answerIndex": 0, "explanation": "why the correct choice is right and grounded in the lesson", "concept": "the concept this tests" }]`,
+  ].join("\n");
+
+  const parsed = await askModelForJson({
+    prompt,
+    systemPrompt:
+      "You are a strict examiner writing an assessment strictly from the given lesson content. Output only the JSON array requested.",
+    failureContext: "Assessment generation",
   });
+
+  const questions: QuizQuestion[] = (Array.isArray(parsed) ? parsed : [])
+    .map((q: any) => {
+      const choices = toStringArray(q?.choices, 6);
+      const answerIndex = Number(q?.answerIndex);
+      if (choices.length < 2 || !Number.isInteger(answerIndex) || answerIndex < 0 || answerIndex >= choices.length) {
+        return null;
+      }
+      return {
+        id: makeId("question"),
+        prompt: String(q?.prompt || "").trim(),
+        choices,
+        answerIndex,
+        explanation: String(q?.explanation || "").trim(),
+        concept: String(q?.concept || lesson.concepts[0] || "").trim(),
+      };
+    })
+    .filter((q): q is QuizQuestion => Boolean(q && q.prompt));
+
+  if (questions.length === 0) {
+    throw new Error("Assessment generation failed because the AI host did not return usable questions.");
+  }
 
   return {
     id: `assessment_${lesson.id}`,
@@ -315,54 +457,108 @@ export class LearningStudioService {
     if (!topic) throw new Error("Topic is required.");
     const createdAt = now();
     const pathId = makeId("path");
+    const notes = input.notes?.trim() || "";
+
     const sourceInputs: SourceInput[] = [
       { kind: "topic", label: "Topic", content: topic },
-      ...(input.notes?.trim()
-        ? [{ kind: "note" as const, label: "User notes", content: input.notes.trim() }]
-        : []),
+      ...(notes ? [{ kind: "note" as const, label: "User notes", content: notes }] : []),
       ...(input.sources || []),
     ];
 
+    const workspaceMemory = input.workspaceId
+      ? await buildWorkspaceMemoryContext(input.workspaceId, `${topic} ${notes}`, input.userId, input.isAdmin).catch(
+          () => ({ prompt: "", count: 0, used: false }),
+        )
+      : { prompt: "", count: 0, used: false };
     if (input.workspaceId) {
       sourceInputs.push({
         kind: "workspace",
         label: `${WORKSPACE_LABEL[input.workspaceId] || input.workspaceId} workspace`,
-        content: `The user selected ${WORKSPACE_LABEL[input.workspaceId] || input.workspaceId} as the workspace context for this learning path.`,
+        content: workspaceMemory.used
+          ? workspaceMemory.prompt
+          : `No workspace memory has been taught yet for ${WORKSPACE_LABEL[input.workspaceId] || input.workspaceId}.`,
         metadata: { workspaceId: input.workspaceId },
       });
     }
 
+    let projectPrompt = "";
     if (input.projectId) {
       const project = await getProject(input.userId, input.projectId);
       if (project) {
-        sourceInputs.push({
-          kind: "project",
-          label: `Project: ${project.name}`,
-          content: [
+        const content =
+          [
             project.instructions ? `Instructions: ${project.instructions}` : "",
             ...(project.sources || []).map((source) =>
               [source.label, source.text, source.notes, source.url].filter(Boolean).join("\n"),
             ),
-          ].filter(Boolean).join("\n\n") || `Project context for ${project.name}.`,
+          ]
+            .filter(Boolean)
+            .join("\n\n") || `Project context for ${project.name}.`;
+        sourceInputs.push({
+          kind: "project",
+          label: `Project: ${project.name}`,
+          content,
           metadata: { projectId: project.id },
         });
+        projectPrompt = `## Project context — ${project.name}\n${excerpt(content, 2000)}`;
       }
     }
 
-    const sources: CourseSource[] = sourceInputs.map((source) => ({
-      id: makeId("source"),
-      userId: input.userId,
-      pathId,
-      kind: source.kind,
-      label: source.label.slice(0, 100),
-      content: excerpt(source.content, 12_000),
-      sourceUri: source.sourceUri,
-      metadata: source.metadata,
-      createdAt,
-    }));
-    const sourceText = sources.map((source) => source.content).join("\n\n");
+    const sources: CourseSource[] = [];
+    for (const source of sourceInputs) {
+      const id = makeId("source");
+      const content = excerpt(source.content, STORED_SOURCE_CHARS);
+      const ingestion =
+        source.kind === "topic" ? undefined : await ingestSource(input.userId, pathId, source.label.slice(0, 100), content);
+      sources.push({
+        id,
+        userId: input.userId,
+        pathId,
+        kind: source.kind,
+        label: source.label.slice(0, 100),
+        content,
+        sourceUri: source.sourceUri,
+        metadata: source.metadata,
+        ingestion,
+        createdAt,
+      });
+    }
+
+    const grounding = await retrieveGrounding(`${topic} ${notes}`.trim(), 10);
+    const rawExcerpts = rawSourceExcerpts(sources, 1200, 6);
     const assumedLevel = input.assumedLevel || "Beginner with some Zed context";
-    const blueprint = buildBlueprint(pathId, topic, assumedLevel, sourceText);
+
+    const generated = await generateBlueprintFromModel({
+      topic,
+      assumedLevel,
+      notes,
+      groundingBlock: grounding.block,
+      rawExcerpts,
+      workspacePrompt: workspaceMemory.used ? workspaceMemory.prompt : "",
+      projectPrompt,
+    });
+
+    const generatedAt = now();
+    const blueprint: LearningBlueprint = {
+      pathId,
+      objective: generated.objective,
+      assumedLevel: generated.assumedLevel,
+      estimatedDepth: generated.estimatedDepth,
+      units: generated.units.map((unit) => ({
+        id: makeId("unit"),
+        title: unit.title,
+        objective: unit.objective,
+        lessons: unit.lessons.map((lesson) => ({ id: makeId("lesson"), ...lesson })),
+      })),
+      practiceActivities: generated.practiceActivities,
+      completionCriteria: generated.completionCriteria,
+      gaps: generated.gaps,
+      revisions: [],
+      approved: false,
+      generatedAt,
+      updatedAt: generatedAt,
+    };
+
     const path: LearningPath = {
       id: pathId,
       userId: input.userId,
@@ -398,6 +594,117 @@ export class LearningStudioService {
     return LearningStore.getPathDetail(userId, pathId);
   }
 
+  /** Conversational blueprint revision: "add a unit about X", "make this
+   *  less beginner-oriented", etc. Preserves everything not implicated by
+   *  the request and records the change in blueprint.revisions. */
+  static async reviseBlueprint(userId: string, pathId: string, instruction: string): Promise<LearningPathDetail> {
+    const trimmedInstruction = instruction?.trim();
+    if (!trimmedInstruction) throw new Error("A revision instruction is required.");
+    const detail = await LearningStore.getPathDetail(userId, pathId);
+    if (!detail?.blueprint) throw new Error("Learning blueprint not found.");
+    if (detail.path.status !== "blueprint") {
+      throw new Error("Only an unapproved blueprint can be revised through chat.");
+    }
+    const current = detail.blueprint;
+
+    const knownIds = new Set<string>();
+    for (const unit of current.units) {
+      knownIds.add(unit.id);
+      for (const lesson of unit.lessons) knownIds.add(lesson.id);
+    }
+
+    const prompt = [
+      `Current course blueprint (JSON):`,
+      JSON.stringify(
+        {
+          objective: current.objective,
+          assumedLevel: current.assumedLevel,
+          estimatedDepth: current.estimatedDepth,
+          units: current.units,
+          practiceActivities: current.practiceActivities,
+          completionCriteria: current.completionCriteria,
+          gaps: current.gaps,
+        },
+        null,
+        2,
+      ),
+      `\nRequested change: "${trimmedInstruction}"`,
+      `\nApply ONLY this change. Keep every unit, lesson, id, title, and objective not implicated by the request byte-for-byte identical — echo back existing "id" fields exactly for anything you keep or modify, and omit "id" only for genuinely new units/lessons.`,
+      `Return ONLY JSON with this exact shape:`,
+      `{`,
+      `  "changeSummary": "one sentence describing what changed",`,
+      `  "blueprint": { "objective": "...", "assumedLevel": "...", "estimatedDepth": "...", "units": [ { "id": "existing id or omit if new", "title": "...", "objective": "...", "lessons": [ { "id": "existing id or omit if new", "title": "...", "objective": "...", "keyConcepts": ["..."], "practice": "...", "verification": "..." } ] } ], "practiceActivities": ["..."], "completionCriteria": ["..."], "gaps": ["..."] }`,
+      `}`,
+    ].join("\n");
+
+    const parsed = await askModelForJson({
+      prompt,
+      systemPrompt:
+        "You are Zed's Cognitive Core revising a course blueprint per a specific user request. Preserve unaffected content exactly. Output only the JSON object requested.",
+      failureContext: "Blueprint revision",
+    });
+
+    const revisedRaw = parsed.blueprint;
+    const parsedUnits = Array.isArray(revisedRaw?.units) ? revisedRaw.units : [];
+    if (parsedUnits.length === 0) {
+      throw new Error("Blueprint revision failed because the AI host did not return any units.");
+    }
+
+    const updatedAt = now();
+    const revision: BlueprintRevision = {
+      id: makeId("revision"),
+      instruction: trimmedInstruction,
+      summary: String(parsed.changeSummary || "").trim() || "Blueprint revised.",
+      createdAt: updatedAt,
+    };
+
+    const blueprint: LearningBlueprint = {
+      pathId,
+      objective: String(revisedRaw.objective || current.objective).trim(),
+      assumedLevel: String(revisedRaw.assumedLevel || current.assumedLevel).trim(),
+      estimatedDepth: String(revisedRaw.estimatedDepth || current.estimatedDepth).trim(),
+      units: parsedUnits
+        .map((unit: any) => ({
+          id: unit?.id && knownIds.has(String(unit.id)) ? String(unit.id) : makeId("unit"),
+          title: String(unit?.title || "Untitled unit").trim(),
+          objective: String(unit?.objective || "").trim(),
+          lessons: (Array.isArray(unit?.lessons) ? unit.lessons : []).map((lesson: any) => ({
+            id: lesson?.id && knownIds.has(String(lesson.id)) ? String(lesson.id) : makeId("lesson"),
+            title: String(lesson?.title || "Untitled lesson").trim(),
+            objective: String(lesson?.objective || "").trim(),
+            keyConcepts: toStringArray(lesson?.keyConcepts, 6),
+            practice: String(lesson?.practice || "").trim(),
+            verification: String(lesson?.verification || "").trim(),
+          })),
+        }))
+        .filter((unit: LearningBlueprintUnit) => unit.lessons.length > 0),
+      practiceActivities: toStringArray(revisedRaw.practiceActivities, 6),
+      completionCriteria: toStringArray(revisedRaw.completionCriteria, 6),
+      gaps: toStringArray(revisedRaw.gaps, 10),
+      revisions: [...current.revisions, revision],
+      approved: false,
+      generatedAt: current.generatedAt,
+      updatedAt,
+    };
+
+    const path: LearningPath = {
+      ...detail.path,
+      objective: blueprint.objective,
+      assumedLevel: blueprint.assumedLevel,
+      estimatedDepth: blueprint.estimatedDepth,
+      updatedAt,
+    };
+
+    await LearningStore.writeObjects(userId, [
+      { type: "learning_path", object: path },
+      { type: "learning_blueprint", object: blueprint },
+    ]);
+
+    const next = await LearningStore.getPathDetail(userId, pathId);
+    if (!next) throw new Error("Revised learning path could not be loaded.");
+    return next;
+  }
+
   static async approveBlueprint(
     userId: string,
     pathId: string,
@@ -409,6 +716,7 @@ export class LearningStudioService {
     const blueprint: LearningBlueprint = {
       ...(blueprintPatch || detail.blueprint),
       pathId,
+      approved: true,
       updatedAt,
     };
     const firstUnit = blueprint.units[0];
@@ -442,9 +750,11 @@ export class LearningStudioService {
     };
 
     const existingLesson = detail.lessons.find((lesson) => lesson.id === firstBlueprintLesson.id);
-    const lesson = existingLesson || buildLesson(userId, path, firstUnit, firstBlueprintLesson, detail.sources);
+    const lesson =
+      existingLesson ||
+      (await generateLesson(userId, path, firstUnit, firstBlueprintLesson, 1, detail.sources));
     const existingAssessment = detail.assessments.find((assessment) => assessment.lessonId === lesson.id);
-    const assessment = existingAssessment || buildAssessment(userId, path, lesson);
+    const assessment = existingAssessment || (await generateAssessment(userId, path, lesson));
 
     await LearningStore.writeObjects(userId, [
       { type: "learning_path", object: path },
@@ -456,6 +766,64 @@ export class LearningStudioService {
 
     const next = await LearningStore.getPathDetail(userId, pathId);
     if (!next) throw new Error("Approved learning path could not be loaded.");
+    return next;
+  }
+
+  /** Advance to the next lesson in blueprint order once the current one is
+   *  passed. Generates the lesson + assessment on first visit (lazy), same
+   *  pattern as approval, but positioned correctly via the blueprint's real
+   *  unit/lesson order instead of a hardcoded value. */
+  static async advanceLesson(userId: string, pathId: string): Promise<LearningPathDetail> {
+    const detail = await LearningStore.getPathDetail(userId, pathId);
+    if (!detail?.blueprint) throw new Error("Learning path not found.");
+    const currentLessonId = detail.path.activeLessonId;
+    if (!currentLessonId) throw new Error("No active lesson to advance from.");
+
+    const currentAssessment = detail.assessments.find((a) => a.lessonId === currentLessonId);
+    const passed = currentAssessment
+      ? detail.attempts.some((attempt) => attempt.assessmentId === currentAssessment.id && attempt.passed)
+      : false;
+    if (!passed) {
+      throw new Error("Pass the current lesson's assessment before continuing.");
+    }
+
+    const flat = flattenedLessonList(detail.blueprint);
+    const currentIndex = flat.findIndex(({ lesson }) => lesson.id === currentLessonId);
+    if (currentIndex < 0 || currentIndex + 1 >= flat.length) {
+      const updatedAt = now();
+      const path: LearningPath = { ...detail.path, status: "completed", completedAt: updatedAt, updatedAt };
+      await LearningStore.writeObjects(userId, [{ type: "learning_path", object: path }]);
+      const finished = await LearningStore.getPathDetail(userId, pathId);
+      if (!finished) throw new Error("Learning path could not be reloaded.");
+      return finished;
+    }
+
+    const { unit: nextUnit, lesson: nextLessonBlueprint } = flat[currentIndex + 1];
+    const order = currentIndex + 2;
+    const updatedAt = now();
+
+    const existingLesson = detail.lessons.find((lesson) => lesson.id === nextLessonBlueprint.id);
+    const lesson =
+      existingLesson ||
+      (await generateLesson(userId, detail.path, nextUnit, nextLessonBlueprint, order, detail.sources));
+    const existingAssessment = detail.assessments.find((a) => a.lessonId === lesson.id);
+    const assessment = existingAssessment || (await generateAssessment(userId, detail.path, lesson));
+
+    const path: LearningPath = {
+      ...detail.path,
+      activeUnitId: nextUnit.id,
+      activeLessonId: lesson.id,
+      updatedAt,
+    };
+
+    await LearningStore.writeObjects(userId, [
+      { type: "learning_path", object: path },
+      { type: "lesson", object: lesson },
+      { type: "assessment", object: assessment },
+    ]);
+
+    const next = await LearningStore.getPathDetail(userId, pathId);
+    if (!next) throw new Error("Learning path could not be reloaded.");
     return next;
   }
 
