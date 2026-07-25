@@ -11,7 +11,19 @@ import {
   Sparkles,
   Upload,
 } from "lucide-react";
-import NexusCore, { type NexusDomain } from "@/nexus/components/NexusCore";
+import NexusCore, { DEFAULT_DOMAINS, type NexusDomain } from "@/nexus/components/NexusCore";
+
+const USAGE_KEY = "nexus-usage";
+
+function readUsage(): { counts: Record<string, number>; lastUsed: string | null } {
+  try {
+    const raw = localStorage.getItem(USAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    /* fresh start */
+  }
+  return { counts: {}, lastUsed: null };
+}
 
 const CONSOLE_MODES = [
   { id: "text", label: "Text", Icon: MessageSquare },
@@ -50,7 +62,19 @@ export default function NexusCoreDemoPage() {
   const [focused, setFocused] = useState<NexusDomain | null>(null);
   const [selected, setSelected] = useState<NexusDomain | null>(null);
   const [inWorld, setInWorld] = useState(false);
+  const [usage, setUsage] = useState(readUsage);
   const entryTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // rings grow with node usage; the last-used node always keeps its ring
+  const domains = useMemo(() => {
+    const max = Math.max(3, ...Object.values(usage.counts));
+    return DEFAULT_DOMAINS.map((d) => {
+      const count = usage.counts[d.id] ?? 0;
+      let u = count > 0 ? Math.min(1, count / max) : 0;
+      if (usage.lastUsed === d.id) u = Math.max(u, 0.4);
+      return { ...d, usage: u };
+    });
+  }, [usage]);
 
   const accent = selected?.color ?? DEFAULT_ACCENT;
 
@@ -81,6 +105,18 @@ export default function NexusCoreDemoPage() {
 
   const handleDomainSelect = useCallback((domain: NexusDomain) => {
     setSelected(domain);
+    setUsage((prev) => {
+      const next = {
+        counts: { ...prev.counts, [domain.id]: (prev.counts[domain.id] ?? 0) + 1 },
+        lastUsed: domain.id,
+      };
+      try {
+        localStorage.setItem(USAGE_KEY, JSON.stringify(next));
+      } catch {
+        /* storage unavailable */
+      }
+      return next;
+    });
     clearTimeout(entryTimer.current);
     entryTimer.current = setTimeout(() => setInWorld(true), 500);
   }, []);
@@ -107,6 +143,7 @@ export default function NexusCoreDemoPage() {
       <div className="absolute inset-0">
         <NexusCore
           particleCount={particleCount}
+          domains={domains}
           onRotate={handleRotate}
           onFocusChange={handleFocusChange}
           onDomainSelect={handleDomainSelect}
@@ -304,3 +341,4 @@ export default function NexusCoreDemoPage() {
     </div>
   );
 }
+

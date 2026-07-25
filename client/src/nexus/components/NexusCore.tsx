@@ -52,19 +52,21 @@ export interface NexusDomain {
   angle: number;
   ring?: boolean;
   moon?: boolean;
+  /** 0..1 — rings appear and grow with node usage */
+  usage?: number;
   icon?: ComponentType<{ color?: string; size?: number | string; strokeWidth?: number | string }> | ElementType;
 }
 
-// chakra-aligned domain identities
+// chakra-aligned domain identities (rings are earned through usage)
 export const DEFAULT_DOMAINS: NexusDomain[] = [
   { id: "identity", label: "IDENTITY", color: "#e8ecf4", size: 0.22, radius: 2.65, inclination: 0.19, angle: 0.42, icon: Fingerprint },
-  { id: "memory", label: "MEMORY", color: "#8b5cf6", size: 0.31, radius: 3.45, inclination: -0.13, angle: 1.28, icon: Brain, ring: true },
-  { id: "knowledge", label: "KNOWLEDGE", color: "#22d3ee", size: 0.26, radius: 4.35, inclination: 0.09, angle: 2.02, ring: true, icon: BookOpen },
+  { id: "memory", label: "MEMORY", color: "#8b5cf6", size: 0.31, radius: 3.45, inclination: -0.13, angle: 1.28, icon: Brain },
+  { id: "knowledge", label: "KNOWLEDGE", color: "#22d3ee", size: 0.26, radius: 4.35, inclination: 0.09, angle: 2.02, icon: BookOpen },
   { id: "projects", label: "PROJECTS", color: "#eab308", size: 0.18, radius: 2.95, inclination: -0.23, angle: 2.88, icon: FolderOpen },
   { id: "workspaces", label: "WORKSPACES", color: "#34d399", size: 0.24, radius: 3.85, inclination: 0.16, angle: 3.52, moon: true, icon: LayoutGrid },
   { id: "connect", label: "CONNECT", color: "#fb923c", size: 0.28, radius: 4.62, inclination: -0.08, angle: 4.46, icon: Plug },
   { id: "tools", label: "TOOLS", color: "#ef4444", size: 0.16, radius: 2.32, inclination: 0.26, angle: 5.02, moon: true, icon: Wrench },
-  { id: "settings", label: "SETTINGS", color: "#6366f1", size: 0.2, radius: 3.15, inclination: -0.19, angle: 5.86, ring: true, icon: SettingsIcon },
+  { id: "settings", label: "SETTINGS", color: "#6366f1", size: 0.2, radius: 3.15, inclination: -0.19, angle: 5.86, icon: SettingsIcon },
 ];
 
 const wrapAngle = (x: number) => Math.atan2(Math.sin(x), Math.cos(x));
@@ -555,7 +557,7 @@ function Planet({
 
     if (glowRef.current) {
       const m = glowRef.current.material as THREE.SpriteMaterial;
-      m.opacity = 0.55 + material.uniforms.uFocus.value * 0.35 + Math.sin(t * 1.4 + index) * 0.06;
+      m.opacity = 0.4 + material.uniforms.uFocus.value * 0.3 + Math.sin(t * 1.4 + index) * 0.05;
     }
     if (moonRef.current) moonRef.current.rotation.y += delta * 0.9;
   });
@@ -579,23 +581,29 @@ function Planet({
       <mesh material={material}>
         <sphereGeometry args={[domain.size, 32, 32]} />
       </mesh>
-      <sprite ref={glowRef} scale={[domain.size * 5.2, domain.size * 5.2, 1]}>
+      <sprite ref={glowRef} scale={[domain.size * 4.1, domain.size * 4.1, 1]}>
         <spriteMaterial
           map={glowTexture}
           color={domain.color}
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}
-          opacity={0.55}
+          opacity={0.4}
         />
       </sprite>
-      {domain.ring && (
+      {(domain.ring || (domain.usage ?? 0) > 0.02) && (
         <mesh rotation={[1.25, 0.3, 0]}>
-          <ringGeometry args={[domain.size * 1.55, domain.size * 2.25, 48]} />
+          <ringGeometry
+            args={[
+              domain.size * 1.45,
+              domain.size * (1.62 + (domain.usage ?? 0) * 0.85),
+              48,
+            ]}
+          />
           <meshBasicMaterial
             color={domain.color}
             transparent
-            opacity={0.3}
+            opacity={0.09 + (domain.usage ?? 0) * 0.2}
             side={THREE.DoubleSide}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
@@ -1051,7 +1059,7 @@ export function NexusCoreScene({
   const isPortrait = aspect < 0.8;
   // mobile-first: compress orbits + enlarge planets so the system stays in frame
   const orbitScale = isPortrait ? THREE.MathUtils.clamp(aspect * 1.15, 0.52, 1) : 1;
-  const sizeScale = isPortrait ? 1.28 : 1;
+  const sizeScale = isPortrait ? 1.05 : 1;
 
   const handleSelect = (domain: NexusDomain, index: number) => {
     interaction.current.overrideIndex = index;
