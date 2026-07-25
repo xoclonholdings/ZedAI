@@ -53,17 +53,12 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
       telephony: {
         ...defaultIntegrations.telephony,
         ...(raw?.integrations?.telephony || {}),
-        hasApiKey: !!(
-          raw?.integrations?.telephony?.apiKey || raw?.integrations?.telephony?.hasApiKey
-        ),
+        hasApiKey: !!raw?.integrations?.telephony?.apiKey,
       },
       firewall: {
         ...defaultIntegrations.firewall,
         ...(raw?.integrations?.firewall || {}),
-        hasAuthToken: !!(
-          raw?.integrations?.firewall?.authToken ||
-          raw?.integrations?.firewall?.hasAuthToken
-        ),
+        hasAuthToken: !!raw?.integrations?.firewall?.authToken,
       },
       businessOperations: {
         ...defaultIntegrations.businessOperations,
@@ -72,21 +67,13 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
       deployment: {
         ...defaultIntegrations.deployment,
         ...(raw?.integrations?.deployment || {}),
-        hasAccessToken: !!(
-          raw?.integrations?.deployment?.accessToken ||
-          raw?.integrations?.deployment?.hasAccessToken
-        ),
+        hasAccessToken: !!raw?.integrations?.deployment?.accessToken,
       },
       payments: {
         ...defaultIntegrations.payments,
         ...(raw?.integrations?.payments || {}),
-        hasSecretKey: !!(
-          raw?.integrations?.payments?.secretKey || raw?.integrations?.payments?.hasSecretKey
-        ),
-        hasWebhookSecret: !!(
-          raw?.integrations?.payments?.webhookSecret ||
-          raw?.integrations?.payments?.hasWebhookSecret
-        ),
+        hasSecretKey: !!raw?.integrations?.payments?.secretKey,
+        hasWebhookSecret: !!raw?.integrations?.payments?.webhookSecret,
       },
       socialPublishing: {
         ...defaultIntegrations.socialPublishing,
@@ -94,48 +81,36 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
         platforms: Array.isArray(raw?.integrations?.socialPublishing?.platforms)
           ? raw!.integrations!.socialPublishing!.platforms
           : defaultIntegrations.socialPublishing.platforms,
-        hasAccessToken: !!(
-          raw?.integrations?.socialPublishing?.accessToken ||
-          raw?.integrations?.socialPublishing?.hasAccessToken
-        ),
+        hasAccessToken: !!raw?.integrations?.socialPublishing?.accessToken,
       },
       crm: {
         ...defaultIntegrations.crm,
         ...(raw?.integrations?.crm || {}),
-        hasApiKey: !!(raw?.integrations?.crm?.apiKey || raw?.integrations?.crm?.hasApiKey),
+        hasApiKey: !!raw?.integrations?.crm?.apiKey,
       },
       accounting: {
         ...defaultIntegrations.accounting,
         ...(raw?.integrations?.accounting || {}),
         hasCredentials: !!(
-          (raw?.integrations?.accounting?.clientId &&
-            raw?.integrations?.accounting?.clientSecret &&
-            raw?.integrations?.accounting?.refreshToken) ||
-          raw?.integrations?.accounting?.hasCredentials
+          raw?.integrations?.accounting?.clientId &&
+          raw?.integrations?.accounting?.clientSecret &&
+          raw?.integrations?.accounting?.refreshToken
         ),
       },
       cloudStorage: {
         ...defaultIntegrations.cloudStorage,
         ...(raw?.integrations?.cloudStorage || {}),
-        hasAccessToken: !!(
-          raw?.integrations?.cloudStorage?.accessToken ||
-          raw?.integrations?.cloudStorage?.hasAccessToken
-        ),
+        hasAccessToken: !!raw?.integrations?.cloudStorage?.accessToken,
       },
       tradingView: {
         ...defaultIntegrations.tradingView,
         ...(raw?.integrations?.tradingView || {}),
-        hasAlertWebhookSecret: !!(
-          raw?.integrations?.tradingView?.alertWebhookSecret ||
-          raw?.integrations?.tradingView?.hasAlertWebhookSecret
-        ),
+        hasAlertWebhookSecret: !!raw?.integrations?.tradingView?.alertWebhookSecret,
       },
       marketData: {
         ...defaultIntegrations.marketData,
         ...(raw?.integrations?.marketData || {}),
-        hasApiKey: !!(
-          raw?.integrations?.marketData?.apiKey || raw?.integrations?.marketData?.hasApiKey
-        ),
+        hasApiKey: !!raw?.integrations?.marketData?.apiKey,
       },
       kalshi: {
         ...defaultIntegrations.kalshi,
@@ -268,9 +243,7 @@ function mergeGitHub(raw: Partial<AdminSettings> | null | undefined) {
     accounts: Array.isArray(raw?.integrations?.github?.accounts)
       ? raw!.integrations!.github!.accounts!
       : [],
-    hasToken: !!(
-      raw?.integrations?.github?.token || raw?.integrations?.github?.hasToken
-    ),
+    hasToken: !!raw?.integrations?.github?.token,
   };
 
   // Migrate legacy single-repo fields → first account, only when no
@@ -294,7 +267,7 @@ function mergeGitHub(raw: Partial<AdminSettings> | null | undefined) {
   // Per-account hasToken flag is derived from token presence.
   merged.accounts = merged.accounts.map((acc: any) => ({
     ...acc,
-    hasToken: !!(acc?.token || acc?.hasToken),
+    hasToken: !!acc?.token,
   }));
   return merged;
 }
@@ -306,9 +279,7 @@ function mergeEmail(raw: Partial<AdminSettings> | null | undefined) {
     accounts: Array.isArray(raw?.integrations?.email?.accounts)
       ? raw!.integrations!.email!.accounts!
       : [],
-    hasPassword: !!(
-      raw?.integrations?.email?.password || raw?.integrations?.email?.hasPassword
-    ),
+    hasPassword: !!raw?.integrations?.email?.password,
   };
 
   // Migrate legacy single-sender fields → first account.
@@ -333,7 +304,7 @@ function mergeEmail(raw: Partial<AdminSettings> | null | undefined) {
   }
   merged.accounts = merged.accounts.map((acc: any) => ({
     ...acc,
-    hasPassword: !!(acc?.password || acc?.hasPassword),
+    hasPassword: !!acc?.password,
   }));
   if (!merged.notes) merged.notes = defaultIntegrations.email.notes;
   return merged;
@@ -350,9 +321,7 @@ function mergeGoogle(raw: Partial<AdminSettings> | null | undefined) {
   merged.accounts = merged.accounts.map((acc: any) => ({
     ...acc,
     scopes: Array.isArray(acc?.scopes) ? acc.scopes : [],
-    hasCredentials: !!(
-      (acc?.clientId && acc?.clientSecret && acc?.refreshToken) || acc?.hasCredentials
-    ),
+    hasCredentials: !!(acc?.clientId && acc?.clientSecret && acc?.refreshToken),
   }));
   return merged;
 }

@@ -644,8 +644,33 @@ const GROUPS: ProviderGroup[] = [
   },
 ];
 
+/**
+ * Connections are only durable across a redeploy when DATABASE_URL is
+ * configured — without one this container's saved credentials live only
+ * in an ephemeral file and vanish on the next deploy. Surfacing that
+ * instead of failing silently.
+ */
+function NoDatabaseBanner() {
+  return (
+    <div
+      role="alert"
+      className="mb-6 flex w-full min-w-0 max-w-full items-start gap-3 rounded-lg border border-amber-400/30 bg-amber-500/[0.06] px-3.5 py-3"
+    >
+      <div className="min-w-0 max-w-full">
+        <div className="break-words text-[13px] font-medium text-amber-200 [overflow-wrap:anywhere]">
+          No database attached
+        </div>
+        <div className="mt-0.5 break-words text-[12.5px] leading-snug text-amber-200/70 [overflow-wrap:anywhere]">
+          Connections you save here will work until the next redeploy, then need to be reconnected.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function IntegrationsSection() {
   const [integrations, setIntegrations] = useState<any>(null);
+  const [databaseConnected, setDatabaseConnected] = useState<boolean>(true);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [loadError, setLoadError] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
@@ -666,6 +691,7 @@ export default function IntegrationsSection() {
       if (!res.ok) throw new Error(`Failed to load (${res.status})`);
       const data = await res.json();
       setIntegrations(data.integrations || {});
+      setDatabaseConnected(data.databaseConnected !== false);
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -780,6 +806,7 @@ export default function IntegrationsSection() {
     <div>
       {header}
       {loadError && <LoadErrorBanner onRetry={() => void load()} />}
+      {!loadError && !databaseConnected && <NoDatabaseBanner />}
 
       {GROUPS.map((group, gi) => (
         <SettingGroup

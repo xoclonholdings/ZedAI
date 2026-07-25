@@ -1,3 +1,4 @@
+import { appStateAvailable } from "../appState";
 import { sanitizeUser } from "./auth-helpers";
 import { loadAdminSettings } from "./io";
 
@@ -16,6 +17,10 @@ export async function getPublicAdminSettings() {
   const settings = await loadAdminSettings();
   return {
     ...settings,
+    // Connections are only durable across a redeploy when a database is
+    // attached — without one, saved credentials live only in this
+    // container's ephemeral file and vanish on the next deploy.
+    databaseConnected: appStateAvailable(),
     integrations: {
       ...settings.integrations,
       github: {

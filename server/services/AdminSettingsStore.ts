@@ -274,31 +274,48 @@ export async function updateIntegrationSettings(
   return settings.integrations;
 }
 
-function preserveSecret<T extends Record<string, any>>(
+/**
+ * An omitted field or the masked placeholder preserve the existing secret
+ * (the UI never round-trips a real value back to us). An explicit empty
+ * string means the caller wants it cleared — that's exactly what
+ * Disconnect sends, so treating "" as "leave alone" made Disconnect a
+ * no-op.
+ */
+export function preserveSecret<T extends Record<string, any>>(
   current: T,
   next: Partial<T> | undefined,
   key: keyof T,
 ): string {
   if (!next || !(key in next)) return current[key];
   const incoming = next[key];
-  if (typeof incoming === "string" && incoming.trim() === "") return current[key];
   if (incoming === "•••••• (set)") return current[key];
   const value = incoming ?? current[key];
   return typeof value === "string" ? value : "";
 }
 
-function mergeSecretAccounts(
+/**
+ * Upserts nextAccounts into currentAccounts by id. Every save only ever
+ * carries the one account the user just edited (see IntegrationsSection's
+ * per-provider `patch`), so mapping over nextAccounts alone silently
+ * dropped every other already-connected account in the group on each
+ * save. Accounts not present in nextAccounts are left untouched.
+ */
+export function mergeSecretAccounts(
   currentAccounts: any[],
   nextAccounts: any[] | undefined,
   secretKeys: string[],
 ) {
   if (!Array.isArray(nextAccounts)) return currentAccounts;
-  return nextAccounts.map((nextAccount) => {
-    const currentAccount = currentAccounts.find((account) => account.id === nextAccount.id) || {};
-    const merged = { ...currentAccount, ...nextAccount };
+  const merged = currentAccounts.slice();
+  for (const nextAccount of nextAccounts) {
+    const index = merged.findIndex((account) => account.id === nextAccount.id);
+    const currentAccount = index >= 0 ? merged[index] : {};
+    const upserted = { ...currentAccount, ...nextAccount };
     for (const key of secretKeys) {
-      merged[key] = preserveSecret(currentAccount, nextAccount, key);
+      upserted[key] = preserveSecret(currentAccount, nextAccount, key);
     }
-    return merged;
-  });
+    if (index >= 0) merged[index] = upserted;
+    else merged.push(upserted);
+  }
+  return merged;
 }
