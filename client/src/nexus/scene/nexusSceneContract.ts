@@ -13,13 +13,22 @@ export interface NexusSceneNode {
 }
 
 /**
- * "home" - nothing targeted, camera holds the overview framing.
- * "hub" - a celestial hub is targeted; camera orbits toward it and its
- * gateway actions are revealed. Still inside Nexus - no workspace has
- * loaded (see NexusRootPage, which derives this from the /nexus/:nodeId
- * route rather than tracking separate client state).
+ * The five interaction states (see NexusRootPage for the full state machine):
+ *
+ * "home"   - nothing targeted, camera holds the overview framing.
+ * "target" - a hub was just tapped; acknowledged but the camera hasn't
+ *            moved yet and the Hub reveal is still hidden.
+ * "orbit"  - the camera is dollying toward the targeted hub; still inside
+ *            Nexus, rest of the universe stays visible, Hub still hidden.
+ * "hub"    - the camera has arrived; the Hub's gateway actions are
+ *            revealed. Still inside Nexus - no workspace has loaded.
+ * "enter"  - a gateway action to a real external workspace was chosen;
+ *            Warp plays before navigating away from Nexus.
+ *
+ * Route only distinguishes Home from a selected node - target/orbit/hub/
+ * enter are transient client state layered on top by NexusRootPage.
  */
-export type NexusSceneStage = "home" | "hub";
+export type NexusInteractionStage = "home" | "target" | "orbit" | "hub" | "enter";
 
 export interface NexusDriftState {
   /** Current drift offset in CSS px (applied to both scene and label overlay). */

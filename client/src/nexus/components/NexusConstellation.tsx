@@ -9,8 +9,8 @@ import {
   canUseNexusWebgl,
   createNexusDriftState,
   type NexusDriftState,
+  type NexusInteractionStage,
   type NexusSceneNode,
-  type NexusSceneStage,
 } from "../scene/nexusSceneContract";
 import { useNexus } from "../state/NexusProvider";
 import { NexusIcon } from "./NexusIcon";
@@ -21,16 +21,22 @@ const DRAG_LIMIT_PX = 14;
 const TAP_THRESHOLD_PX = 7;
 
 export interface NexusConstellationProps {
-  /** STATE 0 (Home) when no hub is targeted, STATE 2/3 (Orbit/Hub) once one is. Derived by the page from the /nexus/:nodeId route - see NexusRootPage. */
-  readonly stage: NexusSceneStage;
+  /** The full interaction stage (home/target/orbit/hub/enter) - owned by NexusRootPage's transient state machine. */
+  readonly stage: NexusInteractionStage;
   /** STATE 4 (Enter): true for the brief transition while actually leaving Nexus for a workspace. */
   readonly warping: boolean;
+  /** Fired once (with the settled node's id) when the camera dolly has arrived - the deterministic Orbit -> Hub gate. */
+  readonly onOrbitSettled: (nodeId: string) => void;
 }
 
-export function NexusConstellation({ stage, warping }: NexusConstellationProps) {
+export function NexusConstellation({ stage, warping, onOrbitSettled }: NexusConstellationProps) {
   const [, navigate] = useLocation();
   const { snapshot, viewportSnapshot, focusNode } = useNexus();
-  const activeId = viewportSnapshot.focusedNode?.id ?? snapshot.activeNode?.id ?? null;
+  // Purely viewport-driven: Home (nothing focused) must show no planet as
+  // visually selected. snapshot.activeNode is a separate, always-defined
+  // "last active" concept used elsewhere (e.g. keyboard nav) - it must not
+  // leak into what the Home scene visually highlights.
+  const activeId = viewportSnapshot.focusedNode?.id ?? null;
 
   const [webgl, setWebgl] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -124,7 +130,14 @@ export function NexusConstellation({ stage, warping }: NexusConstellationProps) 
           className="absolute -inset-x-6 -inset-y-8 [mask-image:radial-gradient(ellipse_at_center,black_58%,transparent_96%)]"
           aria-hidden="true"
         >
-          <NexusScene nodes={sceneNodes} drift={drift} reducedMotion={reducedMotion} stage={stage} warping={warping} />
+          <NexusScene
+            nodes={sceneNodes}
+            drift={drift}
+            reducedMotion={reducedMotion}
+            stage={stage}
+            warping={warping}
+            onOrbitSettled={onOrbitSettled}
+          />
         </div>
       ) : (
         <FallbackField nodes={sceneNodes} />

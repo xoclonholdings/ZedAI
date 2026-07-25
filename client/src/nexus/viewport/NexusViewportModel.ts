@@ -61,6 +61,8 @@ export interface NexusNodeActionView {
   readonly route: string | null;
   readonly enabled: boolean;
   readonly status: NexusCapabilityDefinition["status"];
+  /** Set only when the underlying capability action explicitly opts in via metadata.primary. */
+  readonly primary: boolean;
 }
 
 export interface NexusFocusedNodeView {
@@ -70,6 +72,8 @@ export interface NexusFocusedNodeView {
   readonly accentColor: string;
   readonly icon: string;
   readonly actions: readonly NexusNodeActionView[];
+  /** Only non-null when a capability action explicitly marks itself primary - never defaults to the first action. */
+  readonly primaryAction: NexusNodeActionView | null;
 }
 
 export interface NexusCommunicationModeView {
@@ -145,6 +149,26 @@ export function focusNexusViewportNode(
   if (state.focusedNodeId === nodeId && state.navigationSource === navigationSource) return state;
   return deepFreeze({
     focusedNodeId: nodeId,
+    previousNodeId: state.focusedNodeId,
+    offset: { x: 0, y: 0 },
+    navigationSource,
+    transitionSerial: state.transitionSerial + 1,
+  }) as NexusViewportState;
+}
+
+/**
+ * Home must be a truly neutral state: clears the visual focus (and any
+ * pan offset from it) without touching the graph engine's separate
+ * activeNodeId concept, which callers like keyboard nav still need as a
+ * "last known position" reference point even when nothing is focused.
+ */
+export function clearNexusViewportFocus(
+  state: NexusViewportState,
+  navigationSource: NexusViewportNavigationSource,
+): NexusViewportState {
+  if (state.focusedNodeId === null) return state;
+  return deepFreeze({
+    focusedNodeId: null,
     previousNodeId: state.focusedNodeId,
     offset: { x: 0, y: 0 },
     navigationSource,
@@ -249,22 +273,58 @@ export function getAdjacentNexusNode(
   return rootNodes[wrapIndex(currentIndex + delta, rootNodes.length)] ?? null;
 }
 
+/**
+ * Translates the capability registry (architecture layer) into the Hub's
+ * user-facing gateway actions (UX layer). Deterministic ordering (an
+ * explicit action.metadata.displayOrder, falling back to registry order
+ * as a stable tiebreaker - never engine-iteration-order alone),
+ * deduplicated by route, no arbitrary truncation, and a primary action
+ * only when a capability action explicitly opts in via
+ * action.metadata.primary. Never invents actions or routes: everything
+ * here already exists in the manifest/capability data.
+ */
 export function createFocusedNodeView(
   node: NexusNodeDefinition,
   capabilities: NexusCapabilityRegistry,
 ): NexusFocusedNodeView {
-  const actions = capabilities
+  const candidates = capabilities
     .byOwner(node.id)
     .filter(isNexusCapabilityActionAvailable)
-    .flatMap((capability) => capability.actions.map((action) => ({
-      label: action.label,
-      summary: capability.searchable.summary,
-      route: action.route,
-      enabled: action.enabled,
-      status: capability.status,
-    })))
-    .filter((action) => action.enabled)
-    .slice(0, 3);
+    .flatMap((capability) => capability.actions
+      .filter((action) => action.enabled && Boolean(action.route) && action.metadata?.hiddenFromHub !== true)
+      .map((action) => ({
+        label: (action.metadata?.hubLabel as string | undefined) ?? action.label,
+        summary: (action.metadata?.hubSummary as string | undefined) ?? capability.searchable.summary,
+        route: action.route as string,
+        enabled: action.enabled,
+        status: capability.status,
+        primary: action.metadata?.primary === true,
+        displayOrder: typeof action.metadata?.displayOrder === "number"
+          ? (action.metadata.displayOrder as number)
+          : Number.MAX_SAFE_INTEGER,
+      })));
+
+  // Stable sort by displayOrder; equal-order actions keep registry order (the explicit tiebreaker below).
+  const ordered = candidates
+    .map((candidate, index) => ({ candidate, index }))
+    .sort((a, b) => a.candidate.displayOrder - b.candidate.displayOrder || a.index - b.index)
+    .map((entry) => entry.candidate);
+
+  // Dedupe by route: two capabilities pointing at the same destination should surface once, not twice.
+  const seenRoutes = new Set<string>();
+  const actions: NexusNodeActionView[] = [];
+  for (const candidate of ordered) {
+    if (seenRoutes.has(candidate.route)) continue;
+    seenRoutes.add(candidate.route);
+    actions.push({
+      label: candidate.label,
+      summary: candidate.summary,
+      route: candidate.route,
+      enabled: candidate.enabled,
+      status: candidate.status,
+      primary: candidate.primary,
+    });
+  }
 
   return deepFreeze({
     nodeId: node.id,
@@ -273,6 +333,7 @@ export function createFocusedNodeView(
     accentColor: node.metadata.visual.color,
     icon: node.metadata.visual.icon,
     actions,
+    primaryAction: actions.find((action) => action.primary) ?? null,
   }) as NexusFocusedNodeView;
 }
 
@@ -330,13 +391,19 @@ export function shouldShowNexusDeveloperInspector(input: {
   return params.get("debug") === "nexus";
 }
 
+/**
+ * Home (focusedNodeId === null) must resolve to no focused node at all -
+ * no fallback to the graph engine's activeNode or the first root node.
+ * That's a deliberately separate "last active node" concept (see
+ * getAdjacentNexusNode, which still uses it as a keyboard-nav reference
+ * point); the visual focus used by the Home scene must not inherit it.
+ */
 function resolveFocusedNode(
   graph: NexusGraphSnapshot,
   viewport: NexusViewportState,
 ): NexusNodeDefinition | null {
-  return viewport.focusedNodeId
-    ? graph.nodes.find((node) => node.id === viewport.focusedNodeId) ?? graph.activeNode
-    : graph.activeNode ?? graph.rootNodes[0] ?? null;
+  if (!viewport.focusedNodeId) return null;
+  return graph.nodes.find((node) => node.id === viewport.focusedNodeId) ?? null;
 }
 
 function bestNodeMatch(tokens: readonly string[], graph: NexusGraphSnapshot): NexusNodeDefinition | null {

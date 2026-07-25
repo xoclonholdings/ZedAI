@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 
@@ -8,8 +8,21 @@ import { NexusConstellation } from "../components/NexusConstellation";
 import { NexusDeveloperInspector } from "../components/NexusDeveloperInspector";
 import { NexusFocusedNodePanel } from "../components/NexusFocusedNodePanel";
 import { isNexusRootNodeId } from "../graph/rootConstellation";
+import type { NexusInteractionStage } from "../scene/nexusSceneContract";
 import { useNexus } from "../state/NexusProvider";
 import { shouldShowNexusDeveloperInspector } from "../viewport/NexusViewportModel";
+import {
+  resolveNexusEnterAction,
+  resolveNexusStageOnRouteChange,
+  shouldAcceptNexusOrbitSettle,
+} from "./nexusInteractionStageModel";
+
+/** How long the "target" beat holds before Orbit's camera movement begins - brief but real, not instant. */
+const TARGET_BEAT_MS = 16;
+/** Bounded fallback if the scene's onOrbitSettled callback never fires (e.g. WebGL unavailable). */
+const ORBIT_FALLBACK_MS = 900;
+/** How long Warp plays before the real workspace route loads. */
+const WARP_DURATION_MS = 380;
 
 interface NexusRootPageProps {
   readonly communicationConversationId?: string | null;
@@ -21,7 +34,7 @@ export default function NexusRootPage({
   const params = useParams<{ nodeId?: string }>();
   const [location, navigate] = useLocation();
   const { user } = useAuth();
-  const { focusNode } = useNexus();
+  const { focusNode, clearFocus } = useNexus();
   const routeNodeId = isNexusRootNodeId(params.nodeId) ? params.nodeId : null;
   const hasUnknownRouteNode = Boolean(params.nodeId && !routeNodeId);
   const displayName = user?.personalization?.displayName ?? user?.displayName ?? user?.firstName ?? user?.username ?? "there";
@@ -31,34 +44,145 @@ export default function NexusRootPage({
     queryString: typeof window === "undefined" ? "" : window.location.search,
   }), [location]);
 
-  // STATE 0 (Home) vs STATE 2/3 (Orbit/Hub) is derived from the route itself -
-  // /nexus is Home, /nexus/:nodeId is Orbit/Hub for that node. No separate
-  // client state to drift out of sync, and it's what makes "workspace back ->
-  // resumes the Hub, not Home" fall out of ordinary browser back navigation.
-  const stage = routeNodeId ? "hub" : "home";
-  const [warping, setWarping] = useState(false);
-
+  const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
-    if (routeNodeId) focusNode(routeNodeId, "route");
-  }, [focusNode, routeNodeId]);
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(media.matches);
+    const onChange = (event: MediaQueryListEvent) => setReducedMotion(event.matches);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  // Route only decides Home vs. a selected node. target/orbit/hub/enter is
+  // transient client state layered on top here, so route state and
+  // animation-timing state stay clearly separated (provider owns
+  // selected/focused node data; this page owns the transition sequence).
+  const [stage, setStage] = useState<NexusInteractionStage>(
+    () => resolveNexusStageOnRouteChange({ routeNodeId, reducedMotion: false, isFirstRenderForMount: true }).stage,
+  );
+  const [warping, setWarping] = useState(false);
+  const stageRef = useRef(stage);
+  useEffect(() => { stageRef.current = stage; }, [stage]);
+
+  const isFirstRouteEffect = useRef(true);
+  const targetTimerRef = useRef<number | null>(null);
+  const orbitFallbackTimerRef = useRef<number | null>(null);
+  const warpTimerRef = useRef<number | null>(null);
+  const warpingRef = useRef(false);
+
+  const clearTargetTimer = useCallback(() => {
+    if (targetTimerRef.current !== null) {
+      window.clearTimeout(targetTimerRef.current);
+      targetTimerRef.current = null;
+    }
+  }, []);
+  const clearOrbitFallbackTimer = useCallback(() => {
+    if (orbitFallbackTimerRef.current !== null) {
+      window.clearTimeout(orbitFallbackTimerRef.current);
+      orbitFallbackTimerRef.current = null;
+    }
+  }, []);
+  const clearWarpTimer = useCallback(() => {
+    if (warpTimerRef.current !== null) {
+      window.clearTimeout(warpTimerRef.current);
+      warpTimerRef.current = null;
+    }
+    warpingRef.current = false;
+  }, []);
 
   useEffect(() => {
     if (hasUnknownRouteNode) navigate("/nexus");
   }, [hasUnknownRouteNode, navigate]);
 
+  // The core STATE 0/1/2/3 sequence. Re-runs whenever the selected node
+  // changes (a fresh tap, a different node, or Back to Home) - each run
+  // cancels whatever the previous run was waiting on, so rapid re-targeting
+  // can never reveal stale Hub data or leave a stray timer behind.
+  useEffect(() => {
+    const wasFirstRun = isFirstRouteEffect.current;
+    isFirstRouteEffect.current = false;
+
+    clearTargetTimer();
+    clearOrbitFallbackTimer();
+    clearWarpTimer();
+    setWarping(false);
+
+    if (!routeNodeId) {
+      // STATE 0 (Home): must be truly neutral - no stale focus, no Hub panel.
+      clearFocus("route");
+      setStage("home");
+      return;
+    }
+
+    focusNode(routeNodeId, "route");
+
+    const armOrbitFallback = () => {
+      orbitFallbackTimerRef.current = window.setTimeout(() => {
+        if (stageRef.current === "orbit") setStage("hub");
+      }, ORBIT_FALLBACK_MS);
+    };
+
+    const decision = resolveNexusStageOnRouteChange({
+      routeNodeId,
+      reducedMotion,
+      isFirstRenderForMount: wasFirstRun,
+    });
+    setStage(decision.stage);
+    if (decision.stage === "orbit") armOrbitFallback();
+    if (decision.awaitsTargetBeat) {
+      // STATE 1 (Target): brief but real - acknowledge the tap for one
+      // paint before Orbit's camera movement begins.
+      targetTimerRef.current = window.setTimeout(() => {
+        setStage("orbit");
+        armOrbitFallback();
+      }, TARGET_BEAT_MS);
+    }
+
+    return () => {
+      clearTargetTimer();
+      clearOrbitFallbackTimer();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeNodeId, reducedMotion]);
+
+  // Cancel every pending timer on unmount (e.g. the user navigates away
+  // through some other path while Target/Orbit/Warp is mid-flight).
+  useEffect(() => () => {
+    clearTargetTimer();
+    clearOrbitFallbackTimer();
+    clearWarpTimer();
+  }, [clearTargetTimer, clearOrbitFallbackTimer, clearWarpTimer]);
+
+  // STATE 2 -> 3 (Orbit -> Hub): the deterministic gate. Only accepted while
+  // still oriented toward the node that actually settled - if the user
+  // retargeted before this fired, it's stale and ignored.
+  const handleOrbitSettled = useCallback((nodeId: string) => {
+    if (!shouldAcceptNexusOrbitSettle(nodeId, routeNodeId, stageRef.current)) return;
+    clearOrbitFallbackTimer();
+    setStage("hub");
+  }, [routeNodeId, clearOrbitFallbackTimer]);
+
   // STATE 4 (Enter): only trigger Warp when the action actually leaves Nexus for
   // a real workspace. Some capability actions still route back into /nexus/...
   // (their workspace isn't built yet) - those are internal, so skip the warp
   // theater and just navigate; nothing to fabricate a transition for.
-  function enterWorkspace(route: string | null) {
-    if (!route) return;
-    if (route.startsWith("/nexus")) {
-      navigate(route);
+  const enterWorkspace = useCallback((route: string | null) => {
+    const decision = resolveNexusEnterAction(route, warpingRef.current);
+    if (decision.kind === "noop") return;
+    if (decision.kind === "navigate-internal") {
+      navigate(decision.route);
       return;
     }
+    warpingRef.current = true;
+    setStage("enter");
     setWarping(true);
-    window.setTimeout(() => navigate(route), 380);
-  }
+    warpTimerRef.current = window.setTimeout(() => {
+      warpTimerRef.current = null;
+      navigate(decision.route);
+    }, reducedMotion ? 0 : WARP_DURATION_MS);
+  }, [navigate, reducedMotion]);
+
+  const goHome = useCallback(() => navigate("/nexus"), [navigate]);
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#02030a] text-white">
@@ -92,15 +216,15 @@ export default function NexusRootPage({
       <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-hidden px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
         <div className="nexus-home-grid">
           <div data-nexus-region="constellation">
-            <NexusConstellation stage={stage} warping={warping} />
+            <NexusConstellation stage={stage} warping={warping} onOrbitSettled={handleOrbitSettled} />
           </div>
           <div data-nexus-region="communication">
             <NexusCommunicationDock conversationId={communicationConversationId} />
           </div>
-          {stage === "hub" && (
+          {(stage === "hub" || stage === "enter") && (
             <div data-nexus-region="focused">
-              <NexusFocusedNodePanel variant="compact" className="lg:hidden" onEnterAction={enterWorkspace} onBack={() => navigate("/nexus")} />
-              <NexusFocusedNodePanel variant="panel" className="hidden lg:block" onEnterAction={enterWorkspace} onBack={() => navigate("/nexus")} />
+              <NexusFocusedNodePanel variant="compact" className="lg:hidden" onEnterAction={enterWorkspace} onBack={goHome} />
+              <NexusFocusedNodePanel variant="panel" className="hidden lg:block" onEnterAction={enterWorkspace} onBack={goHome} />
             </div>
           )}
         </div>

@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 
 import { nexusCapabilityRegistry } from "../capabilities/centralCapabilityRegistry";
 import { isNexusCapabilityActionAvailable } from "../capabilities/capabilityAvailability";
+import { NexusCapabilityRegistry } from "../capabilities/NexusCapabilityRegistry";
+import type { NexusCapabilityDefinition } from "../capabilities/types";
 import {
   NEXUS_COMMUNICATION_MODE_IDS,
   PERSISTENT_COMMUNICATION_MANIFEST,
@@ -24,6 +26,7 @@ import {
   NEXUS_ROOT_NODE_IDS,
 } from "../manifests/rootManifests";
 import {
+  clearNexusViewportFocus,
   communicationModeViews,
   createFocusedNodeView,
   createNexusViewportState,
@@ -246,3 +249,138 @@ test("invalid action payloads are ignored during parsing", () => {
     { type: "navigate-route", route: "/nexus/projects" },
   ]);
 });
+
+test("returning to Home clears visual focus without touching the graph engine's active node", () => {
+  const engine = new NexusConstellationEngine(NEXUS_ROOT_NODES, NEXUS_ROOT_CONNECTIONS);
+  const graph = engine.snapshot(engine.createInitialState());
+  const focused = focusNexusViewportNode(createNexusViewportState(null), "memory", "touch");
+  assert.equal(getNexusViewportSnapshot(graph, focused).focusedNode?.id, "memory");
+
+  const cleared = clearNexusViewportFocus(focused, "route");
+  assert.equal(cleared.focusedNodeId, null);
+  assert.equal(
+    getNexusViewportSnapshot(graph, cleared).focusedNode,
+    null,
+    "Home must resolve to no focused node at all - no fallback to the first root node or the last active one",
+  );
+  assert.equal(Object.isFrozen(cleared), true);
+});
+
+test("clearing an already-clear focus is a no-op", () => {
+  const initial = createNexusViewportState(null);
+  assert.equal(clearNexusViewportFocus(initial, "route"), initial);
+});
+
+test("Hub Model: no arbitrary truncation - every valid gateway action is exposed", () => {
+  const node = NEXUS_ROOT_NODES.find((n) => n.id === "identity")!;
+  const registry = new NexusCapabilityRegistry([
+    hubCapability("identity", "alpha", "Alpha Action", "/learning"),
+    hubCapability("identity", "beta", "Beta Action", "/projects"),
+    hubCapability("identity", "gamma", "Gamma Action", "/workspace"),
+    hubCapability("identity", "delta", "Delta Action", "/flows"),
+  ]);
+
+  const view = createFocusedNodeView(node, registry);
+
+  assert.deepEqual(
+    view.actions.map((a) => a.label),
+    ["Alpha Action", "Beta Action", "Gamma Action", "Delta Action"],
+    "all four actions must appear - Hub Model must not cap at three",
+  );
+});
+
+test("Hub Model: ordering is deterministic via displayOrder, not incidental registration order", () => {
+  const node = NEXUS_ROOT_NODES.find((n) => n.id === "identity")!;
+  const registry = new NexusCapabilityRegistry([
+    hubCapability("identity", "alpha", "Alpha Action", "/learning", { displayOrder: 2 }),
+    hubCapability("identity", "beta", "Beta Action", "/projects", { displayOrder: 1 }),
+    hubCapability("identity", "gamma", "Gamma Action", "/workspace"),
+  ]);
+
+  const view = createFocusedNodeView(node, registry);
+
+  assert.deepEqual(view.actions.map((a) => a.label), ["Beta Action", "Alpha Action", "Gamma Action"]);
+});
+
+test("Hub Model: duplicate routes are deduplicated, not shown twice", () => {
+  const node = NEXUS_ROOT_NODES.find((n) => n.id === "identity")!;
+  const registry = new NexusCapabilityRegistry([
+    hubCapability("identity", "alpha", "Alpha Action", "/learning"),
+    hubCapability("identity", "beta", "Beta Action (same destination)", "/learning"),
+  ]);
+
+  const view = createFocusedNodeView(node, registry);
+
+  assert.equal(view.actions.length, 1);
+  assert.equal(view.actions[0].label, "Alpha Action", "first (highest-priority) occurrence wins");
+});
+
+test("Hub Model: route-less actions never appear, even if flagged enabled", () => {
+  const node = NEXUS_ROOT_NODES.find((n) => n.id === "identity")!;
+  const registry = new NexusCapabilityRegistry([
+    hubCapability("identity", "alpha", "Alpha Action", null),
+  ]);
+
+  const view = createFocusedNodeView(node, registry);
+
+  assert.equal(view.actions.length, 0, "an action with no route is not real - it must not appear as interactive");
+});
+
+test("Hub Model: hiddenFromHub actions are omitted, and primary is only set when explicitly supported", () => {
+  const node = NEXUS_ROOT_NODES.find((n) => n.id === "identity")!;
+  const registry = new NexusCapabilityRegistry([
+    hubCapability("identity", "alpha", "Alpha Action", "/learning"),
+    hubCapability("identity", "beta", "Beta Action", "/projects", { hiddenFromHub: true }),
+    hubCapability("identity", "gamma", "Gamma Action", "/workspace", { primary: true }),
+  ]);
+
+  const view = createFocusedNodeView(node, registry);
+
+  assert.deepEqual(view.actions.map((a) => a.label), ["Alpha Action", "Gamma Action"]);
+  assert.equal(view.primaryAction?.label, "Gamma Action");
+  assert.equal(view.actions.find((a) => a.label === "Alpha Action")?.primary, false);
+});
+
+test("Hub Model: primaryAction is null when nothing explicitly opts in - never defaults to the first action", () => {
+  const node = NEXUS_ROOT_NODES.find((n) => n.id === "identity")!;
+  const registry = new NexusCapabilityRegistry([
+    hubCapability("identity", "alpha", "Alpha Action", "/learning"),
+    hubCapability("identity", "beta", "Beta Action", "/projects"),
+  ]);
+
+  const view = createFocusedNodeView(node, registry);
+
+  assert.equal(view.primaryAction, null);
+});
+
+function hubCapability(
+  owningNodeId: string,
+  name: string,
+  label: string,
+  route: string | null,
+  actionMetadata?: { readonly displayOrder?: number; readonly primary?: boolean; readonly hiddenFromHub?: boolean },
+): NexusCapabilityDefinition {
+  const id = `${owningNodeId}.hub-test-${name}`;
+  return {
+    id,
+    owner: { kind: "node", id: owningNodeId },
+    owningNodeId,
+    label,
+    category: owningNodeId,
+    status: "available",
+    actions: [
+      {
+        id: `${id}.primary`,
+        label,
+        kind: "navigate",
+        route,
+        enabled: true,
+        metadata: actionMetadata,
+      },
+    ],
+    dependencies: [],
+    permissions: [{ id: "kernel.authenticated", label: "Authenticated user", source: "kernel", required: true }],
+    searchable: { summary: `${label} summary`, terms: [name], aliases: [] },
+    metadata: {},
+  };
+}

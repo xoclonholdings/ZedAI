@@ -2,19 +2,24 @@ import { useEffect, useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
-import type { NexusDriftState, NexusSceneNode, NexusSceneStage } from "./nexusSceneContract";
+import type { NexusDriftState, NexusInteractionStage, NexusSceneNode } from "./nexusSceneContract";
+
+/** Camera position/lookAt is within this world-unit distance of its target: "arrived" for Orbit -> Hub purposes. */
+const ORBIT_SETTLE_EPSILON = 0.03;
 
 interface NexusSceneProps {
   readonly nodes: readonly NexusSceneNode[];
   readonly drift: React.MutableRefObject<NexusDriftState>;
   readonly reducedMotion: boolean;
-  /** STATE 2 (Orbit): camera dollies toward the targeted hub without leaving Nexus. */
-  readonly stage: NexusSceneStage;
+  /** The full interaction stage - camera dollies toward the focused node for orbit/hub/enter, holds overview for home/target. */
+  readonly stage: NexusInteractionStage;
   /** STATE 4 (Enter): brief star-streak transition, only when actually leaving Nexus for a workspace. */
   readonly warping: boolean;
+  /** Fired once (with the settled node's id) when the camera dolly has actually arrived - the deterministic Orbit -> Hub gate. */
+  readonly onOrbitSettled: (nodeId: string) => void;
 }
 
-export default function NexusScene({ nodes, drift, reducedMotion, stage, warping }: NexusSceneProps) {
+export default function NexusScene({ nodes, drift, reducedMotion, stage, warping, onOrbitSettled }: NexusSceneProps) {
   return (
     <Canvas
       dpr={[1, 1.75]}
@@ -24,12 +29,19 @@ export default function NexusScene({ nodes, drift, reducedMotion, stage, warping
       style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
       aria-hidden="true"
     >
-      <SceneInner nodes={nodes} drift={drift} reducedMotion={reducedMotion} stage={stage} warping={warping} />
+      <SceneInner
+        nodes={nodes}
+        drift={drift}
+        reducedMotion={reducedMotion}
+        stage={stage}
+        warping={warping}
+        onOrbitSettled={onOrbitSettled}
+      />
     </Canvas>
   );
 }
 
-function SceneInner({ nodes, drift, reducedMotion, stage, warping }: NexusSceneProps) {
+function SceneInner({ nodes, drift, reducedMotion, stage, warping, onOrbitSettled }: NexusSceneProps) {
   const { viewport, size, camera } = useThree();
   const worldPerPx = viewport.width / size.width;
   const toWorld = (xPct: number, yPct: number): [number, number] => [
@@ -40,11 +52,25 @@ function SceneInner({ nodes, drift, reducedMotion, stage, warping }: NexusSceneP
   const glowTex = useDisposableTexture(() => makeRadialTexture(1));
   const softTex = useDisposableTexture(() => makeRadialTexture(0.45));
 
-  // STATE 2 (Orbit): camera dollies partway toward the targeted hub - restrained,
-  // so the rest of the universe stays visible (never a full-screen single planet).
+  // Camera holds the overview framing during home/target; dollies toward the
+  // focused hub for orbit/hub/enter (restrained - the rest of the universe
+  // stays visible, never a full-screen single planet). Reports settle exactly
+  // once per newly-focused node, only while still in "orbit" - that's the
+  // deterministic signal NexusRootPage waits on before revealing the Hub.
+  const settledForId = useRef<string | null>(null);
   useFrame(() => {
     if (document.hidden) return;
-    const focused = stage === "hub" ? nodes.find((n) => n.focused) ?? null : null;
+    const shouldOrbit = stage === "orbit" || stage === "hub" || stage === "enter";
+    const focused = shouldOrbit ? nodes.find((n) => n.focused) ?? null : null;
+
+    if (!focused) {
+      settledForId.current = null;
+    } else if (settledForId.current !== focused.id && stage !== "orbit") {
+      // A new node is focused but we're not (yet) in "orbit" - re-arm so the
+      // next real orbit for this node can still signal settle.
+      settledForId.current = null;
+    }
+
     let targetX = 0;
     let targetY = 0;
     let targetZ = 8;
@@ -59,6 +85,16 @@ function SceneInner({ nodes, drift, reducedMotion, stage, warping }: NexusSceneP
     camera.position.y += (targetY - camera.position.y) * ease;
     camera.position.z += (targetZ - camera.position.z) * ease;
     camera.lookAt(targetX * 0.35, targetY * 0.35, 0);
+
+    if (focused && stage === "orbit" && settledForId.current !== focused.id) {
+      const dx = camera.position.x - targetX;
+      const dy = camera.position.y - targetY;
+      const dz = camera.position.z - targetZ;
+      if (Math.sqrt(dx * dx + dy * dy + dz * dz) <= ORBIT_SETTLE_EPSILON) {
+        settledForId.current = focused.id;
+        onOrbitSettled(focused.id);
+      }
+    }
   });
 
   return (

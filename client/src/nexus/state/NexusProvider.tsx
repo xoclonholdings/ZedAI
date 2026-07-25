@@ -15,6 +15,7 @@ import { NexusConstellationEngine } from "../graph/NexusConstellationEngine";
 import { nexusConstellationEngine } from "../graph/rootConstellation";
 import type { NexusGraphSnapshot, NexusGraphState, NexusNodeId } from "../graph/types";
 import {
+  clearNexusViewportFocus,
   createNexusViewportState,
   focusNexusViewportNode,
   getAdjacentNexusNode,
@@ -33,7 +34,8 @@ type NexusAction =
 
 type NexusViewportAction =
   | { type: "focus"; nodeId: NexusNodeId; source: NexusViewportNavigationSource }
-  | { type: "pan"; deltaX: number; deltaY: number; source: NexusViewportNavigationSource };
+  | { type: "pan"; deltaX: number; deltaY: number; source: NexusViewportNavigationSource }
+  | { type: "unfocus"; source: NexusViewportNavigationSource };
 
 interface NexusContextValue {
   readonly engine: NexusConstellationEngine;
@@ -45,6 +47,8 @@ interface NexusContextValue {
   readonly viewportSnapshot: NexusViewportSnapshot;
   readonly activateNode: (nodeId: NexusNodeId) => void;
   readonly focusNode: (nodeId: NexusNodeId, source?: NexusViewportNavigationSource) => void;
+  /** Home must be a truly neutral state - clears visual focus without touching activeNodeId. */
+  readonly clearFocus: (source?: NexusViewportNavigationSource) => void;
   readonly focusAdjacentNode: (direction: "previous" | "next", source?: NexusViewportNavigationSource) => NexusNodeId | null;
   readonly navigateToNode: (nodeId: NexusNodeId, source?: NexusViewportNavigationSource) => void;
   readonly panViewport: (deltaX: number, deltaY: number, source?: NexusViewportNavigationSource) => void;
@@ -89,6 +93,8 @@ export function NexusProvider({
         return focusNexusViewportNode(state, action.nodeId, action.source);
       case "pan":
         return panNexusViewport(state, { x: action.deltaX, y: action.deltaY }, action.source);
+      case "unfocus":
+        return clearNexusViewportFocus(state, action.source);
       default:
         return state;
     }
@@ -113,6 +119,10 @@ export function NexusProvider({
     dispatchViewport({ type: "focus", nodeId, source });
   }, []);
 
+  const clearFocus = useCallback((source: NexusViewportNavigationSource = "route") => {
+    dispatchViewport({ type: "unfocus", source });
+  }, []);
+
   const focusAdjacentNode = useCallback((
     direction: "previous" | "next",
     source: NexusViewportNavigationSource = "keyboard",
@@ -134,6 +144,7 @@ export function NexusProvider({
     viewportSnapshot,
     activateNode: (nodeId) => focusNode(nodeId, "programmatic"),
     focusNode,
+    clearFocus,
     focusAdjacentNode,
     navigateToNode: (nodeId, source = "zar") => focusNode(nodeId, source),
     panViewport: (deltaX, deltaY, source = "touch") => dispatchViewport({ type: "pan", deltaX, deltaY, source }),
@@ -142,6 +153,7 @@ export function NexusProvider({
     toggleNode: (nodeId) => dispatch({ type: "toggle", nodeId }),
   }), [
     capabilityRegistry,
+    clearFocus,
     communicationLayer,
     engine,
     focusAdjacentNode,

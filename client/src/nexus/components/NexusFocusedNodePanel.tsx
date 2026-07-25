@@ -23,41 +23,52 @@ export function NexusFocusedNodePanel({ variant = "panel", className, onEnterAct
   const view = createFocusedNodeView(focusedNode, capabilityRegistry);
 
   if (variant === "compact") {
-    const primaryAction = view.actions[0] ?? null;
     return (
       <section
-        className={cn("flex items-center gap-2 px-1 py-1", className)}
+        className={cn("flex flex-col gap-1.5 px-1 py-1", className)}
         aria-labelledby="nexus-focused-node-title-compact"
       >
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
-          aria-label="Back to Nexus"
-          title="Back to Nexus"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-        </button>
-        <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-          style={{ color: view.accentColor, backgroundColor: `${view.accentColor}16` }}
-          aria-hidden="true"
-        >
-          <NexusIcon name={view.icon} size={14} />
-        </span>
-        <h2 id="nexus-focused-node-title-compact" className="min-w-0 flex-1 truncate text-[13px] font-medium text-white/80">
-          {view.title}
-        </h2>
-        {primaryAction && (
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onEnterAction(primaryAction.route)}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
-            aria-label={primaryAction.label}
-            title={primaryAction.label}
+            onClick={onBack}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
+            aria-label="Back to Nexus"
+            title="Back to Nexus"
           >
-            <ArrowUpRight size={14} aria-hidden="true" />
+            <ArrowLeft size={14} aria-hidden="true" />
           </button>
+          <span
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+            style={{ color: view.accentColor, backgroundColor: `${view.accentColor}16` }}
+            aria-hidden="true"
+          >
+            <NexusIcon name={view.icon} size={14} />
+          </span>
+          <h2 id="nexus-focused-node-title-compact" className="min-w-0 flex-1 truncate text-[13px] font-medium text-white/80">
+            {view.title}
+          </h2>
+        </div>
+
+        {view.actions.length > 0 && (
+          <div
+            className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="list"
+            aria-label={`${view.title} gateway actions`}
+          >
+            {view.actions.map((action) => (
+              <button
+                key={`${view.nodeId}:${action.label}`}
+                type="button"
+                role="listitem"
+                onClick={() => onEnterAction(action.route)}
+                className="flex shrink-0 items-center gap-1 rounded-full border border-white/[0.08] bg-black/25 px-2.5 py-1 text-[11.5px] font-medium text-white/80 transition hover:border-cyan-200/35 hover:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
+              >
+                {action.label}
+                <ArrowUpRight size={11} className="shrink-0 text-cyan-100/65" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
         )}
       </section>
     );
