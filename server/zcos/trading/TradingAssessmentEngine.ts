@@ -1,6 +1,10 @@
 import { generateChatFromProvider } from "../../services/ModelProviderService";
 import { buildTradingKnowledgeContext } from "./TradingKnowledgeBase";
 import { TradingStore } from "./TradingStore";
+import { getExternalPaperReport } from "./ExternalPaperEngine";
+import { getEvaluationReport } from "./EvaluationEngine";
+import { getQualificationReport } from "./QualificationEngine";
+import { getLiveState } from "./LiveTradingEngine";
 import { TRADING_KNOWLEDGE_AREAS } from "./TradingCurriculum";
 import {
   stageDefinition,
@@ -472,9 +476,143 @@ export async function assessStage(userId: string, stageId: TradingStageId): Prom
       return assessValidation(userId);
     case "sandbox":
       return assessSandbox(userId);
+    case "external_paper":
+      return assessExternalPaper(userId);
+    case "evaluation":
+      return assessEvaluation(userId);
+    case "qualification":
+      return assessQualification(userId);
+    case "live":
+      return assessLive(userId);
     default:
       return lockedResult(stageId);
   }
+}
+
+async function assessExternalPaper(userId: string): Promise<StageAssessmentResult> {
+  const def = stageDefinition("external_paper");
+  const report = await getExternalPaperReport(userId);
+  const sampleScore = Math.min(100, Math.round((report.closedTrades / report.requiredTrades) * 100));
+  return {
+    stageId: "external_paper",
+    kind: "data_check",
+    score: report.passed ? 100 : report.providerConnected ? sampleScore : 0,
+    threshold: def.assessment.passThreshold,
+    passed: report.passed,
+    summary: report.summary,
+    breakdown: [
+      {
+        label: "Paper provider connected",
+        detail: report.providerConnected ? `Connected: ${report.providerLabel}.` : "No paper/demo provider connected.",
+        points: report.providerConnected ? 100 : 0,
+        max: 100,
+      },
+      {
+        label: "External sample",
+        detail: `${report.closedTrades} of ${report.requiredTrades} external paper trades.`,
+        points: sampleScore,
+        max: 100,
+      },
+      {
+        label: "Edge & compliance",
+        detail: `Expectancy ${report.expectancy}, ${report.ruleViolations} rule-violation type(s).`,
+        points: report.expectancy > 0 && report.ruleViolations === 0 ? 100 : 0,
+        max: 100,
+      },
+    ],
+    quiz: [],
+    assessedAt: now(),
+  };
+}
+
+async function assessEvaluation(userId: string): Promise<StageAssessmentResult> {
+  const def = stageDefinition("evaluation");
+  const report = await getEvaluationReport(userId);
+  const passed = report.status === "passed";
+  return {
+    stageId: "evaluation",
+    kind: "data_check",
+    score: passed ? 100 : report.profitTargetProgressPct,
+    threshold: def.assessment.passThreshold,
+    passed,
+    summary: report.summary,
+    breakdown: [
+      {
+        label: "Profit objective",
+        detail: `Net +$${report.netProfit} of $${report.config.profitTarget} target.`,
+        points: report.profitTargetProgressPct,
+        max: 100,
+      },
+      {
+        label: "Trading days",
+        detail: `${report.tradingDays} of ${report.config.minTradingDays} required.`,
+        points: Math.min(100, Math.round((report.tradingDays / report.config.minTradingDays) * 100)),
+        max: 100,
+      },
+      {
+        label: "Rule breaches",
+        detail: report.breaches.length ? report.breaches.join(" ") : "No daily-loss or drawdown breaches.",
+        points: report.breaches.length ? 0 : 100,
+        max: 100,
+      },
+    ],
+    quiz: [],
+    assessedAt: now(),
+  };
+}
+
+async function assessQualification(userId: string): Promise<StageAssessmentResult> {
+  const def = stageDefinition("qualification");
+  const report = await getQualificationReport(userId);
+  return {
+    stageId: "qualification",
+    kind: "data_check",
+    score: report.overallScore,
+    threshold: def.assessment.passThreshold,
+    passed: report.ready,
+    summary: report.summary,
+    breakdown: report.scores.map((s) => ({
+      label: s.label,
+      detail: s.detail,
+      points: s.score,
+      max: 100,
+    })),
+    quiz: [],
+    assessedAt: now(),
+  };
+}
+
+async function assessLive(userId: string): Promise<StageAssessmentResult> {
+  const def = stageDefinition("live");
+  const state = await getLiveState(userId);
+  // "Passed" here means the promotion gates are satisfied — qualification
+  // passed AND a broker connected. Arming the kill switch is an operational
+  // toggle, not part of the promotion gate.
+  const passed = state.qualificationPassed && state.brokerConnected;
+  return {
+    stageId: "live",
+    kind: "data_check",
+    score: passed ? 100 : state.qualificationPassed ? 50 : 0,
+    threshold: def.assessment.passThreshold,
+    passed,
+    summary: state.summary,
+    breakdown: [
+      {
+        label: "Qualification",
+        detail: state.qualificationPassed ? "Qualification passed." : "Qualification not passed yet.",
+        points: state.qualificationPassed ? 100 : 0,
+        max: 100,
+      },
+      {
+        label: "Broker connection",
+        detail: state.brokerConnected ? `Broker connected: ${state.brokerLabel}.` : "No broker connected for order routing.",
+        points: state.brokerConnected ? 100 : 0,
+        max: 100,
+      },
+    ],
+    quiz: [],
+    assessedAt: now(),
+  };
 }
 
 function normalizeVerdict(v: unknown): AssessmentQuizItem["verdict"] {

@@ -6,8 +6,22 @@ import { LearningStudioService } from "../services/learning/LearningStudioServic
 import { ensureSessionUserInDatabase } from "./conversations-crud";
 import type { LearningBlueprint } from "../../shared/learning-types";
 
+/**
+ * `isAuthenticated` (server/local-auth/middleware.ts) always sets
+ * `req.user.claims.sub` before calling next() and returns 401 otherwise —
+ * so a missing sub here means the auth state is malformed, not that the
+ * user is anonymous. Falling back to a shared id (e.g. "user_001") would
+ * let unrelated requests collapse onto one pseudo-user and cross-
+ * contaminate learning data, so this fails the request instead.
+ */
 function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || req.session?.userId || "user_001";
+  const userId = req.user?.claims?.sub;
+  if (!userId) throw new Error("Authenticated user id is missing.");
+  return userId;
+}
+
+function isAdminFrom(req: any): boolean {
+  return Boolean(req.user?.claims?.isAdmin);
 }
 
 function bodyString(body: any, key: string): string | undefined {
@@ -82,6 +96,7 @@ export function registerLearningRoutes(app: Express): void {
 
         const detail = await LearningStudioService.createBlueprint({
           userId: userIdFrom(req),
+          isAdmin: isAdminFrom(req),
           topic: bodyString(req.body, "topic") || "",
           assumedLevel: bodyString(req.body, "assumedLevel"),
           workspaceId: bodyString(req.body, "workspaceId"),
@@ -107,6 +122,19 @@ export function registerLearningRoutes(app: Express): void {
     }
   });
 
+  app.post("/api/learning/paths/:id/revise", isAuthenticated, async (req: any, res) => {
+    try {
+      const detail = await LearningStudioService.reviseBlueprint(
+        userIdFrom(req),
+        req.params.id,
+        bodyString(req.body, "instruction") || "",
+      );
+      res.json(detail);
+    } catch (error: any) {
+      res.status(400).json({ error: error?.message || "Failed to revise blueprint" });
+    }
+  });
+
   app.post("/api/learning/paths/:id/approve", isAuthenticated, async (req: any, res) => {
     try {
       await ensureSessionUserInDatabase(req);
@@ -118,6 +146,15 @@ export function registerLearningRoutes(app: Express): void {
       res.json(detail);
     } catch (error: any) {
       res.status(400).json({ error: error?.message || "Failed to approve blueprint" });
+    }
+  });
+
+  app.post("/api/learning/paths/:id/advance", isAuthenticated, async (req: any, res) => {
+    try {
+      const detail = await LearningStudioService.advanceLesson(userIdFrom(req), req.params.id);
+      res.json(detail);
+    } catch (error: any) {
+      res.status(400).json({ error: error?.message || "Failed to advance to the next lesson" });
     }
   });
 

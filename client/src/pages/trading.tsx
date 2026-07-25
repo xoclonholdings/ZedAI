@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ChevronLeft,
-  ClipboardList,
   LineChart,
   RefreshCw,
   ShieldAlert,
@@ -18,28 +17,39 @@ import SandboxWorkspace from "@/components/trading/SandboxWorkspace";
 import LearnStage from "@/components/trading/LearnStage";
 import StrategyStage from "@/components/trading/StrategyStage";
 import ValidationStage from "@/components/trading/ValidationStage";
+import ExternalPaperStage from "@/components/trading/ExternalPaperStage";
+import EvaluationStage from "@/components/trading/EvaluationStage";
+import QualificationStage from "@/components/trading/QualificationStage";
+import LiveStage from "@/components/trading/LiveStage";
 import type { TradingStageId } from "@shared/trading-progression";
 import type {
   TradingGovernanceDecision,
   TradingIncidentReport,
-  TradingViewRecord,
 } from "@shared/trading-types";
 
-const FUNCTIONAL_STAGES: TradingStageId[] = ["learn", "strategy", "validation", "sandbox"];
+const FUNCTIONAL_STAGES: TradingStageId[] = [
+  "learn",
+  "strategy",
+  "validation",
+  "sandbox",
+  "external_paper",
+  "evaluation",
+  "qualification",
+  "live",
+];
 
 /**
  * The guided training stages (banner + stage tools) are the primary
  * surface. Below them, "Zed's records" holds the two things the stages
- * don't cover: Zed's governance audit trail and its TradingView
- * library. Everything else (knowledge, strategies, paper trades,
+ * don't cover: Zed's governance audit trail. Everything else
+ * (knowledge, strategies, paper trades,
  * performance) lives in the stage tools, so it isn't duplicated here.
  */
 
-type RecordsTab = "governance" | "tradingview";
+type RecordsTab = "governance";
 
 const tabs: Array<{ id: RecordsTab; label: string }> = [
   { id: "governance", label: "Governance" },
-  { id: "tradingview", label: "TradingView" },
 ];
 
 async function apiGet<T>(url: string): Promise<T> {
@@ -61,14 +71,6 @@ async function apiSend<T>(url: string, method: "POST" | "PATCH", body: Record<st
     throw new Error(detail);
   }
   return data;
-}
-
-function splitList(value: string): string[] {
-  return value
-    .split("\n")
-    .flatMap((line) => line.split(","))
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function formatDate(value?: string): string {
@@ -108,48 +110,17 @@ function Panel({ title, children, icon }: { title: string; children: React.React
   );
 }
 
-function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={`w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50 ${props.className || ""}`}
-    />
-  );
-}
-
-function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      {...props}
-      className={`min-h-24 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50 ${props.className || ""}`}
-    />
-  );
-}
-
 export default function TradingPage() {
   const [, navigate] = useLocation();
   const [currentStage, setCurrentStage] = useState<TradingStageId | null>(null);
   const [showRecords, setShowRecords] = useState<boolean>(false);
   const [tab, setTab] = useState<RecordsTab>("governance");
 
-  const [tvRecords, setTvRecords] = useState<TradingViewRecord[]>([]);
   const [governanceDecisions, setGovernanceDecisions] = useState<TradingGovernanceDecision[]>([]);
   const [incidents, setIncidents] = useState<TradingIncidentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-
-  const [tvForm, setTvForm] = useState({
-    type: "watchlist",
-    symbol: "BTC",
-    assetClass: "crypto",
-    timeframe: "4H",
-    title: "",
-    chartUrl: "",
-    trigger: "",
-    notes: "",
-    tags: "",
-  });
 
   useEffect(() => {
     let cancelled = false;
@@ -172,12 +143,10 @@ export default function TradingPage() {
     setLoading(true);
     setError(null);
     try {
-      const [tvData, governanceData, incidentData] = await Promise.all([
-        apiGet<{ records: TradingViewRecord[] }>("/api/trading/tradingview/records"),
+      const [governanceData, incidentData] = await Promise.all([
         apiGet<{ decisions: TradingGovernanceDecision[] }>("/api/trading/governance/decisions"),
         apiGet<{ incidents: TradingIncidentReport[] }>("/api/trading/governance/incidents"),
       ]);
-      setTvRecords(tvData.records || []);
       setGovernanceDecisions(governanceData.decisions || []);
       setIncidents(incidentData.incidents || []);
     } catch (err: any) {
@@ -198,28 +167,6 @@ export default function TradingPage() {
     const response = await apiSend<{ governanceDecision: TradingGovernanceDecision }>("/api/trading/governance/review", "POST", {});
     setNotice(`Governance review complete: ${response.governanceDecision.decision}.`);
     setTab("governance");
-    await refresh();
-  }
-
-  async function submitTradingViewRecord() {
-    await apiSend("/api/trading/tradingview/records", "POST", {
-      ...tvForm,
-      tags: splitList(tvForm.tags),
-    });
-    setNotice("TradingView record saved.");
-    await refresh();
-  }
-
-  async function importSnapshot() {
-    await apiSend("/api/trading/tradingview/snapshot", "POST", {
-      symbol: tvForm.symbol,
-      assetClass: tvForm.assetClass,
-      timeframe: tvForm.timeframe,
-      chartUrl: tvForm.chartUrl,
-      notes: tvForm.notes,
-      tags: splitList(tvForm.tags),
-    });
-    setNotice("TradingView snapshot imported into Zed's knowledge and records.");
     await refresh();
   }
 
@@ -279,6 +226,10 @@ export default function TradingPage() {
             {currentStage === "strategy" && <StrategyStage />}
             {currentStage === "validation" && <ValidationStage />}
             {currentStage === "sandbox" && <SandboxWorkspace />}
+            {currentStage === "external_paper" && <ExternalPaperStage />}
+            {currentStage === "evaluation" && <EvaluationStage />}
+            {currentStage === "qualification" && <QualificationStage />}
+            {currentStage === "live" && <LiveStage />}
           </div>
         )}
 
@@ -394,38 +345,6 @@ export default function TradingPage() {
                       </div>
                     </Panel>
                   </div>
-                </div>
-              )}
-
-              {tab === "tradingview" && (
-                <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
-                  <Panel title="TradingView Record" icon={<LineChart size={16} className="text-cyan-300" />}>
-                    <div className="grid gap-2">
-                      <div className="grid grid-cols-2 gap-2"><TextInput placeholder="Type" value={tvForm.type} onChange={(e) => setTvForm({ ...tvForm, type: e.target.value })} /><TextInput placeholder="Symbol" value={tvForm.symbol} onChange={(e) => setTvForm({ ...tvForm, symbol: e.target.value })} /></div>
-                      <div className="grid grid-cols-2 gap-2"><TextInput placeholder="Asset class" value={tvForm.assetClass} onChange={(e) => setTvForm({ ...tvForm, assetClass: e.target.value })} /><TextInput placeholder="Timeframe" value={tvForm.timeframe} onChange={(e) => setTvForm({ ...tvForm, timeframe: e.target.value })} /></div>
-                      <TextInput placeholder="Title" value={tvForm.title} onChange={(e) => setTvForm({ ...tvForm, title: e.target.value })} />
-                      <TextInput placeholder="TradingView link" value={tvForm.chartUrl} onChange={(e) => setTvForm({ ...tvForm, chartUrl: e.target.value })} />
-                      <TextInput placeholder="Alert trigger / screener condition" value={tvForm.trigger} onChange={(e) => setTvForm({ ...tvForm, trigger: e.target.value })} />
-                      <TextArea placeholder="Notes" value={tvForm.notes} onChange={(e) => setTvForm({ ...tvForm, notes: e.target.value })} />
-                      <TextInput placeholder="Tags" value={tvForm.tags} onChange={(e) => setTvForm({ ...tvForm, tags: e.target.value })} />
-                      <div className="grid grid-cols-2 gap-2"><Button onClick={submitTradingViewRecord} className="rounded-xl zed-gradient">Save Record</Button><Button onClick={importSnapshot} className="rounded-xl" variant="secondary">Import Snapshot</Button></div>
-                    </div>
-                  </Panel>
-
-                  <Panel title="TradingView Library" icon={<ClipboardList size={16} className="text-purple-300" />}>
-                    <div className="space-y-3">
-                      {tvRecords.map((record) => (
-                        <div key={record.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                          <div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{record.symbol}</span><Badge>{record.type}</Badge><Badge>{record.status}</Badge></div>
-                          <div className="mt-2 text-sm text-white">{record.title}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">{record.timeframe || "no timeframe"} {record.trigger ? `- ${record.trigger}` : ""}</div>
-                          <p className="mt-2 text-sm text-muted-foreground">{record.notes}</p>
-                          {record.chartUrl && <a className="mt-2 block text-xs text-cyan-300 underline" href={record.chartUrl} target="_blank" rel="noreferrer">Open chart</a>}
-                        </div>
-                      ))}
-                      {tvRecords.length === 0 && <p className="text-sm text-muted-foreground">No TradingView records yet.</p>}
-                    </div>
-                  </Panel>
                 </div>
               )}
             </>

@@ -27,10 +27,7 @@ import { defaultAuthSettings, normalizeUsers } from "./auth-helpers";
  * data is always in the multi-account shape.
  */
 export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): AdminSettings {
-  const auth = {
-    ...defaultAuthSettings(),
-    ...(raw?.auth || {}),
-  };
+  const auth = normalizeAuthSettings(raw?.auth);
 
   return {
     auth,
@@ -97,6 +94,28 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
     voice: mergeVoiceSettings(raw?.voice),
     approvals: mergeApprovalSettings(raw?.approvals),
   };
+}
+
+function normalizeAuthSettings(rawAuth: Partial<AdminSettings["auth"]> | undefined) {
+  const defaults = defaultAuthSettings();
+  const auth = {
+    ...defaults,
+    ...(rawAuth || {}),
+  };
+
+  // Migrate the old dev defaults that caused long local lockouts.
+  if (auth.maxFailedAttempts === 3) auth.maxFailedAttempts = defaults.maxFailedAttempts;
+  if (auth.lockoutDurationMinutes === 15) {
+    auth.lockoutDurationMinutes = defaults.lockoutDurationMinutes;
+  }
+
+  auth.maxFailedAttempts = Math.max(1, Math.round(Number(auth.maxFailedAttempts) || defaults.maxFailedAttempts));
+  auth.lockoutDurationMinutes = Math.max(
+    1,
+    Math.round(Number(auth.lockoutDurationMinutes) || defaults.lockoutDurationMinutes),
+  );
+
+  return auth;
 }
 
 /**

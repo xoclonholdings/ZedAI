@@ -13,6 +13,14 @@ export type LearningMode =
 
 export type MasteryStatus = "introduced" | "practicing" | "mastered" | "needs_review";
 
+export interface CourseSourceIngestion {
+  ingested: boolean;
+  topics: string[];
+  objectIds: string[];
+  conflictCount: number;
+  skippedReason?: string;
+}
+
 export interface CourseSource {
   id: string;
   userId: string;
@@ -22,6 +30,7 @@ export interface CourseSource {
   content: string;
   sourceUri?: string;
   metadata?: Record<string, unknown>;
+  ingestion?: CourseSourceIngestion;
   createdAt: string;
 }
 
@@ -41,6 +50,13 @@ export interface LearningBlueprintUnit {
   lessons: LearningBlueprintLesson[];
 }
 
+export interface BlueprintRevision {
+  id: string;
+  instruction: string;
+  summary: string;
+  createdAt: string;
+}
+
 export interface LearningBlueprint {
   pathId: string;
   objective: string;
@@ -49,6 +65,10 @@ export interface LearningBlueprint {
   units: LearningBlueprintUnit[];
   practiceActivities: string[];
   completionCriteria: string[];
+  /** Gaps or missing information Zed found in the source material while designing the course. */
+  gaps: string[];
+  revisions: BlueprintRevision[];
+  approved: boolean;
   generatedAt: string;
   updatedAt: string;
 }
@@ -100,6 +120,12 @@ export interface QuizQuestion {
   concept: string;
 }
 
+export interface LessonCitation {
+  sourceId: string;
+  sourceLabel: string;
+  note: string;
+}
+
 export interface LearningLesson {
   id: string;
   userId: string;
@@ -112,6 +138,7 @@ export interface LearningLesson {
   content: string;
   concepts: string[];
   sourceIds: string[];
+  citations: LessonCitation[];
   modes: LearningMode[];
   flashcards: Flashcard[];
   practicePrompt: string;

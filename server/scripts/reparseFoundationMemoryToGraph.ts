@@ -4,7 +4,7 @@ import { createHash } from "crypto";
 
 import { KnowledgeIngestionService } from "../services/knowledge-ingestion/KnowledgeIngestionService";
 import { loadAdminSettings } from "../services/AdminSettingsStore";
-import { HUB_SHARED_MEMORY_DIR, HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
+import { HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
 import type { IngestionReport, RawKnowledgeInput } from "../services/knowledge-ingestion/types";
 
 type FoundationMessage = {
@@ -63,17 +63,18 @@ type PromotionCandidate = {
   reason: string;
 };
 
-const LEGACY_FOUNDATION_CONVERSATIONS_PATH = path.join(
-  HUB_SHARED_MEMORY_DIR,
-  "semantic/foundation/merged-conversations.json",
-);
+const INVALID_MEMORY_USER_IDS = new Set(["user", "user_001", "default-user", "anonymous", "admin-user", "unknown"]);
 
-function safeUserId(userId: string): string {
-  return userId.replace(/[^a-zA-Z0-9_-]/g, "_") || "user";
+function requireMemoryUserId(userId: string | undefined, context: string): string {
+  const normalized = (userId || "").trim();
+  if (!normalized || INVALID_MEMORY_USER_IDS.has(normalized)) {
+    throw new Error(`${context} requires a real authenticated memory owner`);
+  }
+  return normalized.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 function adminRoot(userId: string): string {
-  return path.join(HUB_USER_MEMORY_DIR, safeUserId(userId));
+  return path.join(HUB_USER_MEMORY_DIR, requireMemoryUserId(userId, "foundation reparse"));
 }
 
 function foundationConversationsPath(userId: string): string {
@@ -90,7 +91,7 @@ function knowledgeGraphPath(userId: string): string {
 
 async function adminUserId(): Promise<string> {
   const settings = await loadAdminSettings();
-  return settings.users.find((user) => user.isAdmin)?.id || settings.users[0]?.id || "user_admin";
+  return requireMemoryUserId(settings.users.find((user) => user.isAdmin)?.id, "foundation reparse admin target");
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -212,12 +213,7 @@ function toRawKnowledgeInput(conversation: FoundationConversation, options: CliO
 }
 
 async function readConversations(sourcePath: string): Promise<FoundationConversation[]> {
-  const raw = await fs.readFile(sourcePath, "utf8").catch(async (error) => {
-    if (sourcePath !== LEGACY_FOUNDATION_CONVERSATIONS_PATH) {
-      return fs.readFile(LEGACY_FOUNDATION_CONVERSATIONS_PATH, "utf8");
-    }
-    throw error;
-  });
+  const raw = await fs.readFile(sourcePath, "utf8");
   const parsed = JSON.parse(raw);
   if (!Array.isArray(parsed)) throw new Error("merged-conversations.json must be an array");
   return parsed;

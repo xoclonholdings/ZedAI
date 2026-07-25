@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "npm install --prefix ../shared",
+    "postinstall": "npm install --prefix ../shared && node scripts/installWebullSdk.cjs",
     "dev": "tsx watch --ignore '../client/**' index.ts",
     "start": "tsx index.ts",
     "smoke": "tsx scripts/smokeCheck.ts",
@@ -26,7 +26,7 @@
     "drizzle-orm": "^0.45.1",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.3.0",
     "mammoth": "^1.12.0",
     "multer": "^2.1.1",
     "nanoid": "^5.1.7",

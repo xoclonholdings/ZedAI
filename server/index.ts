@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { checkDatabaseConnection, gracefulShutdown } from "./db";
+import { checkDatabaseConnection, gracefulShutdown, isDatabaseRequired } from "./db";
 import { runMigrations } from "./migrations";
 import { fallbackStorage } from "./services/fallbackStorage";
 import { UPLOADS_DIR, ensureRuntimeDataReady } from "./utils/repoPaths";
@@ -122,22 +122,24 @@ app.use((req, res, next) => {
   await ensureRuntimeDataReady();
   log(`Runtime data root ready at ${UPLOADS_DIR.replace(/\\uploads$/, "")}`);
 
-  log("Initializing fallback storage system...");
-  try {
-    await fallbackStorage.initialize();
-    log("Fallback storage initialized successfully");
-  } catch (error) {
-    log("[ERROR] Failed to initialize fallback storage:", String(error));
+  const databaseRequired = isDatabaseRequired();
+  if (databaseRequired) {
+    log("PostgreSQL is authoritative in this environment; fallback storage is disabled.");
+  } else {
+    log("Initializing fallback storage system for offline development...");
+    try {
+      await fallbackStorage.initialize();
+      log("Fallback storage initialized successfully");
+    } catch (error) {
+      log("[ERROR] Failed to initialize fallback storage:", String(error));
+    }
   }
 
-  // Start serving as EARLY as possible. Login, sessions, and /api/me
-  // depend only on local file state (file-backed session store + admin
-  // settings) — never the database. So we bind the HTTP server before
-  // the slow warmup (DB connect, migrations, core memory, curation). On
-  // a cold instance this is the difference between login responding in
-  // milliseconds and it hanging for minutes behind a cold database +
-  // migrations. Until the warmup flips the DB on, DB-backed requests
-  // transparently use fallback storage — the existing offline mode.
+  // Start serving as EARLY as possible. In development, DB-backed
+  // requests can use fallback storage until the warmup completes. In
+  // production/Render/REQUIRE_DATABASE=true, PostgreSQL is authoritative:
+  // if the warmup cannot connect and migrate, the process exits instead
+  // of pretending ephemeral files are durable.
   const { setDatabaseStatus } = await import("./routes");
   setDatabaseStatus(false);
 
@@ -148,10 +150,6 @@ app.use((req, res, next) => {
   const bootedAt = Date.now();
   app.get(["/api/health", "/healthz"], (_req, res) => {
     res.status(200).json({ status: "ok", uptimeSeconds: Math.round((Date.now() - bootedAt) / 1000) });
-  });
-
-  app.use("/api/auth/user", (_req, res) => {
-    res.status(200).json({ message: "Auth temporarily disabled" });
   });
 
   const server = await registerRoutes(app);
@@ -188,19 +186,33 @@ app.use((req, res, next) => {
           await runMigrations();
           log("Database migrations completed");
         } catch (migrationError) {
-          log("[WARNING] Migration failed, continuing in offline mode");
+          log(
+            databaseRequired
+              ? "[ERROR] Migration failed; PostgreSQL is required, shutting down"
+              : "[WARNING] Migration failed, continuing in offline development mode",
+          );
           dbHealthy = false;
         }
       }
     } catch (error) {
-      log("[WARNING] Database connection failed - offline mode");
+      log(
+        databaseRequired
+          ? "[ERROR] Database connection failed; PostgreSQL is required"
+          : "[WARNING] Database connection failed - offline development mode",
+      );
       dbHealthy = false;
     }
+
+    if (!dbHealthy && databaseRequired) {
+      log("[DATABASE] Refusing to run without PostgreSQL because it is the authoritative store.");
+      process.exit(1);
+    }
+
     setDatabaseStatus(dbHealthy);
     log(
       dbHealthy
-        ? "[INFO] Online with database + fallback storage redundancy"
-        : "[INFO] Offline mode with fallback storage - full functionality maintained",
+        ? "[INFO] Online with PostgreSQL as authoritative store"
+        : "[INFO] Offline development mode with fallback storage",
     );
 
     // Restore admin settings (managed users + credentials) from the
@@ -231,6 +243,15 @@ app.use((req, res, next) => {
       log("Knowledge curation scheduler active");
     } catch (error) {
       log("[WARNING] Failed to start knowledge curation scheduler:", String(error));
+    }
+
+    try {
+      const { startTradeResolverScheduler } = await import(
+        "./zcos/trading/TradeResolverScheduler"
+      );
+      startTradeResolverScheduler((msg) => log(msg));
+    } catch (error) {
+      log("[WARNING] Failed to start trade resolver scheduler:", String(error));
     }
 
     // Lightning connectivity smoke check. Surfaces a misconfigured

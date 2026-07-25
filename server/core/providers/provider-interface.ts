@@ -27,9 +27,8 @@ export interface ProviderMessage {
 
 /**
  * Lanes describe the calling site so providers / executors can apply
- * different routing or model selection per workload. Lane name flows
- * through to provider-config.resolveModelForLane(), letting you set
- * different models per lane via MODEL_CHAT / MODEL_MANAGER / etc.
+ * workload-specific prompts and generation params. They do not select
+ * models; the Lightning deployment owns model routing internally.
  */
 export type ProviderLane =
   | "chat"
@@ -39,7 +38,8 @@ export type ProviderLane =
   | "business"
   | "finance"
   | "strategy"
-  | "admin";
+  | "admin"
+  | "education";
 
 /**
  * Reasoning effort is separate from lane. Lane answers "what kind of
@@ -48,10 +48,9 @@ export type ProviderLane =
 export type ReasoningEffort = "low" | "medium" | "high" | "deep";
 
 export interface ProviderExecutionOptions {
-  model?: string;
   systemPrompt?: string;
   lane?: ProviderLane;
-  /** Lets the provider pick a lighter/heavier configured model for this turn. */
+  /** Describes task complexity for prompt/runtime tuning only; it does not select a model. */
   reasoningEffort?: ReasoningEffort;
   /**
    * Generation parameters. When any of these are set, providers forward

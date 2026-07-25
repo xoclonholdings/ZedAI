@@ -35,6 +35,7 @@ import type { AnyMemoryObject, ObjectRelationship } from "../../shared/object-me
 
 const FILE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(FILE_DIR, "..", "..");
+const INVALID_MEMORY_USER_IDS = new Set(["user", "user_001", "default-user", "anonymous", "admin-user", "unknown"]);
 
 interface CliFlags {
   dryRun: boolean;
@@ -107,25 +108,32 @@ function parseFlags(argv: string[]): CliFlags {
   return flags;
 }
 
+function requireMemoryUserId(userId: string | undefined, context: string): string {
+  const normalized = (userId || "").trim();
+  if (!normalized || INVALID_MEMORY_USER_IDS.has(normalized)) {
+    throw new Error(`${context} requires a real authenticated memory owner`);
+  }
+  return normalized;
+}
+
 async function applyUserId(flags: CliFlags): Promise<string | undefined> {
   if (flags.system) return undefined;
-  if (flags.userId) return flags.userId;
+  if (flags.userId) return requireMemoryUserId(flags.userId, "object memory reparse");
   const settings = await loadAdminSettings();
-  return settings.users.find((user) => user.isAdmin)?.id || settings.users[0]?.id || "user_admin";
+  const adminUserId = settings.users.find((user) => user.isAdmin)?.id;
+  return requireMemoryUserId(adminUserId, "object memory reparse admin target");
 }
 
 async function defaultSources(userId?: string): Promise<string[]> {
-  const safeUserId = (userId || "").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const roots = [
-    ...(safeUserId
-      ? [
-          path.join(REPO_ROOT, "hub/user-memory", safeUserId, "foundation/semantic"),
-          path.join(REPO_ROOT, "hub/user-memory", safeUserId, "foundation/consensus"),
-        ]
-      : []),
-    path.join(REPO_ROOT, "hub/shared-memory/semantic/foundation"),
-    path.join(REPO_ROOT, "hub/shared-memory/consensus/foundation"),
-  ];
+  const roots = userId
+    ? [
+        path.join(REPO_ROOT, "hub/user-memory", requireMemoryUserId(userId, "object memory source"), "foundation/semantic"),
+        path.join(REPO_ROOT, "hub/user-memory", requireMemoryUserId(userId, "object memory source"), "foundation/consensus"),
+      ]
+    : [
+        path.join(REPO_ROOT, "hub/shared-memory/semantic/system"),
+        path.join(REPO_ROOT, "hub/shared-memory/consensus/system"),
+      ];
   const results: string[] = [];
   for (const root of roots) {
     try {
@@ -136,7 +144,7 @@ async function defaultSources(userId?: string): Promise<string[]> {
         }
       }
     } catch {
-      /* directory absent — skip */
+      /* directory absent - skip */
     }
   }
   return results;
@@ -161,7 +169,7 @@ async function main() {
   const sources = flags.sources.length ? flags.sources : await defaultSources(targetUserId);
 
   if (sources.length === 0) {
-    console.error("[reparse] No sources found. Point --source at a foundation file.");
+    console.error("[reparse] No sources found. Point --source at a scoped foundation file.");
     process.exit(1);
   }
 

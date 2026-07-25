@@ -11,10 +11,9 @@ export interface ProviderRuntimeConfig {
   activeProvider: ProviderName;
   activeModel: string;
   /**
-   * Per-lane model overrides. Set via env vars:
-   *   MODEL_CHAT, MODEL_MANAGER, MODEL_OPERATIONS,
-   *   MODEL_RESEARCH, MODEL_BUSINESS, MODEL_FINANCE,
-   *   MODEL_STRATEGY, MODEL_ADMIN.
+   * Lane and reasoning model routing are intentionally disabled. The
+   * global Lightning API may still require one model selector, while
+   * dedicated deployments can leave it blank.
    */
   laneModels: Partial<Record<ProviderLane, string>>;
   reasoningModels: Partial<Record<ReasoningEffort, string>>;
@@ -23,6 +22,7 @@ export interface ProviderRuntimeConfig {
     baseUrl: string;
     apiKey: string;
     model: string;
+    models: string[];
     chatPath: string;
     healthPath: string;
     timeoutMs: number;
@@ -34,126 +34,54 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
-function laneEnv(lane: ProviderLane): string | undefined {
-  const upper = lane.toUpperCase();
-  return (
-    process.env[`MODEL_${upper}`]?.trim() ||
-    process.env[`LANE_${upper}_MODEL`]?.trim() ||
-    undefined
-  );
-}
-
-const PROVIDER_LANES: ProviderLane[] = [
-  "chat",
-  "manager",
-  "operations",
-  "research",
-  "business",
-  "finance",
-  "strategy",
-  "admin",
-];
-
-const REASONING_EFFORTS: ReasoningEffort[] = ["low", "medium", "high", "deep"];
-
 function buildLaneModels(): Partial<Record<ProviderLane, string>> {
-  const out: Partial<Record<ProviderLane, string>> = {};
-  for (const lane of PROVIDER_LANES) {
-    const value = laneEnv(lane);
-    if (value) out[lane] = value;
-  }
-  return out;
-}
-
-function reasoningEnv(effort: ReasoningEffort): string | undefined {
-  const upper = effort.toUpperCase();
-  return (
-    process.env[`MODEL_REASONING_${upper}`]?.trim() ||
-    process.env[`REASONING_${upper}_MODEL`]?.trim() ||
-    undefined
-  );
-}
-
-function laneReasoningEnv(lane: ProviderLane, effort: ReasoningEffort): string | undefined {
-  const upperLane = lane.toUpperCase();
-  const upperEffort = effort.toUpperCase();
-  return (
-    process.env[`MODEL_${upperLane}_${upperEffort}`]?.trim() ||
-    process.env[`LANE_${upperLane}_${upperEffort}_MODEL`]?.trim() ||
-    undefined
-  );
+  return {};
 }
 
 function buildReasoningModels(): Partial<Record<ReasoningEffort, string>> {
-  const out: Partial<Record<ReasoningEffort, string>> = {};
-  for (const effort of REASONING_EFFORTS) {
-    const value = reasoningEnv(effort);
-    if (value) out[effort] = value;
-  }
-  return out;
+  return {};
 }
 
 function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record<ReasoningEffort, string>>>> {
-  const out: Partial<Record<ProviderLane, Partial<Record<ReasoningEffort, string>>>> = {};
-  for (const lane of PROVIDER_LANES) {
-    const laneOut: Partial<Record<ReasoningEffort, string>> = {};
-    for (const effort of REASONING_EFFORTS) {
-      const value = laneReasoningEnv(lane, effort);
-      if (value) laneOut[effort] = value;
-    }
-    if (Object.keys(laneOut).length > 0) out[lane] = laneOut;
-  }
-  return out;
+  return {};
 }
 
-/**
- * Resolve the model name to use for a given lane. Priority:
- *   1. Lane + reasoning override (MODEL_FINANCE_DEEP, MODEL_RESEARCH_HIGH, ...)
- *   2. Reasoning override (MODEL_REASONING_DEEP, MODEL_REASONING_HIGH, ...)
- *   3. Explicit per-lane env override (MODEL_CHAT, MODEL_OPERATIONS, ...)
- *   4. Global OPENAI_MODEL / MODEL_NAME / ZED_MODEL_NAME
- *   5. The Lightning-configured fallback.
- */
-export function resolveModelForLane(
-  lane: ProviderLane | undefined,
-  fallback: string,
-  reasoningEffort?: ReasoningEffort,
-): string {
-  if (lane && reasoningEffort) {
-    const laneReasoningValue = laneReasoningEnv(lane, reasoningEffort);
-    if (laneReasoningValue) return laneReasoningValue;
-  }
-  if (reasoningEffort) {
-    const reasoningValue = reasoningEnv(reasoningEffort);
-    if (reasoningValue) return reasoningValue;
-  }
-  if (lane) {
-    const laneValue = laneEnv(lane);
-    if (laneValue) return laneValue;
-  }
-  return (
-    process.env.MODEL_NAME?.trim() ||
-    process.env.ZED_MODEL_NAME?.trim() ||
-    fallback
-  );
+const DEFAULT_LIGHTNING_BASE_URL = "https://lightning.ai/api/v1";
+const DEFAULT_LIGHTNING_MODELS = [
+  "lightning-ai/gpt-oss-120b",
+  "lightning-ai/gemma-4-31B-it",
+];
+const LIGHTNING_DEPLOYMENT_DEFAULT_LABEL = "Lightning deployment default";
+
+function uniqueNonEmpty(values: string[]): string[] {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
 
 export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
   const baseUrl = trimTrailingSlash(
     process.env.LIGHTNING_BASE_URL ||
       process.env.LIGHTNING_AI_URL ||
-      "",
+      DEFAULT_LIGHTNING_BASE_URL,
   );
-  const model =
-    process.env.LIGHTNING_MODEL ||
-    process.env.MODEL_NAME ||
-    process.env.ZED_MODEL_NAME ||
-    "";
-  const activeModel = model;
-
+  const usesDefaultModelApi = baseUrl === DEFAULT_LIGHTNING_BASE_URL;
+  const configuredModels = uniqueNonEmpty([
+    ...(process.env.LIGHTNING_MODELS || "")
+      .split(",")
+      .map((value) => value.trim()),
+    process.env.LIGHTNING_MODEL || "",
+  ]);
+  const lightningModels =
+    configuredModels.length > 0
+      ? configuredModels
+      : usesDefaultModelApi
+        ? DEFAULT_LIGHTNING_MODELS
+        : [];
+  const lightningModel = lightningModels[0] || "";
   return {
     activeProvider: "lightning",
-    activeModel,
+    activeModel: lightningModels.length
+      ? lightningModels.join(", ")
+      : LIGHTNING_DEPLOYMENT_DEFAULT_LABEL,
     laneModels: buildLaneModels(),
     reasoningModels: buildReasoningModels(),
     laneReasoningModels: buildLaneReasoningModels(),
@@ -164,9 +92,10 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
         process.env.LIGHTNING_AI_API_KEY ||
         process.env.LIGHTNING_TOKEN ||
         "",
-      model,
-      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat",
-      healthPath: process.env.LIGHTNING_HEALTH_PATH || "/health",
+      model: lightningModel,
+      models: lightningModels,
+      chatPath: process.env.LIGHTNING_CHAT_PATH || "/chat/completions",
+      healthPath: process.env.LIGHTNING_HEALTH_PATH || "/models",
       timeoutMs: Number(process.env.LIGHTNING_TIMEOUT_MS || 45000),
       // Health probes must fail fast — the runtime footer pings them
       // and a hung endpoint should not stall the UI for 45s.
@@ -176,12 +105,13 @@ export function getProviderRuntimeConfig(): ProviderRuntimeConfig {
 }
 
 /**
- * Returns the configured default model — the value used when a
- * request doesn't carry a per-lane override. Useful for diagnostics
- * endpoints and admin UI.
+ * Returns the single Lightning model used by diagnostics, or the
+ * deployment-default label when no model selector is sent.
  */
 export function getActiveProviderDefaultModel(
   config: ProviderRuntimeConfig = getProviderRuntimeConfig(),
 ): string {
-  return config.lightning.model;
+  return config.lightning.models.length
+    ? config.lightning.models.join(", ")
+    : LIGHTNING_DEPLOYMENT_DEFAULT_LABEL;
 }

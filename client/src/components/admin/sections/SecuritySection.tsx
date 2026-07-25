@@ -51,8 +51,8 @@ interface SecuritySettings {
 const DEFAULTS: SecuritySettings = {
   adminUsername: "Admin",
   sessionTimeoutMinutes: 45,
-  maxFailedAttempts: 3,
-  lockoutDurationMinutes: 15,
+  maxFailedAttempts: 10,
+  lockoutDurationMinutes: 1,
   requireSecureCookies: false,
 };
 
@@ -112,8 +112,8 @@ export default function SecuritySection() {
       setSettings({
         adminUsername: auth.adminUsername || "Admin",
         sessionTimeoutMinutes: auth.sessionTimeoutMinutes ?? 45,
-        maxFailedAttempts: auth.maxFailedAttempts ?? 3,
-        lockoutDurationMinutes: auth.lockoutDurationMinutes ?? 15,
+        maxFailedAttempts: auth.maxFailedAttempts ?? 10,
+        lockoutDurationMinutes: auth.lockoutDurationMinutes ?? 1,
         requireSecureCookies: Boolean(auth.requireSecureCookies),
       });
       setUsers(usersData.users || []);

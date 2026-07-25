@@ -15,8 +15,8 @@ import {
 } from "../../../shared/trading-training-types";
 
 /**
- * Per-user trading provider connections (TopStep, TradingView, Lucid,
- * Tradovate, Kalshi, Polymarket, custom).
+ * Per-user trading provider connections (Webull, Tradovate, Lucid,
+ * Kalshi, Polymarket, custom).
  *
  * This is the real connection/credential layer that live sync will
  * use. Secrets are stored server-side and NEVER returned to the
@@ -44,6 +44,15 @@ interface StoredIntegration {
   lastResult?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TradingIntegrationConnection {
+  provider: IntegrationProvider;
+  label: string;
+  status: IntegrationStatus;
+  baseUrl?: string;
+  fields: Record<string, string>;
+  secrets: Record<string, string>;
 }
 
 function keyFor(userId: string): string {
@@ -113,6 +122,20 @@ export const TradingIntegrationsStore = {
         updatedAt: "",
       };
     });
+  },
+
+  async getConnection(userId: string, provider: IntegrationProvider): Promise<TradingIntegrationConnection | null> {
+    const records = await readAll(userId);
+    const record = records.find((r) => r.provider === provider);
+    if (!record) return null;
+    return {
+      provider: record.provider,
+      label: record.label,
+      status: record.status,
+      baseUrl: record.baseUrl,
+      fields: { ...(record.fields || {}) },
+      secrets: { ...(record.secrets || {}) },
+    };
   },
 
   async connect(input: {

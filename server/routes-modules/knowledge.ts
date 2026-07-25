@@ -22,12 +22,21 @@ import { users } from "../../shared/schema";
  *   - /api/knowledge/scratchpad                  (persistent working notes)
  */
 
+const INVALID_MEMORY_USER_IDS = new Set(["user", "user_001", "default-user", "anonymous", "admin-user", "unknown"]);
+
+function requireRequestUserId(req: any): string {
+  const userId = String(req?.user?.claims?.sub || "").trim();
+  if (!userId || INVALID_MEMORY_USER_IDS.has(userId)) {
+    throw new Error("Memory operation requires an authenticated user owner");
+  }
+  return userId;
+}
+
 /** Ensures req.user maps to an actual users-table row before we
  *  insert FK-bearing memory rows that reference it. */
 async function ensureSessionUserInDatabase(req: any): Promise<void> {
   if (!db) return;
-  const sessionUserId = req.user?.claims?.sub;
-  if (!sessionUserId) return;
+  const sessionUserId = requireRequestUserId(req);
   const sessionUser = req.session?.user || {};
   const claims = req.user?.claims || {};
   try {
@@ -70,7 +79,7 @@ async function ensureSessionUserInDatabase(req: any): Promise<void> {
 export function registerKnowledgeRoutes(app: Express): void {
   app.get("/api/knowledge/context", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = requireRequestUserId(req);
       const isAdminUser = !!req.user?.claims?.isAdmin;
       const query = String(req.query.q || "").trim();
       if (!query) return res.status(400).json({ error: "Query required" });
@@ -100,7 +109,7 @@ export function registerKnowledgeRoutes(app: Express): void {
 
   app.get("/api/knowledge/search", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = requireRequestUserId(req);
       const query = String(req.query.q || "").trim();
       if (!query) return res.status(400).json({ error: "Query required" });
       const results = await KnowledgeService.search({
@@ -129,7 +138,7 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.post("/api/knowledge/curation/review", isAuthenticated, async (req: any, res) => {
     try {
       const report = await KnowledgeCurationEngine.runReview({
-        userId: req.user.claims.sub,
+        userId: requireRequestUserId(req),
         trigger: req.user?.claims?.isAdmin ? "manual-admin" : "manual-user",
       });
       res.json({ report });
@@ -141,7 +150,7 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.post("/api/knowledge/curation/evaluate", isAuthenticated, async (req: any, res) => {
     try {
       const evaluation = await KnowledgeCurationEngine.evaluateIncoming({
-        userId: req.user.claims.sub,
+        userId: requireRequestUserId(req),
         title: typeof req.body?.title === "string" ? req.body.title : undefined,
         type: typeof req.body?.type === "string" ? req.body.type : null,
         content: String(req.body?.content || ""),
@@ -157,7 +166,7 @@ export function registerKnowledgeRoutes(app: Express): void {
       const latest = await KnowledgeCurationEngine.getLatestReview();
       if (latest) return res.json({ report: latest });
       const report = await KnowledgeCurationEngine.runReview({
-        userId: req.user?.claims?.sub || "admin-user",
+        userId: requireRequestUserId(req),
         trigger: "admin-read-through",
       });
       res.json({ report });
@@ -169,7 +178,7 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.get("/api/knowledge/project-memory", isAuthenticated, async (req: any, res) => {
     try {
       const { MemoryService } = await import("../services/memoryService");
-      res.json({ items: await MemoryService.getProjectMemory(req.user.claims.sub) });
+      res.json({ items: await MemoryService.getProjectMemory(requireRequestUserId(req)) });
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to fetch project memory" });
     }
@@ -178,7 +187,7 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.get("/api/knowledge/personal-base", isAuthenticated, async (req: any, res) => {
     try {
       const { MemoryService } = await import("../services/memoryService");
-      const items = await MemoryService.getProjectMemory(req.user.claims.sub);
+      const items = await MemoryService.getProjectMemory(requireRequestUserId(req));
       const item =
         items.find(
           (entry) =>
@@ -220,7 +229,7 @@ export function registerKnowledgeRoutes(app: Express): void {
     try {
       const { ingestZedVoiceCorrection } = await import("../services/ZedVoiceFormationEngine");
       const item = await ingestZedVoiceCorrection({
-        userId: req.user?.claims?.sub || "unknown",
+        userId: requireRequestUserId(req),
         conversationId: typeof req.body?.conversationId === "string" ? req.body.conversationId : undefined,
         userMessage: String(req.body?.correction || req.body?.content || ""),
         previousAssistantContent:
@@ -261,10 +270,11 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.post("/api/knowledge/project-memory", isAuthenticated, async (req: any, res) => {
     try {
       await ensureSessionUserInDatabase(req);
+      const userId = requireRequestUserId(req);
       const { MemoryService } = await import("../services/memoryService");
       const item = await MemoryService.createProjectMemory(
         insertProjectMemorySchema.parse({
-          userId: req.user.claims.sub,
+          userId,
           name: req.body?.name || "Untitled knowledge item",
           description: req.body?.description || "",
           content: req.body?.content || "",
@@ -281,7 +291,7 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.put("/api/knowledge/personal-base", isAuthenticated, async (req: any, res) => {
     try {
       await ensureSessionUserInDatabase(req);
-      const userId = req.user.claims.sub;
+      const userId = requireRequestUserId(req);
       const { MemoryService } = await import("../services/memoryService");
       const existing = (await MemoryService.getProjectMemory(userId)).find(
         (entry) => (entry.type || "").toLowerCase() === "profile",
@@ -307,8 +317,9 @@ export function registerKnowledgeRoutes(app: Express): void {
 
   app.patch("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = requireRequestUserId(req);
       const { MemoryService } = await import("../services/memoryService");
-      const owned = (await MemoryService.getProjectMemory(req.user.claims.sub)).find(
+      const owned = (await MemoryService.getProjectMemory(userId)).find(
         (entry) => entry.id === req.params.id,
       );
       if (!owned) return res.status(404).json({ error: "Project memory not found" });
@@ -321,8 +332,9 @@ export function registerKnowledgeRoutes(app: Express): void {
 
   app.delete("/api/knowledge/project-memory/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = requireRequestUserId(req);
       const { MemoryService } = await import("../services/memoryService");
-      const owned = (await MemoryService.getProjectMemory(req.user.claims.sub)).find(
+      const owned = (await MemoryService.getProjectMemory(userId)).find(
         (entry) => entry.id === req.params.id,
       );
       if (!owned) return res.status(404).json({ error: "Project memory not found" });
@@ -335,7 +347,7 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.get("/api/knowledge/scratchpad", isAuthenticated, async (req: any, res) => {
     try {
       const { MemoryService } = await import("../services/memoryService");
-      res.json({ items: await MemoryService.getScratchpadMemory(req.user.claims.sub) });
+      res.json({ items: await MemoryService.getScratchpadMemory(requireRequestUserId(req)) });
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to fetch scratchpad memory" });
     }
@@ -344,10 +356,11 @@ export function registerKnowledgeRoutes(app: Express): void {
   app.post("/api/knowledge/scratchpad", isAuthenticated, async (req: any, res) => {
     try {
       await ensureSessionUserInDatabase(req);
+      const userId = requireRequestUserId(req);
       const { MemoryService } = await import("../services/memoryService");
       const item = await MemoryService.createScratchpadMemory(
         insertScratchpadMemorySchema.parse({
-          userId: req.user.claims.sub,
+          userId,
           conversationId: req.body?.conversationId || null,
           content: req.body?.content || "",
           tags: Array.isArray(req.body?.tags) ? req.body.tags : [],
@@ -362,8 +375,9 @@ export function registerKnowledgeRoutes(app: Express): void {
 
   app.delete("/api/knowledge/scratchpad/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = requireRequestUserId(req);
       const { MemoryService } = await import("../services/memoryService");
-      const owned = (await MemoryService.getScratchpadMemory(req.user.claims.sub)).find(
+      const owned = (await MemoryService.getScratchpadMemory(userId)).find(
         (entry) => entry.id === req.params.id,
       );
       if (!owned) return res.status(404).json({ error: "Scratchpad memory not found" });

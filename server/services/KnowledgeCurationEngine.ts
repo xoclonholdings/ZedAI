@@ -193,12 +193,22 @@ let schedulerStarted = false;
 let schedulerTimer: NodeJS.Timeout | null = null;
 let schedulerInterval: NodeJS.Timeout | null = null;
 
+const INVALID_MEMORY_USER_IDS = new Set(["user", "user_001", "default-user", "anonymous", "admin-user", "unknown"]);
+
+function requireMemoryUserId(userId: string | undefined, context: string): string {
+  const normalized = (userId || "").trim();
+  if (!normalized || INVALID_MEMORY_USER_IDS.has(normalized)) {
+    throw new Error(`${context} requires an authenticated memory owner`);
+  }
+  return normalized;
+}
+
 export class KnowledgeCurationEngine {
   static async runReview(params: {
     userId: string;
     trigger?: string;
   }): Promise<KnowledgeCurationReport> {
-    const userId = params.userId || "admin-user";
+    const userId = requireMemoryUserId(params.userId, "Knowledge curation review");
     const trigger = params.trigger || "manual";
 
     await MemoryService.resetScratchpadMemory().catch(() => undefined);
@@ -727,7 +737,10 @@ export function startKnowledgeCurationScheduler(): void {
   const runScheduledReview = async () => {
     try {
       const settings = await loadAdminSettings().catch(() => null);
-      const userId = settings?.users?.[0]?.id || "admin-user";
+      const userId = requireMemoryUserId(
+        settings?.users?.find((user) => user.isAdmin)?.id,
+        "Knowledge curation scheduler",
+      );
       await KnowledgeCurationEngine.runReview({ userId, trigger: "scheduler" });
     } catch (error) {
       await logRuntimeEvent({

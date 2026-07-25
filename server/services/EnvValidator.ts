@@ -97,6 +97,7 @@ function checkUrl(
 }
 
 function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
+  const defaultBaseUrl = "https://lightning.ai/api/v1";
   const baseUrlKey = present(env, "LIGHTNING_BASE_URL")
     ? "LIGHTNING_BASE_URL"
     : present(env, "LIGHTNING_AI_URL")
@@ -106,9 +107,9 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
   if (!baseUrlKey) {
     checks.push({
       name: "LIGHTNING_BASE_URL",
-      severity: "error",
-      message: "Not set. Lightning AI endpoint URL is required.",
-      hint: "Set LIGHTNING_BASE_URL to your Lightning AI endpoint.",
+      severity: "ok",
+      message: `Using default Lightning Model APIs base URL: ${defaultBaseUrl}.`,
+      hint: "Set LIGHTNING_BASE_URL only if Lightning changes the endpoint or you run a dedicated deployment.",
     });
   } else {
     const check = checkUrl(env, baseUrlKey);
@@ -136,20 +137,44 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     });
   }
 
-  const defaultModel = firstPresent(env, ["LIGHTNING_MODEL", "MODEL_NAME"]);
-  if (!defaultModel) {
+  const lightningModels = firstPresent(env, ["LIGHTNING_MODELS"]);
+  const lightningModel = firstPresent(env, ["LIGHTNING_MODEL"]);
+  const legacyModel = firstPresent(env, ["MODEL_NAME", "ZED_MODEL_NAME"]);
+  if (lightningModels) {
     checks.push({
       name: "AI_MODEL",
-      severity: "warn",
+      severity: "ok",
+      message: `Using approved Lightning models ${lightningModels.value}. Lane and reasoning model routing remains disabled.`,
+    });
+  } else if (lightningModel) {
+    checks.push({
+      name: "AI_MODEL",
+      severity: "ok",
+      message: `Using approved Lightning model ${lightningModel.value}. Lane and reasoning model routing remains disabled.`,
+    });
+  } else if (!baseUrlKey) {
+    checks.push({
+      name: "AI_MODEL",
+      severity: "ok",
       message:
-        "Not set. Per-lane MODEL_<LANE> overrides must be set or the runner needs its own default.",
-      hint: "Set LIGHTNING_MODEL to the default Lightning model slug.",
+        "Using approved Lightning Model APIs models lightning-ai/gpt-oss-120b and lightning-ai/gemma-4-31B-it.",
+      hint: "Set LIGHTNING_MODELS only if Lightning changes the approved global API models.",
     });
   } else {
     checks.push({
       name: "AI_MODEL",
       severity: "ok",
-      message: `Default model from ${defaultModel.key}: ${defaultModel.value}.`,
+      message: "No model selector sent. Zed will let the Lightning deployment choose.",
+      hint: "No action needed for a compiled Lightning deployment.",
+    });
+  }
+
+  if (legacyModel) {
+    checks.push({
+      name: "Legacy AI_MODEL",
+      severity: "warn",
+      message: `${legacyModel.key} is set to ${legacyModel.value}, but legacy model overrides are ignored.`,
+      hint: "Remove MODEL_NAME / ZED_MODEL_NAME so there is no confusion.",
     });
   }
 
@@ -284,14 +309,15 @@ export function validateEnv(
 
   pushLightningChecks(env, checks);
 
-  // 2. Per-lane overrides (informational only)
+  // 2. Legacy model override env vars are ignored by design.
   const lanes = ["CHAT", "MANAGER", "OPERATIONS", "RESEARCH", "BUSINESS", "FINANCE", "STRATEGY", "ADMIN"];
   const overrideCount = lanes.filter((lane) => present(env, `MODEL_${lane}`)).length;
   if (overrideCount > 0) {
     checks.push({
       name: "MODEL_<lane> overrides",
-      severity: "ok",
-      message: `${overrideCount} of ${lanes.length} lanes have explicit overrides.`,
+      severity: "warn",
+      message: `${overrideCount} legacy lane model override(s) are set but ignored. Zed uses one Lightning deployment.`,
+      hint: "Remove MODEL_<LANE> values such as MODEL_FINANCE to avoid confusion.",
     });
   }
 
@@ -307,8 +333,9 @@ export function validateEnv(
   if (reasoningOverrideCount > 0 || laneReasoningOverrideCount > 0) {
     checks.push({
       name: "MODEL_REASONING_<effort> overrides",
-      severity: "ok",
-      message: `${reasoningOverrideCount} general and ${laneReasoningOverrideCount} lane-specific reasoning overrides configured.`,
+      severity: "warn",
+      message: `${reasoningOverrideCount} general and ${laneReasoningOverrideCount} lane-specific reasoning model override(s) are set but ignored.`,
+      hint: "Remove MODEL_REASONING_<EFFORT> and MODEL_<LANE>_<EFFORT>; Lightning handles routing inside the deployment.",
     });
   }
 

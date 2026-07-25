@@ -19,7 +19,7 @@ export async function runMigrations(): Promise<void> {
     // credentials, voice, approvals, integrations). The runtime keeps a
     // local hub/config/admin-settings.json cache for fast reads, but on
     // an ephemeral host (e.g. Render) that file is wiped on every
-    // redeploy â€” so this table is the source of truth that survives
+    // redeploy - so this table is the source of truth that survives
     // redeploys and is hydrated back into the file at boot.
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS app_settings (
@@ -42,10 +42,10 @@ export async function runMigrations(): Promise<void> {
       );
     `);
 
-    // Seed the single Admin user so FK constraints are satisfied
+    // Seed the canonical Admin user so FK constraints are satisfied.
     await db.execute(sql`
       INSERT INTO users (id, email, first_name, last_name)
-      VALUES ('user_001', 'admin@zed-ai.online', 'ZED', 'Admin')
+      VALUES ('user_admin', 'admin@zed-ai.online', 'ZED', 'Admin')
       ON CONFLICT (id) DO NOTHING;
     `);
 

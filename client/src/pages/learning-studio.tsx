@@ -72,6 +72,9 @@ export default function LearningStudioPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [revising, setRevising] = useState(false);
+  const [revisionInstruction, setRevisionInstruction] = useState("");
+  const [advancing, setAdvancing] = useState(false);
   const [submittingQuiz, setSubmittingQuiz] = useState(false);
   const [showCreate, setShowCreate] = useState(!id);
   const [mode, setMode] = useState<Mode>("learn");
@@ -200,6 +203,60 @@ export default function LearningStudioPage() {
       setError(err?.message || "Could not approve blueprint.");
     } finally {
       setApproving(false);
+    }
+  }
+
+  async function reviseBlueprint() {
+    if (!detail?.path || !revisionInstruction.trim()) return;
+    setRevising(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/learning/paths/${detail.path.id}/revise`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction: revisionInstruction.trim() }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      const next = body as LearningPathDetail;
+      setDetail(next);
+      setEditableBlueprint(next.blueprint || null);
+      setRevisionInstruction("");
+      const latest = next.blueprint?.revisions?.[next.blueprint.revisions.length - 1];
+      setNotice(latest ? `Revised: ${latest.summary}` : "Blueprint revised.");
+    } catch (err: any) {
+      setError(err?.message || "Could not revise blueprint.");
+    } finally {
+      setRevising(false);
+    }
+  }
+
+  async function advanceLesson() {
+    if (!detail?.path) return;
+    setAdvancing(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/learning/paths/${detail.path.id}/advance`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      const next = body as LearningPathDetail;
+      setDetail(next);
+      setMode("learn");
+      setAnswers({});
+      setNotice(
+        next.path.status === "completed" ? "Course complete." : "Advanced to the next lesson.",
+      );
+      await refreshPaths();
+    } catch (err: any) {
+      setError(err?.message || "Could not advance to the next lesson.");
+    } finally {
+      setAdvancing(false);
     }
   }
 
@@ -504,7 +561,17 @@ export default function LearningStudioPage() {
                   onUpdateLesson={updateLesson}
                   onApprove={() => void approveBlueprint()}
                   approving={approving}
+                  revisionInstruction={revisionInstruction}
+                  onRevisionInstructionChange={setRevisionInstruction}
+                  onRevise={() => void reviseBlueprint()}
+                  revising={revising}
                 />
+              )}
+
+              {detail.path.status === "completed" && (
+                <div className="rounded-xl border border-emerald-400/25 bg-emerald-400/[0.05] px-4 py-3 text-sm text-emerald-200">
+                  Course complete — every lesson has been passed.
+                </div>
               )}
 
               {lesson && detail.path.status !== "blueprint" && (
@@ -519,6 +586,9 @@ export default function LearningStudioPage() {
                   submittingQuiz={submittingQuiz}
                   lastAttempt={lastAttempt}
                   onOpenTutor={openTutor}
+                  canAdvance={detail.path.status === "active" && Boolean(lastAttempt?.passed)}
+                  onAdvance={() => void advanceLesson()}
+                  advancing={advancing}
                 />
               )}
             </>
@@ -536,6 +606,10 @@ function BlueprintEditor({
   onUpdateLesson,
   onApprove,
   approving,
+  revisionInstruction,
+  onRevisionInstructionChange,
+  onRevise,
+  revising,
 }: {
   blueprint: LearningBlueprint;
   onPatch: (patch: Partial<LearningBlueprint>) => void;
@@ -543,6 +617,10 @@ function BlueprintEditor({
   onUpdateLesson: (unitId: string, lessonId: string, patch: { title?: string; objective?: string }) => void;
   onApprove: () => void;
   approving: boolean;
+  revisionInstruction: string;
+  onRevisionInstructionChange: (value: string) => void;
+  onRevise: () => void;
+  revising: boolean;
 }) {
   return (
     <section className="space-y-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.03] p-4">
@@ -559,6 +637,53 @@ function BlueprintEditor({
           {approving ? "Approving..." : "Approve Blueprint"}
         </Button>
       </div>
+
+      <div className="rounded-xl border border-white/10 bg-black/30 p-3">
+        <label className="text-[11px] uppercase tracking-[0.16em] text-white/60">
+          Ask Zed to change the blueprint
+        </label>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={revisionInstruction}
+            onChange={(e) => onRevisionInstructionChange(e.target.value)}
+            placeholder='e.g. "Add a unit about risk controls" or "Make this less beginner-oriented"'
+            className="flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-cyan-400/50 focus:outline-none"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !revising && revisionInstruction.trim()) onRevise();
+            }}
+          />
+          <Button
+            onClick={onRevise}
+            disabled={revising || !revisionInstruction.trim()}
+            variant="secondary"
+            className="rounded-xl zed-glass shrink-0"
+          >
+            {revising ? "Revising..." : "Revise"}
+          </Button>
+        </div>
+        {blueprint.revisions.length > 0 && (
+          <div className="mt-3 space-y-1">
+            {blueprint.revisions.slice().reverse().map((revision) => (
+              <div key={revision.id} className="text-[11.5px] leading-5 text-white/50">
+                <span className="text-white/70">"{revision.instruction}"</span> — {revision.summary}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {blueprint.gaps.length > 0 && (
+        <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.04] p-3">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-amber-200/70">
+            Gaps Zed found in the source material
+          </div>
+          <ul className="mt-2 space-y-1 text-[12.5px] leading-5 text-white/65">
+            {blueprint.gaps.map((gap, index) => (
+              <li key={index}>- {gap}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2">
         <div>
@@ -630,6 +755,9 @@ function LessonExperience({
   submittingQuiz,
   lastAttempt,
   onOpenTutor,
+  canAdvance,
+  onAdvance,
+  advancing,
 }: {
   lesson: LearningLesson;
   assessment: LearningAssessment | null;
@@ -641,6 +769,9 @@ function LessonExperience({
   submittingQuiz: boolean;
   lastAttempt: AssessmentAttempt | null;
   onOpenTutor: () => void;
+  canAdvance: boolean;
+  onAdvance: () => void;
+  advancing: boolean;
 }) {
   const modes: Array<{ id: Mode; label: string }> = [
     { id: "learn", label: "Learn" },
@@ -689,8 +820,23 @@ function LessonExperience({
 
       <div className="mt-4 min-h-[260px]">
         {mode === "learn" && (
-          <div className="prose prose-invert max-w-none">
-            <AssistantMarkdown content={lesson.content} />
+          <div className="space-y-4">
+            <div className="prose prose-invert max-w-none">
+              <AssistantMarkdown content={lesson.content} />
+            </div>
+            {lesson.citations.length > 0 && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-white/45">Sources referenced</div>
+                <ul className="mt-2 space-y-1 text-[12px] leading-5 text-white/60">
+                  {lesson.citations.map((citation, index) => (
+                    <li key={index}>
+                      <span className="text-white/80">{citation.sourceLabel}</span>
+                      {citation.note ? ` — ${citation.note}` : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -738,9 +884,16 @@ function LessonExperience({
                 </div>
               </div>
             ))}
-            <Button onClick={onSubmitQuiz} disabled={submittingQuiz} className="rounded-xl zed-gradient">
-              {submittingQuiz ? "Submitting..." : "Submit Quiz"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={onSubmitQuiz} disabled={submittingQuiz} className="rounded-xl zed-gradient">
+                {submittingQuiz ? "Submitting..." : "Submit Quiz"}
+              </Button>
+              {canAdvance && (
+                <Button onClick={onAdvance} disabled={advancing} variant="secondary" className="rounded-xl zed-glass">
+                  {advancing ? "Loading..." : "Continue to Next Lesson"}
+                </Button>
+              )}
+            </div>
           </div>
         )}
 

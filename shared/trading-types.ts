@@ -30,6 +30,25 @@ export type ChecklistResult = "PASS" | "FAIL" | "NOT_APPLICABLE" | "UNKNOWN";
 
 export type LiveTradingEligibility = "Eligible" | "Nearly Eligible" | "Not Eligible";
 
+export type PaperTradingGovernanceMode = "enforce" | "warn" | "off";
+
+export interface PaperTradingGovernanceCheckSetting {
+  enabled: boolean;
+  blocking: boolean;
+}
+export interface PaperTradingGovernanceSettings {
+  userId: string;
+  updatedAt: string;
+  mode: PaperTradingGovernanceMode;
+  checks: Record<string, PaperTradingGovernanceCheckSetting>;
+  thresholds: {
+    minimumRiskReward: number;
+    maxRiskPerPaperTrade: number;
+    maxNegativeDrawdown: number;
+    requiredSampleSize: number;
+  };
+}
+
 export interface TradingGovernanceChecklistItem {
   key: string;
   label: string;
@@ -90,7 +109,7 @@ export interface TradingKnowledgeEntry {
   createdAt: string;
   updatedAt: string;
   source: string;
-  sourceType: "manual" | "tradingview" | "trades_by_sci" | "topstep" | "journal" | "backtest" | "other";
+  sourceType: "manual" | "trades_by_sci" | "journal" | "backtest" | "other";
   category: TradingKnowledgeCategory;
   title: string;
   concepts: string[];
@@ -134,6 +153,7 @@ export interface TradeThesis {
 }
 
 export type PaperTradeStatus = "open" | "closed" | "cancelled";
+export type PaperTradeManagementStyle = "bracket" | "stop_only" | "target_only" | "manual";
 
 export interface TradeReviewReport {
   id: string;
@@ -163,11 +183,14 @@ export interface PaperTrade {
   status: PaperTradeStatus;
   timeframe?: string;
   setupName?: string;
+  /** External platform's response for the entry order (accepted or why not). */
+  externalNote?: string;
   entry: number;
   stop: number;
   target: number;
   size: number;
   riskAmount: number;
+  managementStyle?: PaperTradeManagementStyle;
   exitPrice?: number;
   realizedPnl?: number;
   unrealizedPnl?: number;
@@ -180,6 +203,10 @@ export interface PaperTrade {
   reviewReport?: TradeReviewReport;
   authorizationDecisionId?: string;
   authorizationDecision?: AuthorizationDecision;
+  executionMode?: "internal" | "external_paper";
+  executionProvider?: "webull" | "tradovate" | "lucid" | "custom";
+  externalOrderId?: string;
+  externalOrderStatus?: "staged" | "submitted" | "filled" | "rejected" | "cancelled";
 }
 
 export interface TradingPatternAnalytics {
@@ -213,23 +240,4 @@ export interface TradingPerformanceReport {
   leastSuccessfulSetups: string[];
   patternAnalytics: TradingPatternAnalytics;
   notes: string[];
-}
-
-export type TradingViewRecordType = "watchlist" | "alert" | "screener_result" | "note";
-
-export interface TradingViewRecord {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-  type: TradingViewRecordType;
-  symbol: string;
-  assetClass: TradingAssetClass;
-  timeframe?: string;
-  title: string;
-  status: "active" | "resolved" | "archived";
-  chartUrl?: string;
-  trigger?: string;
-  notes: string;
-  tags: string[];
 }

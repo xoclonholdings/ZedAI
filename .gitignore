@@ -9,6 +9,7 @@ hub/shared-memory/curation/
 hub/shared-memory/foundation-reparse/
 hub/shared-memory/execution/
 hub/shared-memory/knowledge-graph/
+hub/shared-memory/lexicon/
 hub/shared-memory/working/trading-intelligence.md
 hub/sessions/
 hub/user-personalization/
@@ -23,3 +24,11 @@ zed-config/deployment/.netlify
 # Temporary files
 zed-temp/*
 memory-imports/*
+
+# Legacy personal memory archive protection.
+# Existing tracked files are unaffected by .gitignore; these rules only block
+# new untracked raw personal exports until a later verified archive-removal pass.
+zed-memory/storage/
+zed-memory/**
+!zed-memory/
+!zed-memory/LEGACY_BACKUP_MANIFEST.md

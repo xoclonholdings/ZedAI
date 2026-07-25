@@ -518,7 +518,7 @@ export default function HomePage() {
               {currentStageDef && (
                 <CurrentWorkRow
                   icon={LineChart}
-                  eyebrow={`Trading · stage ${currentStageDef.order}/7`}
+                  eyebrow={`Trading · stage ${currentStageDef.order}/${TRADING_STAGES.length}`}
                   title={currentStageDef.label}
                   detail={currentStageDef.purpose}
                   href="/trading"

@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 
+import { zedErrorMessage } from "@shared/error-contract";
 import type { AgentTarget, Message } from "@shared/schema";
 
 interface SendAgentMessageArgs {
@@ -14,13 +15,14 @@ interface SendAgentMessageArgs {
   setIsStreaming: Dispatch<SetStateAction<boolean>>;
   setLocalMessages: Dispatch<SetStateAction<Message[]>>;
   queryClient: QueryClient;
+  onResponse?: (data: unknown) => void;
 }
 
 /**
- * Primary ZED dispatch: posts to /api/orchestrate and lets the server
+ * Primary ZAR dispatch: posts to /api/orchestrate and lets the server
  * select agents, tools, memory, approvals, and optional flow suggestions.
  * A legacy agentTarget can still be supplied by older surfaces, but the
- * main chat UI intentionally omits it so users talk to ZED, not lanes.
+ * main chat UI intentionally omits it so users talk to ZAR, not lanes.
  */
 export async function sendAgentMessage({
   message,
@@ -33,6 +35,7 @@ export async function sendAgentMessage({
   setIsStreaming,
   setLocalMessages,
   queryClient,
+  onResponse,
 }: SendAgentMessageArgs) {
   setIsStreaming(true);
 
@@ -76,12 +79,19 @@ export async function sendAgentMessage({
       const isAuthLike = res.status === 401 || res.status === 403;
       replyContent = isAuthLike
         ? `Session expired (HTTP ${res.status}). Please sign in again.`
-        : data?.reply ||
+        : zedErrorMessage(data?.errorDetail, data?.reply || data?.error || "") ||
+          data?.reply ||
           data?.error ||
-          `ZED request failed: HTTP ${res.status} ${res.statusText || ""}`.trim();
+          `ZAR request failed: HTTP ${res.status} ${res.statusText || ""}`.trim();
     } else {
-      replyContent = data?.reply || data?.error || "Execution failed: server returned no reply content.";
+      replyContent =
+        zedErrorMessage(data?.errorDetail, data?.reply || data?.error || "") ||
+        data?.reply ||
+        data?.error ||
+        "Execution failed: server returned no reply content.";
     }
+
+    onResponse?.(data);
 
     setLocalMessages((prev) => {
       const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
@@ -109,7 +119,7 @@ export async function sendAgentMessage({
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
   } catch (err: any) {
     const wasAborted = err?.name === "AbortError";
-    console.error("[ZED] Error:", err);
+    console.error("[ZAR] Error:", err);
     setLocalMessages((prev) => {
       const withoutTemp = prev.filter((m) => m.id !== tempUser.id);
       return [
@@ -121,7 +131,7 @@ export async function sendAgentMessage({
           role: "assistant" as const,
           content: wasAborted
             ? "Request stopped."
-            : `ZED request failed: ${err?.message || "network error"}`,
+            : `ZAR request failed: ${err?.message || "network error"}`,
           metadata: { agent: "ManagerAgent" },
           createdAt: new Date(),
         },

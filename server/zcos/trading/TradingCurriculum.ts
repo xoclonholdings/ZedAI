@@ -18,16 +18,6 @@ export const TRADING_SOURCE_LIST = [
     purpose: "Primary trading education source for market structure, liquidity, Bank & Sweep concepts, and setup discipline.",
   },
   {
-    name: "TradingView",
-    type: "analysis_platform",
-    purpose: "Primary charting, watchlist, alert, screener, and indicator environment.",
-  },
-  {
-    name: "TopStep",
-    type: "trader_evaluation_reference",
-    purpose: "Risk discipline, evaluation-style rules, drawdown awareness, and futures trading process reference.",
-  },
-  {
     name: "Bank & Sweep",
     type: "strategy_concept",
     purpose: "Liquidity behavior, stop hunts, sweep confirmation, and institutional-style setup framing.",
@@ -91,9 +81,9 @@ export const TRADING_KNOWLEDGE_AREAS: TradingCurriculumArea[] = [
     requiredTopics: ["Confluence scoring", "Setup ranking", "Confidence evaluation"],
   },
   {
-    id: "tradingview_integration",
-    title: "TradingView Integration",
-    requiredTopics: ["Chart analysis", "Alerts", "Watchlists", "Screeners"],
+    id: "broker_integration",
+    title: "Broker Integration",
+    requiredTopics: ["Paper account connection", "Position sync", "Order status", "Approval controls"],
   },
   {
     id: "backtesting",
@@ -135,8 +125,8 @@ export const TRADING_KNOWLEDGE_AREAS: TradingCurriculumArea[] = [
 export const TRADING_BUILD_SEQUENCE: TradingBuildStep[] = [
   {
     order: 1,
-    name: "TradingView Integration",
-    purpose: "Make chart snapshots, watchlists, alerts, screeners, indicators, and symbol tracking available to ZED.",
+    name: "Broker Integration",
+    purpose: "Make paper account status, positions, orders, and approval controls available to ZED.",
   },
   {
     order: 2,

@@ -1,166 +1,168 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import {
-  ChevronLeft,
-  ChevronDown,
-  ChevronUp,
-  MessageSquare,
-  RefreshCw,
-  Search,
-  Trash2,
-} from "lucide-react";
+import { Bookmark, ChevronLeft, ExternalLink, RotateCcw, Search, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import WorkspaceLibrary from "@/components/WorkspaceLibrary";
-import type { ResearchBrief } from "@shared/research-types";
+import ResearchDocuments from "@/components/research/ResearchDocuments";
 
 /**
- * The Research workspace — an actual working surface, not a menu. You
- * hand Zed a subject (and optionally paste sources), Zed returns a
- * structured brief, and every brief stacks up here durably so the desk
- * becomes your research record. Everything is editable/removable and
- * nothing is auto-shared.
+ * The Research workspace.
+ *
+ * Search is the front door. After Zed looks something up, he offers a few
+ * plain things to do with it — give the short version, check if it's
+ * legit, save it for later, or whatever you type. Or nothing.
  */
 
-function List({ label, items }: { label: string; items: string[] }) {
-  if (!items || items.length === 0) return null;
-  return (
-    <div>
-      <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-1">{label}</div>
-      <ul className="space-y-1">
-        {items.map((it, i) => (
-          <li key={i} className="text-[13px] text-white/75 leading-snug">
-            · {it}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+interface SearchResult {
+  title: string;
+  url: string;
+  snippet: string;
 }
 
-function BriefCard({
-  brief,
-  onDelete,
-}: {
-  brief: ResearchBrief;
-  onDelete: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="min-w-0 flex-1 text-left"
-        >
-          <div className="flex items-center gap-2">
-            <span className="text-[15px] font-semibold text-white">{brief.topic}</span>
-            {brief.draft && (
-              <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 bg-amber-400/15 text-amber-200">
-                Draft
-              </span>
-            )}
-          </div>
-          <div className="mt-1 text-[12px] text-white/55 leading-snug">{brief.summary}</div>
-        </button>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-white/50 hover:text-white/90 transition-colors"
-            aria-label={open ? "Collapse" : "Expand"}
-          >
-            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(brief.id)}
-            className="rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-white/40 hover:text-red-300 transition-colors"
-            aria-label="Delete"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
-
-      {open && (
-        <div className="mt-3 grid gap-3 border-t border-white/[0.06] pt-3">
-          <List label="Key findings" items={brief.keyFindings} />
-          <List label="Risks & unknowns" items={brief.risks} />
-          <List label="Open questions" items={brief.openQuestions} />
-          <List label="Next steps" items={brief.nextSteps} />
-          <div className="text-[11px] text-white/35 italic leading-snug">{brief.basis}</div>
-        </div>
-      )}
-    </div>
-  );
+interface SavedItem {
+  id: string;
+  createdAt: string;
+  query: string;
+  note: string;
+  results: SearchResult[];
 }
 
 export default function ResearchDesk() {
   const [, navigate] = useLocation();
-  const [topic, setTopic] = useState("");
-  const [sources, setSources] = useState("");
-  const [showSources, setShowSources] = useState(false);
-  const [briefs, setBriefs] = useState<ResearchBrief[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [working, setWorking] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [lastQuery, setLastQuery] = useState("");
+  const [searched, setSearched] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherText, setOtherText] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [zedText, setZedText] = useState<string | null>(null);
+  const [zedFailed, setZedFailed] = useState(false);
+  const [lastAct, setLastAct] = useState<{ action: "summarize" | "verify" | "other"; instruction?: string } | null>(null);
+
+  const [saved, setSaved] = useState<SavedItem[]>([]);
+
+  const loadSaved = useCallback(async () => {
     try {
-      const res = await fetch("/api/research/briefs", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setBriefs(data.briefs || []);
-      }
-    } catch (err: any) {
-      setError(err?.message || "Failed to load your research");
-    } finally {
-      setLoading(false);
+      const res = await fetch("/api/research/saved", { credentials: "include" });
+      if (res.ok) setSaved((await res.json()).items || []);
+    } catch {
+      /* silent */
     }
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void loadSaved();
+  }, [loadSaved]);
 
   const run = useCallback(async () => {
     setError(null);
-    if (!topic.trim()) {
-      setError("Type a subject for Zed to research.");
+    setNote(null);
+    setZedText(null);
+    if (!query.trim()) {
+      setError("Type what you want to look up.");
       return;
     }
-    setWorking(true);
+    setSearching(true);
     try {
-      const res = await fetch("/api/research/brief", {
+      const res = await fetch("/api/research/search", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic: topic.trim(), sources: sources.trim() || undefined }),
+        body: JSON.stringify({ query: query.trim() }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
-      if (body.brief) setBriefs((prev) => [body.brief as ResearchBrief, ...prev]);
-      setTopic("");
-      setSources("");
-      setShowSources(false);
-    } catch (err: any) {
-      setError(err?.message || "Zed could not build the brief. Try again.");
-    } finally {
-      setWorking(false);
-    }
-  }, [topic, sources]);
-
-  const remove = useCallback(async (id: string) => {
-    setBriefs((prev) => prev.filter((b) => b.id !== id));
-    try {
-      await fetch(`/api/research/briefs/${id}`, { method: "DELETE", credentials: "include" });
+      setResults(body.results || []);
+      setLastQuery(query.trim());
+      setSearched(true);
+      setSuggestOpen((body.results || []).length > 0);
+      setOtherOpen(false);
+      if ((body.results || []).length === 0) {
+        setNote(
+          body.source === "none"
+            ? "No search is connected yet. Add a Brave or Serper key so Zed can look things up."
+            : "Nothing came back for that. Try different words.",
+        );
+      }
     } catch {
-      /* optimistic — refresh will reconcile */
+      setError("I couldn't run that search just now. Give it another go in a moment.");
+    } finally {
+      setSearching(false);
+    }
+  }, [query]);
+
+  const act = useCallback(
+    async (action: "summarize" | "verify" | "other", instruction?: string) => {
+      setError(null);
+      setBusy(action);
+      setZedText(null);
+      setZedFailed(false);
+      setLastAct({ action, instruction });
+      try {
+        const res = await fetch("/api/research/act", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, query: lastQuery, results, instruction }),
+        });
+        const body = await res.json().catch(() => ({}));
+        // Zed always speaks in plain language via body.text; body.ok tells
+        // us whether it worked so we can show a "try again".
+        setZedText(body.text || "I couldn't finish that. Mind trying again?");
+        setZedFailed(body.ok === false);
+        if (body.ok !== false) {
+          setOtherOpen(false);
+          setOtherText("");
+        }
+      } catch {
+        setZedText("I couldn't reach my brain just now. Give it a moment and try again.");
+        setZedFailed(true);
+      } finally {
+        setBusy(null);
+      }
+    },
+    [lastQuery, results],
+  );
+
+  const save = useCallback(async () => {
+    setBusy("save");
+    try {
+      const res = await fetch("/api/research/saved", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: lastQuery, note: zedText || "", results }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body.item) {
+        setSaved((prev) => [body.item as SavedItem, ...prev]);
+        setNote("Saved. You'll find it below whenever you come back.");
+      }
+    } catch {
+      setError("Couldn't save that. Try again.");
+    } finally {
+      setBusy(null);
+    }
+  }, [lastQuery, zedText, results]);
+
+  const removeSaved = useCallback(async (id: string) => {
+    setSaved((prev) => prev.filter((s) => s.id !== id));
+    try {
+      await fetch(`/api/research/saved/${id}`, { method: "DELETE", credentials: "include" });
+    } catch {
+      /* optimistic */
     }
   }, []);
+
+  const chip =
+    "rounded-full border border-white/15 bg-white/[0.05] px-3 py-1.5 text-[12.5px] text-white/80 hover:bg-white/10 disabled:opacity-50 transition-colors";
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -180,106 +182,204 @@ export default function ResearchDesk() {
             Research
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void refresh()}
-          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
-        >
-          <RefreshCw size={14} className={loading ? "mr-1 animate-spin" : "mr-1"} />
-          Refresh
-        </Button>
+        <span className="w-14" />
       </div>
 
       <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
-        {/* The working input — hand Zed a subject */}
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-4">
-          <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">Research desk</div>
-          <p className="mt-1 text-[13px] text-white/60 leading-snug">
-            Give Zed a subject — a person, company, market, technology, or question. Zed returns a
-            working brief you can act on, and it's saved here.
-          </p>
-          <div className="mt-3 space-y-2">
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) void run();
-              }}
-              placeholder="e.g. Competitive landscape for AI trading tools"
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
-            />
-            {showSources ? (
-              <textarea
-                value={sources}
-                onChange={(e) => setSources(e.target.value)}
-                rows={4}
-                placeholder="Optional: paste notes, an article, or a document for Zed to ground the brief in."
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50 resize-y"
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void run();
+                }}
+                placeholder="Look something up…"
+                className="w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
               />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowSources(true)}
-                className="text-[12px] text-cyan-300/80 hover:text-cyan-200"
-              >
-                + Add sources (optional)
-              </button>
-            )}
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => navigate("/chat?ctx=research")}
-                className="inline-flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white/80"
-              >
-                <MessageSquare size={13} />
-                Ask Zed directly
-              </button>
-              <Button
-                onClick={() => void run()}
-                disabled={working}
-                className="rounded-xl zed-gradient"
-              >
-                <Search size={14} className="mr-1.5" />
-                {working ? "Researching…" : "Research it"}
-              </Button>
             </div>
+            <Button onClick={() => void run()} disabled={searching} className="rounded-xl zed-gradient">
+              {searching ? "Looking…" : "Search"}
+            </Button>
           </div>
         </section>
-
-        <WorkspaceLibrary workspace="research" label="Research library" />
 
         {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">
-            {error}
-          </div>
+          <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>
+        )}
+        {note && (
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-white/60">{note}</div>
         )}
 
-        {working && (
-          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-cyan-100">
-            Zed is working through the subject and structuring a brief…
-          </div>
-        )}
-
-        <section className="space-y-3">
-          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Your research {briefs.length > 0 ? `(${briefs.length})` : ""}
-          </div>
-          {loading ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>
-          ) : briefs.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-5 text-sm text-muted-foreground">
-              Nothing here yet. Give Zed a subject above and your briefs will collect here.
+        {/* Zed's "want me to…" suggestions */}
+        {suggestOpen && (
+          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-3">
+            <div className="text-[13px] text-white/80 mb-2">Want me to…</div>
+            <div className="flex flex-wrap gap-2">
+              <button className={chip} disabled={!!busy} onClick={() => void act("summarize")}>
+                {busy === "summarize" ? "…" : "Summarize it"}
+              </button>
+              <button className={chip} disabled={!!busy} onClick={() => void act("verify")}>
+                {busy === "verify" ? "…" : "Check if it's legit"}
+              </button>
+              <button className={chip} disabled={!!busy} onClick={() => void save()}>
+                {busy === "save" ? "…" : "Save it for later"}
+              </button>
+              <button className={chip} disabled={!!busy} onClick={() => setOtherOpen((v) => !v)}>
+                Something else
+              </button>
+              <button
+                className={chip}
+                onClick={() => {
+                  setSuggestOpen(false);
+                  setZedText(null);
+                  setOtherOpen(false);
+                }}
+              >
+                No thanks
+              </button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {briefs.map((b) => (
-                <BriefCard key={b.id} brief={b} onDelete={remove} />
+            {otherOpen && (
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="text"
+                  value={otherText}
+                  onChange={(e) => setOtherText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && otherText.trim()) void act("other", otherText.trim());
+                  }}
+                  placeholder="Tell Zed what to do with this…"
+                  className="flex-1 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
+                />
+                <button
+                  className={chip}
+                  disabled={!otherText.trim() || !!busy}
+                  onClick={() => void act("other", otherText.trim())}
+                >
+                  {busy === "other" ? "…" : "Go"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Zed's answer */}
+        {zedText && (
+          <div
+            className={`rounded-2xl border p-4 ${
+              zedFailed ? "border-amber-400/30 bg-amber-400/[0.05]" : "border-white/10 bg-black/30"
+            }`}
+          >
+            <div className="whitespace-pre-line text-[13.5px] text-white/85 leading-relaxed">{zedText}</div>
+            <div className="mt-3 flex justify-end gap-2">
+              {zedFailed ? (
+                <button
+                  className={chip}
+                  disabled={!!busy}
+                  onClick={() => lastAct && void act(lastAct.action, lastAct.instruction)}
+                >
+                  <RotateCcw size={12} className="inline mr-1" />
+                  {busy ? "Trying…" : "Try again"}
+                </button>
+              ) : (
+                <button className={chip} disabled={!!busy} onClick={() => void save()}>
+                  <Bookmark size={12} className="inline mr-1" />
+                  {busy === "save" ? "Saving…" : "Save this"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Results */}
+        {searched && results.length > 0 && (
+          <section className="space-y-2">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Results ({results.length})
+            </div>
+            <div className="space-y-2">
+              {results.map((r, i) => (
+                <a
+                  key={i}
+                  href={r.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-2xl border border-white/10 bg-black/30 p-3.5 transition-all hover:border-cyan-400/40 hover:bg-white/5"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="text-[14px] font-semibold text-white leading-snug">{r.title}</div>
+                    <ExternalLink size={13} className="mt-1 shrink-0 text-white/40" />
+                  </div>
+                  {r.snippet && <div className="mt-1 text-[12.5px] text-white/55 leading-snug">{r.snippet}</div>}
+                  <div className="mt-1 truncate text-[11px] text-cyan-300/70">{r.url}</div>
+                </a>
               ))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
+
+        {/* Saved for later */}
+        {saved.length > 0 && (
+          <section className="space-y-2">
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Saved for later</div>
+            <div className="space-y-2">
+              {saved.map((s) => (
+                <div key={s.id} className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-white">
+                        <Bookmark size={12} className="text-cyan-300" />
+                        {s.query || "Saved"}
+                      </div>
+                      {s.note && (
+                        <div className="mt-1 whitespace-pre-line text-[12.5px] text-white/60 leading-snug">
+                          {s.note}
+                        </div>
+                      )}
+                      {s.results?.length > 0 && (
+                        <div className="mt-1.5 space-y-0.5">
+                          {s.results.slice(0, 3).map((r, i) => (
+                            <a
+                              key={i}
+                              href={r.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block truncate text-[11.5px] text-cyan-300/70 hover:text-cyan-200"
+                            >
+                              {r.title || r.url}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => void removeSaved(s.id)}
+                      className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] p-1.5 text-white/40 hover:text-red-300"
+                      aria-label="Remove"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <ResearchDocuments
+          seedInstruction={lastQuery ? `Write up my research on "${lastQuery}".` : ""}
+          seedSources={
+            zedText ||
+            (results.length > 0
+              ? results.map((r) => `- ${r.title}\n  ${r.snippet}\n  ${r.url}`).join("\n")
+              : "")
+          }
+        />
+
+        <WorkspaceLibrary workspace="research" label="Research library" />
       </main>
     </div>
   );

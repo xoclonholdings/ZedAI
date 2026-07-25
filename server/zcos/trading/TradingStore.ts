@@ -3,30 +3,62 @@ import path from "path";
 import { randomUUID } from "crypto";
 
 import { HUB_DIR, HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
-import { readTradingState, tradingDbAvailable, writeTradingState } from "./tradingPersistence";
+import { readTradingState, tradingDbAvailable, tradingPersistenceRequired, writeTradingState } from "./tradingPersistence";
 import type {
   PaperTrade,
   PaperTradeStatus,
   TradeReviewReport,
   TradeThesis,
+  PaperTradingGovernanceSettings,
   TradingGovernanceDecision,
   TradingIncidentReport,
   TradingKnowledgeEntry,
   TradingPatternAnalytics,
   TradingPerformanceReport,
-  TradingViewRecord,
 } from "../../../shared/trading-types";
 
 const TRADING_DIR = path.resolve(HUB_DIR, "trading");
 const KNOWLEDGE_PATH = path.resolve(TRADING_DIR, "knowledge.json");
 const THESES_PATH = path.resolve(TRADING_DIR, "trade-theses.json");
 const PAPER_TRADES_PATH = path.resolve(TRADING_DIR, "paper-trades.json");
-const TRADINGVIEW_PATH = path.resolve(TRADING_DIR, "tradingview-records.json");
 const GOVERNANCE_DECISIONS_PATH = path.resolve(TRADING_DIR, "governance-decisions.json");
+const GOVERNANCE_SETTINGS_PATH = path.resolve(TRADING_DIR, "governance-settings.json");
 const INCIDENT_REPORTS_PATH = path.resolve(TRADING_DIR, "incident-reports.json");
 const TRADING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working", "trading-intelligence.md");
 
+const DEFAULT_PAPER_GOVERNANCE_CHECKS: Record<string, { enabled: boolean; blocking: boolean }> = {
+  market_context: { enabled: true, blocking: true },
+  trend_alignment: { enabled: true, blocking: false },
+  market_structure: { enabled: true, blocking: true },
+  liquidity_conditions: { enabled: true, blocking: true },
+  session: { enabled: true, blocking: false },
+  news_filter: { enabled: true, blocking: false },
+  trade_thesis: { enabled: true, blocking: false },
+  entry_rules: { enabled: true, blocking: true },
+  exit_rules: { enabled: true, blocking: true },
+  risk_limits: { enabled: true, blocking: true },
+  position_size: { enabled: true, blocking: true },
+  correlation: { enabled: true, blocking: false },
+  drawdown_limits: { enabled: true, blocking: true },
+  system_health: { enabled: true, blocking: false },
+  risk_reward: { enabled: true, blocking: true },
+};
+
+const DEFAULT_PAPER_GOVERNANCE_THRESHOLDS = {
+  minimumRiskReward: 2,
+  maxRiskPerPaperTrade: 100,
+  maxNegativeDrawdown: -500,
+  requiredSampleSize: 100,
+};
+
+type PaperGovernanceSettingsPatch = {
+  mode?: PaperTradingGovernanceSettings["mode"];
+  checks?: Partial<PaperTradingGovernanceSettings["checks"]>;
+  thresholds?: Partial<PaperTradingGovernanceSettings["thresholds"]>;
+};
+
 async function ensureTradingDirs() {
+  if (tradingPersistenceRequired()) return;
   await fs.mkdir(TRADING_DIR, { recursive: true });
   await fs.mkdir(path.dirname(TRADING_MEMORY_PATH), { recursive: true });
 }
@@ -51,19 +83,22 @@ async function readFileArray<T>(file: string): Promise<T[]> {
 }
 
 async function readJsonArray<T>(file: string): Promise<T[]> {
-  // Durable store first; fall back to the JSON file (also seeds any
-  // pre-existing file data on first read before the DB has a row).
-  if (tradingDbAvailable()) {
+  // Durable store first. In production/Render, do not fall back to JSON.
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
     const stored = await readTradingState<T[]>("collection", collectionKey(file));
     if (stored) return Array.isArray(stored) ? stored : [];
+    if (tradingPersistenceRequired()) return [];
   }
   return readFileArray<T>(file);
 }
 
 async function writeJsonArray<T>(file: string, data: T[]) {
-  if (tradingDbAvailable()) {
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
     const ok = await writeTradingState("collection", collectionKey(file), data);
     if (ok) return;
+    if (tradingPersistenceRequired()) {
+      throw new Error(`Unable to persist trading collection ${collectionKey(file)} to PostgreSQL.`);
+    }
   }
   await ensureTradingDirs();
   await fs.writeFile(file, JSON.stringify(data, null, 2), "utf8");
@@ -230,6 +265,47 @@ function createReviewReport(trade: PaperTrade, thesis?: TradeThesis): TradeRevie
   };
 }
 
+function defaultPaperGovernanceSettings(userId: string): PaperTradingGovernanceSettings {
+  return {
+    userId,
+    updatedAt: now(),
+    mode: "enforce",
+    checks: Object.fromEntries(
+      Object.entries(DEFAULT_PAPER_GOVERNANCE_CHECKS).map(([key, value]) => [
+        key,
+        { ...value },
+      ]),
+    ),
+    thresholds: { ...DEFAULT_PAPER_GOVERNANCE_THRESHOLDS },
+  };
+}
+
+function normalizePaperGovernanceSettings(
+  userId: string,
+  input?: PaperGovernanceSettingsPatch & Pick<Partial<PaperTradingGovernanceSettings>, "updatedAt">,
+): PaperTradingGovernanceSettings {
+  const base = defaultPaperGovernanceSettings(userId);
+  const checks = { ...base.checks };
+  for (const [key, value] of Object.entries(input?.checks || {})) {
+    checks[key] = {
+      enabled: typeof value?.enabled === "boolean" ? value.enabled : checks[key]?.enabled ?? true,
+      blocking: typeof value?.blocking === "boolean" ? value.blocking : checks[key]?.blocking ?? false,
+    };
+  }
+  return {
+    ...base,
+    ...input,
+    userId,
+    updatedAt: input?.updatedAt || base.updatedAt,
+    mode: input?.mode === "warn" || input?.mode === "off" ? input.mode : "enforce",
+    checks,
+    thresholds: {
+      ...base.thresholds,
+      ...(input?.thresholds || {}),
+    },
+  };
+}
+
 export const TradingStore = {
   async listKnowledge(): Promise<TradingKnowledgeEntry[]> {
     await ensureTradingDirs();
@@ -386,45 +462,6 @@ export const TradingStore = {
     return updated;
   },
 
-  async listTradingViewRecords(userId?: string): Promise<TradingViewRecord[]> {
-    await ensureTradingDirs();
-    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
-    return records
-      .filter((record) => !userId || record.userId === userId)
-      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  },
-
-  async addTradingViewRecord(input: Omit<TradingViewRecord, "id" | "createdAt" | "updatedAt">): Promise<TradingViewRecord> {
-    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
-    const timestamp = now();
-    const record: TradingViewRecord = {
-      ...input,
-      id: randomUUID(),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    await writeJsonArray(TRADINGVIEW_PATH, [record, ...records]);
-    await this.appendMemory(`TradingView ${record.type} added: ${record.symbol} ${record.title}.`);
-    return record;
-  },
-
-  async updateTradingViewRecord(input: { id: string; userId: string; patch: Partial<TradingViewRecord> }): Promise<TradingViewRecord | null> {
-    const records = await readJsonArray<TradingViewRecord>(TRADINGVIEW_PATH);
-    const index = records.findIndex((record) => record.id === input.id && record.userId === input.userId);
-    if (index === -1) return null;
-    const updated: TradingViewRecord = {
-      ...records[index],
-      ...input.patch,
-      id: records[index].id,
-      userId: records[index].userId,
-      updatedAt: now(),
-    };
-    records[index] = updated;
-    await writeJsonArray(TRADINGVIEW_PATH, records);
-    await this.appendMemory(`TradingView ${updated.type} updated: ${updated.symbol} ${updated.title}.`);
-    return updated;
-  },
-
   async listGovernanceDecisions(userId?: string): Promise<TradingGovernanceDecision[]> {
     await ensureTradingDirs();
     const decisions = await readJsonArray<TradingGovernanceDecision>(GOVERNANCE_DECISIONS_PATH);
@@ -445,6 +482,38 @@ export const TradingStore = {
     await writeJsonArray(GOVERNANCE_DECISIONS_PATH, [decision, ...decisions]);
     await this.appendMemory(`Governance decision recorded: ${decision.symbol || "trade"} => ${decision.decision}. ${decision.reason}`);
     return decision;
+  },
+
+  async getPaperGovernanceSettings(userId: string): Promise<PaperTradingGovernanceSettings> {
+    await ensureTradingDirs();
+    const allSettings = await readJsonArray<PaperTradingGovernanceSettings>(GOVERNANCE_SETTINGS_PATH);
+    const existing = allSettings.find((settings) => settings.userId === userId);
+    return normalizePaperGovernanceSettings(userId, existing);
+  },
+
+  async updatePaperGovernanceSettings(
+    userId: string,
+    patch: PaperGovernanceSettingsPatch,
+  ): Promise<PaperTradingGovernanceSettings> {
+    const allSettings = await readJsonArray<PaperTradingGovernanceSettings>(GOVERNANCE_SETTINGS_PATH);
+    const current = allSettings.find((settings) => settings.userId === userId);
+    const updated = normalizePaperGovernanceSettings(userId, {
+      ...current,
+      ...patch,
+      checks: {
+        ...(current?.checks || {}),
+        ...(patch.checks || {}),
+      },
+      thresholds: {
+        ...(current?.thresholds || {}),
+        ...(patch.thresholds || {}),
+      },
+      updatedAt: now(),
+    });
+    const nextSettings = allSettings.filter((settings) => settings.userId !== userId);
+    await writeJsonArray(GOVERNANCE_SETTINGS_PATH, [updated, ...nextSettings]);
+    await this.appendMemory(`Paper governance settings updated: mode ${updated.mode}.`);
+    return updated;
   },
 
   async listIncidentReports(userId?: string): Promise<TradingIncidentReport[]> {
@@ -521,6 +590,7 @@ export const TradingStore = {
     // Best-effort activity log — must never break a save that already
     // persisted (the log file may be on a read-only/ephemeral disk).
     try {
+      if (tradingPersistenceRequired()) return;
       await ensureTradingDirs();
       const entry = `\n- ${now()}: ${summary}`;
       await fs.appendFile(TRADING_MEMORY_PATH, entry, "utf8");

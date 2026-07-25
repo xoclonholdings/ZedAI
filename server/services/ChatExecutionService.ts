@@ -9,6 +9,7 @@ import { IntelligenceCore } from "./intelligence-core";
 import { ContextIntelligenceEngine } from "./intelligence-core/ContextIntelligenceEngine";
 import { DocumentIntelligenceService } from "./intelligence-core/DocumentIntelligenceService";
 import { ContextInquiryEngine } from "./knowledge-ingestion/ContextInquiryEngine";
+import { LexiconAuthorityService } from "./lexicon-authority/LexiconAuthorityService";
 import { ZedPrincipleEngine } from "./ZedPrincipleEngine";
 import { ZedStrategicReasoningEngine } from "./ZedStrategicReasoningEngine";
 import { ZedReflectionEngine } from "./ZedReflectionEngine";
@@ -33,6 +34,8 @@ import { isWebLookupIntent } from "../orchestrator/manager-agent/agent-selection
 import { getActiveProviderName, getResolvedTargetName } from "../core/providers/provider-executor";
 import { logRuntimeEvent } from "./RuntimeLogger";
 import { auditTrace } from "./TraceValidator";
+import { classifyChatError } from "./ErrorContract";
+import { zedErrorMessage } from "../../shared/error-contract";
 
 type ExecutionStatus = "success" | "partial" | "failed";
 
@@ -85,6 +88,7 @@ export interface ChatExecutionTrace {
   intelligencePlan?: import("./intelligence-core/types").IntelligenceCorePlan;
   contextCompressionRatio?: number;
   documentCitations?: string[];
+  lexiconResolutions?: string[];
 }
 
 export interface ChatExecutionTestHooks {
@@ -124,6 +128,9 @@ function hasTemplateLeakage(value: string): boolean {
 
 function normalizeFailureReason(error: any, trace: ChatExecutionTrace): string {
   const message = error?.message || String(error);
+  if (/lightning/i.test(message)) {
+    return message;
+  }
   if (/fetch failed|ECONNREFUSED|ECONNRESET|model host|provider|api[_ -]?key|not configured/i.test(message)) {
     return `modelProviderUnavailable:${trace.providerUsed || "unknown"}:${trace.providerTarget || "unknown"}`;
   }
@@ -314,6 +321,36 @@ export class ChatExecutionService {
       const effectiveMessage = resolveReferencedWebpageForTest(input.message, history);
       const webLookupIntent = isWebLookupIntent(effectiveMessage) || isWebLookupIntent(input.message);
       trace.detectedIntent = webLookupIntent ? "web_research" : "manager";
+
+      // Lexicon Authority runs first, ahead of Context Inquiry, per
+      // SPEC.md § Reasoning Pipeline: User Input -> Lexicon Authority ->
+      // Intent Interpretation -> Knowledge Assembly -> Reasoning ->
+      // Response. It interprets slang, community language, acronyms,
+      // and project/product terminology in the raw message so the rest
+      // of the Cognitive Core reasons over meaning, not just text.
+      trace.servicesInvoked.push("LexiconAuthorityService.resolveText");
+      const lexiconResolution = await LexiconAuthorityService.resolveText(effectiveMessage, {
+        userId: input.userId,
+        workspaceId: input.workspaceId || input.context?.workspaceId,
+      }).catch(() => ({ prompt: "", resolutions: [], unresolvedSignals: [] as string[] }));
+      if (lexiconResolution.resolutions.length > 0) {
+        trace.memorySources.push("LexiconAuthority");
+        trace.lexiconResolutions = lexiconResolution.resolutions.map((resolution) => resolution.term);
+      }
+      // Discovery: quote/definition-style signals ("what does X mean",
+      // 'X') that the lexicon doesn't recognize become low-confidence
+      // candidates with this turn as evidence. Never promoted on one
+      // occurrence — see LexiconAuthorityService.registerCandidate.
+      for (const term of lexiconResolution.unresolvedSignals.slice(0, 3)) {
+        LexiconAuthorityService.registerCandidate({
+          term,
+          evidenceExcerpt: effectiveMessage.slice(0, 480),
+          sourceLabel: "chat_unresolved_signal",
+          userId: input.userId,
+          conversationId: input.conversationId,
+        }).catch(() => null);
+      }
+
       let contextInquiryPrompt = "";
       let contextMaterialUncertainty = false;
 
@@ -603,14 +640,16 @@ export class ChatExecutionService {
               .join("\n\n");
 
       // Cognitive Core order per SPEC.md § Cognitive Core:
-      //   1. Context Inquiry   2. Principle   3. Strategic
-      //   4. Knowledge         5. Voice        6. Reflection (post-response)
+      //   0. Lexicon Authority 1. Context Inquiry   2. Principle
+      //   3. Strategic          4. Knowledge         5. Voice
+      //   6. Reflection (post-response)
       // Intelligence Core reasoning stages (deep thinking + self-
       // orchestration) sit with Strategic Reasoning before knowledge; the
       // adaptive response directive sits just before Voice. Governance is
       // pinned first; response policy is pinned last so style wins ties.
       const cognitiveKnowledgePrompt = [
         governancePrompt,
+        lexiconResolution.prompt,
         contextInquiryPrompt,
         // Workspace memory sits ahead of general knowledge so Zed always
         // works from the workspace's own library first.
@@ -690,6 +729,7 @@ export class ChatExecutionService {
         reasoningEffort: trace.reasoningEffort,
         contextCompressionRatio: trace.contextCompressionRatio,
         documentCitations: trace.documentCitations,
+        lexiconResolutions: trace.lexiconResolutions,
         providerUsed: trace.providerUsed,
         providerTarget: trace.providerTarget,
         projectContextUsed: trace.projectContextUsed,
@@ -751,18 +791,23 @@ export class ChatExecutionService {
     } catch (error: any) {
       trace.executionStatus = "failed";
       trace.failureReason = normalizeFailureReason(error, trace);
+      const errorDetail = classifyChatError(error, {
+        provider: trace.providerUsed,
+        target: trace.providerTarget,
+      });
       await (hooks.log || logRuntimeEvent)({
         level: "error",
         source: "server",
         event: "chat.execution.failed",
         detail: trace.failureReason,
-        context: { traceId: trace.traceId, conversationId: input.conversationId },
+        context: { traceId: trace.traceId, conversationId: input.conversationId, errorDetail },
       });
-      const failureReply = `Execution failed: ${trace.failureReason}.`;
+      const failureReply = zedErrorMessage(errorDetail, `Execution failed: ${trace.failureReason}.`);
       await saveAssistantMessage(input.conversationId, failureReply, {
         agent: "ManagerAgent",
         executionStatus: trace.executionStatus,
         failureReason: trace.failureReason,
+        errorDetail,
         executionTrace: trace,
       }).catch(() => null);
       return {
@@ -772,8 +817,10 @@ export class ChatExecutionService {
         metadata: {
           executionStatus: trace.executionStatus,
           failureReason: trace.failureReason,
+          errorDetail,
           executionTrace: trace,
         },
+        errorDetail,
         trace,
       };
     }

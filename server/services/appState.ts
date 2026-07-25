@@ -1,21 +1,27 @@
 import { sql } from "drizzle-orm";
 
-import { db } from "../db";
+import { db, isDatabaseRequired } from "../db";
 
 /**
  * Generic durable key/value store for app features that need to persist
  * structured JSON per user without a bespoke table each time.
  *
  * Backed by the Neon/Drizzle database (an `app_state` table of JSONB
- * blobs keyed by scope + key) so data survives restarts. When there is
- * no database (offline mode, `db` is null) reads return null and writes
- * report false, letting callers degrade gracefully.
+ * blobs keyed by scope + key) so data survives restarts. Offline
+ * development may receive null/false when no DB is configured, but
+ * production/Render/REQUIRE_DATABASE=true fails closed instead of
+ * allowing callers to treat ephemeral files as authoritative state.
  */
 
 let ensured: Promise<void> | null = null;
 
 async function ensureTable(): Promise<boolean> {
-  if (!db) return false;
+  if (!db) {
+    if (isDatabaseRequired()) {
+      throw new Error("app_state requires PostgreSQL in this environment.");
+    }
+    return false;
+  }
   if (!ensured) {
     ensured = (async () => {
       await db!.execute(sql`
@@ -35,7 +41,8 @@ async function ensureTable(): Promise<boolean> {
   try {
     await ensured;
     return true;
-  } catch {
+  } catch (error) {
+    if (isDatabaseRequired()) throw error;
     return false;
   }
 }
@@ -53,7 +60,8 @@ export async function readAppState<T>(scope: string, key: string): Promise<T | n
     const rows = result?.rows ?? (Array.isArray(result) ? result : []);
     if (rows.length > 0 && rows[0]?.data != null) return rows[0].data as T;
     return null;
-  } catch {
+  } catch (error) {
+    if (isDatabaseRequired()) throw error;
     return null;
   }
 }
@@ -67,7 +75,8 @@ export async function writeAppState<T>(scope: string, key: string, data: T): Pro
       ON CONFLICT (scope, key) DO UPDATE SET data = EXCLUDED.data, updated_at = now();
     `);
     return true;
-  } catch {
+  } catch (error) {
+    if (isDatabaseRequired()) throw error;
     return false;
   }
 }

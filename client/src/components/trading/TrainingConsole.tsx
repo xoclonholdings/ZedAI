@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link2, Plug, Upload, X } from "lucide-react";
+import { KeyRound, Link2, Plug, Upload, X } from "lucide-react";
 
 import type {
   IntegrationProviderInfo,
@@ -8,6 +8,7 @@ import type {
 } from "@shared/trading-training-types";
 
 import { EmptyBox, NoticeBanner, StageShell, inputClass } from "./stage-atoms";
+import TradovateConnect from "./TradovateConnect";
 
 const STATUS_LABEL: Record<string, string> = {
   connected: "connected",
@@ -19,8 +20,8 @@ const STATUS_LABEL: Record<string, string> = {
 /**
  * How you feed and connect Zed for training:
  *   - Upload material (files) so Zed ingests it into its knowledge.
- *   - Connect providers (TopStep, TradingView, Lucid, Tradovate,
- *     custom) — the real connection layer live sync will use.
+ *   - Connect providers (Webull, Tradovate, Polymarket, and custom)
+ *     that the trading stages can use.
  *
  * The paste-a-note flow and the "what Zed has learned" library live
  * in LearnStage; this console adds file ingestion and connections.
@@ -45,6 +46,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
   const [providers, setProviders] = useState<IntegrationProviderInfo[]>([]);
   const [integrations, setIntegrations] = useState<TradingIntegration[]>([]);
   const [selected, setSelected] = useState<string>("");
+  const [tab, setTab] = useState<"feed" | "accounts" | "data" | "execution">("feed");
 
   const loadIntegrations = useCallback(async () => {
     try {
@@ -111,7 +113,32 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       {notice && <NoticeBanner kind="success">{notice}</NoticeBanner>}
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
 
-      {/* Feed Zed material (files) */}
+      {/* One section at a time — tabs instead of five stacked panels. */}
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {(
+          [
+            ["feed", "Feed Zed"],
+            ["accounts", "Accounts"],
+            ["data", "Data keys"],
+            ["execution", "Execution"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={`rounded-full px-3 py-1.5 text-[12px] transition-colors ${
+              tab === id
+                ? "bg-cyan-400 text-black font-medium"
+                : "bg-white/[0.05] text-white/60 hover:text-white"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "feed" && (
       <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-4">
         <div className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-white">
           <Upload size={15} className="text-cyan-300" />
@@ -124,7 +151,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
               type="text"
               value={source}
               onChange={(e) => setSource(e.target.value)}
-              placeholder="Trades By Sci / TopStep rulebook"
+              placeholder="Strategy rulebook / market notes"
               className={inputClass}
             />
           </label>
@@ -171,15 +198,17 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
           </div>
         )}
       </div>
+      )}
 
       {/* Connections */}
-      <div className="mt-5">
+      {tab === "accounts" && (
+      <div>
         <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
           <Plug size={13} className="text-cyan-300" />
-          Accounts Zed can sign into
+          Trading connections
         </div>
         <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
-          Just your username and password — the same way you log in. Zed signs in and works in the account for you. No API keys or setup.
+          Connect only the services that have an explicit bridge. Webull is the primary paper-trading connection.
         </p>
         {providers.length === 0 ? (
           <EmptyBox>Loading providers…</EmptyBox>
@@ -223,7 +252,262 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
           </>
         )}
       </div>
+      )}
+
+      {tab === "data" && <MarketDataKeysPanel />}
+      {tab === "execution" && (
+        <>
+          <ExecutionAdaptersPanel />
+          <TradovateConnect />
+        </>
+      )}
     </StageShell>
+  );
+}
+
+interface ExecutionAdapterStatus {
+  provider: string;
+  label: string;
+  configured: boolean;
+  connected: boolean;
+  mode: string;
+  missing: string[];
+  capabilities: {
+    assets: string[];
+    placeOrders: boolean;
+  };
+  accounts: Array<{ id: string; label: string; type: string }>;
+  note: string;
+}
+
+function ExecutionAdaptersPanel() {
+  const [adapters, setAdapters] = useState<ExecutionAdapterStatus[]>([]);
+  const [query, setQuery] = useState("");
+  const [markets, setMarkets] = useState<Array<{ id: string; slug: string; title: string }>>([]);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/trading/execution/adapters", { credentials: "include" });
+      if (res.ok) setAdapters((await res.json()).adapters || []);
+    } catch {
+      /* silent */
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const searchMarkets = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/trading/execution/polymarket/markets?query=${encodeURIComponent(query)}`, {
+        credentials: "include",
+      });
+      const body = await res.json().catch(() => ({}));
+      setMarkets(body.markets || []);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-5">
+      <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
+        <Plug size={13} className="text-cyan-300" />
+        Execution adapters
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {adapters.map((adapter) => (
+          <div key={adapter.provider} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[13px] font-semibold text-white">{adapter.label}</div>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.06em] ${
+                  adapter.connected
+                    ? "bg-emerald-400/15 text-emerald-300"
+                    : adapter.configured
+                      ? "bg-cyan-400/15 text-cyan-300"
+                      : "bg-white/10 text-white/45"
+                }`}
+              >
+                {adapter.connected ? "ready" : adapter.configured ? "configured" : "missing keys"}
+              </span>
+            </div>
+            <div className="mt-1 text-[11.5px] text-white/45 leading-snug">{adapter.note}</div>
+            <div className="mt-2 text-[10.5px] text-white/35">
+              {adapter.capabilities.assets.join(", ")} · orders {adapter.capabilities.placeOrders ? "enabled" : "disabled"}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
+        <div className="mb-2 text-[12px] font-semibold text-white">Polymarket US market lookup</div>
+        <div className="flex gap-2">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search events"
+            className={inputClass}
+          />
+          <button
+            type="button"
+            onClick={() => void searchMarkets()}
+            disabled={busy}
+            className="rounded-lg bg-cyan-400 px-3 py-1.5 text-[13px] font-medium text-black disabled:opacity-50"
+          >
+            {busy ? "Searching..." : "Search"}
+          </button>
+        </div>
+        {markets.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {markets.slice(0, 5).map((market) => (
+              <div key={market.id || market.slug} className="rounded-lg bg-black/20 px-2.5 py-1.5 text-[11.5px] text-white/65">
+                {market.title}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface KeyStatus {
+  vendor: "finnhub" | "alphavantage" | "twelvedata";
+  label: string;
+  configured: boolean;
+  source: "saved" | "env" | null;
+}
+
+const VENDOR_HINTS: Record<string, string> = {
+  finnhub: "finnhub.io/register — free key",
+  alphavantage: "alphavantage.co/support/#api-key — free key",
+  twelvedata: "twelvedata.com — free key",
+};
+
+/**
+ * Lets the user paste a data-vendor API key so Zed's live feed is more
+ * reliable, without touching Render env vars. Keys are stored server-side
+ * and never returned — the UI only shows whether each is configured.
+ */
+function MarketDataKeysPanel() {
+  const [keys, setKeys] = useState<KeyStatus[]>([]);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [live, setLive] = useState<{ live: boolean; source: string | null; note: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [keysRes, statusRes] = await Promise.all([
+        fetch("/api/trading/market-data/keys", { credentials: "include" }),
+        fetch("/api/trading/market-data/status", { credentials: "include" }),
+      ]);
+      if (keysRes.ok) setKeys((await keysRes.json()).keys || []);
+      if (statusRes.ok) {
+        const s = await statusRes.json();
+        setLive({ live: !!s.live, source: s.source, note: s.note });
+      }
+    } catch {
+      /* silent */
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const save = async () => {
+    setBusy(true);
+    setError(null);
+    setSaved(null);
+    try {
+      const res = await fetch("/api/trading/market-data/keys", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setValues({});
+      setSaved("Saved. Zed will use it on the next proposal.");
+      await load();
+    } catch (err: any) {
+      setError(err?.message || "Could not save keys");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-5">
+      <div className="mb-1 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">
+        <KeyRound size={13} className="text-cyan-300" />
+        Market data API keys
+      </div>
+      <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
+        Optional. Zed reads live prices from a free public feed already; adding a vendor
+        key makes it more reliable. Keys are stored securely and never shown again.
+      </p>
+
+      {live && (
+        <div
+          title={live.note}
+          className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+            live.live ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-300"
+          }`}
+        >
+          <span className={`h-1.5 w-1.5 rounded-full ${live.live ? "bg-emerald-400" : "bg-amber-400"}`} />
+          {live.live ? `Live feed reachable · ${live.source}` : "No live feed reachable"}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {keys.map((k) => (
+          <div key={k.vendor} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <span className="text-[13px] font-semibold text-white">{k.label}</span>
+              <span
+                className={`text-[9.5px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${
+                  k.configured ? "bg-emerald-400/15 text-emerald-300" : "bg-white/10 text-white/40"
+                }`}
+              >
+                {k.configured ? (k.source === "env" ? "set (env)" : "saved") : "not set"}
+              </span>
+            </div>
+            <input
+              type="password"
+              value={values[k.vendor] || ""}
+              onChange={(e) => setValues((v) => ({ ...v, [k.vendor]: e.target.value }))}
+              placeholder={k.configured ? "•••• saved — leave blank to keep" : "paste API key"}
+              className={inputClass}
+            />
+            <div className="mt-1 text-[10.5px] text-white/35">{VENDOR_HINTS[k.vendor]}</div>
+          </div>
+        ))}
+      </div>
+
+      {error && <div className="mt-2 text-[11.5px] text-red-300">{error}</div>}
+      {saved && <div className="mt-2 text-[11.5px] text-emerald-300">{saved}</div>}
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="text-[10.5px] text-white/35 leading-snug max-w-[46ch]">
+          Tradovate futures data &amp; order routing is a separate bridge — connect the
+          Tradovate login in the account dropdown above; the live futures feed is the next build.
+        </p>
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={busy || Object.values(values).every((v) => !v.trim())}
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-40 transition-colors"
+        >
+          {busy ? "Saving…" : "Save keys"}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -313,7 +597,7 @@ function ProviderCard({
           </div>
           <p className="mt-1 text-[11.5px] text-white/50 leading-snug">{info.purpose}</p>
           <p className="mt-1 text-[10.5px] text-white/35">
-            Your login stays private — Zed uses it to sign in for you.
+            Credentials stay server-side and are never shown again.
           </p>
           {integration?.lastResult && (
             <p className="mt-1 text-[11px] text-white/55">{integration.lastResult}</p>

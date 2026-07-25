@@ -1,5 +1,5 @@
 import { Component, type ReactNode, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useParams } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { queryClient } from "./lib/queryClient";
@@ -10,10 +10,11 @@ import { AuthProvider } from "@/components/auth/AuthContext";
 import { installApiFetchPatch } from "@/lib/apiClient";
 import { logClientRuntime } from "@/lib/runtimeLogger";
 import NotFound from "@/pages/not-found";
-import Chat from "@/pages/chat";
 import Login from "@/pages/login";
 import Admin from "@/pages/admin";
 import HomePage from "@/pages/home";
+import NexusRootPage from "@/nexus/pages/NexusRootPage";
+import { NexusProvider } from "@/nexus";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
@@ -57,7 +58,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
         <div className="min-h-screen bg-black flex items-center justify-center px-6 text-center">
           <div>
             <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-2xl font-semibold text-transparent">
-              ZED encountered an error
+              ZAR encountered an error
             </div>
             <p className="mt-3 text-sm text-gray-400">
               The issue was logged for debugging. Refresh the app or open Admin once the session recovers.
@@ -78,14 +79,26 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        {isAuthenticated ? <HomePage /> : <Login />}
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
       </Route>
 
       <Route path="/chat/:id?">
-        {isAuthenticated ? <Chat /> : <Login />}
+        {isAuthenticated ? <NexusChatRoute /> : <Login />}
       </Route>
 
       <Route path="/home">
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/nexus">
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/nexus/:nodeId/:view?">
+        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/knowledge-map">
         {isAuthenticated ? <HomePage /> : <Login />}
       </Route>
 
@@ -190,6 +203,12 @@ function Router() {
   );
 }
 
+function NexusChatRoute() {
+  const { id } = useParams<{ id?: string }>();
+  const conversationId = !id || id === "undefined" || id === "null" ? null : id;
+  return <NexusRootPage communicationConversationId={conversationId} />;
+}
+
 function GlobalErrorHooks() {
   useEffect(() => {
     const onError = (event: ErrorEvent) => {
@@ -230,9 +249,11 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>
-            <GlobalErrorHooks />
-            <Toaster />
-            <Router />
+            <NexusProvider>
+              <GlobalErrorHooks />
+              <Toaster />
+              <Router />
+            </NexusProvider>
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>
