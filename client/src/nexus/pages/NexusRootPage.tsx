@@ -68,6 +68,17 @@ export default function NexusRootPage({
   // touch routing or the provider's focus.
   const [ambientDomain, setAmbientDomain] = useState<NexusDomain | null>(null);
 
+  // Heading readout - Emergent's own HUD affordance. Mutated directly via ref
+  // (not React state) since NexusCore's onRotate fires every animation frame
+  // while dragging; routing that through setState would re-render the whole
+  // page on every frame for no visible benefit.
+  const headingRef = useRef<HTMLSpanElement>(null);
+  const handleRotate = useCallback((angle: number) => {
+    if (!headingRef.current) return;
+    const deg = ((angle * 180) / Math.PI) % 360;
+    headingRef.current.textContent = `${(deg < 0 ? deg + 360 : deg).toFixed(1)}°`;
+  }, []);
+
   // Route only decides Home vs. a selected node. target/orbit/hub/enter is
   // transient client state layered on top here, so route state and
   // animation-timing state stay clearly separated (provider owns
@@ -203,6 +214,7 @@ export default function NexusRootPage({
         {webgl ? (
           <NexusCore
             domains={domains}
+            onRotate={handleRotate}
             onFocusChange={setAmbientDomain}
             onDomainSelect={handleDomainSelect}
             onCoreTap={goHome}
@@ -249,13 +261,21 @@ export default function NexusRootPage({
             How can I assist you today?
           </p>
         </div>
-        <button
-          type="button"
-          className="pointer-events-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-violet-200 shadow-[0_0_18px_rgba(167,139,250,0.25)] backdrop-blur transition hover:border-violet-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
-          aria-label="Ask ZAR"
-        >
-          <Sparkles size={18} />
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <button
+            type="button"
+            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-violet-200 shadow-[0_0_18px_rgba(167,139,250,0.25)] backdrop-blur transition hover:border-violet-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
+            aria-label="Ask ZAR"
+          >
+            <Sparkles size={18} />
+          </button>
+          <div className="rounded-full border border-purple-500/20 bg-black/30 px-3 py-1 text-[10px] backdrop-blur">
+            <span className="text-gray-500">heading </span>
+            <span ref={headingRef} className="font-mono text-cyan-300/80">
+              0.0°
+            </span>
+          </div>
+        </div>
       </header>
 
       {/* Ambient focused-domain indicator - shows as the user rotates, before a tap commits.
