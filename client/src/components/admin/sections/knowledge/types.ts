@@ -1,4 +1,4 @@
-import { BrainCircuit, Database, FileStack, Fingerprint, Layers } from "lucide-react";
+import { BrainCircuit, Database, FileStack, Fingerprint, Languages, Layers } from "lucide-react";
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -56,7 +56,7 @@ export type IdentityProfile = {
   boundaries: string;
 };
 
-export type KnowledgeView = "overview" | "identity" | "project" | "scratchpad" | "core";
+export type KnowledgeView = "overview" | "identity" | "project" | "scratchpad" | "core" | "lexicon";
 
 export const EMPTY_PROJECT_MEMORY: ProjectMemoryDraft = {
   id: "",
@@ -125,6 +125,11 @@ export const VIEW_META: Record<
     label: "Zed's foundation",
     description: "The core facts about how Zed behaves. Only touch if you know what you're changing.",
     icon: Layers,
+  },
+  lexicon: {
+    label: "Lexicon",
+    description: "How Zed understands words, slang, acronyms, and community language before it reasons.",
+    icon: Languages,
   },
 };
 

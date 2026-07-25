@@ -112,15 +112,17 @@ The Cognitive Core is the active hidden reasoning chain used by normal chat and 
 
 Required runtime order:
 
-1. Context Inquiry Engine checks whether missing or ambiguous context would materially change correctness, classification, storage, retrieval, or reasoning.
-2. Principle Engine injects hidden operating principles before generation.
-3. Strategic Reasoning Engine activates for strategy, architecture, product, business, roadmap, competitor, audit, planning, gap-analysis, and next-move questions.
-4. Knowledge retrieval and orchestration provide canonical memory, rules, project context, and agent execution.
-5. Voice + Presentation Engine produces the final user-visible response.
-6. Reflection Engine stores safe post-response summaries for important replies only.
+1. Lexicon Authority resolves the raw message into interpreted meaning (terms, phrases, slang, acronyms, community language) before anything else reasons over it.
+2. Context Inquiry Engine checks whether missing or ambiguous context would materially change correctness, classification, storage, retrieval, or reasoning.
+3. Principle Engine injects hidden operating principles before generation.
+4. Strategic Reasoning Engine activates for strategy, architecture, product, business, roadmap, competitor, audit, planning, gap-analysis, and next-move questions.
+5. Knowledge retrieval and orchestration provide canonical memory, rules, project context, and agent execution.
+6. Voice + Presentation Engine produces the final user-visible response.
+7. Reflection Engine stores safe post-response summaries for important replies only.
 
 Runtime implementation:
 
+- Lexicon Authority: `server/services/lexicon-authority/LexiconAuthorityService.ts`
 - Context Inquiry: `server/services/knowledge-ingestion/ContextInquiryEngine.ts`
 - Principle Engine: `server/services/ZedPrincipleEngine.ts`
 - Strategic Reasoning Engine: `server/services/ZedStrategicReasoningEngine.ts`
@@ -131,7 +133,7 @@ Runtime implementation:
 - Orchestrator entry point: `server/routes-modules/orchestrate-and-misc.ts`
 - Agent prompt integration: `server/orchestrator/ManagerAgent.ts`
 
-The prompt fragments reach the model in the SPEC order above: governance is pinned first as a hard control frame, then context inquiry, then principle, then strategic reasoning, then the knowledge sources (foundation -> personalization -> project -> scratchpad -> retrieved), then voice, then response policy last so style guardrails win any ties. Both `ChatExecutionService` and `ManagerAgent` assemble their fragment lists in this order.
+The prompt fragments reach the model in the SPEC order above: governance is pinned first as a hard control frame, then Lexicon Authority's interpreted-meaning block, then context inquiry, then principle, then strategic reasoning, then the knowledge sources (foundation -> personalization -> project -> scratchpad -> retrieved), then voice, then response policy last so style guardrails win any ties. Both `ChatExecutionService` and `ManagerAgent` assemble their fragment lists in this order.
 
 The Principle, Strategic Reasoning, and Reflection services must not expose raw chain-of-thought, hidden prompts, source trails, provider names, workflow names, internal scoring, route names, graph IDs, or retrieval internals to the user. If the user asks how an answer was produced, ZED should provide a clean implementation summary only.
 
@@ -228,6 +230,43 @@ Per the buffer requirement above, the provider layer supports true streaming via
 - The Context Inquiry Engine sits between retrieval and response generation. It scores completeness, confidence, recency, relationship density, conflict count, context depth, and unknown fields.
 - The Context Inquiry Engine returns `answer` only when uncertainty is immaterial. It returns `inquire_first` with minimal high-value questions when missing context would change classification, storage, reasoning, retrieval, or conflict resolution.
 - This subsystem is intentionally service-owned and UI-agnostic so it can become a future ZCOS service.
+
+### Lexicon Authority
+
+The Lexicon Authority is a core subsystem of the Knowledge Authority, a sibling to the Knowledge Graph, Knowledge Ingestion, and Knowledge Curation Engine rather than a dependency of any one of them. Its job is to understand language before reasoning begins: words, phrases, abbreviations, acronyms, slang, symbols, technical terminology, cultural and community language, and user-specific vocabulary. It is not a spell checker, a thesaurus, or a flat dictionary — the same word can carry several unrelated or community-specific meanings, and the Lexicon's job is to identify which one applies given domain, community, and conversation context, not to flatten them into one definition.
+
+Runtime implementation:
+
+- Service: `server/services/lexicon-authority/LexiconAuthorityService.ts`
+- Types (entry/relationship/authority/domain shapes): `server/services/lexicon-authority/types.ts`
+- Storage: `server/services/lexicon-authority/store.ts`
+- Domain manifest loader: `server/services/lexicon-authority/domains.ts`
+- Seed lexicon: `server/services/lexicon-authority/seed.ts`
+- Route wiring: `server/routes-modules/lexicon.ts`
+- Cognitive Core wiring: `server/services/ChatExecutionService.ts` (`LexiconAuthorityService.resolveText` runs before Context Inquiry; see § Cognitive Core)
+- Admin UI: `client/src/components/admin/sections/knowledge/LexiconView.tsx` (Knowledge tab -> Lexicon)
+
+Storage and scope:
+
+- Lexicon entries and relationships persist at `hub/shared-memory/lexicon/lexicon.json` — local fallback/export storage with the same non-canonical status as `hub/shared-memory/knowledge-graph/`, seeded once from `seed.ts` on first read and never treated as canonical personal user memory.
+- The domain manifest is extensible without a code change at `hub/config/lexicon-domains.yaml`; `domains.ts` falls back to a bundled default list if the file is missing or fails to parse.
+- The lexicon is a single shared store, not duplicated per workspace. Every subsystem (Memory, Identity, Projects, Workspaces, Finance, Trading, Marketing, ZWAP, Z-Citi, and future applications) queries the same authority instead of maintaining its own terminology.
+- Relationships between entries reuse the Knowledge Graph's subject/predicate/object shape and predicate vocabulary (`is_a`, `part_of`, `related_to`, `derived_from`, `variant_of`, `abbreviation_of`, `synonym_of`, `antonym_of`, `community_variant_of`, `historical_form_of`, `successor_of`, `predecessor_of`) so the two subsystems agree on what a relationship is, without merging into one graph engine or one store.
+
+Entry model:
+
+- Each `LexiconEntry` represents one meaning of a term, not one term — a word with several meanings (bridge, swap, clock, mother, read, serve, shade, house, icon, ate) is several entries sharing a term string, linked to each other by relationships rather than flattened into a single definition.
+- Fields include term, canonical form, variants, definition, alternate definitions, domains, communities, related/parent/child concepts, synonyms, antonyms, abbreviations, acronyms, example usage, confidence, authority, evidence, source, first-observed/last-confirmed timestamps, version, status (`candidate` | `verified` | `deprecated` | `rejected`), deprecation record, sensitivity flags, and notes.
+- Authority sources are explicit and never assumed globally correct: Standard Dictionary, Scientific, Legal, Medical, Financial, Programming, Ballroom Community, Black Vernacular, LGBTQ+ Terminology, Internet Culture, ZAR/ZWAP/ZCOS/Z-Citi Internal, User Defined, Verified User, External Reference.
+- Community language is preserved as its own entry rather than overwritten into standard English — e.g. Mother, Muva, and Motha are three linked entries (`community_variant_of` / `related_to`), not one entry with the others discarded as synonyms.
+
+Discovery and learning:
+
+- `registerCandidate` never permanently learns from one occurrence: a new candidate starts at low confidence, accumulates evidence on repeated occurrences, and only becomes `verified` through an explicit `confirmMeaning` (or is dropped via `rejectMeaning`). A user's own novel vocabulary registers scoped to that user (`ownerScope: "user"`) and is never silently promoted into the shared/global lexicon.
+- Confirming a `user_defined` candidate upgrades its authority to `verified_user`, distinguishing "a user said this" from "this was reviewed and confirmed."
+- `ChatExecutionService` calls `resolveText` on every message (read-only, deterministic, no model call) and separately registers unresolved quote/definition-style signals ("what does X mean", "define X", quoted terms) as low-confidence candidates — the resolution step itself never writes.
+
+API surface (typed service methods, mirrored 1:1 as `/api/lexicon/*` routes): `resolveTerm`, `resolvePhrase`, `resolveMeaning`, `suggestMeaning`, `searchLexicon`, `searchDomain`, `searchCommunity`, `searchUserVocabulary`, `registerCandidate`, `confirmMeaning`, `rejectMeaning`, `mergeEntries`, `deprecateEntry`, `listDomains`, `listAuthorities`, `findRelatedTerms`. The UI and other subsystems only ever go through this surface — nothing reaches into the store directly.
 
 ### Admin
 
@@ -412,6 +451,25 @@ The server currently exposes at least these API routes:
 - `GET /api/knowledge-ingestion/indexes`
 - `POST /api/knowledge-ingestion/promote`
 - `POST /api/knowledge-ingestion/conflicts/:id/resolve`
+- `GET /api/lexicon/resolve`
+- `GET /api/lexicon/resolve-phrase`
+- `POST /api/lexicon/resolve-meaning`
+- `POST /api/lexicon/resolve-text`
+- `GET /api/lexicon/suggest`
+- `GET /api/lexicon/search`
+- `GET /api/lexicon/domains`
+- `GET /api/lexicon/domains/:domainId/search`
+- `GET /api/lexicon/communities/:communityId/search`
+- `GET /api/lexicon/user-vocabulary`
+- `GET /api/lexicon/authorities`
+- `GET /api/lexicon/related`
+- `POST /api/lexicon/candidates`
+- `GET /api/lexicon/candidates`
+- `GET /api/lexicon/overview`
+- `POST /api/lexicon/entries/:id/confirm`
+- `POST /api/lexicon/entries/:id/reject`
+- `POST /api/lexicon/entries/:id/deprecate`
+- `POST /api/lexicon/entries/merge`
 - `POST /api/context/assess`
 - `POST /api/intelligence/plan`
 - `POST /api/intelligence/documents/query`
@@ -547,8 +605,11 @@ Canonical config is in `netlify.toml`:
 - `server/routes.ts`
 - `server/routes-modules/knowledge.ts`
 - `server/routes-modules/knowledge-ingestion.ts`
+- `server/routes-modules/lexicon.ts`
 - `server/services/KnowledgeCurationEngine.ts`
 - `server/services/knowledge-ingestion/`
+- `server/services/lexicon-authority/`
+- `hub/config/lexicon-domains.yaml`
 - `server/services/ZedResponseGovernance.ts`
 - `server/services/ZedResponsePolicy.ts`
 - `server/vite.ts`
@@ -596,6 +657,7 @@ Secrets still live in Render environment variables, not Git:
 - `README.md`
 - `docs/policies/MEMORY_IMPORT_POLICY.md`
 - `docs/policies/KNOWLEDGE_CURATION_ENGINE.md`
+- `docs/policies/LEXICON_AUTHORITY.md`
 
 ### Legacy Docs
 

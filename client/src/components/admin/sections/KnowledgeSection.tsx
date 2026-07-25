@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 
 import { CoreView } from "./knowledge/CoreView";
 import { IdentityView } from "./knowledge/IdentityView";
+import { LexiconView } from "./knowledge/LexiconView";
 import { MetricCard, SectionIntro } from "./knowledge/atoms";
 import { OverviewView } from "./knowledge/OverviewView";
 import { ProjectView } from "./knowledge/ProjectView";
@@ -396,6 +397,8 @@ export default function KnowledgeSection() {
           onSaveFoundation={saveFoundationProfile}
         />
       ) : null}
+
+      {view === "lexicon" ? <LexiconView /> : null}
     </div>
   );
 }

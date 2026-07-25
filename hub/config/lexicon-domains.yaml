@@ -1,0 +1,153 @@
+# Lexicon Authority domain manifest.
+#
+# Extension point for server/services/lexicon-authority/domains.ts —
+# add a domain here and it is immediately usable by ResolveTerm,
+# SearchDomain, and the Lexicon UI without a code change. `community:
+# true` marks a domain as community/cultural language (Ballroom, Black
+# Vernacular, Internet Culture, ...) rather than a professional/technical
+# field, so the UI and curation review can group them separately.
+#
+# Removing a domain here does not delete lexicon entries that already
+# reference it; it only stops it from being offered going forward.
+
+domains:
+  - id: general_english
+    label: General English
+    description: Everyday standard English usage.
+    community: false
+  - id: business
+    label: Business
+    description: Business and operations terminology.
+    community: false
+  - id: finance
+    label: Finance
+    description: Finance and accounting terminology.
+    community: false
+  - id: law
+    label: Law
+    description: Legal terminology.
+    community: false
+  - id: medicine
+    label: Medicine
+    description: Medical and clinical terminology.
+    community: false
+  - id: technology
+    label: Technology
+    description: General technology terminology.
+    community: false
+  - id: programming
+    label: Programming
+    description: Software engineering terminology.
+    community: false
+  - id: artificial_intelligence
+    label: Artificial Intelligence
+    description: AI and machine learning terminology.
+    community: false
+  - id: cybersecurity
+    label: Cybersecurity
+    description: Security terminology.
+    community: false
+  - id: music
+    label: Music
+    description: Music terminology.
+    community: false
+  - id: film
+    label: Film
+    description: Film and television terminology.
+    community: false
+  - id: gaming
+    label: Gaming
+    description: Video game terminology.
+    community: false
+  - id: fitness
+    label: Fitness
+    description: Fitness and training terminology.
+    community: false
+  - id: trading
+    label: Trading
+    description: Market and trading terminology.
+    community: false
+  - id: cryptocurrency
+    label: Cryptocurrency
+    description: Crypto terminology.
+    community: false
+  - id: web3
+    label: Web3
+    description: Web3 and decentralized-app terminology.
+    community: false
+  - id: marketing
+    label: Marketing
+    description: Marketing and growth terminology.
+    community: false
+  - id: education
+    label: Education
+    description: Education terminology.
+    community: false
+  - id: psychology
+    label: Psychology
+    description: Psychology terminology.
+    community: false
+  - id: government
+    label: Government
+    description: Government and civic terminology.
+    community: false
+  - id: science
+    label: Science
+    description: General scientific terminology.
+    community: false
+  - id: religion
+    label: Religion
+    description: Religious terminology.
+    community: false
+  - id: mathematics
+    label: Mathematics
+    description: Mathematical terminology.
+    community: false
+  - id: history
+    label: History
+    description: Historical terminology.
+    community: false
+  - id: culture
+    label: Culture
+    description: General cultural terminology.
+    community: true
+  - id: regional_language
+    label: Regional Language
+    description: Regional and dialectal language.
+    community: true
+  - id: internet_culture
+    label: Internet Culture
+    description: Internet-native slang and idiom.
+    community: true
+  - id: ballroom_culture
+    label: Ballroom Culture
+    description: Ballroom and drag-scene terminology.
+    community: true
+  - id: black_vernacular
+    label: Black Vernacular
+    description: African American Vernacular English.
+    community: true
+  - id: lgbtq_terminology
+    label: LGBTQ+ Terminology
+    description: LGBTQ+ community terminology.
+    community: true
+  - id: zar
+    label: ZAR
+    description: ZAR-internal terminology.
+    community: false
+  - id: zwap
+    label: ZWAP
+    description: ZWAP-internal terminology.
+    community: false
+  - id: zcos
+    label: ZCOS
+    description: ZCOS-internal terminology.
+    community: false
+  - id: z_citi
+    label: Z-Citi
+    description: Z-Citi-internal terminology.
+    community: false
+  - id: user_vocabulary
+    label: User Vocabulary
+    description: Terminology unique to one user, not yet shared.
+    community: false
