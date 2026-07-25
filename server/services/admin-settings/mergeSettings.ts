@@ -75,14 +75,7 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
         hasSecretKey: !!raw?.integrations?.payments?.secretKey,
         hasWebhookSecret: !!raw?.integrations?.payments?.webhookSecret,
       },
-      socialPublishing: {
-        ...defaultIntegrations.socialPublishing,
-        ...(raw?.integrations?.socialPublishing || {}),
-        platforms: Array.isArray(raw?.integrations?.socialPublishing?.platforms)
-          ? raw!.integrations!.socialPublishing!.platforms
-          : defaultIntegrations.socialPublishing.platforms,
-        hasAccessToken: !!raw?.integrations?.socialPublishing?.accessToken,
-      },
+      socialPublishing: mergeSocialPublishing(raw),
       crm: {
         ...defaultIntegrations.crm,
         ...(raw?.integrations?.crm || {}),
@@ -322,6 +315,27 @@ function mergeGoogle(raw: Partial<AdminSettings> | null | undefined) {
     ...acc,
     scopes: Array.isArray(acc?.scopes) ? acc.scopes : [],
     hasCredentials: !!(acc?.clientId && acc?.clientSecret && acc?.refreshToken),
+  }));
+  return merged;
+}
+
+function mergeSocialPublishing(raw: Partial<AdminSettings> | null | undefined) {
+  const merged = {
+    ...defaultIntegrations.socialPublishing,
+    ...(raw?.integrations?.socialPublishing || {}),
+    platforms: Array.isArray(raw?.integrations?.socialPublishing?.platforms)
+      ? raw!.integrations!.socialPublishing!.platforms
+      : defaultIntegrations.socialPublishing.platforms,
+    accounts: Array.isArray(raw?.integrations?.socialPublishing?.accounts)
+      ? raw!.integrations!.socialPublishing!.accounts!
+      : [],
+    hasAccessToken: !!raw?.integrations?.socialPublishing?.accessToken,
+  };
+  merged.accounts = merged.accounts.map((acc: any) => ({
+    ...acc,
+    hasAccessToken: !!acc?.accessToken,
+    hasPassword: !!acc?.password,
+    hasSessionState: !!acc?.sessionState,
   }));
   return merged;
 }

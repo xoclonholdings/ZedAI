@@ -32,6 +32,8 @@ import { registerOrchestrateAndMiscRoutes } from "./routes-modules/orchestrate-a
 import { registerConversationCrudRoutes } from "./routes-modules/conversations-crud";
 import { registerZyncCodingOperatorRoutes } from "./routes-modules/zync-coding-operator";
 import { registerIntelligenceCoreRoutes } from "./routes-modules/intelligence-core";
+import { registerBrowserSignInRoutes } from "./routes-modules/browser-signin";
+import { registerLiveHandoffSocket } from "./services/browserAuth/liveHandoffSocket";
 
 let isDatabaseHealthy = false;
 
@@ -96,7 +98,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerApprovalRoutes(app);
   registerExecutionRoutes(app);
   registerIntakeRoutes(app);
+  registerBrowserSignInRoutes(app);
 
   const httpServer = createServer(app);
+  registerLiveHandoffSocket(httpServer);
   return httpServer;
 }

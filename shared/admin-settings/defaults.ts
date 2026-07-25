@@ -180,6 +180,7 @@ export const defaultIntegrations: IntegrationsSettings = {
     platforms: ["YouTube", "TikTok", "Instagram", "Facebook", "X", "LinkedIn"],
     contentApprovalRequired: true,
     dashboardUrl: "",
+    accounts: [],
     accessToken: "",
     hasAccessToken: false,
     notes: "Content distribution lane. Publishing must remain approval-gated before any external post is sent.",

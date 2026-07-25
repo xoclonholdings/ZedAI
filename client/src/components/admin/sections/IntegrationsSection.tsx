@@ -6,6 +6,7 @@ import {
   SettingGroup,
   SettingRow,
 } from "./settings/atoms";
+import { CredentialSignInDialog } from "./integrations/CredentialSignInDialog";
 
 /**
  * Plain-language Integrations surface — per-provider rows.
@@ -36,6 +37,13 @@ interface Provider {
   connectedFn: (integrations: any) => { connected: boolean; account?: string };
   /** Builds the JSON patch for /api/admin/settings/integrations. */
   patch: (primary: string, secondary?: string) => any;
+  /**
+   * Set for providers with no paste-a-token path (Instagram, Facebook,
+   * LinkedIn, TikTok). Connect opens CredentialSignInDialog instead of
+   * the generic paste dialog; value is the loginProfiles.ts key on the
+   * server. Disconnect still goes through `patch`.
+   */
+  signInProvider?: string;
   /**
    * Endpoint URL to POST to after connecting so the user can verify
    * the credential actually works. If set, a "Send test" button
@@ -454,48 +462,68 @@ const GROUPS: ProviderGroup[] = [
         patch: (value) => ({ socialPublishing: { provider: "twitter", accessToken: value } }),
       },
       {
-        key: "tiktok-info",
-        label: "TikTok (info only)",
+        key: "tiktok",
+        label: "TikTok",
         fieldLabel: "",
-        steps: [
-          "TikTok posting only works through their app-approval flow — no paste-a-key path.",
-          "Not set up.",
-        ],
-        connectedFn: () => ({ connected: false }),
-        patch: () => ({}),
+        signInProvider: "tiktok",
+        steps: [],
+        connectedFn: (i) => {
+          const acc = (i?.socialPublishing?.accounts || []).find((a: any) => a.platform === "tiktok");
+          return { connected: Boolean(acc?.hasSessionState), account: acc?.username };
+        },
+        patch: () => ({
+          socialPublishing: {
+            accounts: [{ id: "social-tiktok", accessToken: "", password: "", sessionState: "" }],
+          },
+        }),
       },
       {
-        key: "instagram-info",
-        label: "Instagram (info only)",
+        key: "instagram",
+        label: "Instagram",
         fieldLabel: "",
-        steps: [
-          "Instagram posting requires going through Meta's Facebook app registration.",
-          "Not set up.",
-        ],
-        connectedFn: () => ({ connected: false }),
-        patch: () => ({}),
+        signInProvider: "instagram",
+        steps: [],
+        connectedFn: (i) => {
+          const acc = (i?.socialPublishing?.accounts || []).find((a: any) => a.platform === "instagram");
+          return { connected: Boolean(acc?.hasSessionState), account: acc?.username };
+        },
+        patch: () => ({
+          socialPublishing: {
+            accounts: [{ id: "social-instagram", accessToken: "", password: "", sessionState: "" }],
+          },
+        }),
       },
       {
-        key: "facebook-info",
-        label: "Facebook (info only)",
+        key: "facebook",
+        label: "Facebook",
         fieldLabel: "",
-        steps: [
-          "Facebook posting requires Meta's app registration flow.",
-          "Not set up.",
-        ],
-        connectedFn: () => ({ connected: false }),
-        patch: () => ({}),
+        signInProvider: "facebook",
+        steps: [],
+        connectedFn: (i) => {
+          const acc = (i?.socialPublishing?.accounts || []).find((a: any) => a.platform === "facebook");
+          return { connected: Boolean(acc?.hasSessionState), account: acc?.username };
+        },
+        patch: () => ({
+          socialPublishing: {
+            accounts: [{ id: "social-facebook", accessToken: "", password: "", sessionState: "" }],
+          },
+        }),
       },
       {
-        key: "linkedin-info",
-        label: "LinkedIn (info only)",
+        key: "linkedin",
+        label: "LinkedIn",
         fieldLabel: "",
-        steps: [
-          "LinkedIn's posting API needs a full app registration.",
-          "Not set up.",
-        ],
-        connectedFn: () => ({ connected: false }),
-        patch: () => ({}),
+        signInProvider: "linkedin",
+        steps: [],
+        connectedFn: (i) => {
+          const acc = (i?.socialPublishing?.accounts || []).find((a: any) => a.platform === "linkedin");
+          return { connected: Boolean(acc?.hasSessionState), account: acc?.username };
+        },
+        patch: () => ({
+          socialPublishing: {
+            accounts: [{ id: "social-linkedin", accessToken: "", password: "", sessionState: "" }],
+          },
+        }),
       },
       {
         key: "youtube-info",
@@ -684,6 +712,7 @@ export default function IntegrationsSection() {
     label: string;
     value: string;
   } | null>(null);
+  const [credentialDialog, setCredentialDialog] = useState<Provider | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -818,7 +847,8 @@ export default function IntegrationsSection() {
         >
           {group.providers.map((provider) => {
             const state = provider.connectedFn(integrations);
-            const isInfoOnly = provider.key.endsWith("-info") || !provider.fieldLabel;
+            const isInfoOnly =
+              !provider.signInProvider && (provider.key.endsWith("-info") || !provider.fieldLabel);
             return (
               <SettingRow
                 key={provider.key}
@@ -872,6 +902,14 @@ export default function IntegrationsSection() {
                     title="This one can't be signed in from Zed today. Tap for the why."
                   >
                     Why not?
+                  </button>
+                ) : provider.signInProvider ? (
+                  <button
+                    type="button"
+                    onClick={() => setCredentialDialog(provider)}
+                    className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
+                  >
+                    Connect
                   </button>
                 ) : (
                   <button
@@ -956,6 +994,18 @@ export default function IntegrationsSection() {
             };
             const ok = await submit(patch);
             if (ok) setCustomDialog(null);
+          }}
+        />
+      )}
+
+      {credentialDialog && (
+        <CredentialSignInDialog
+          provider={credentialDialog.signInProvider!}
+          label={credentialDialog.label}
+          onClose={() => setCredentialDialog(null)}
+          onConnected={() => {
+            setCredentialDialog(null);
+            void load();
           }}
         />
       )}

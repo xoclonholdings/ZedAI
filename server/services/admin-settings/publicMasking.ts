@@ -84,6 +84,15 @@ export async function getPublicAdminSettings() {
         ...settings.integrations.socialPublishing,
         accessToken: "",
         hasAccessToken: !!settings.integrations.socialPublishing.accessToken,
+        accounts: (settings.integrations.socialPublishing.accounts || []).map((acc) => ({
+          ...acc,
+          accessToken: "",
+          password: "",
+          sessionState: "",
+          hasAccessToken: !!acc.accessToken,
+          hasPassword: !!acc.password,
+          hasSessionState: !!acc.sessionState,
+        })),
       },
       crm: {
         ...settings.integrations.crm,

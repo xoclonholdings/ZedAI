@@ -214,6 +214,11 @@ export async function updateIntegrationSettings(
           nextIntegrations.socialPublishing,
           "accessToken",
         ),
+        accounts: mergeSecretAccounts(
+          current.integrations.socialPublishing.accounts || [],
+          nextIntegrations.socialPublishing?.accounts,
+          ["accessToken", "password", "sessionState"],
+        ),
       },
       crm: {
         ...current.integrations.crm,

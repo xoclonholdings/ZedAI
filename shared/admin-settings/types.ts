@@ -226,13 +226,37 @@ export interface PaymentsIntegrationSettings {
   notes: string;
 }
 
+/**
+ * One connected social platform. Most platforms use a pasted API token
+ * (authMethod "token"); a handful (Instagram/Facebook/LinkedIn/TikTok)
+ * offer no token path at all, so those connect via a real browser
+ * sign-in instead (authMethod "credentials") and the resulting session
+ * (cookies/local storage) is what's actually reused on later requests.
+ */
+export interface SocialAccount {
+  id: string;
+  label: string;
+  platform: string;
+  authMethod: "token" | "credentials";
+  accessToken: string;
+  hasAccessToken?: boolean;
+  username?: string;
+  password?: string;
+  hasPassword?: boolean;
+  sessionState?: string;
+  hasSessionState?: boolean;
+}
+
 export interface SocialPublishingIntegrationSettings {
   enabled: boolean;
   status: IntegrationStatus;
   platforms: string[];
   contentApprovalRequired: boolean;
   dashboardUrl: string;
-  accessToken: string;
+  /** Multi-account: one entry per connected platform. */
+  accounts: SocialAccount[];
+  /** Legacy single-token fields preserved for backward-compat. */
+  accessToken?: string;
   hasAccessToken?: boolean;
   notes: string;
 }
