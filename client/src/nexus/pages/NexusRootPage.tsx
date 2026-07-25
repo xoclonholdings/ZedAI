@@ -4,23 +4,26 @@ import { useLocation, useParams } from "wouter";
 
 import { useAuth } from "@/components/auth/UseAuth";
 import { NexusCommunicationDock } from "../components/NexusCommunicationDock";
-import { NexusConstellation } from "../components/NexusConstellation";
+import NexusCore from "../components/NexusCore";
 import { NexusDeveloperInspector } from "../components/NexusDeveloperInspector";
-import { NexusFocusedNodePanel } from "../components/NexusFocusedNodePanel";
-import { isNexusRootNodeId } from "../graph/rootConstellation";
-import type { NexusInteractionStage } from "../scene/nexusSceneContract";
+import { NexusHubOverlay } from "../components/NexusHubOverlay";
+import type { NexusDomain } from "../components/NexusCore";
+import { isNexusRootNodeId, routeForNexusNode } from "../graph/rootConstellation";
+import { nexusDomainsFromRootNodes } from "../scene/nexusDomainAdapter";
+import { canUseNexusWebgl, type NexusInteractionStage } from "../scene/nexusSceneContract";
 import { useNexus } from "../state/NexusProvider";
 import { shouldShowNexusDeveloperInspector } from "../viewport/NexusViewportModel";
-import {
-  resolveNexusEnterAction,
-  resolveNexusStageOnRouteChange,
-  shouldAcceptNexusOrbitSettle,
-} from "./nexusInteractionStageModel";
+import { resolveNexusEnterAction, resolveNexusStageOnRouteChange } from "./nexusInteractionStageModel";
 
 /** How long the "target" beat holds before Orbit's camera movement begins - brief but real, not instant. */
 const TARGET_BEAT_MS = 16;
-/** Bounded fallback if the scene's onOrbitSettled callback never fires (e.g. WebGL unavailable). */
-const ORBIT_FALLBACK_MS = 900;
+/**
+ * NexusCore's own camera dolly doesn't expose a settle callback (it's the
+ * official Emergent scene behavior - not something this pass alters), so
+ * Orbit -> Hub advances on a bounded timer matched to the rig's own easing
+ * (Math.min(1, 4.5*delta), which is visually settled well within this window).
+ */
+const ORBIT_SETTLE_MS = 900;
 /** How long Warp plays before the real workspace route loads. */
 const WARP_DURATION_MS = 380;
 
@@ -34,7 +37,7 @@ export default function NexusRootPage({
   const params = useParams<{ nodeId?: string }>();
   const [location, navigate] = useLocation();
   const { user } = useAuth();
-  const { focusNode, clearFocus } = useNexus();
+  const { focusNode, clearFocus, snapshot, viewportSnapshot } = useNexus();
   const routeNodeId = isNexusRootNodeId(params.nodeId) ? params.nodeId : null;
   const hasUnknownRouteNode = Boolean(params.nodeId && !routeNodeId);
   const displayName = user?.personalization?.displayName ?? user?.displayName ?? user?.firstName ?? user?.username ?? "there";
@@ -53,6 +56,18 @@ export default function NexusRootPage({
     return () => media.removeEventListener("change", onChange);
   }, []);
 
+  const [webgl, setWebgl] = useState(true);
+  useEffect(() => setWebgl(canUseNexusWebgl()), []);
+
+  // Real manifest nodes -> the official scene's domain shape. No prototype
+  // DEFAULT_DOMAINS anywhere in the production path.
+  const domains = useMemo(() => nexusDomainsFromRootNodes(snapshot.rootNodes), [snapshot.rootNodes]);
+
+  // Ambient "nearest while rotating" indicator - Emergent's own onFocusChange
+  // concept, distinct from a deliberate tap. Purely local/visual; does not
+  // touch routing or the provider's focus.
+  const [ambientDomain, setAmbientDomain] = useState<NexusDomain | null>(null);
+
   // Route only decides Home vs. a selected node. target/orbit/hub/enter is
   // transient client state layered on top here, so route state and
   // animation-timing state stay clearly separated (provider owns
@@ -61,12 +76,10 @@ export default function NexusRootPage({
     () => resolveNexusStageOnRouteChange({ routeNodeId, reducedMotion: false, isFirstRenderForMount: true }).stage,
   );
   const [warping, setWarping] = useState(false);
-  const stageRef = useRef(stage);
-  useEffect(() => { stageRef.current = stage; }, [stage]);
 
   const isFirstRouteEffect = useRef(true);
   const targetTimerRef = useRef<number | null>(null);
-  const orbitFallbackTimerRef = useRef<number | null>(null);
+  const orbitTimerRef = useRef<number | null>(null);
   const warpTimerRef = useRef<number | null>(null);
   const warpingRef = useRef(false);
 
@@ -76,10 +89,10 @@ export default function NexusRootPage({
       targetTimerRef.current = null;
     }
   }, []);
-  const clearOrbitFallbackTimer = useCallback(() => {
-    if (orbitFallbackTimerRef.current !== null) {
-      window.clearTimeout(orbitFallbackTimerRef.current);
-      orbitFallbackTimerRef.current = null;
+  const clearOrbitTimer = useCallback(() => {
+    if (orbitTimerRef.current !== null) {
+      window.clearTimeout(orbitTimerRef.current);
+      orbitTimerRef.current = null;
     }
   }, []);
   const clearWarpTimer = useCallback(() => {
@@ -103,12 +116,13 @@ export default function NexusRootPage({
     isFirstRouteEffect.current = false;
 
     clearTargetTimer();
-    clearOrbitFallbackTimer();
+    clearOrbitTimer();
     clearWarpTimer();
     setWarping(false);
 
     if (!routeNodeId) {
-      // STATE 0 (Home): must be truly neutral - no stale focus, no Hub panel.
+      // STATE 0 (Home): must be truly neutral - no stale focus, no Hub reveal,
+      // full official universe composition restored.
       clearFocus("route");
       setStage("home");
       return;
@@ -116,31 +130,27 @@ export default function NexusRootPage({
 
     focusNode(routeNodeId, "route");
 
-    const armOrbitFallback = () => {
-      orbitFallbackTimerRef.current = window.setTimeout(() => {
-        if (stageRef.current === "orbit") setStage("hub");
-      }, ORBIT_FALLBACK_MS);
-    };
-
     const decision = resolveNexusStageOnRouteChange({
       routeNodeId,
       reducedMotion,
       isFirstRenderForMount: wasFirstRun,
     });
     setStage(decision.stage);
-    if (decision.stage === "orbit") armOrbitFallback();
+    if (decision.stage === "orbit") {
+      orbitTimerRef.current = window.setTimeout(() => setStage("hub"), ORBIT_SETTLE_MS);
+    }
     if (decision.awaitsTargetBeat) {
       // STATE 1 (Target): brief but real - acknowledge the tap for one
       // paint before Orbit's camera movement begins.
       targetTimerRef.current = window.setTimeout(() => {
         setStage("orbit");
-        armOrbitFallback();
+        orbitTimerRef.current = window.setTimeout(() => setStage("hub"), ORBIT_SETTLE_MS);
       }, TARGET_BEAT_MS);
     }
 
     return () => {
       clearTargetTimer();
-      clearOrbitFallbackTimer();
+      clearOrbitTimer();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeNodeId, reducedMotion]);
@@ -149,18 +159,18 @@ export default function NexusRootPage({
   // through some other path while Target/Orbit/Warp is mid-flight).
   useEffect(() => () => {
     clearTargetTimer();
-    clearOrbitFallbackTimer();
+    clearOrbitTimer();
     clearWarpTimer();
-  }, [clearTargetTimer, clearOrbitFallbackTimer, clearWarpTimer]);
+  }, [clearTargetTimer, clearOrbitTimer, clearWarpTimer]);
 
-  // STATE 2 -> 3 (Orbit -> Hub): the deterministic gate. Only accepted while
-  // still oriented toward the node that actually settled - if the user
-  // retargeted before this fired, it's stale and ignored.
-  const handleOrbitSettled = useCallback((nodeId: string) => {
-    if (!shouldAcceptNexusOrbitSettle(nodeId, routeNodeId, stageRef.current)) return;
-    clearOrbitFallbackTimer();
-    setStage("hub");
-  }, [routeNodeId, clearOrbitFallbackTimer]);
+  // STATE 1 (Target): a deliberate tap on a celestial hub - never an
+  // immediate workspace open. Ambient rotation (onFocusChange) does not
+  // reach here at all.
+  const handleDomainSelect = useCallback((domain: NexusDomain) => {
+    navigate(routeForNexusNode(domain.id));
+  }, [navigate]);
+
+  const goHome = useCallback(() => navigate("/nexus"), [navigate]);
 
   // STATE 4 (Enter): only trigger Warp when the action actually leaves Nexus for
   // a real workspace. Some capability actions still route back into /nexus/...
@@ -182,55 +192,109 @@ export default function NexusRootPage({
     }, reducedMotion ? 0 : WARP_DURATION_MS);
   }, [navigate, reducedMotion]);
 
-  const goHome = useCallback(() => navigate("/nexus"), [navigate]);
+  const focusedNode = viewportSnapshot.focusedNode;
+  const atmosphereColor = stage !== "home" ? focusedNode?.metadata.visual.color ?? null : null;
+  const showHub = stage === "hub" || stage === "enter";
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#02030a] text-white">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(180deg,rgba(8,13,28,0.85),rgba(0,0,0,1)_60%),radial-gradient(circle_at_20%_0%,rgba(167,139,250,0.1),transparent_40%),radial-gradient(circle_at_85%_10%,rgba(34,211,238,0.1),transparent_38%),radial-gradient(circle_at_75%_90%,rgba(251,146,60,0.05),transparent_32%)]" />
+    <div className="relative h-[100dvh] w-full overflow-hidden bg-[radial-gradient(ellipse_90%_70%_at_50%_35%,#0b0620_0%,#050211_55%,#010005_100%)] text-white">
+      {/* Celestial system - fills the entire viewport. This IS the application screen. */}
+      <div className="absolute inset-0" data-nexus-region="scene">
+        {webgl ? (
+          <NexusCore
+            domains={domains}
+            onFocusChange={setAmbientDomain}
+            onDomainSelect={handleDomainSelect}
+            onCoreTap={goHome}
+            zoom={stage !== "home" ? 1.8 : 1}
+            warp={stage === "enter"}
+            atmosphere={atmosphereColor}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-white/50">
+            Nexus needs a WebGL-capable browser to render the universe.
+          </div>
+        )}
+      </div>
+
+      {/* Atmospheric tint - each hub subtly shifts the environment on entry. */}
       <div
-        className="nexus-particle-field pointer-events-none fixed inset-0 -z-10 opacity-40 motion-safe:animate-[nexus-twinkle_9s_ease-in-out_infinite] motion-reduce:animate-none"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: atmosphereColor
+            ? `radial-gradient(ellipse 85% 70% at 50% 45%, ${atmosphereColor}26 0%, ${atmosphereColor}10 40%, transparent 75%)`
+            : "transparent",
+          opacity: atmosphereColor ? 1 : 0,
+          transition: "opacity 700ms ease",
+        }}
         aria-hidden="true"
       />
 
-      <header className="shrink-0 px-4 pt-safe-sm sm:px-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 py-4 sm:py-5">
-          <div className="min-w-0">
-            <div className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
-              ZAR
-            </div>
-            <h1 className="mt-1 truncate text-base font-medium text-white sm:text-lg">
-              {greeting}, {displayName}
-            </h1>
-            <p className="truncate text-[13px] text-white/45">How can I assist you today?</p>
+      {/* Floating header overlay */}
+      <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-safe-sm sm:px-6 sm:pt-5">
+        <div className="min-w-0">
+          <div className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
+            ZAR
           </div>
-          <button
-            type="button"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-violet-200 shadow-[0_0_18px_rgba(167,139,250,0.25)] transition hover:border-violet-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
-            aria-label="Ask ZAR"
+          <h1
+            className="mt-1 truncate text-base font-medium text-white transition-opacity duration-300 sm:text-lg"
+            style={{ opacity: stage === "home" ? 1 : 0 }}
           >
-            <Sparkles size={18} />
-          </button>
+            {greeting}, {displayName}
+          </h1>
+          <p
+            className="truncate text-[13px] text-white/45 transition-opacity duration-300"
+            style={{ opacity: stage === "home" ? 1 : 0 }}
+          >
+            How can I assist you today?
+          </p>
         </div>
+        <button
+          type="button"
+          className="pointer-events-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-violet-200 shadow-[0_0_18px_rgba(167,139,250,0.25)] backdrop-blur transition hover:border-violet-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
+          aria-label="Ask ZAR"
+        >
+          <Sparkles size={18} />
+        </button>
       </header>
 
-      <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col gap-3 overflow-hidden px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6">
-        <div className="nexus-home-grid">
-          <div data-nexus-region="constellation">
-            <NexusConstellation stage={stage} warping={warping} onOrbitSettled={handleOrbitSettled} />
+      {/* Ambient focused-domain indicator - shows as the user rotates, before a tap commits.
+          Anchored below the header (not a fixed distance from the bottom) so it never
+          collides with the console, regardless of viewport height or console content. */}
+      {stage === "home" && ambientDomain && (
+        <div className="pointer-events-none absolute inset-x-0 top-[104px] z-10 flex justify-center sm:top-[118px]">
+          <div
+            className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/35 px-5 py-2 backdrop-blur-md"
+            style={{ animation: "nexus-settle 400ms ease both" }}
+          >
+            <span
+              className="block h-2 w-2 rounded-full"
+              style={{ background: ambientDomain.color, boxShadow: `0 0 10px 2px ${ambientDomain.color}88` }}
+              aria-hidden="true"
+            />
+            <span className="text-xs font-medium tracking-[0.3em] text-gray-200">{ambientDomain.label}</span>
           </div>
-          <div data-nexus-region="communication">
-            <NexusCommunicationDock conversationId={communicationConversationId} />
-          </div>
-          {(stage === "hub" || stage === "enter") && (
-            <div data-nexus-region="focused">
-              <NexusFocusedNodePanel variant="compact" className="lg:hidden" onEnterAction={enterWorkspace} onBack={goHome} />
-              <NexusFocusedNodePanel variant="panel" className="hidden lg:block" onEnterAction={enterWorkspace} onBack={goHome} />
-            </div>
-          )}
         </div>
-      </main>
+      )}
+
+      {/* STATE 3 (Hub): the gateway reveal, still inside Nexus. */}
+      {showHub && <NexusHubOverlay onEnterAction={enterWorkspace} onBack={goHome} />}
+
+      {/* Floating communication console - the universe stays visible behind it. */}
+      <div
+        className="absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        data-nexus-region="communication"
+      >
+        <div className="w-full max-w-[760px]">
+          <NexusCommunicationDock conversationId={communicationConversationId} />
+        </div>
+      </div>
 
       {showInspector && <NexusDeveloperInspector />}
+
+      <style>{`
+        @keyframes nexus-settle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+      `}</style>
     </div>
   );
 }

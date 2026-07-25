@@ -35,3 +35,8 @@ export function NexusIcon({
   const Icon = iconMap[name] ?? Sparkles;
   return <Icon size={size} className={className} aria-hidden="true" />;
 }
+
+/** Same icon-name -> component resolution as NexusIcon, for non-DOM consumers (e.g. the NexusCore scene adapter). */
+export function resolveNexusIconComponent(name: string): LucideIcon {
+  return iconMap[name] ?? Sparkles;
+}

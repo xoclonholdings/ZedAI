@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, Image, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
+import { Clock, FileText, Image, Layers, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
@@ -51,6 +51,13 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
   );
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [status, setStatus] = useState("Ready");
+  // Emergent's official console is collapsed by default (mode row + voice
+  // dock only) - the transcript/context panels reveal on demand via
+  // History/Memory Context, matching the approved composition, rather than
+  // always occupying the console's space. A deep link into a specific
+  // conversation (communicationConversationId) opens straight to it.
+  const [showTranscript, setShowTranscript] = useState(() => Boolean(normalizeConversationId(conversationId)));
+  const [showMemory, setShowMemory] = useState(false);
   const search = useLocationSearch();
   const workspaceSlug = useMemo<WorkspaceSlug | null>(
     () => resolveWorkspace(search),
@@ -208,11 +215,26 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
 
   return (
     <section
-      className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden rounded-3xl border border-t-white/[0.14] bg-gradient-to-b from-indigo-300/[0.05] via-black/30 to-black/45 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-2xl transition-colors duration-500 sm:p-4"
-      style={{ borderColor: `${accentColor}2e` }}
+      className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden border border-b-0 border-indigo-400/25 bg-gradient-to-b from-[#0d0a1f] via-[#0a0718] to-[#070512] px-4 pb-3 pt-3 shadow-[0_-10px_60px_-15px_rgba(99,102,241,0.45)] backdrop-blur-2xl transition-colors duration-500 sm:px-5 sm:pb-4"
+      style={{
+        borderColor: `${accentColor}40`,
+        clipPath: "polygon(0 22px, 7% 22px, 10% 0, 90% 0, 93% 22px, 100% 22px, 100% 100%, 0 100%)",
+      }}
       aria-label="Persistent ZAR communication"
     >
-      <div className="mb-2 flex shrink-0 items-center gap-2">
+      {/* edge accent lights - the console's own identity, in Emergent's visual language */}
+      <div
+        className="pointer-events-none absolute left-0 top-1/2 h-14 w-[3px] -translate-y-1/2 rounded-r blur-[1px] transition-colors duration-700"
+        style={{ background: `linear-gradient(to bottom, ${accentColor}b0, #a855f7b0)` }}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute right-0 top-1/2 h-14 w-[3px] -translate-y-1/2 rounded-l blur-[1px] transition-colors duration-700"
+        style={{ background: `linear-gradient(to bottom, #a855f7b0, ${accentColor}b0)` }}
+        aria-hidden="true"
+      />
+
+      <div className="mb-2 mt-3 flex shrink-0 items-center gap-2">
         <span
           className="h-1.5 w-1.5 shrink-0 rounded-full motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none"
           style={{ backgroundColor: accentColor }}
@@ -221,12 +243,13 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
           ZAR
         </span>
+        <span className="text-[11px] text-emerald-400">&middot; Online</span>
         {status !== "Ready" && (
           <span className="truncate text-[12px] text-white/55">{status}</span>
         )}
       </div>
 
-      <div className="mb-2.5 shrink-0">
+      <div className="mb-3 shrink-0 rounded-xl border border-white/10 bg-black/40 px-2 py-1.5">
         <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} communication modes`}>
           {modes.map((mode) => (
             <CommunicationModeButton
@@ -241,27 +264,49 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         </div>
       </div>
 
-      {conversations.length > 0 && (
-        <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
-          {conversations.slice(0, 6).map((conversation) => (
-            <button
-              key={conversation.id}
-              type="button"
-              onClick={() => openConversation(conversation.id)}
-              className={cn(
-                "max-w-[220px] shrink-0 truncate rounded-full border px-3 py-1.5 text-[12px] transition",
-                activeConversationId === conversation.id
-                  ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
-                  : "border-white/[0.08] bg-white/[0.035] text-white/58 hover:border-white/18 hover:text-white",
-              )}
-            >
-              {conversation.title || "Conversation"}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="mb-3 shrink-0">
+        <NexusVoiceDock
+          onTranscript={(text) => {
+            conversationController.setComposerValue(text);
+            setShowTranscript(true);
+          }}
+          isResponding={conversationController.isStreaming}
+        />
+      </div>
 
-      {projects.length > 0 && (
+      {/* History / Memory Context - Emergent's own collapsed-console affordances.
+          Reveal real conversations/project context on demand instead of always
+          occupying the console, matching the official composition. */}
+      <div className="mb-1 flex shrink-0 items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setShowTranscript((value) => !value)}
+          aria-pressed={showTranscript}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
+            showTranscript
+              ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
+              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
+          )}
+        >
+          <Clock size={14} /> History
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowMemory((value) => !value)}
+          aria-pressed={showMemory}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
+            showMemory
+              ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
+              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
+          )}
+        >
+          Memory Context <Layers size={14} />
+        </button>
+      </div>
+
+      {showMemory && projects.length > 0 && (
         <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Project context">
           <button
             type="button"
@@ -299,12 +344,31 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         </div>
       )}
 
-      <NexusConversationRuntime controller={conversationController} />
+      {showTranscript && (
+        <>
+          {conversations.length > 0 && (
+            <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
+              {conversations.slice(0, 6).map((conversation) => (
+                <button
+                  key={conversation.id}
+                  type="button"
+                  onClick={() => openConversation(conversation.id)}
+                  className={cn(
+                    "max-w-[220px] shrink-0 truncate rounded-full border px-3 py-1.5 text-[12px] transition",
+                    activeConversationId === conversation.id
+                      ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
+                      : "border-white/[0.08] bg-white/[0.035] text-white/58 hover:border-white/18 hover:text-white",
+                  )}
+                >
+                  {conversation.title || "Conversation"}
+                </button>
+              ))}
+            </div>
+          )}
 
-      <NexusVoiceDock
-        onTranscript={conversationController.setComposerValue}
-        isResponding={conversationController.isStreaming}
-      />
+          <NexusConversationRuntime controller={conversationController} />
+        </>
+      )}
     </section>
   );
 }
