@@ -10,6 +10,7 @@ import {
   createNexusDriftState,
   type NexusDriftState,
   type NexusSceneNode,
+  type NexusSceneStage,
 } from "../scene/nexusSceneContract";
 import { useNexus } from "../state/NexusProvider";
 import { NexusIcon } from "./NexusIcon";
@@ -19,7 +20,14 @@ const RENDER_INSET = 0.86;
 const DRAG_LIMIT_PX = 14;
 const TAP_THRESHOLD_PX = 7;
 
-export function NexusConstellation() {
+export interface NexusConstellationProps {
+  /** STATE 0 (Home) when no hub is targeted, STATE 2/3 (Orbit/Hub) once one is. Derived by the page from the /nexus/:nodeId route - see NexusRootPage. */
+  readonly stage: NexusSceneStage;
+  /** STATE 4 (Enter): true for the brief transition while actually leaving Nexus for a workspace. */
+  readonly warping: boolean;
+}
+
+export function NexusConstellation({ stage, warping }: NexusConstellationProps) {
   const [, navigate] = useLocation();
   const { snapshot, viewportSnapshot, focusNode } = useNexus();
   const activeId = viewportSnapshot.focusedNode?.id ?? snapshot.activeNode?.id ?? null;
@@ -116,7 +124,7 @@ export function NexusConstellation() {
           className="absolute -inset-x-6 -inset-y-8 [mask-image:radial-gradient(ellipse_at_center,black_58%,transparent_96%)]"
           aria-hidden="true"
         >
-          <NexusScene nodes={sceneNodes} drift={drift} reducedMotion={reducedMotion} />
+          <NexusScene nodes={sceneNodes} drift={drift} reducedMotion={reducedMotion} stage={stage} warping={warping} />
         </div>
       ) : (
         <FallbackField nodes={sceneNodes} />

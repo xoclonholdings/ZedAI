@@ -1,5 +1,4 @@
-import { ArrowUpRight } from "lucide-react";
-import { useLocation } from "wouter";
+import { ArrowLeft, ArrowUpRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useNexus } from "../state/NexusProvider";
@@ -10,10 +9,13 @@ export interface NexusFocusedNodePanelProps {
   /** "panel" is the full card (desktop aside). "compact" is a single-row strip that fits the mobile one-screen shell without adding scroll. */
   readonly variant?: "panel" | "compact";
   readonly className?: string;
+  /** STATE 4 (Enter): call with the gateway action's route rather than navigating directly, so Warp can play first. */
+  readonly onEnterAction: (route: string | null) => void;
+  /** Hub -> Back -> Home. */
+  readonly onBack: () => void;
 }
 
-export function NexusFocusedNodePanel({ variant = "panel", className }: NexusFocusedNodePanelProps) {
-  const [, navigate] = useLocation();
+export function NexusFocusedNodePanel({ variant = "panel", className, onEnterAction, onBack }: NexusFocusedNodePanelProps) {
   const { capabilityRegistry, viewportSnapshot } = useNexus();
   const focusedNode = viewportSnapshot.focusedNode;
   if (!focusedNode) return null;
@@ -24,9 +26,18 @@ export function NexusFocusedNodePanel({ variant = "panel", className }: NexusFoc
     const primaryAction = view.actions[0] ?? null;
     return (
       <section
-        className={cn("flex items-center gap-2.5 px-1 py-1", className)}
+        className={cn("flex items-center gap-2 px-1 py-1", className)}
         aria-labelledby="nexus-focused-node-title-compact"
       >
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
+          aria-label="Back to Nexus"
+          title="Back to Nexus"
+        >
+          <ArrowLeft size={14} aria-hidden="true" />
+        </button>
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
           style={{ color: view.accentColor, backgroundColor: `${view.accentColor}16` }}
@@ -40,7 +51,7 @@ export function NexusFocusedNodePanel({ variant = "panel", className }: NexusFoc
         {primaryAction && (
           <button
             type="button"
-            onClick={() => primaryAction.route && navigate(primaryAction.route)}
+            onClick={() => onEnterAction(primaryAction.route)}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
             aria-label={primaryAction.label}
             title={primaryAction.label}
@@ -58,6 +69,15 @@ export function NexusFocusedNodePanel({ variant = "panel", className }: NexusFoc
       aria-labelledby="nexus-focused-node-title"
     >
       <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/45 transition hover:bg-white/[0.06] hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
+          aria-label="Back to Nexus"
+          title="Back to Nexus"
+        >
+          <ArrowLeft size={16} aria-hidden="true" />
+        </button>
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10"
           style={{ color: view.accentColor, backgroundColor: `${view.accentColor}14` }}
@@ -85,7 +105,7 @@ export function NexusFocusedNodePanel({ variant = "panel", className }: NexusFoc
             <button
               key={`${view.nodeId}:${action.label}`}
               type="button"
-              onClick={() => action.route && navigate(action.route)}
+              onClick={() => onEnterAction(action.route)}
               className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-black/25 px-3 py-3 text-left transition hover:border-cyan-200/35 hover:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none"
             >
               <span className="min-w-0">
