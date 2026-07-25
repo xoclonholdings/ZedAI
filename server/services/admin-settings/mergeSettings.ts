@@ -369,7 +369,9 @@ function mergeSocialPublishing(raw: Partial<AdminSettings> | null | undefined) {
             accessToken: legacy.accessToken,
           }
         : null,
-    (acc) => ({ hasAccessToken: !!acc.accessToken }),
+    // "Connected" covers both auth methods: a pasted token (Twitter)
+    // or a signed-in browser session (credential-based providers).
+    (acc) => ({ hasAccessToken: !!(acc.accessToken || acc.sessionState) }),
   );
   merged.platforms = Array.isArray(rawGroup?.platforms)
     ? rawGroup!.platforms

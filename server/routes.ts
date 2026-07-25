@@ -17,6 +17,8 @@ import { registerDiagnosticsRoutes } from "./routes-modules/diagnostics";
 import { registerAiHostTestRoute } from "./routes-modules/ai-host-test";
 import { registerRulesetRoutes } from "./routes-modules/ruleset";
 import { registerAdminSettingsRoutes } from "./routes-modules/admin-settings";
+import { registerBrowserSignInRoutes } from "./routes-modules/browser-signin";
+import { registerLiveHandoffSocket } from "./services/browserAuth/liveHandoffSocket";
 import { registerAdminLogsRoutes } from "./routes-modules/admin-logs";
 import { registerAdminSubsystemRoutes } from "./routes-modules/admin-subsystems";
 import { registerIntegrationTestRoutes } from "./routes-modules/integration-test";
@@ -78,6 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   registerAiHostTestRoute(app);
   registerAdminSettingsRoutes(app);
+  registerBrowserSignInRoutes(app);
   registerRulesetRoutes(app);
   registerDiagnosticsRoutes(app, { isDatabaseHealthy: () => isDatabaseHealthy });
   registerFlowRoutes(app);
@@ -96,5 +99,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerIntakeRoutes(app);
 
   const httpServer = createServer(app);
+  registerLiveHandoffSocket(httpServer);
   return httpServer;
 }

@@ -268,8 +268,18 @@ export interface SocialPublishingAccount {
   label: string;
   platform: string;
   dashboardUrl?: string;
+  /** "token" = pasted API token (Twitter). "credentials" = Zed signed
+   *  in with a username/password via a real browser, autofill-style,
+   *  and is holding the resulting session. */
+  authMethod?: "token" | "credentials";
   accessToken: string;
   hasAccessToken?: boolean;
+  /** Only set when authMethod is "credentials". */
+  username?: string;
+  password?: string;
+  /** Serialized Playwright storageState (cookies + local storage) so
+   *  Zed can act as this account without signing in again each time. */
+  sessionState?: string;
 }
 
 export interface SocialPublishingIntegrationSettings {
