@@ -1,7 +1,7 @@
 import { Mic, MicOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useNexusDictation } from "../../communication/useNexusDictation";
+import type { useNexusDictation } from "../../communication/useNexusDictation";
 
 const BAR_COUNT = 26;
 
@@ -10,15 +10,18 @@ const BAR_COUNT = 26;
  * microphone floating over its center. States are driven by real system
  * state (dictation active / ZAR responding) - no fake audio sync, since the
  * current stack exposes no amplitude data.
+ *
+ * `dictation` is owned by the parent (not this component) so the console's
+ * own "Talk" mode button can trigger the exact same toggle this mic button
+ * does, rather than each maintaining separate, disconnected dictation state.
  */
 export function NexusVoiceDock({
-  onTranscript,
+  dictation,
   isResponding,
 }: {
-  readonly onTranscript: (text: string) => void;
+  readonly dictation: ReturnType<typeof useNexusDictation>;
   readonly isResponding: boolean;
 }) {
-  const dictation = useNexusDictation(onTranscript);
   const state = dictation.isDictating ? "listening" : isResponding ? "responding" : "idle";
   const caption = !dictation.speechSupported
     ? "Voice input unavailable"

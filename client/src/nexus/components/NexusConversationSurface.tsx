@@ -15,13 +15,15 @@ import {
 import type { AgentTarget, Conversation, Message, File as DBFile } from "@shared/schema";
 import type { FilingProject } from "@/types/conversation";
 import { useNexusConversationController } from "../communication/useNexusConversationController";
+import { useNexusDictation } from "../communication/useNexusDictation";
 import {
   extractNexusClientActions,
   resolveDeterministicNexusClientAction,
   resolveNexusClientAction,
   type NexusClientAction,
 } from "../actions/NexusClientActions";
-import { NexusConversationRuntime } from "./communication/NexusConversationRuntime";
+import { NexusFileUpload } from "./communication/NexusFileUpload";
+import { NexusMessageComposer } from "./communication/NexusMessageComposer";
 import { NexusVoiceDock } from "./communication/NexusVoiceDock";
 import { routeForNexusNode } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
@@ -37,6 +39,15 @@ export interface NexusConversationSurfaceProps {
 /** Stable identity so a data-less query doesn't feed a new [] into effects every render. */
 const EMPTY_MESSAGES: Message[] = [];
 
+/**
+ * What's showing in the console's one content slot, where the mic sits by
+ * default - Text/Talk/Image/Doc/Upload/History/Memory Context all just swap
+ * this slot's content. The dock around it (status row, mode row, this slot,
+ * History/Memory row) never changes shape or grows - only the slot's
+ * content changes.
+ */
+type NexusDockMode = "talk" | "text" | "image" | "doc" | "upload" | "history" | "memory";
+
 export function NexusConversationSurface({ conversationId }: NexusConversationSurfaceProps) {
   const [, navigate] = useLocation();
   const {
@@ -51,13 +62,11 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
   );
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [status, setStatus] = useState("Ready");
-  // Emergent's official console is collapsed by default (mode row + voice
-  // dock only) - the transcript/context panels reveal on demand via
-  // History/Memory Context, matching the approved composition, rather than
-  // always occupying the console's space. A deep link into a specific
-  // conversation (communicationConversationId) opens straight to it.
-  const [showTranscript, setShowTranscript] = useState(() => Boolean(normalizeConversationId(conversationId)));
-  const [showMemory, setShowMemory] = useState(false);
+  // A deep link into a specific conversation opens straight to its composer;
+  // otherwise the mic is the default slot content.
+  const [activeMode, setActiveMode] = useState<NexusDockMode>(
+    () => (normalizeConversationId(conversationId) ? "text" : "talk"),
+  );
   const search = useLocationSearch();
   const workspaceSlug = useMemo<WorkspaceSlug | null>(
     () => resolveWorkspace(search),
@@ -145,7 +154,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     }
 
     if (action.type === "open-communication" && result.resolution) {
-      navigate(result.resolution.route);
+      handleModeSelect(action.modeId);
       setStatus(`Opened ${result.resolution.label}`);
       return result;
     }
@@ -192,11 +201,6 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     }
   }
 
-  function openConversation(id: string) {
-    setActiveConversationId(id);
-    navigate(`/chat/${id}`);
-  }
-
   const conversationController = useNexusConversationController({
     conversation: currentConversation,
     messages,
@@ -213,9 +217,40 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     onConversationIdChange: setActiveConversationId,
   });
 
+  // Owned here (not inside NexusVoiceDock) so the "Talk" mode button below
+  // can trigger the exact same dictation toggle as the persistent mic button.
+  const dictation = useNexusDictation((text) => {
+    conversationController.setComposerValue(text);
+    setActiveMode("text");
+  });
+
+  // Each mode button performs the real action it names, in the console's own
+  // one content slot, using the console's real surfaces (composer, dictation,
+  // file upload) - never navigating anywhere, since the dock is a persistent
+  // overlay, not a page of its own.
+  function handleModeSelect(modeId: string) {
+    switch (modeId) {
+      case "text":
+        setActiveMode("text");
+        return;
+      case "talk":
+        dictation.toggle();
+        setActiveMode("talk");
+        return;
+      case "image":
+      case "doc":
+      case "upload":
+        setActiveMode(modeId);
+        void conversationController.openFileUpload();
+        return;
+      default:
+        setStatus(`${modeId} is not available yet`);
+    }
+  }
+
   return (
     <section
-      className="relative flex max-h-[85dvh] w-full flex-col-reverse overflow-hidden border border-b-0 border-indigo-400/25 bg-gradient-to-b from-[#0d0a1f] via-[#0a0718] to-[#070512] px-4 pb-3 pt-3 shadow-[0_-10px_60px_-15px_rgba(99,102,241,0.45)] backdrop-blur-2xl transition-colors duration-500 sm:px-5 sm:pb-4"
+      className="relative flex w-full flex-col overflow-hidden border border-b-0 border-indigo-400/25 bg-gradient-to-b from-[#0d0a1f] via-[#0a0718] to-[#070512] px-4 pb-3 pt-3 shadow-[0_-10px_60px_-15px_rgba(99,102,241,0.45)] backdrop-blur-2xl transition-colors duration-500 sm:px-5 sm:pb-4"
       style={{
         borderColor: `${accentColor}40`,
         clipPath: "polygon(0 22px, 7% 22px, 10% 0, 90% 0, 93% 22px, 100% 22px, 100% 100%, 0 100%)",
@@ -234,166 +269,185 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         aria-hidden="true"
       />
 
-      {/*
-        The dock below is the ONE persistent, never-moving piece of the
-        console - status row, mode row, voice dock, History/Memory Context.
-        It's first in DOM but `flex-col-reverse` on the section renders it
-        last (i.e. flush at the bottom) regardless of what opens above it,
-        so opening History/Memory Context can never shift its position.
-      */}
-      <div className="shrink-0">
-        <div className="mb-2 mt-3 flex items-center gap-2">
-          <span
-            className="h-1.5 w-1.5 shrink-0 rounded-full motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none"
-            style={{ backgroundColor: accentColor }}
-            aria-hidden="true"
-          />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
-            ZAR
-          </span>
-          <span className="text-[11px] text-emerald-400">&middot; Online</span>
-          {status !== "Ready" && (
-            <span className="truncate text-[12px] text-white/55">{status}</span>
-          )}
-        </div>
+      <div className="mb-2 mt-3 flex items-center gap-2">
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none"
+          style={{ backgroundColor: accentColor }}
+          aria-hidden="true"
+        />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
+          ZAR
+        </span>
+        <span className="text-[11px] text-emerald-400">&middot; Online</span>
+        {status !== "Ready" && (
+          <span className="truncate text-[12px] text-white/55">{status}</span>
+        )}
+      </div>
 
-        <div className="mb-3 rounded-xl border border-white/10 bg-black/40 px-2 py-1.5">
-          <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} communication modes`}>
-            {modes.map((mode) => (
-              <CommunicationModeButton
-                key={mode.id}
-                mode={mode}
-                onSelect={() => {
-                  const result = applyClientAction({ type: "open-communication", modeId: mode.id });
-                  if (!result.accepted) setStatus(`${mode.label} is not available yet`);
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="mb-3">
-          <NexusVoiceDock
-            onTranscript={(text) => {
-              conversationController.setComposerValue(text);
-              setShowTranscript(true);
-            }}
-            isResponding={conversationController.isStreaming}
-          />
-        </div>
-
-        {/* History / Memory Context - Emergent's own collapsed-console affordances.
-            Reveal real conversations/project context on demand instead of always
-            occupying the console, matching the official composition. */}
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setShowTranscript((value) => !value)}
-            aria-pressed={showTranscript}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
-              showTranscript
-                ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
-                : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
-            )}
-          >
-            <Clock size={14} /> History
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowMemory((value) => !value)}
-            aria-pressed={showMemory}
-            className={cn(
-              "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
-              showMemory
-                ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
-                : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
-            )}
-          >
-            Memory Context <Layers size={14} />
-          </button>
+      <div className="mb-3 rounded-xl border border-white/10 bg-black/40 px-2 py-1.5">
+        <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} communication modes`}>
+          {modes.map((mode) => (
+            <CommunicationModeButton
+              key={mode.id}
+              mode={mode}
+              active={activeMode === mode.id}
+              onSelect={() => handleModeSelect(mode.id)}
+            />
+          ))}
         </div>
       </div>
 
       {/*
-        Everything below is revealed on demand, ABOVE the persistent dock -
-        it never pushes or resizes the dock itself, only grows upward within
-        its own bounded, internally-scrollable space.
+        The one content slot - exactly one of these is shown at a time,
+        swapped by whichever tab is active. Nothing here ever grows past its
+        own bounded content or pushes the rows around it.
       */}
-      {showMemory && projects.length > 0 && (
-        <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Project context">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedProjectId(null);
-              if (activeConversationId) void handleAssignProject(activeConversationId, null);
+      <div className="mb-3 flex min-h-[101px] flex-col justify-center">
+        {activeMode === "talk" && (
+          <NexusVoiceDock dictation={dictation} isResponding={conversationController.isStreaming} />
+        )}
+
+        {activeMode === "text" && (
+          <NexusMessageComposer
+            value={conversationController.composerValue}
+            onValueChange={conversationController.setComposerValue}
+            onSend={(message) => void conversationController.sendMessage(message)}
+            onAbort={conversationController.abort}
+            isStreaming={conversationController.isStreaming}
+            onOpenFileUpload={() => {
+              setActiveMode("upload");
+              void conversationController.openFileUpload();
             }}
-            className={cn(
-              "shrink-0 rounded-full border px-3 py-1.5 text-[12px] transition",
-              selectedProjectId === null
-                ? "border-white/22 bg-white/[0.08] text-white"
-                : "border-white/[0.08] bg-white/[0.03] text-white/52 hover:text-white",
+            editModeLabel={conversationController.editingMessageId ? "Editing message draft" : null}
+            onCancelEdit={conversationController.editingMessageId ? conversationController.cancelEdit : undefined}
+          />
+        )}
+
+        {(activeMode === "image" || activeMode === "doc" || activeMode === "upload") && (
+          conversationController.showFileUpload && conversationController.activeUploadConversationId ? (
+            <NexusFileUpload
+              conversationId={conversationController.activeUploadConversationId}
+              onUpload={conversationController.handleFileUpload}
+              onClose={() => setActiveMode("talk")}
+            />
+          ) : (
+            <div className="flex h-[104px] items-center justify-center rounded-xl border border-white/10 bg-black/40 text-[12px] text-white/45">
+              Preparing upload...
+            </div>
+          )
+        )}
+
+        {activeMode === "history" && (
+          <div className="max-h-[220px] overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-2">
+            {conversations.length === 0 ? (
+              <p className="p-3 text-center text-[12px] text-white/40">No conversations yet.</p>
+            ) : (
+              <div className="space-y-1">
+                {conversations.slice(0, 12).map((conversation) => (
+                  <button
+                    key={conversation.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveConversationId(conversation.id);
+                      setActiveMode("text");
+                    }}
+                    className={cn(
+                      "block w-full truncate rounded-lg px-3 py-2 text-left text-[13px] transition",
+                      activeConversationId === conversation.id
+                        ? "bg-cyan-200/10 text-cyan-50"
+                        : "text-white/70 hover:bg-white/5",
+                    )}
+                  >
+                    {conversation.title || "Conversation"}
+                  </button>
+                ))}
+              </div>
             )}
-          >
-            All context
-          </button>
-          {projects.slice(0, 6).map((project) => (
+          </div>
+        )}
+
+        {activeMode === "memory" && (
+          <div className="flex flex-wrap gap-2 rounded-xl border border-white/10 bg-black/40 p-2.5">
             <button
-              key={project.id}
               type="button"
               onClick={() => {
-                setSelectedProjectId(project.id);
-                if (activeConversationId) void handleAssignProject(activeConversationId, project.id);
+                setSelectedProjectId(null);
+                if (activeConversationId) void handleAssignProject(activeConversationId, null);
               }}
               className={cn(
-                "max-w-[180px] shrink-0 truncate rounded-full border px-3 py-1.5 text-[12px] transition",
-                selectedProjectId === project.id
-                  ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
+                "shrink-0 rounded-full border px-3 py-1.5 text-[12px] transition",
+                selectedProjectId === null
+                  ? "border-white/22 bg-white/[0.08] text-white"
                   : "border-white/[0.08] bg-white/[0.03] text-white/52 hover:text-white",
               )}
             >
-              {project.name}
+              All context
             </button>
-          ))}
-        </div>
-      )}
-
-      {showTranscript && (
-        <div className="mb-3 flex max-h-[50dvh] min-h-0 flex-col overflow-hidden rounded-2xl">
-          {conversations.length > 0 && (
-            <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
-              {conversations.slice(0, 6).map((conversation) => (
+            {projects.length === 0 ? (
+              <span className="px-1 py-1.5 text-[12px] text-white/40">No projects yet.</span>
+            ) : (
+              projects.slice(0, 6).map((project) => (
                 <button
-                  key={conversation.id}
+                  key={project.id}
                   type="button"
-                  onClick={() => openConversation(conversation.id)}
+                  onClick={() => {
+                    setSelectedProjectId(project.id);
+                    if (activeConversationId) void handleAssignProject(activeConversationId, project.id);
+                  }}
                   className={cn(
-                    "max-w-[220px] shrink-0 truncate rounded-full border px-3 py-1.5 text-[12px] transition",
-                    activeConversationId === conversation.id
-                      ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
-                      : "border-white/[0.08] bg-white/[0.035] text-white/58 hover:border-white/18 hover:text-white",
+                    "max-w-[180px] shrink-0 truncate rounded-full border px-3 py-1.5 text-[12px] transition",
+                    selectedProjectId === project.id
+                      ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
+                      : "border-white/[0.08] bg-white/[0.03] text-white/52 hover:text-white",
                   )}
                 >
-                  {conversation.title || "Conversation"}
+                  {project.name}
                 </button>
-              ))}
-            </div>
-          )}
-
-          <div className="min-h-0 flex-1 overflow-hidden">
-            <NexusConversationRuntime controller={conversationController} />
+              ))
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveMode((value) => (value === "history" ? "talk" : "history"))}
+          aria-pressed={activeMode === "history"}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
+            activeMode === "history"
+              ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
+              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
+          )}
+        >
+          <Clock size={14} /> History
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMode((value) => (value === "memory" ? "talk" : "memory"))}
+          aria-pressed={activeMode === "memory"}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
+            activeMode === "memory"
+              ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
+              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
+          )}
+        >
+          Memory Context <Layers size={14} />
+        </button>
+      </div>
     </section>
   );
 }
 
 function CommunicationModeButton({
   mode,
+  active,
   onSelect,
 }: {
   readonly mode: NexusCommunicationModeView;
+  readonly active: boolean;
   readonly onSelect: () => void;
 }) {
   const Icon = iconForMode(mode.id);
@@ -402,8 +456,10 @@ function CommunicationModeButton({
       type="button"
       onClick={onSelect}
       disabled={!mode.enabled}
+      aria-pressed={active}
       className={cn(
         "flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1 text-white/58 transition hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none",
+        active && mode.enabled && "text-cyan-200",
         !mode.enabled && "cursor-not-allowed opacity-35 hover:text-white/58",
       )}
       title={mode.label}

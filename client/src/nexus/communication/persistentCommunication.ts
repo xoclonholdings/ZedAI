@@ -30,20 +30,17 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
   modes: [
     mode("text", "Text", "create.text", "available", "/chat", [
       "client/src/nexus/components/communication/NexusMessageComposer.tsx",
-      "client/src/nexus/components/communication/NexusConversationRuntime.tsx",
     ]),
     mode("talk", "Talk", "create.talk", "available", "/chat", [
-      "client/src/nexus/components/communication/NexusMessageComposer.tsx",
+      "client/src/nexus/components/communication/NexusVoiceDock.tsx",
       "client/src/nexus/communication/useNexusDictation.ts",
     ]),
     mode("image", "Image", "create.image", "available", "/chat", [
       "client/src/nexus/components/communication/NexusFileUpload.tsx",
-      "client/src/nexus/components/communication/NexusAttachmentTray.tsx",
     ]),
     mode("draw", "Draw", "create.draw", "scaffolded", null, []),
     mode("doc", "Doc", "create.document", "available", "/chat", [
       "client/src/nexus/components/communication/NexusFileUpload.tsx",
-      "client/src/nexus/components/communication/NexusAttachmentTray.tsx",
     ]),
     mode("upload", "Upload", "create.upload", "available", "/chat", [
       "client/src/nexus/components/communication/NexusFileUpload.tsx",

@@ -116,7 +116,7 @@ export function useNexusConversationController({
     scrollToBottom();
   }, [localMessages, streamingMessage, scrollToBottom]);
 
-  async function createConversation(titleSeed: string) {
+  async function createConversation(titleSeed: string, options?: { navigateToChat?: boolean }) {
     const response = await fetch("/api/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -133,7 +133,12 @@ export function useNexusConversationController({
     }
 
     const newConversationId = newConversation.id as string;
-    navigate(`/chat/${newConversationId}`);
+    // /nexus and /chat/:id are different <Route>s in the same Switch, so
+    // navigating between them remounts this whole persistent console -
+    // fine for sendMessage (nothing pending survives that matters), but
+    // openFileUpload sets showFileUpload=true right after this call and
+    // needs that update to survive, so it skips the navigate entirely.
+    if (options?.navigateToChat !== false) navigate(`/chat/${newConversationId}`);
     onConversationIdChange?.(newConversationId);
     queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     return newConversationId;
@@ -156,7 +161,10 @@ export function useNexusConversationController({
     let activeConversationId = conversationId;
     if (!activeConversationId) {
       try {
-        activeConversationId = await createConversation(trimmed);
+        // Never navigate away for this either - the console is a persistent
+        // overlay on top of Nexus, not a page of its own; changing route
+        // would remount the whole universe scene under it.
+        activeConversationId = await createConversation(trimmed, { navigateToChat: false });
       } catch (error) {
         console.error("Failed to create conversation:", error);
         setRuntimeError("Could not start a conversation. Try again.");
@@ -218,7 +226,6 @@ export function useNexusConversationController({
         queryKey: ["/api/conversations", uploadedConversationId],
       });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-      if (conversationId !== uploadedConversationId) navigate(`/chat/${uploadedConversationId}`);
       onConversationIdChange?.(uploadedConversationId);
     }
     setShowFileUpload(false);
@@ -233,7 +240,7 @@ export function useNexusConversationController({
     let activeConversationId = activeUploadConversationId;
     if (!activeConversationId) {
       try {
-        activeConversationId = await createConversation("File upload");
+        activeConversationId = await createConversation("File upload", { navigateToChat: false });
       } catch (error) {
         console.error("Failed to create conversation for upload:", error);
         window.alert("Could not start a conversation for file upload.");

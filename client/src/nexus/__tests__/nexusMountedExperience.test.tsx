@@ -35,17 +35,16 @@ function renderNexusCommunication(conversationId?: string) {
   );
 }
 
-test("mounted Nexus communication surface is ZAR-facing and omits the legacy shell", () => {
-  // Emergent's official console is collapsed by default: mode row + voice
-  // dock + History/Memory Context, no transcript panel occupying the space
-  // until the user asks for it - matching the approved composition.
+test("mounted Nexus communication surface is ZAR-facing, defaults to the mic slot, and omits the legacy shell", () => {
+  // The dock's one content slot defaults to the mic (Talk) - no separate
+  // transcript panel, no "Ask ZAR" empty state, ever.
   const html = renderNexusCommunication();
 
   assert.match(html, /Persistent ZAR communication/);
   assert.match(html, /Online/, "the official ZAR . Online status reads exactly as approved");
-  assert.doesNotMatch(html, /data-nexus-conversation-runtime="true"/, "transcript stays collapsed until History is opened");
-  assert.match(html, /data-nexus-voice=/, "voice dock (waveform + mic) is part of the communication surface");
+  assert.match(html, /data-nexus-voice=/, "the mic slot is the default content");
   assert.match(html, /Voice input unavailable|Talk to ZAR/);
+  assert.doesNotMatch(html, /Ask ZAR/, "no composer/empty-state text shows until Text is tapped");
   assert.match(html, /History/);
   assert.match(html, /Memory Context/);
   assert.doesNotMatch(html, /Message Zed/);
@@ -56,9 +55,9 @@ test("mounted Nexus communication surface is ZAR-facing and omits the legacy she
   assert.doesNotMatch(html, /data-legacy-chat-area/);
 });
 
-test("deep-linking into a specific conversation opens straight to its transcript", () => {
+test("deep-linking into a specific conversation opens straight to the composer slot", () => {
   const html = renderNexusCommunication("conversation-42");
 
-  assert.match(html, /data-nexus-conversation-runtime="true"/, "a direct conversation link shouldn't hide its own transcript");
-  assert.match(html, /Ask ZAR/);
+  assert.match(html, /Ask ZAR/, "the composer (not the mic) is the default slot content for a direct conversation link");
+  assert.doesNotMatch(html, /data-nexus-voice=/, "the mic slot isn't shown at the same time as the composer");
 });
