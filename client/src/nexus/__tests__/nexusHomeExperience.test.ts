@@ -199,7 +199,7 @@ test("typed Nexus client actions validate and resolve against Nexus authorities"
       nexusClientActions: [
         { type: "focus-node", nodeId: "memory" },
         { type: "navigate-route", route: "https://example.test" },
-        { type: "open-capability", capabilityId: "connect.provider-accounts" },
+        { type: "open-capability", capabilityId: "connect.channels" },
       ],
     },
   });
@@ -220,19 +220,20 @@ test("typed Nexus client actions validate and resolve against Nexus authorities"
 });
 
 test("capability status controls user-facing focused-node actions", () => {
-  const connect = nexusCapabilityRegistry.get("connect.provider-accounts");
+  const channels = nexusCapabilityRegistry.get("connect.channels");
   const projectNavigation = nexusCapabilityRegistry.get("projects.navigation");
-  assert.ok(connect);
+  assert.ok(channels);
   assert.ok(projectNavigation);
 
-  assert.equal(isNexusCapabilityActionAvailable(connect), false);
+  assert.equal(isNexusCapabilityActionAvailable(channels), false);
   assert.equal(isNexusCapabilityActionAvailable(projectNavigation), true);
 
   const engine = new NexusConstellationEngine(NEXUS_ROOT_NODES, NEXUS_ROOT_CONNECTIONS);
   const graph = engine.snapshot(engine.createInitialState("connect"));
   const view = createFocusedNodeView(graph.activeNode!, nexusCapabilityRegistry);
 
-  assert.equal(view.actions.some((action) => action.label === "Provider Accounts"), false);
+  assert.equal(view.actions.some((action) => action.label === "Connection Channels"), false);
+  assert.equal(view.actions.some((action) => action.label === "Provider Accounts"), true);
 });
 
 test("invalid action payloads are ignored during parsing", () => {

@@ -186,21 +186,20 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
   rootManifest({
     id: "connect",
     label: "Connect",
-    summary: "External accounts, channels, providers, and future ecosystem connections.",
+    summary: "External accounts and providers ZAR can act in on your behalf.",
     icon: "Cable",
     color: "#e879f9",
-    currentSurfacePath: null,
+    currentSurfacePath: "/connect",
     consumes: ["authorization", "provider_context"],
     tags: ["providers", "channels", "integration"],
     capabilities: [
-      capability("connect", "provider-accounts", "Provider Accounts", "Reserve provider account connections behind explicit authorization.", {
+      capability("connect", "provider-accounts", "Provider Accounts", "Connect and manage external accounts through the real per-user integrations surface.", {
         actionKind: "connect",
-        actionRoute: "/nexus/connect",
+        actionRoute: "/connect",
         dependencies: [
           dependency("identity.current-principal", "Connections belong to the current user."),
           dependency("settings.permissions", "Provider access must honor user permissions."),
         ],
-        status: "scaffolded",
         terms: ["connect", "provider", "account", "authorization"],
       }),
       capability("connect", "channels", "Connection Channels", "Reserve channel routing for future ecosystem communication surfaces.", {
@@ -215,22 +214,22 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
   rootManifest({
     id: "settings",
     label: "Settings",
-    summary: "User-controlled preferences, privacy boundaries, and administrative configuration.",
+    summary: "User-controlled preferences, privacy boundaries, and account configuration.",
     icon: "Settings",
     color: "#38bdf8",
-    currentSurfacePath: null,
+    currentSurfacePath: "/settings",
     consumes: ["configuration", "privacy", "permissions"],
     tags: ["settings", "privacy", "configuration"],
     capabilities: [
-      capability("settings", "privacy", "Privacy Settings", "Reserve user-controlled privacy and retention boundaries.", {
+      capability("settings", "privacy", "Privacy Settings", "Manage retention and privacy-relevant preferences through the real Settings surface.", {
         actionKind: "configure",
-        actionRoute: "/nexus/settings",
+        actionRoute: "/settings",
         dependencies: [dependency("identity.current-principal", "Privacy settings belong to the current user.")],
         terms: ["settings", "privacy", "retention", "control"],
       }),
-      capability("settings", "permissions", "Permission Settings", "Reserve permission settings consumed by tools and provider connections.", {
+      capability("settings", "permissions", "Permission Settings", "Manage sign-in, session, and account permissions through the real Settings surface.", {
         actionKind: "configure",
-        actionRoute: "/nexus/settings",
+        actionRoute: "/settings",
         dependencies: [dependency("identity.current-principal", "Permission settings are owned by the current user.")],
         terms: ["settings", "permissions", "authorization", "access"],
       }),
