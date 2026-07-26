@@ -215,7 +215,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
 
   return (
     <section
-      className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden border border-b-0 border-indigo-400/25 bg-gradient-to-b from-[#0d0a1f] via-[#0a0718] to-[#070512] px-4 pb-3 pt-3 shadow-[0_-10px_60px_-15px_rgba(99,102,241,0.45)] backdrop-blur-2xl transition-colors duration-500 sm:px-5 sm:pb-4"
+      className="relative flex max-h-[85dvh] w-full flex-col-reverse overflow-hidden border border-b-0 border-indigo-400/25 bg-gradient-to-b from-[#0d0a1f] via-[#0a0718] to-[#070512] px-4 pb-3 pt-3 shadow-[0_-10px_60px_-15px_rgba(99,102,241,0.45)] backdrop-blur-2xl transition-colors duration-500 sm:px-5 sm:pb-4"
       style={{
         borderColor: `${accentColor}40`,
         clipPath: "polygon(0 22px, 7% 22px, 10% 0, 90% 0, 93% 22px, 100% 22px, 100% 100%, 0 100%)",
@@ -234,78 +234,92 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         aria-hidden="true"
       />
 
-      <div className="mb-2 mt-3 flex shrink-0 items-center gap-2">
-        <span
-          className="h-1.5 w-1.5 shrink-0 rounded-full motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none"
-          style={{ backgroundColor: accentColor }}
-          aria-hidden="true"
-        />
-        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
-          ZAR
-        </span>
-        <span className="text-[11px] text-emerald-400">&middot; Online</span>
-        {status !== "Ready" && (
-          <span className="truncate text-[12px] text-white/55">{status}</span>
-        )}
-      </div>
+      {/*
+        The dock below is the ONE persistent, never-moving piece of the
+        console - status row, mode row, voice dock, History/Memory Context.
+        It's first in DOM but `flex-col-reverse` on the section renders it
+        last (i.e. flush at the bottom) regardless of what opens above it,
+        so opening History/Memory Context can never shift its position.
+      */}
+      <div className="shrink-0">
+        <div className="mb-2 mt-3 flex items-center gap-2">
+          <span
+            className="h-1.5 w-1.5 shrink-0 rounded-full motion-safe:animate-[nexus-pulse_2.4s_ease-in-out_infinite] motion-reduce:animate-none"
+            style={{ backgroundColor: accentColor }}
+            aria-hidden="true"
+          />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
+            ZAR
+          </span>
+          <span className="text-[11px] text-emerald-400">&middot; Online</span>
+          {status !== "Ready" && (
+            <span className="truncate text-[12px] text-white/55">{status}</span>
+          )}
+        </div>
 
-      <div className="mb-3 shrink-0 rounded-xl border border-white/10 bg-black/40 px-2 py-1.5">
-        <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} communication modes`}>
-          {modes.map((mode) => (
-            <CommunicationModeButton
-              key={mode.id}
-              mode={mode}
-              onSelect={() => {
-                const result = applyClientAction({ type: "open-communication", modeId: mode.id });
-                if (!result.accepted) setStatus(`${mode.label} is not available yet`);
-              }}
-            />
-          ))}
+        <div className="mb-3 rounded-xl border border-white/10 bg-black/40 px-2 py-1.5">
+          <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} communication modes`}>
+            {modes.map((mode) => (
+              <CommunicationModeButton
+                key={mode.id}
+                mode={mode}
+                onSelect={() => {
+                  const result = applyClientAction({ type: "open-communication", modeId: mode.id });
+                  if (!result.accepted) setStatus(`${mode.label} is not available yet`);
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <NexusVoiceDock
+            onTranscript={(text) => {
+              conversationController.setComposerValue(text);
+              setShowTranscript(true);
+            }}
+            isResponding={conversationController.isStreaming}
+          />
+        </div>
+
+        {/* History / Memory Context - Emergent's own collapsed-console affordances.
+            Reveal real conversations/project context on demand instead of always
+            occupying the console, matching the official composition. */}
+        <div className="flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setShowTranscript((value) => !value)}
+            aria-pressed={showTranscript}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
+              showTranscript
+                ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
+                : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
+            )}
+          >
+            <Clock size={14} /> History
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowMemory((value) => !value)}
+            aria-pressed={showMemory}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
+              showMemory
+                ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
+                : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
+            )}
+          >
+            Memory Context <Layers size={14} />
+          </button>
         </div>
       </div>
 
-      <div className="mb-3 shrink-0">
-        <NexusVoiceDock
-          onTranscript={(text) => {
-            conversationController.setComposerValue(text);
-            setShowTranscript(true);
-          }}
-          isResponding={conversationController.isStreaming}
-        />
-      </div>
-
-      {/* History / Memory Context - Emergent's own collapsed-console affordances.
-          Reveal real conversations/project context on demand instead of always
-          occupying the console, matching the official composition. */}
-      <div className="mb-1 flex shrink-0 items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setShowTranscript((value) => !value)}
-          aria-pressed={showTranscript}
-          className={cn(
-            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
-            showTranscript
-              ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
-              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
-          )}
-        >
-          <Clock size={14} /> History
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowMemory((value) => !value)}
-          aria-pressed={showMemory}
-          className={cn(
-            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
-            showMemory
-              ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
-              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
-          )}
-        >
-          Memory Context <Layers size={14} />
-        </button>
-      </div>
-
+      {/*
+        Everything below is revealed on demand, ABOVE the persistent dock -
+        it never pushes or resizes the dock itself, only grows upward within
+        its own bounded, internally-scrollable space.
+      */}
       {showMemory && projects.length > 0 && (
         <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Project context">
           <button
@@ -345,7 +359,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
       )}
 
       {showTranscript && (
-        <>
+        <div className="mb-3 flex max-h-[50dvh] min-h-0 flex-col overflow-hidden rounded-2xl">
           {conversations.length > 0 && (
             <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Recent conversations">
               {conversations.slice(0, 6).map((conversation) => (
@@ -366,8 +380,10 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
             </div>
           )}
 
-          <NexusConversationRuntime controller={conversationController} />
-        </>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <NexusConversationRuntime controller={conversationController} />
+          </div>
+        </div>
       )}
     </section>
   );

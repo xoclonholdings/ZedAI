@@ -1,6 +1,5 @@
 import type { Message } from "@shared/schema";
 
-import { NexusConversationEmptyState } from "./NexusConversationEmptyState";
 import { NexusMessageItem } from "./NexusMessageItem";
 
 interface NexusMessageListProps {
@@ -50,9 +49,7 @@ export function NexusMessageList({
         compact ? "pt-2 md:pt-3" : "pt-3 md:pt-4"
       }`}
     >
-      {messages.length === 0 && !isStreaming && !hasStartedTyping ? (
-        <NexusConversationEmptyState />
-      ) : messages.length === 0 && !isStreaming ? (
+      {messages.length === 0 && !isStreaming && !hasStartedTyping ? null : messages.length === 0 && !isStreaming ? (
         <div className="mx-auto max-w-3xl rounded-xl border border-white/[0.08] bg-white/[0.025] p-4 text-center text-xs text-white/55 md:text-sm">
           Sent. Waiting for ZAR to respond. If nothing arrives in a few seconds, refresh or check logs.
         </div>
