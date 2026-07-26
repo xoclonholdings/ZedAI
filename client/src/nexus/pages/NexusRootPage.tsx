@@ -65,19 +65,10 @@ export default function NexusRootPage({
 
   // Ambient "nearest while rotating" indicator - Emergent's own onFocusChange
   // concept, distinct from a deliberate tap. Purely local/visual; does not
-  // touch routing or the provider's focus.
+  // touch routing or the provider's focus. Shown next to the header (where a
+  // raw heading-degree readout used to be) since the planet's name is what's
+  // actually useful there - the numeric heading isn't.
   const [ambientDomain, setAmbientDomain] = useState<NexusDomain | null>(null);
-
-  // Heading readout - Emergent's own HUD affordance. Mutated directly via ref
-  // (not React state) since NexusCore's onRotate fires every animation frame
-  // while dragging; routing that through setState would re-render the whole
-  // page on every frame for no visible benefit.
-  const headingRef = useRef<HTMLSpanElement>(null);
-  const handleRotate = useCallback((angle: number) => {
-    if (!headingRef.current) return;
-    const deg = ((angle * 180) / Math.PI) % 360;
-    headingRef.current.textContent = `${(deg < 0 ? deg + 360 : deg).toFixed(1)}°`;
-  }, []);
 
   // Route only decides Home vs. a selected node. target/orbit/hub/enter is
   // transient client state layered on top here, so route state and
@@ -214,7 +205,6 @@ export default function NexusRootPage({
         {webgl ? (
           <NexusCore
             domains={domains}
-            onRotate={handleRotate}
             onFocusChange={setAmbientDomain}
             onDomainSelect={handleDomainSelect}
             onCoreTap={goHome}
@@ -269,33 +259,23 @@ export default function NexusRootPage({
           >
             <Sparkles size={18} />
           </button>
-          <div className="rounded-full border border-purple-500/20 bg-black/30 px-3 py-1 text-[10px] backdrop-blur">
-            <span className="text-gray-500">heading </span>
-            <span ref={headingRef} className="font-mono text-cyan-300/80">
-              0.0°
-            </span>
-          </div>
+          {stage === "home" && ambientDomain && (
+            <div
+              className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 backdrop-blur"
+              style={{ animation: "nexus-settle 300ms ease both" }}
+            >
+              <span
+                className="block h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: ambientDomain.color, boxShadow: `0 0 8px 2px ${ambientDomain.color}88` }}
+                aria-hidden="true"
+              />
+              <span className="text-[10px] font-medium tracking-[0.2em] text-white/70">
+                {ambientDomain.label}
+              </span>
+            </div>
+          )}
         </div>
       </header>
-
-      {/* Ambient focused-domain indicator - shows as the user rotates, before a tap commits.
-          Anchored below the header (not a fixed distance from the bottom) so it never
-          collides with the console, regardless of viewport height or console content. */}
-      {stage === "home" && ambientDomain && (
-        <div className="pointer-events-none absolute inset-x-0 top-[104px] z-10 flex justify-center sm:top-[118px]">
-          <div
-            className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/35 px-5 py-2 backdrop-blur-md"
-            style={{ animation: "nexus-settle 400ms ease both" }}
-          >
-            <span
-              className="block h-2 w-2 rounded-full"
-              style={{ background: ambientDomain.color, boxShadow: `0 0 10px 2px ${ambientDomain.color}88` }}
-              aria-hidden="true"
-            />
-            <span className="text-xs font-medium tracking-[0.3em] text-gray-200">{ambientDomain.label}</span>
-          </div>
-        </div>
-      )}
 
       {/* STATE 3 (Hub): the gateway reveal, still inside Nexus. */}
       {showHub && <NexusHubOverlay onEnterAction={enterWorkspace} onBack={goHome} />}
