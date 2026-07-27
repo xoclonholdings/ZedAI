@@ -27,10 +27,10 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
   rootManifest({
     id: "identity",
     label: "Identity",
-    summary: "The user's relationship-owned identity and confirmed Personal Constitution surface.",
+    summary: "The user's relationship-owned identity and self-authored personal notes.",
     icon: "Fingerprint",
     color: "#22d3ee",
-    currentSurfacePath: null,
+    currentSurfacePath: "/identity",
     consumes: ["constitution", "identity", "reflection"],
     tags: ["constitution", "self-understanding", "ownership"],
     capabilities: [
@@ -39,17 +39,17 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
         actionRoute: null,
         terms: ["identity", "user", "principal", "owner"],
       }),
-      capability("identity", "constitution-review", "Constitution Review", "Review user-controlled understanding without confirming it automatically.", {
+      capability("identity", "constitution-review", "Personal Notes", "Review and write the personal notes Zed retrieves as context about you.", {
         actionKind: "review",
-        actionRoute: "/nexus/identity",
+        actionRoute: "/identity",
         dependencies: [dependency("identity.current-principal", "Personal understanding must be owned by the current user.")],
-        terms: ["constitution", "review", "understanding", "reflection"],
+        terms: ["notes", "review", "understanding", "reflection", "personalization"],
       }),
       capability("identity", "collaboration-context", "Collaboration Context", "Expose confirmed understanding as non-duplicated ZAR Core context.", {
         actionKind: "read",
         actionRoute: null,
         dependencies: [
-          dependency("identity.constitution-review", "Confirmed understanding originates from the Constitution boundary."),
+          dependency("identity.constitution-review", "Confirmed understanding originates from the user's personal notes."),
           dependency("memory.policy", "Memory policy constrains retained relationship context."),
         ],
         terms: ["collaboration", "context", "confirmed", "working style"],
