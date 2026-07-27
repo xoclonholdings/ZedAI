@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
   ChevronDown,
-  ChevronLeft,
   ChevronUp,
   MessageSquare,
   RefreshCw,
@@ -162,23 +161,8 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
   const title = spec?.title || `${workspace} desk`;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            {title}
-          </span>
-        </div>
+    <main className="mx-auto max-w-3xl space-y-4">
+      <div className="flex justify-end">
         <Button
           variant="ghost"
           size="sm"
@@ -190,87 +174,85 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
         </Button>
       </div>
 
-      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-4">
-          <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">{title}</div>
-          <p className="mt-1 text-[13px] text-white/60 leading-snug">{spec?.blurb || ""}</p>
-          <div className="mt-3 space-y-2">
-            <input
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) void run();
-              }}
-              placeholder={spec?.placeholder || "What should Zed work on?"}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-4">
+        <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">{title}</div>
+        <p className="mt-1 text-[13px] text-white/60 leading-snug">{spec?.blurb || ""}</p>
+        <div className="mt-3 space-y-2">
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) void run();
+            }}
+            placeholder={spec?.placeholder || "What should Zed work on?"}
+            className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
+          />
+          {showSources ? (
+            <textarea
+              value={sources}
+              onChange={(e) => setSources(e.target.value)}
+              rows={4}
+              placeholder="Optional: paste notes or a document for Zed to ground this in."
+              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50 resize-y"
             />
-            {showSources ? (
-              <textarea
-                value={sources}
-                onChange={(e) => setSources(e.target.value)}
-                rows={4}
-                placeholder="Optional: paste notes or a document for Zed to ground this in."
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50 resize-y"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowSources(true)}
-                className="text-[12px] text-cyan-300/80 hover:text-cyan-200"
-              >
-                + Add sources (optional)
-              </button>
-            )}
-            <div className="flex items-center justify-between gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => navigate(`/chat?ctx=${workspace}`)}
-                className="inline-flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white/80"
-              >
-                <MessageSquare size={13} />
-                Ask Zed directly
-              </button>
-              <Button onClick={() => void run()} disabled={working} className="rounded-xl zed-gradient">
-                <Sparkles size={14} className="mr-1.5" />
-                {working ? "Working…" : spec?.action || "Build"}
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <WorkspaceLibrary workspace={workspace} label={`${title} library`} />
-
-        {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">
-            {error}
-          </div>
-        )}
-        {working && (
-          <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-cyan-100">
-            Zed is grounding in this workspace's memory and building your entry…
-          </div>
-        )}
-
-        <section className="space-y-3">
-          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            On this desk {entries.length > 0 ? `(${entries.length})` : ""}
-          </div>
-          {loading ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>
-          ) : entries.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-5 text-sm text-muted-foreground">
-              Nothing here yet. Give Zed a subject above and your work will collect here.
-            </div>
           ) : (
-            <div className="space-y-3">
-              {entries.map((e) => (
-                <EntryCard key={e.id} entry={e} onDelete={remove} />
-              ))}
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowSources(true)}
+              className="text-[12px] text-cyan-300/80 hover:text-cyan-200"
+            >
+              + Add sources (optional)
+            </button>
           )}
-        </section>
-      </main>
-    </div>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => navigate(`/chat?ctx=${workspace}`)}
+              className="inline-flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white/80"
+            >
+              <MessageSquare size={13} />
+              Ask Zed directly
+            </button>
+            <Button onClick={() => void run()} disabled={working} className="rounded-xl zed-gradient">
+              <Sparkles size={14} className="mr-1.5" />
+              {working ? "Working…" : spec?.action || "Build"}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <WorkspaceLibrary workspace={workspace} label={`${title} library`} />
+
+      {error && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">
+          {error}
+        </div>
+      )}
+      {working && (
+        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-cyan-100">
+          Zed is grounding in this workspace's memory and building your entry…
+        </div>
+      )}
+
+      <section className="space-y-3">
+        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          On this desk {entries.length > 0 ? `(${entries.length})` : ""}
+        </div>
+        {loading ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>
+        ) : entries.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-5 text-sm text-muted-foreground">
+            Nothing here yet. Give Zed a subject above and your work will collect here.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {entries.map((e) => (
+              <EntryCard key={e.id} entry={e} onDelete={remove} />
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }

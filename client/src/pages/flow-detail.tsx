@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { CheckCircle2, ChevronLeft, Play, Rocket, Wrench } from "lucide-react";
+import { CheckCircle2, Play, Rocket, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,6 @@ export default function FlowDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
   const [brief, setBrief] = useState("");
-
-  const backPath = workspace ? `/workspaces/${workspace}` : "/nexus";
-  const backLabel = workspace ? "Workspace" : "Nexus";
 
   useEffect(() => {
     if (!id) return;
@@ -69,27 +66,8 @@ export default function FlowDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(backPath)}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          {backLabel}
-        </Button>
-        <div className="flex items-center gap-2">
-          <Wrench size={16} className="text-cyan-300" />
-          <span className="max-w-[60vw] truncate text-sm font-medium">
-            {flow?.userFacingLabel || "Tool"}
-          </span>
-        </div>
-        <span className="w-10" />
-      </div>
-
-      <div className="mx-auto max-w-3xl space-y-4 p-4 pb-28">
+    <div className="mx-auto max-w-3xl space-y-4 p-4 pb-4">
+      <div className="space-y-4">
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
             {error}
@@ -157,26 +135,24 @@ export default function FlowDetailPage() {
       </div>
 
       {flow && (
-        <div className="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-black/95 px-4 pt-3 pb-safe backdrop-blur">
-          <div className="mx-auto max-w-3xl">
-            <Button
-              onClick={launch}
-              disabled={launching}
-              className="h-12 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
-            >
-              {launching ? (
-                <span className="flex items-center gap-2">
-                  <Rocket size={16} className="animate-pulse" />
-                  Starting...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Play size={16} />
-                  Start
-                </span>
-              )}
-            </Button>
-          </div>
+        <div className="sticky bottom-0 -mx-4 mt-4 border-t border-white/10 bg-black/95 px-4 py-3 backdrop-blur">
+          <Button
+            onClick={launch}
+            disabled={launching}
+            className="h-12 w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50"
+          >
+            {launching ? (
+              <span className="flex items-center gap-2">
+                <Rocket size={16} className="animate-pulse" />
+                Starting...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Play size={16} />
+                Start
+              </span>
+            )}
+          </Button>
         </div>
       )}
     </div>

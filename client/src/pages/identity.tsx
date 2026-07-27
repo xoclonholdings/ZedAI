@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { ChevronDown, ChevronLeft, ChevronUp, Fingerprint, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/UseAuth";
 import MyMemorySettings from "@/components/settings/MyMemorySettings";
@@ -29,7 +28,6 @@ interface NoteDetail {
  * not a fabricated constitution feature.
  */
 export default function IdentityPage() {
-  const [, navigate] = useLocation();
   const { user } = useAuth() as {
     user?: { username?: string; displayName?: string; email?: string; isAdmin?: boolean };
   };
@@ -132,26 +130,7 @@ export default function IdentityPage() {
     "w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[13.5px] text-white placeholder:text-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40";
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <button
-          type="button"
-          onClick={() => navigate("/nexus")}
-          className="flex items-center gap-1 rounded-xl px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ChevronLeft size={16} />
-          Nexus
-        </button>
-        <div className="flex items-center gap-2">
-          <Fingerprint size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            Identity
-          </span>
-        </div>
-        <div className="h-9 w-9" aria-hidden="true" />
-      </div>
-
-      <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="mx-auto max-w-2xl">
         <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40">Signed in as</div>
           <div className="mt-2 text-[15px] font-medium text-white">
@@ -281,6 +260,5 @@ export default function IdentityPage() {
           </div>
         )}
       </div>
-    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "wouter";
-import { ChevronLeft, Plus, Save } from "lucide-react";
+import { useParams } from "wouter";
+import { Plus, Save } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import { SourceCard } from "./project-detail/SourceCard";
 import type { ProjectDetail } from "./project-detail/types";
 
 export default function ProjectDetailPage() {
-  const [, navigate] = useLocation();
   const { id } = useParams<{ id?: string }>();
   const [project, setProject] = useState<ProjectDetail | null>(null);
   const [instructions, setInstructions] = useState("");
@@ -82,30 +81,7 @@ export default function ProjectDetailPage() {
   const dirty = instructions !== (project?.instructions || "");
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between sticky top-0 z-20">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="text-muted-foreground hover:text-foreground zed-button rounded-xl"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2 min-w-0">
-          {project && (
-            <span
-              className="h-3 w-3 rounded-full shrink-0"
-              style={{ backgroundColor: project.color }}
-            />
-          )}
-          <span className="font-medium truncate max-w-[55vw]">{project?.name || "Project"}</span>
-        </div>
-        <span className="w-10" />
-      </div>
-
-      <div className="p-4 max-w-3xl mx-auto space-y-4 pb-24">
+    <div className="p-4 max-w-3xl mx-auto space-y-4 pb-24">
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
             {error}
@@ -211,7 +187,6 @@ export default function ProjectDetailPage() {
             </section>
           </>
         )}
-      </div>
     </div>
   );
 }

@@ -26,16 +26,21 @@ import {
  * mode row, this slot, History row) never changes shape or grows - only the
  * slot's content changes.
  */
-type NexusDockMode = "talk" | "image" | "draw" | "doc" | "upload" | "history";
+export type NexusDockMode = "talk" | "image" | "draw" | "doc" | "upload" | "history";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const IMAGE_ACCEPT = "image/*";
 
-export function NexusConversationSurface() {
+export function NexusConversationSurface({
+  initialMode,
+}: {
+  /** Which slot to open with - set by the console dock when a specific tool icon requested power-on. */
+  readonly initialMode?: NexusDockMode;
+} = {}) {
   const [, navigate] = useLocation();
   const { viewportSnapshot, communicationLayer } = useNexus();
   const [status, setStatus] = useState("Ready");
-  const [activeMode, setActiveMode] = useState<NexusDockMode>("talk");
+  const [activeMode, setActiveMode] = useState<NexusDockMode>(initialMode ?? "talk");
 
   const goToChat = useCallback((conversationId?: string) => {
     navigate(conversationId ? `/chat/${conversationId}` : "/chat");
@@ -263,7 +268,7 @@ function CommunicationModeButton({
   );
 }
 
-function iconForMode(modeId: string) {
+export function iconForMode(modeId: string) {
   switch (modeId) {
     case "talk":
       return Mic;

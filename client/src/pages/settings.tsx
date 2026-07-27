@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Settings as SettingsIcon } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAppSettings } from "@/hooks/useAppSettings";
@@ -18,13 +18,6 @@ interface SettingsUser {
   claims?: { isAdmin?: boolean };
   personalization?: { compactMessages?: boolean };
 }
-
-const SECTION_TITLE: Record<string, string> = {
-  preferences: "Preferences",
-  workspace: "Projects & workspaces",
-  security: "Sign-in & session",
-  archived: "Archived chats",
-};
 
 /**
  * The real Settings surface, reachable from Nexus's "Settings" domain.
@@ -51,35 +44,23 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => (section === "main" ? navigate("/nexus") : setSection("main"))}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          {section === "main" ? "Nexus" : "Settings"}
-        </Button>
-        <div className="flex items-center gap-2">
-          <SettingsIcon size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            {section === "main" ? "Settings" : SECTION_TITLE[section] ?? "Settings"}
-          </span>
-        </div>
-        <div className="h-9 w-9" aria-hidden="true" />
-      </div>
-
-      <div className={`mx-auto max-w-2xl px-4 ${compact ? "py-4" : "py-6"}`}>
-        {section === "main" && <SettingsMainMenu isAdmin={isAdmin} onNavigate={handleNavigate} />}
-        {section === "preferences" && (
-          <PersonalizationSettings appSettings={appSettings} setAppSettings={setAppSettings} />
-        )}
-        {section === "workspace" && <RulesSettings />}
-        {section === "security" && <AccountSecuritySettings />}
-        {section === "archived" && <ArchivedChatsSettings />}
-      </div>
+    <div className={`mx-auto max-w-2xl px-4 ${compact ? "py-4" : "py-6"}`}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => (section === "main" ? navigate("/nexus") : setSection("main"))}
+        className="mb-4 rounded-xl text-muted-foreground hover:text-foreground zed-button"
+      >
+        <ChevronLeft size={16} className="mr-1" />
+        {section === "main" ? "Nexus" : "Settings"}
+      </Button>
+      {section === "main" && <SettingsMainMenu isAdmin={isAdmin} onNavigate={handleNavigate} />}
+      {section === "preferences" && (
+        <PersonalizationSettings appSettings={appSettings} setAppSettings={setAppSettings} />
+      )}
+      {section === "workspace" && <RulesSettings />}
+      {section === "security" && <AccountSecuritySettings />}
+      {section === "archived" && <ArchivedChatsSettings />}
     </div>
   );
 }

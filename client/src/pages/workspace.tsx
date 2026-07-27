@@ -3,7 +3,6 @@ import { useLocation, useParams } from "wouter";
 import {
   BookOpen,
   Briefcase,
-  ChevronLeft,
   FolderKanban,
   GraduationCap,
   History,
@@ -194,52 +193,31 @@ function WorkspaceIndex() {
   const [, navigate] = useLocation();
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <Layers size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            Workspaces
-          </span>
-        </div>
-        <span className="w-14" />
-      </div>
-
-      <main className="mx-auto max-w-2xl space-y-3 p-4 pb-24">
-        <p className="px-1 text-sm leading-6 text-muted-foreground">
-          Domain operating spaces Zed works within. Pick one to open its desk.
-        </p>
-        {WORKSPACE_INDEX_ORDER.map((slug) => {
-          const config = WORKSPACES[slug];
-          const Icon = config.icon;
-          return (
-            <button
-              key={slug}
-              type="button"
-              onClick={() => navigate(`/workspaces/${slug}`)}
-              className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200">
-                <Icon size={18} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold text-white">{config.label}</div>
-                <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">{config.purpose}</p>
-              </div>
-            </button>
-          );
-        })}
-      </main>
-    </div>
+    <main className="mx-auto max-w-2xl space-y-3">
+      <p className="px-1 text-sm leading-6 text-muted-foreground">
+        Domain operating spaces Zed works within. Pick one to open its desk.
+      </p>
+      {WORKSPACE_INDEX_ORDER.map((slug) => {
+        const config = WORKSPACES[slug];
+        const Icon = config.icon;
+        return (
+          <button
+            key={slug}
+            type="button"
+            onClick={() => navigate(`/workspaces/${slug}`)}
+            className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200">
+              <Icon size={18} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-white">{config.label}</div>
+              <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">{config.purpose}</p>
+            </div>
+          </button>
+        );
+      })}
+    </main>
   );
 }
 
@@ -298,115 +276,94 @@ function WorkspaceDetail({
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <Icon size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            {config.label}
-          </span>
+    <main className="mx-auto max-w-3xl space-y-4">
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
+          <Icon size={14} />
+          Workspace
         </div>
-        <span className="w-14" />
-      </div>
+        <h1 className="mt-2 text-2xl font-semibold">{config.label}</h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{config.purpose}</p>
+      </section>
 
-      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
-            <Icon size={14} />
-            Workspace
+      {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
+
+      <Button
+        onClick={() => navigate(`/chat?ctx=${workspace}`)}
+        className="w-full rounded-xl zed-gradient"
+      >
+        <MessageSquare size={14} className="mr-2" />
+        Ask Zed in {config.label}
+      </Button>
+
+      <WorkspaceLibrary workspace={workspace} label={`${config.label} library`} />
+
+      {config.subspaces && config.subspaces.length > 0 && (
+        <section className="space-y-2">
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Subspaces
           </div>
-          <h1 className="mt-2 text-2xl font-semibold">{config.label}</h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{config.purpose}</p>
-        </section>
-
-        {error && <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-300">{error}</div>}
-
-        <Button
-          onClick={() => navigate(`/chat?ctx=${workspace}`)}
-          className="w-full rounded-xl zed-gradient"
-        >
-          <MessageSquare size={14} className="mr-2" />
-          Ask Zed in {config.label}
-        </Button>
-
-        <WorkspaceLibrary workspace={workspace} label={`${config.label} library`} />
-
-        {config.subspaces && config.subspaces.length > 0 && (
-          <section className="space-y-2">
-            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Subspaces
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {config.subspaces.map((sub) => {
-                const SubIcon = sub.icon;
-                const accentText =
-                  sub.accent === "fuchsia"
-                    ? "text-fuchsia-300"
-                    : sub.accent === "emerald"
-                      ? "text-emerald-300"
-                      : sub.accent === "amber"
-                        ? "text-amber-300"
-                        : "text-cyan-300";
-                return (
-                  <button
-                    key={sub.href}
-                    type="button"
-                    onClick={() => navigate(sub.href)}
-                    className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
-                  >
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <SubIcon size={15} className={accentText} />
-                      {sub.label}
-                    </div>
-                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                      {sub.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        <section className="space-y-3">
-          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Available Tools</div>
-          {loading ? (
-            <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
-          ) : workspaceItems.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-              {config.empty}
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {workspaceItems.map((item) => (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {config.subspaces.map((sub) => {
+              const SubIcon = sub.icon;
+              const accentText =
+                sub.accent === "fuchsia"
+                  ? "text-fuchsia-300"
+                  : sub.accent === "emerald"
+                    ? "text-emerald-300"
+                    : sub.accent === "amber"
+                      ? "text-amber-300"
+                      : "text-cyan-300";
+              return (
                 <button
-                  key={item.id}
+                  key={sub.href}
                   type="button"
-                  onClick={() => navigate(`/workspaces/${workspace}/tools/${item.id}`)}
+                  onClick={() => navigate(sub.href)}
                   className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
                 >
-                  <div className="text-sm font-semibold text-foreground">{item.userFacingLabel}</div>
-                  <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.userFacingBlurb}</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <Badge variant="secondary" className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]">
-                      {item.stageCount} step set{item.stageCount === 1 ? "" : "s"}
-                    </Badge>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <SubIcon size={15} className={accentText} />
+                    {sub.label}
                   </div>
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    {sub.description}
+                  </p>
                 </button>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </section>
-      </main>
-    </div>
+      )}
+
+      <section className="space-y-3">
+        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Available Tools</div>
+        {loading ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
+        ) : workspaceItems.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
+            {config.empty}
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {workspaceItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => navigate(`/workspaces/${workspace}/tools/${item.id}`)}
+                className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+              >
+                <div className="text-sm font-semibold text-foreground">{item.userFacingLabel}</div>
+                <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.userFacingBlurb}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  <Badge variant="secondary" className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]">
+                    {item.stageCount} step set{item.stageCount === 1 ? "" : "s"}
+                  </Badge>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
   );
 }

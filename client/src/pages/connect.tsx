@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, ChevronRight, LineChart, Link2, Plug } from "lucide-react";
+import { ChevronRight, LineChart, Link2 } from "lucide-react";
 
 import type {
   IntegrationProvider,
@@ -62,26 +62,7 @@ export default function ConnectPage() {
   const connectedCount = integrations.filter((i) => i.status !== "disconnected").length;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <button
-          type="button"
-          onClick={() => navigate("/nexus")}
-          className="flex items-center gap-1 rounded-xl px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ChevronLeft size={16} />
-          Nexus
-        </button>
-        <div className="flex items-center gap-2">
-          <Plug size={16} className="text-fuchsia-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            Connect
-          </span>
-        </div>
-        <div className="h-9 w-9" aria-hidden="true" />
-      </div>
-
-      <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="mx-auto max-w-2xl px-4 py-6">
         <header className="mb-6">
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
             Connected accounts
@@ -144,7 +125,6 @@ export default function ConnectPage() {
           More account categories (email, calendar, social, storage) aren't
           connectable per-user yet - only trading/market-data accounts are today.
         </p>
-      </div>
     </div>
   );
 }

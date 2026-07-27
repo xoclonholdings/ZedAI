@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 
 import { useAuth } from "@/components/auth/UseAuth";
-import { NexusCommunicationDock } from "../components/NexusCommunicationDock";
+import { ConsoleShell } from "@/console/ConsoleShell";
+import { ZAR_NEXUS_CONSOLE } from "@/console/consoleIdentity";
 import NexusCore from "../components/NexusCore";
 import { NexusDeveloperInspector } from "../components/NexusDeveloperInspector";
 import { NexusHubOverlay } from "../components/NexusHubOverlay";
@@ -52,6 +52,8 @@ export default function NexusRootPage() {
 
   const [webgl, setWebgl] = useState(true);
   useEffect(() => setWebgl(canUseNexusWebgl()), []);
+
+  const [dockPowered, setDockPowered] = useState(false);
 
   // Real manifest nodes -> the official scene's domain shape. No prototype
   // DEFAULT_DOMAINS anywhere in the production path.
@@ -214,7 +216,47 @@ export default function NexusRootPage() {
   const showHub = stage === "hub" || stage === "enter";
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-[radial-gradient(ellipse_90%_70%_at_50%_35%,#0b0620_0%,#050211_55%,#010005_100%)] text-white">
+    <ConsoleShell
+      identity={ZAR_NEXUS_CONSOLE}
+      dockPowered={dockPowered}
+      onDockPowerChange={setDockPowered}
+      headerLeft={
+        <div className="min-w-0">
+          <div className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
+            ZAR
+          </div>
+          <h1
+            className="mt-1 truncate text-base font-medium text-white transition-opacity duration-300 sm:text-lg"
+            style={{ opacity: stage === "home" ? 1 : 0 }}
+          >
+            {greeting}, {displayName}
+          </h1>
+          <p
+            className="truncate text-[13px] text-white/45 transition-opacity duration-300"
+            style={{ opacity: stage === "home" ? 1 : 0 }}
+          >
+            How can I assist you today?
+          </p>
+        </div>
+      }
+      headerRightExtra={
+        stage === "home" && ambientDomain ? (
+          <div
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 backdrop-blur"
+            style={{ animation: "nexus-settle 300ms ease both" }}
+          >
+            <span
+              className="block h-1.5 w-1.5 shrink-0 rounded-full"
+              style={{ background: ambientDomain.color, boxShadow: `0 0 8px 2px ${ambientDomain.color}88` }}
+              aria-hidden="true"
+            />
+            <span className="text-[10px] font-medium tracking-[0.2em] text-white/70">
+              {ambientDomain.label}
+            </span>
+          </div>
+        ) : undefined
+      }
+    >
       {/* Celestial system - fills the entire viewport. This IS the application screen. */}
       <div className="absolute inset-0" data-nexus-region="scene">
         {webgl ? (
@@ -251,70 +293,15 @@ export default function NexusRootPage() {
         aria-hidden="true"
       />
 
-      {/* Floating header overlay */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-safe-sm sm:px-6 sm:pt-5">
-        <div className="min-w-0">
-          <div className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
-            ZAR
-          </div>
-          <h1
-            className="mt-1 truncate text-base font-medium text-white transition-opacity duration-300 sm:text-lg"
-            style={{ opacity: stage === "home" ? 1 : 0 }}
-          >
-            {greeting}, {displayName}
-          </h1>
-          <p
-            className="truncate text-[13px] text-white/45 transition-opacity duration-300"
-            style={{ opacity: stage === "home" ? 1 : 0 }}
-          >
-            How can I assist you today?
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <button
-            type="button"
-            className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.03] text-violet-200 shadow-[0_0_18px_rgba(167,139,250,0.25)] backdrop-blur transition hover:border-violet-300/50 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
-            aria-label="Ask ZAR"
-          >
-            <Sparkles size={18} />
-          </button>
-          {stage === "home" && ambientDomain && (
-            <div
-              className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 backdrop-blur"
-              style={{ animation: "nexus-settle 300ms ease both" }}
-            >
-              <span
-                className="block h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{ background: ambientDomain.color, boxShadow: `0 0 8px 2px ${ambientDomain.color}88` }}
-                aria-hidden="true"
-              />
-              <span className="text-[10px] font-medium tracking-[0.2em] text-white/70">
-                {ambientDomain.label}
-              </span>
-            </div>
-          )}
-        </div>
-      </header>
-
       {/* STATE 3 (Hub): the gateway reveal, still inside Nexus. */}
       {showHub && <NexusHubOverlay onBack={goHome} />}
-
-      {/* Floating communication console - the universe stays visible behind it. */}
-      <div
-        className="absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
-        data-nexus-region="communication"
-      >
-        <div className="w-full max-w-[760px]">
-          <NexusCommunicationDock />
-        </div>
-      </div>
 
       {showInspector && <NexusDeveloperInspector />}
 
       <style>{`
         @keyframes nexus-settle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
       `}</style>
-    </div>
+    </ConsoleShell>
   );
 }
 

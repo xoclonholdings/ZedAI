@@ -15,6 +15,7 @@ import Admin from "@/pages/admin";
 import HomePage from "@/pages/home";
 import NexusRootPage from "@/nexus/pages/NexusRootPage";
 import { NexusProvider } from "@/nexus";
+import { ConsoleWorkspaceFrame } from "@/console/ConsoleWorkspaceFrame";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
 import { RunsListPage, RunDetailPage } from "@/pages/runs";
@@ -128,15 +129,15 @@ function Router() {
       </Route>
 
       <Route path="/workspaces/:workspace/tools/:id">
-        {isAuthenticated ? <FlowDetailPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><FlowDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/workspace">
-        {isAuthenticated ? <WorkspacePage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><WorkspacePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/workspaces/:workspace">
-        {isAuthenticated ? <WorkspacePage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><WorkspacePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/history/:runId">
@@ -152,11 +153,11 @@ function Router() {
       </Route>
 
       <Route path="/flows">
-        {isAuthenticated ? <FlowsPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><FlowsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/flows/:id">
-        {isAuthenticated ? <FlowDetailPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><FlowDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/runs">
@@ -168,39 +169,39 @@ function Router() {
       </Route>
 
       <Route path="/projects">
-        {isAuthenticated ? <ProjectsPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="projects"><ProjectsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/settings">
-        {isAuthenticated ? <SettingsPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="settings"><SettingsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/connect">
-        {isAuthenticated ? <ConnectPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="connect"><ConnectPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/identity">
-        {isAuthenticated ? <IdentityPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="identity"><IdentityPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/knowledge">
-        {isAuthenticated ? <KnowledgePage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><KnowledgePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/projects/:id">
-        {isAuthenticated ? <ProjectDetailPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="projects"><ProjectDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/learning/studio">
-        {isAuthenticated ? <LearningStudioPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><LearningStudioPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/learning/paths/:id">
-        {isAuthenticated ? <LearningStudioPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><LearningStudioPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/learning">
-        {isAuthenticated ? <LearningPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><LearningPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/decisions">

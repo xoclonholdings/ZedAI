@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation } from "wouter";
-import { ChevronLeft, Link as LinkIcon, Network, RefreshCw } from "lucide-react";
+import { Link as LinkIcon, Network } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import type { AnyMemoryObject, BaseObject, ObjectGraph } from "@shared/object-memory-types";
 
 function friendlyType(t: string): string {
@@ -25,7 +23,6 @@ function friendlyRel(t: string): string {
  * Knowledge is for browsing what's already there and where it came from.
  */
 export default function KnowledgePage() {
-  const [, navigate] = useLocation();
   const [graph, setGraph] = useState<ObjectGraph | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,36 +74,7 @@ export default function KnowledgePage() {
   );
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <Network size={16} className="text-blue-300" />
-          <span className="font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 bg-clip-text text-transparent">
-            Knowledge
-          </span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void refresh()}
-          disabled={loading}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-          aria-label="Refresh"
-        >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-        </Button>
-      </div>
-
-      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
+    <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-black p-5">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-blue-200/80">
             <Network size={14} />
@@ -258,7 +226,6 @@ export default function KnowledgePage() {
             ))
           )}
         </section>
-      </main>
-    </div>
+    </main>
   );
 }

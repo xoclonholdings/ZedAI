@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  ChevronLeft,
   FileText,
   Users,
   Megaphone,
@@ -16,7 +15,6 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 interface PublishedFlow {
   id: string;
@@ -70,34 +68,7 @@ export default function FlowsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm flex items-center justify-between sticky top-0 z-20">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="text-muted-foreground hover:text-foreground zed-button rounded-xl"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <Workflow size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            Flow Mode
-          </span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/runs")}
-          className="text-muted-foreground hover:text-foreground zed-button rounded-xl text-xs"
-        >
-          Runs
-        </Button>
-      </div>
-
-      <div className="p-4 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 max-w-3xl mx-auto space-y-4">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">What do you want to do?</h1>
           <p className="text-sm text-muted-foreground">
@@ -162,7 +133,6 @@ export default function FlowsPage() {
             })}
           </div>
         )}
-      </div>
     </div>
   );
 }
