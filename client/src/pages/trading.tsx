@@ -98,6 +98,57 @@ function StatCard({ label, value, note }: { label: string; value: string | numbe
   );
 }
 
+function GovernanceDecisionRow({ decision }: { decision: TradingGovernanceDecision }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge className={decisionBadgeClass(decision.decision)}>{decision.decision}</Badge>
+          {decision.symbol && <span className="text-sm font-semibold">{decision.symbol}</span>}
+        </div>
+        <span className="text-xs text-muted-foreground">{formatDate(decision.createdAt)}</span>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{decision.reason}</p>
+
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((v) => !v)}
+        className="mt-2 text-xs text-cyan-300 hover:text-cyan-200"
+      >
+        {detailsOpen ? "Hide" : "Show"} Zed's checklist &amp; evidence
+      </button>
+
+      {detailsOpen && (
+        <>
+          {decision.paperTradingProgress && (
+            <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-400/5 p-2 text-xs text-cyan-100">
+              Validation: {decision.paperTradingProgress.currentSampleSize}/{decision.paperTradingProgress.requiredSampleSize} trades. Status: {decision.paperTradingProgress.status}. Live eligibility: {decision.liveTradingEligibility || "Not Eligible"}.
+            </div>
+          )}
+          {decision.checklist && (
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {decision.checklist.map((item) => (
+                <div key={`${decision.id}-${item.key}`} className="rounded-lg border border-white/10 bg-black/30 p-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-white">{item.label}</span>
+                    <Badge className={decisionBadgeClass(item.result)}>{item.result}</Badge>
+                  </div>
+                  <p className="mt-1 leading-5 text-muted-foreground">{item.evidence}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
+            <div><span className="text-white">Evidence:</span> {decision.supportingEvidence.slice(0, 3).join(" | ") || "None recorded"}</div>
+            <div><span className="text-white">Required:</span> {decision.requiredActions.join(" | ") || "None"}</div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function Panel({ title, children, icon }: { title: string; children: React.ReactNode; icon?: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-white/10 bg-black/30 p-4 shadow-[0_0_24px_rgba(147,51,234,0.12)]">
@@ -288,38 +339,7 @@ export default function TradingPage() {
                       </div>
                       <div className="space-y-3">
                         {governanceDecisions.map((decision) => (
-                          <div key={decision.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Badge className={decisionBadgeClass(decision.decision)}>{decision.decision}</Badge>
-                                {decision.symbol && <span className="text-sm font-semibold">{decision.symbol}</span>}
-                              </div>
-                              <span className="text-xs text-muted-foreground">{formatDate(decision.createdAt)}</span>
-                            </div>
-                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{decision.reason}</p>
-                            {decision.paperTradingProgress && (
-                              <div className="mt-3 rounded-lg border border-cyan-400/20 bg-cyan-400/5 p-2 text-xs text-cyan-100">
-                                Validation: {decision.paperTradingProgress.currentSampleSize}/{decision.paperTradingProgress.requiredSampleSize} trades. Status: {decision.paperTradingProgress.status}. Live eligibility: {decision.liveTradingEligibility || "Not Eligible"}.
-                              </div>
-                            )}
-                            {decision.checklist && (
-                              <div className="mt-3 grid gap-2 md:grid-cols-2">
-                                {decision.checklist.map((item) => (
-                                  <div key={`${decision.id}-${item.key}`} className="rounded-lg border border-white/10 bg-black/30 p-2 text-xs">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="font-medium text-white">{item.label}</span>
-                                      <Badge className={decisionBadgeClass(item.result)}>{item.result}</Badge>
-                                    </div>
-                                    <p className="mt-1 leading-5 text-muted-foreground">{item.evidence}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <div className="mt-3 grid gap-2 text-xs text-muted-foreground md:grid-cols-2">
-                              <div><span className="text-white">Evidence:</span> {decision.supportingEvidence.slice(0, 3).join(" | ") || "None recorded"}</div>
-                              <div><span className="text-white">Required:</span> {decision.requiredActions.join(" | ") || "None"}</div>
-                            </div>
-                          </div>
+                          <GovernanceDecisionRow key={decision.id} decision={decision} />
                         ))}
                         {governanceDecisions.length === 0 && <p className="text-sm text-muted-foreground">No governance decisions yet.</p>}
                       </div>
