@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Link2, Plug } from "lucide-react";
+import { ChevronLeft, ChevronRight, LineChart, Link2, Plug } from "lucide-react";
 
 import type {
+  IntegrationProvider,
   IntegrationProviderInfo,
   TradingIntegration,
 } from "@shared/trading-training-types";
@@ -13,6 +14,18 @@ const STATUS_CLS: Record<string, string> = {
   error: "bg-red-400/15 text-red-300",
   disconnected: "bg-white/10 text-white/40",
 };
+
+// Every real per-user connectable account in the app today is a trading/
+// market-data provider (TradingIntegrationsStore) - there's no per-user
+// backend yet for email, calendar, social, or storage accounts (those only
+// exist as a single admin-wide config, not something an individual user
+// connects). Grouping what's real into sub-categories rather than
+// inventing categories the backend can't back.
+const CATEGORIES: Array<{ label: string; providers: IntegrationProvider[] }> = [
+  { label: "Trading Brokers", providers: ["lucid", "tradovate", "webull"] },
+  { label: "Prediction Markets", providers: ["kalshi", "polymarket"] },
+  { label: "Other Accounts", providers: ["custom"] },
+];
 
 /**
  * The real Connect surface, reachable from Nexus's "Connect" domain.
@@ -80,20 +93,57 @@ export default function ConnectPage() {
           </p>
         </header>
 
+        <button
+          type="button"
+          onClick={() => navigate("/trading")}
+          className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 via-purple-500/10 to-black p-4 text-left transition-colors hover:border-white/20"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/15 text-fuchsia-300">
+            <LineChart size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-white">Trading Intelligence</div>
+            <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
+              Theses, journals, paper trades, and performance built on these connections.
+            </p>
+          </div>
+          <ChevronRight size={16} className="shrink-0 text-white/40" />
+        </button>
+
         {loading ? (
           <p className="text-[13px] text-white/40">Loading...</p>
         ) : (
-          <div className="space-y-2.5">
-            {providers.map((info) => (
-              <ProviderCard
-                key={info.provider}
-                info={info}
-                integration={integrations.find((i) => i.provider === info.provider)}
-                onChanged={load}
-              />
-            ))}
+          <div className="space-y-6">
+            {CATEGORIES.map((category) => {
+              const categoryProviders = category.providers
+                .map((id) => providers.find((p) => p.provider === id))
+                .filter((p): p is IntegrationProviderInfo => Boolean(p));
+              if (categoryProviders.length === 0) return null;
+              return (
+                <section key={category.label}>
+                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40">
+                    {category.label}
+                  </div>
+                  <div className="space-y-2.5">
+                    {categoryProviders.map((info) => (
+                      <ProviderCard
+                        key={info.provider}
+                        info={info}
+                        integration={integrations.find((i) => i.provider === info.provider)}
+                        onChanged={load}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         )}
+
+        <p className="mt-6 text-center text-[11.5px] leading-snug text-white/30">
+          More account categories (email, calendar, social, storage) aren't
+          connectable per-user yet - only trading/market-data accounts are today.
+        </p>
       </div>
     </div>
   );
