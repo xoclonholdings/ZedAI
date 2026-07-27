@@ -1,5 +1,37 @@
 [
   {
+    "userId": "test-user-1785148261045",
+    "market": "US",
+    "assetClass": "stock",
+    "symbol": "AAPL",
+    "direction": "long",
+    "status": "possible_setup",
+    "reason": "Higher-timeframe trend remains bullish across Daily / 4H / 1H. Price swept sell-side liquidity beyond the prior session / swing low and reclaimed support. Looking for continuation toward buy-side liquidity resting at the previous swing high.",
+    "marketStructure": "Daily and 4H structure remain bullish with higher highs and higher lows. 1H shows a bullish break of structure after the sweep, confirming intent in the direction of the higher-timeframe bias (Daily / 4H / 1H).",
+    "liquidityAnalysis": "Sell-side liquidity beyond the prior session / swing low has already been taken (stop hunt / sweep). Buy-side liquidity above/below the previous swing high remains the likely draw on price.",
+    "timeframeAlignment": {
+      "Daily": "bullish",
+      "4H": "bullish",
+      "1H": "bullish"
+    },
+    "primaryTimeframe": "Daily / 4H / 1H",
+    "entryPlan": "Wait for a 15m confirmation candle above reclaimed support. Enter on the retrace back into the confirmation zone with predefined risk — no chasing, confirmation before commitment.",
+    "stopPlan": "Stop sits below the sweep low — the point that invalidates the setup structurally. Exit early if price closes back below reclaimed support or market structure fails in the trade direction.",
+    "targetPlan": "TP1 at the previous swing high (prior swing objective). TP2 at the buy-side liquidity pool. Trail the remaining position using higher lows once TP1 is banked.",
+    "riskReward": 3,
+    "invalidationConditions": [
+      "1H close below the sweep low",
+      "Daily structure flips bearish",
+      "High-impact news invalidates the setup",
+      "Gap against the position beyond planned risk"
+    ],
+    "confidenceScore": 62,
+    "outcome": "unresolved",
+    "notes": "Zed built this proposal from its learned Trades By Sci framework (no stored knowledge matched yet). Levels are anchored to the $237.5 reference you provided, spaced for a 3:1 reward/risk.\n\nRelevant knowledge:\nMinimum Trading Curriculum Sources:\n- Trades By Sci: Primary trading education source for market structure, liquidity, Bank & Sweep concepts, and setup discipline.\n- Bank & Sweep: Liquidity behavior, stop hunts, sweep confirmation, and institutional-style setup framing.\n\nRequired Knowledge Areas:\n- Market Structure: Trend, Range, Break of Structure (BOS), Change of Character (CHOCH)\n- Liquidity: Liquidity pools, Stop hunts, Liquidity sweeps, Bank & Sweep concepts\n- Supply & Demand: Support, Resistance, Supply zones, Demand zones\n- Multi-Timeframe Analysis: Monthly, Weekly, Daily, Intraday alignment\n- Entry Models: Confirmation entries, Retests, Breakouts, Reversals\n- Risk Management: Position sizing, Stop loss placement, Risk/reward ratios, Max drawdown rules\n- Trade Planning: Entry, Stop, Target, Invalidation\n- Trade Management: Partial profits, Stop adjustments, Exit conditions\n- Probability Assessment: Confluence scoring, Setup ranking, Confidence evaluation\n- Broker Integration: Paper account connection, Position sync, Order status, Approval controls\n- Backtesting: Strategy testing, Performance metrics, Win rate, Expectancy\n- Journaling: Trade logging, Mistake tracking, Pattern identification\n- Market Catalysts: Economic calendar, Earnings, CPI, FOMC, Major news events\n- Asset Classes: Stocks, ETFs, Options, Futures, Crypto, Forex\n- Automation Workflow: Scan, Detect, Analyze, Plan, Alert, Approve, Execute, Review, Learn\n\nBuild Order:\n1. Broker Integration: Make paper account status, positions, orders, and approval controls available to ZED.\n2. Trades By Sci Knowledge Base: Convert trusted educational material into structured concepts, setup rules, mistakes, and examples.\n3. Scanner: Detect market structure, liquidity, continuation, reversal, breakout, and no-trade conditions.\n4. Signal Engine: Convert scanner observations into ranked setup signals with strict invalidation logic.\n5. Journal: Track trades, decisions, mistakes, screenshots, and lessons learned.\n6. Backtesting: Validate strategies against historical outcomes before live consideration.\n7. Risk Engine: Enforce position sizing, drawdown limits, daily loss limits, correlation exposure, and capital preservation rules.\n8. Approval Mode: Require user approval before any future external or capital-impacting action.\n9. Guarded Autonomy: Allow low-risk automation only after validation, risk controls, and approval gates are proven.\n10. Full Autonomy: Future-only target after proven performance, broker integrations, audit trails, hard stops, and user-defined risk limits.\n\nStored Knowledge Matches:\nNo stored trading knowledge matched this request yet. Use Phase 1 knowledge import to teach ZED structured concepts before relying on setup evaluation.",
+    "id": "f15a8715-6686-4625-ab5e-45be925f4fe9",
+    "createdAt": "2026-07-27T10:31:02.166Z"
+  },
+  {
     "userId": "verify-user-1783842899107",
     "market": "US",
     "assetClass": "stock",

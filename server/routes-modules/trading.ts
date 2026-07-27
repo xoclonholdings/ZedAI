@@ -13,6 +13,11 @@ import { evaluateScannerObservation } from "../zcos/trading/ScannerEngine";
 import { createTradeThesis } from "../zcos/trading/TradeThesisEngine";
 import { generateTradeStrategy } from "../zcos/trading/TradeStrategyGenerator";
 import {
+  proposeTrade,
+  internalTradeDataAdapter,
+  webullTradeDataAdapter,
+} from "../zcos/trading/TradeProposalService";
+import {
   authorizePaperTrade,
   evaluateTradeThesisGovernance,
   governanceReview,
@@ -41,12 +46,10 @@ import { getLiveState, saveLiveConfig, setKillSwitch } from "../zcos/trading/Liv
 import { getPolymarketUsStatus, searchPolymarketUsMarkets } from "../zcos/trading/PolymarketUsBridge";
 import {
   getWebullStatus,
-  getWebullMarketQuote,
   listWebullAccounts,
   listWebullOrders,
   listWebullPositions,
   placeWebullOrder,
-  recommendWebullSymbol,
   saveWebullCredentials,
   testWebullConnection,
 } from "../zcos/trading/WebullBridge";
@@ -217,87 +220,38 @@ export function registerTradingRoutes(app: Express): void {
       const userId = userIdFrom(req);
       const asset = req.body.asset || "stock";
       const market = req.body.market ? String(req.body.market) : "US";
+      const recentTrades = await TradingStore.listPaperTrades(userId);
 
-      // Zed can pick the symbol when the user doesn't supply one.
-      let symbol = String(req.body.symbol || "").trim();
-      let directionPreference = req.body.directionPreference || "auto";
-      let recommendation: Awaited<ReturnType<typeof recommendSymbol>> = null;
-      if (!symbol) {
-        const recentTrades = await TradingStore.listPaperTrades(userId);
-        recommendation = await recommendSymbol(asset, market, {
-          avoidSymbols: recentTrades.slice(0, 12).map((trade) => trade.symbol),
-          preferDirection: directionPreference,
-        });
-        if (!recommendation) {
-          return res.status(422).json({
-            error:
-              "Zed couldn't reach live data to pick a symbol. Enter a symbol, or add a market-data API key.",
-          });
-        }
-        symbol = recommendation.symbol;
-        if (directionPreference === "auto") directionPreference = recommendation.direction;
-      }
-
-      // Pull a live quote so Zed prices the setup off real levels. A user-
-      // supplied referencePrice always wins; otherwise the live price is
-      // used, and the live ATR sizes the stop to real volatility. If no
-      // source is reachable, the generator falls back to a paper reference.
-      const overridePrice =
-        req.body.referencePrice === undefined ? undefined : toNumber(req.body.referencePrice);
-      const quote = await getMarketQuote(symbol, asset);
-      const referencePrice = overridePrice ?? quote?.price;
-
-      // Let the technical buy/sell signal decide direction when the caller
-      // didn't force one and the indicators agree.
-      if (directionPreference === "auto" && quote?.signal && quote.signal.signal !== "neutral") {
-        directionPreference = quote.signal.signal === "buy" ? "long" : "short";
-      }
-
-      const strategy = await generateTradeStrategy({
+      const result = await proposeTrade({
         userId,
-        symbol,
+        adapter: internalTradeDataAdapter(),
         asset,
         market,
-        directionPreference,
+        symbol: req.body.symbol ? String(req.body.symbol) : undefined,
+        directionPreference: req.body.directionPreference || "auto",
         timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
-        referencePrice,
-        stopDistance: quote?.atr,
-        signal: quote?.signal ?? null,
+        referencePrice:
+          req.body.referencePrice === undefined ? undefined : toNumber(req.body.referencePrice),
+        avoidSymbols: recentTrades.slice(0, 12).map((trade) => trade.symbol),
       });
 
-      const marketData = quote
-        ? { live: true, source: quote.source, price: quote.price, asOf: quote.asOf, atr: quote.atr ?? null }
-        : { live: false, source: null, price: null, asOf: null, atr: null };
-
-      const thesis = await createTradeThesis({
-        userId,
-        market,
-        assetClass: asset,
-        symbol: strategy.symbol,
-        direction: strategy.direction,
-        reason: strategy.thesis,
-        marketStructure: strategy.marketStructure,
-        liquidityAnalysis: strategy.liquidityAnalysis,
-        timeframeAlignment: strategy.timeframeAlignment,
-        primaryTimeframe: strategy.timeframe,
-        entryPlan: strategy.entryPlan,
-        stopPlan: strategy.stopPlan,
-        targetPlan: strategy.targetPlan,
-        riskReward: strategy.riskReward,
-        invalidationConditions: strategy.invalidation.split("\n").map((s) => s.trim()).filter(Boolean),
-        confidenceScore: strategy.confidence,
-        notes: strategy.basis,
-      });
-
+      if (result.kind === "error") return res.status(result.statusCode).json({ error: result.error });
+      if (result.kind === "no_trade") {
+        return res.json({
+          action: "no_trade",
+          symbol: result.symbol,
+          marketData: result.marketData,
+          signal: result.signal,
+          reason: result.reason,
+        });
+      }
       res.json({
-        ...strategy,
-        thesisId: thesis.id,
-        session: strategy.session,
-        marketData,
-        signal: quote?.signal ?? null,
-        recommendedSymbol: recommendation
-          ? { symbol: recommendation.symbol, reason: recommendation.reason }
-          : null,
+        ...result.strategy,
+        thesisId: result.thesisId,
+        session: result.strategy.session,
+        marketData: result.marketData,
+        signal: result.signal,
+        recommendedSymbol: result.recommendedSymbol,
       });
     } catch (error: any) {
       res.status(500).json({ error: error?.message || "Trade proposal failed" });
@@ -798,111 +752,43 @@ export function registerTradingRoutes(app: Express): void {
 
       const asset = req.body.asset || req.body.assetClass || "stock";
       const market = req.body.market ? String(req.body.market) : "US";
-      let symbol = String(req.body.symbol || "").trim();
-      let directionPreference = req.body.directionPreference || "auto";
-      let recommendation: Awaited<ReturnType<typeof recommendWebullSymbol>> = null;
-      let quote: Awaited<ReturnType<typeof getWebullMarketQuote>> | null = null;
+      const recentTrades = await TradingStore.listPaperTrades(userId);
+      const avoidSymbols = recentTrades
+        .filter((trade) => trade.executionMode === "external_paper")
+        .slice(0, 12)
+        .map((trade) => trade.symbol);
 
-      if (!symbol) {
-        const recentTrades = await TradingStore.listPaperTrades(userId);
-        const avoidSymbols = recentTrades
-          .filter((trade) => trade.executionMode === "external_paper")
-          .slice(0, 12)
-          .map((trade) => trade.symbol);
-        // This is the Webull step — Webull is the data source. Surface
-        // Webull's real error (e.g. a missing market-data entitlement)
-        // rather than masking it with another feed.
-        try {
-          recommendation = await recommendWebullSymbol(userId, asset, market, {
-            avoidSymbols,
-            preferDirection: directionPreference,
-          });
-        } catch (err: any) {
-          return res.status(422).json({
-            action: "no_trade",
-            error: `Webull market data is unavailable: ${err?.message || "unknown error"}`,
-          });
-        }
-        if (!recommendation) {
-          return res.status(422).json({
-            action: "no_trade",
-            error:
-              "Webull returned no usable market data for the scanned symbols. This is typically a market-data entitlement your Webull OpenAPI app hasn't enabled (separate from trading access).",
-          });
-        }
-        symbol = recommendation.symbol;
-        quote = recommendation.quote;
-        if (directionPreference === "auto") directionPreference = recommendation.direction;
-      }
+      const result = await proposeTrade({
+        userId,
+        adapter: webullTradeDataAdapter(userId),
+        asset,
+        market,
+        symbol: req.body.symbol ? String(req.body.symbol) : undefined,
+        directionPreference: req.body.directionPreference || "auto",
+        timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
+        avoidSymbols,
+        notesPrefix: "Webull external paper proposal.",
+      });
 
-      if (!quote) {
-        try {
-          quote = await getWebullMarketQuote(userId, symbol, asset);
-        } catch (err: any) {
-          return res.status(422).json({
-            action: "no_trade",
-            error: `Webull market data is unavailable for ${symbol}: ${err?.message || "unknown error"}`,
-          });
-        }
-      }
-      if (quote?.signal?.signal === "neutral") {
+      if (result.kind === "error") return res.status(result.statusCode).json({ action: "no_trade", error: result.error });
+      if (result.kind === "no_trade") {
         return res.json({
           action: "no_trade",
-          symbol,
-          marketData: { live: true, source: quote.source, price: quote.price, asOf: quote.asOf, atr: quote.atr ?? null },
-          signal: quote.signal,
-          reason: `No Webull paper trade proposed for ${symbol}: live signal is neutral (${quote.signal.bullish} bullish / ${quote.signal.bearish} bearish).`,
+          symbol: result.symbol,
+          marketData: result.marketData,
+          signal: result.signal,
+          reason: result.reason,
           status,
         });
       }
-      if (directionPreference === "auto" && quote?.signal) {
-        directionPreference = quote.signal.signal === "buy" ? "long" : "short";
-      }
-
-      const strategy = await generateTradeStrategy({
-        userId,
-        symbol,
-        asset,
-        market,
-        directionPreference,
-        timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
-        referencePrice: quote?.price,
-        stopDistance: quote?.atr,
-        signal: quote?.signal ?? null,
-      });
-
-      const thesis = await createTradeThesis({
-        userId,
-        market,
-        assetClass: asset,
-        symbol: strategy.symbol,
-        direction: strategy.direction,
-        reason: strategy.thesis,
-        marketStructure: strategy.marketStructure,
-        liquidityAnalysis: strategy.liquidityAnalysis,
-        timeframeAlignment: strategy.timeframeAlignment,
-        primaryTimeframe: strategy.timeframe,
-        entryPlan: strategy.entryPlan,
-        stopPlan: strategy.stopPlan,
-        targetPlan: strategy.targetPlan,
-        riskReward: strategy.riskReward,
-        invalidationConditions: strategy.invalidation.split("\n").map((s) => s.trim()).filter(Boolean),
-        confidenceScore: strategy.confidence,
-        notes: `Webull external paper proposal. ${strategy.basis}`,
-      });
-
       res.json({
-        action: strategy.direction === "long" ? "buy" : "sell",
-        ...strategy,
-        thesisId: thesis.id,
+        action: result.strategy.direction === "long" ? "buy" : "sell",
+        ...result.strategy,
+        thesisId: result.thesisId,
         managementStyle: "bracket",
-        marketData: quote
-          ? { live: true, source: quote.source, price: quote.price, asOf: quote.asOf, atr: quote.atr ?? null }
-          : { live: false, source: null, price: null, asOf: null, atr: null },
-        signal: quote?.signal ?? null,
-        recommendedSymbol: recommendation
-          ? { symbol: recommendation.symbol, reason: recommendation.reason }
-          : null,
+        marketData: result.marketData,
+        signal: result.signal,
+        recommendedSymbol: result.recommendedSymbol,
         status,
       });
     } catch (error: any) {
