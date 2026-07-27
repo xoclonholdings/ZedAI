@@ -16,8 +16,8 @@ import {
 /**
  * The Learn stage, organised as sections — one per required knowledge
  * area (market structure, liquidity, risk, …). Each section is where you
- * feed Zed education for that topic, then test Zed on that section
- * specifically. Feeding and testing here reuse Zed's existing
+ * feed ZAR education for that topic, then test ZAR on that section
+ * specifically. Feeding and testing here reuse ZAR's existing
  * TradingKnowledgeBase and assessment engine; nothing new is duplicated.
  */
 
@@ -61,8 +61,8 @@ export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
   return (
     <StageShell
       eyebrow="Learn"
-      title="Teach Zed, section by section"
-      description="Each section is a required area of Zed's trading framework. Feed education into a section, then test Zed on that section specifically. Zed structures what you give it and is graded only on what it actually learned."
+      title="Teach ZAR, section by section"
+      description="Each section is a required area of ZAR's trading framework. Feed education into a section, then test ZAR on that section specifically. ZAR structures what you give it and is graded only on what it actually learned."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >
@@ -124,7 +124,7 @@ function SectionCard({
       setFiles([]);
       if (fileRef.current) fileRef.current.value = "";
       setNotice(
-        `Zed ingested ${body?.totals?.sources || 0} source(s) into ${area.title}. Test Zed when ready.`,
+        `ZAR ingested ${body?.totals?.sources || 0} source(s) into ${area.title}. Test ZAR when ready.`,
       );
       onFed?.();
       onChanged();
@@ -200,7 +200,7 @@ function SectionCard({
             disabled={testing}
             className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-2.5 py-1 text-[11.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
           >
-            {testing ? "Testing…" : "Test Zed"}
+            {testing ? "Testing…" : "Test ZAR"}
           </button>
         </div>
       </div>
@@ -240,7 +240,7 @@ function SectionCard({
               className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
             >
               <Upload size={13} />
-              {uploading ? "Feeding Zed…" : "Feed this section"}
+              {uploading ? "Feeding ZAR…" : "Feed this section"}
             </button>
           </div>
 

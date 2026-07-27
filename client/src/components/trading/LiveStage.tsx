@@ -64,7 +64,7 @@ export default function LiveStage() {
     <StageShell
       eyebrow="Live"
       title="Live trading (governed)"
-      description="Zed operates the full risk framework it proved through the earlier stages. Live execution unlocks only when qualified, with a broker connected and the kill switch armed."
+      description="ZAR operates the full risk framework it proved through the earlier stages. Live execution unlocks only when qualified, with a broker connected and the kill switch armed."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >
@@ -113,7 +113,7 @@ export default function LiveStage() {
 
           <p className="text-[11px] text-white/40 leading-snug">
             Live order routing requires a broker execution bridge such as Webull. Until it's enabled,
-            Zed stays in a governed, ready state and does not place real orders.
+            ZAR stays in a governed, ready state and does not place real orders.
           </p>
         </div>
       )}

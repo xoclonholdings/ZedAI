@@ -5,7 +5,7 @@ import type { EvaluationReport } from "@shared/trading-training-types";
 import { EmptyBox, NoticeBanner, StageShell } from "./stage-atoms";
 
 /**
- * Stage 5 — External evaluation. Zed runs its proven strategy toward a
+ * Stage 5 — External evaluation. ZAR runs its proven strategy toward a
  * funded-account objective (profit target, daily-loss + drawdown limits,
  * minimum trading days), scored from the trades it closes. Honest about
  * whether a real provider is connected.
@@ -69,7 +69,7 @@ export default function EvaluationStage() {
     <StageShell
       eyebrow="Funded account"
       title="Funded-account evaluation"
-      description="After external paper trading, Zed runs the funded-account challenge — hit the profit target without breaching the daily-loss or drawdown limits, over the minimum trading days. Real payout stakes."
+      description="After external paper trading, ZAR runs the funded-account challenge — hit the profit target without breaching the daily-loss or drawdown limits, over the minimum trading days. Real payout stakes."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >
@@ -132,7 +132,7 @@ export default function EvaluationStage() {
 
           {!report.providerConnected && (
             <p className="text-[11px] text-white/40 leading-snug">
-              No evaluation provider bridge is live yet, so this runs on Zed's own trade engine.
+              No evaluation provider bridge is live yet, so this runs on ZAR's own trade engine.
               Connect a supported evaluation bridge when it is available to run it under a real provider.
             </p>
           )}

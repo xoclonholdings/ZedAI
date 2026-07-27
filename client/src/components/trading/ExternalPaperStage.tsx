@@ -188,7 +188,7 @@ export default function ExternalPaperStage() {
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       setProposalSignal(body.signal || null);
       if (body.action === "no_trade") {
-        setProposalSummary(body.reason || "Zed found no trade worth staging right now.");
+        setProposalSummary(body.reason || "ZAR found no trade worth staging right now.");
         setNotice(body.reason || "No Webull paper trade proposed.");
         return;
       }
@@ -215,7 +215,7 @@ export default function ExternalPaperStage() {
         managementStyle: body.managementStyle || "bracket",
         entryReason: body.thesis || body.entryPlan || "",
       }));
-      setNotice(`Zed proposed a Webull ${body.action?.toUpperCase() || body.direction} setup for ${body.symbol}. Review and stage it.`);
+      setNotice(`ZAR proposed a Webull ${body.action?.toUpperCase() || body.direction} setup for ${body.symbol}. Review and stage it.`);
     } catch (err: any) {
       setError(err?.message || "Could not build Webull paper proposal");
     } finally {
@@ -262,7 +262,7 @@ export default function ExternalPaperStage() {
     <StageShell
       eyebrow="External paper"
       title="External paper trading"
-      description="Zed repeats the proof on a Webull paper account: real platform mechanics and live data, no money, before any funded risk."
+      description="ZAR repeats the proof on a Webull paper account: real platform mechanics and live data, no money, before any funded risk."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >
@@ -322,7 +322,7 @@ export default function ExternalPaperStage() {
 
           {!report.providerConnected && (
             <p className="text-[11px] text-white/40 leading-snug">
-              External paper trading does not start until Webull is connected. Zed will not label this
+              External paper trading does not start until Webull is connected. ZAR will not label this
               stage connected unless a paper account is actually configured.
             </p>
           )}
@@ -452,7 +452,7 @@ function WebullPaperOrderCard({
         <div>
           <div className="text-[13px] font-semibold text-white">Webull paper proposal</div>
           <p className="mt-1 text-[11.5px] leading-snug text-white/50">
-            Zed builds the full Webull paper setup from live data. You review, then stage it.
+            ZAR builds the full Webull paper setup from live data. You review, then stage it.
           </p>
         </div>
         <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.06em] ${connected ? "bg-emerald-400/15 text-emerald-300" : "bg-white/10 text-white/40"}`}>
@@ -467,7 +467,7 @@ function WebullPaperOrderCard({
           disabled={!connected || proposing}
           className="rounded-lg bg-cyan-400 px-3 py-1.5 text-[12.5px] font-medium text-black hover:bg-cyan-300 disabled:opacity-40"
         >
-          {proposing ? "Zed is building..." : form.symbol.trim() ? "Zed, build this Webull trade" : "Zed, pick & build a Webull trade"}
+          {proposing ? "ZAR is building..." : form.symbol.trim() ? "ZAR, build this Webull trade" : "ZAR, pick & build a Webull trade"}
         </button>
         {summary && <p className="mt-2 text-[11.5px] leading-snug text-white/60">{summary}</p>}
         {signal && <div className="mt-2"><SignalPanel signal={signal} /></div>}
@@ -506,7 +506,7 @@ function WebullPaperOrderCard({
           <Input label="Timeframe" value={form.timeframe} onChange={(timeframe) => setForm((v) => ({ ...v, timeframe }))} />
           <Input label="Setup" value={form.setupName} onChange={(setupName) => setForm((v) => ({ ...v, setupName }))} />
           <label className="block sm:col-span-2">
-            <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Zed manages</div>
+            <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">ZAR manages</div>
             <select
               value={form.managementStyle}
               onChange={(event) => setForm((v) => ({ ...v, managementStyle: event.target.value as NonNullable<PaperTrade["managementStyle"]> }))}
@@ -530,7 +530,7 @@ function WebullPaperOrderCard({
           <span className="truncate text-left">
             {form.entryReason.trim()
               ? form.entryReason.trim().split("\n")[0].slice(0, 90)
-              : "Why is Zed taking this trade? (required)"}
+              : "Why is ZAR taking this trade? (required)"}
           </span>
           <span className="shrink-0 text-[10.5px] uppercase tracking-[0.06em] text-cyan-300/80">
             {reasoningOpen ? "Hide" : form.entryReason.trim() ? "Edit" : "Add"}
@@ -542,7 +542,7 @@ function WebullPaperOrderCard({
             onChange={(event) => setForm((v) => ({ ...v, entryReason: event.target.value }))}
             rows={4}
             autoFocus
-            placeholder="Why Zed is taking this Webull paper trade"
+            placeholder="Why ZAR is taking this Webull paper trade"
             className="mt-2 min-h-20 w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-cyan-400/50"
           />
         )}

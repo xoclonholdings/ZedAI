@@ -18,12 +18,12 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 /**
- * How you feed and connect Zed for training:
- *   - Upload material (files) so Zed ingests it into its knowledge.
+ * How you feed and connect ZAR for training:
+ *   - Upload material (files) so ZAR ingests it into its knowledge.
  *   - Connect providers (Webull, Tradovate, Polymarket, and custom)
  *     that the trading stages can use.
  *
- * The paste-a-note flow and the "what Zed has learned" library live
+ * The paste-a-note flow and the "what ZAR has learned" library live
  * in LearnStage; this console adds file ingestion and connections.
  */
 
@@ -77,7 +77,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
     setNotice(null);
     setResult(null);
     if (files.length === 0) {
-      setError("Choose at least one file to feed Zed.");
+      setError("Choose at least one file to feed ZAR.");
       return;
     }
     setUploading(true);
@@ -95,7 +95,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       setResult(body as MaterialUploadResult);
       setFiles([]);
       if (fileRef.current) fileRef.current.value = "";
-      setNotice("Zed ingested your material. Run the test when you're ready.");
+      setNotice("ZAR ingested your material. Run the test when you're ready.");
       onFed?.();
     } catch (err: any) {
       setError(err?.message || "Upload failed");
@@ -106,9 +106,9 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
 
   return (
     <StageShell
-      eyebrow="Train Zed"
+      eyebrow="Train ZAR"
       title="Feed & connect"
-      description="Upload material for Zed to ingest, and connect the providers it should reach. Zed learns from everything you give it here."
+      description="Upload material for ZAR to ingest, and connect the providers it should reach. ZAR learns from everything you give it here."
     >
       {notice && <NoticeBanner kind="success">{notice}</NoticeBanner>}
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
@@ -117,7 +117,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       <div className="mb-4 flex flex-wrap gap-1.5">
         {(
           [
-            ["feed", "Feed Zed"],
+            ["feed", "Feed ZAR"],
             ["accounts", "Accounts"],
             ["data", "Data keys"],
             ["execution", "Execution"],
@@ -142,7 +142,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-4">
         <div className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-white">
           <Upload size={15} className="text-cyan-300" />
-          Upload material for Zed
+          Upload material for ZAR
         </div>
         <div className="grid gap-3 sm:grid-cols-[1fr_1.4fr]">
           <label className="block">
@@ -181,7 +181,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
             className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
           >
             <Upload size={13} />
-            {uploading ? "Feeding Zed…" : "Feed Zed"}
+            {uploading ? "Feeding ZAR…" : "Feed ZAR"}
           </button>
         </div>
         {result && (
@@ -388,7 +388,7 @@ const VENDOR_HINTS: Record<string, string> = {
 };
 
 /**
- * Lets the user paste a data-vendor API key so Zed's live feed is more
+ * Lets the user paste a data-vendor API key so ZAR's live feed is more
  * reliable, without touching Render env vars. Keys are stored server-side
  * and never returned — the UI only shows whether each is configured.
  */
@@ -433,7 +433,7 @@ function MarketDataKeysPanel() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setValues({});
-      setSaved("Saved. Zed will use it on the next proposal.");
+      setSaved("Saved. ZAR will use it on the next proposal.");
       await load();
     } catch (err: any) {
       setError(err?.message || "Could not save keys");
@@ -449,7 +449,7 @@ function MarketDataKeysPanel() {
         Market data API keys
       </div>
       <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
-        Optional. Zed reads live prices from a free public feed already; adding a vendor
+        Optional. ZAR reads live prices from a free public feed already; adding a vendor
         key makes it more reliable. Keys are stored securely and never shown again.
       </p>
 

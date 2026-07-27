@@ -289,7 +289,7 @@ export default function ValidationStage() {
     <StageShell
       eyebrow="Validation"
       title="Governance review"
-      description="Zed reviews every strategy against market context, statistical edge, risk math, and systemic weakness. You'll see a verdict and reason you can act on."
+      description="ZAR reviews every strategy against market context, statistical edge, risk math, and systemic weakness. You'll see a verdict and reason you can act on."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >

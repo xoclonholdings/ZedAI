@@ -53,7 +53,7 @@ const EMPTY_LOG_FORM = {
   riskAmount: "",
   managementStyle: "bracket" as NonNullable<PaperTrade["managementStyle"]>,
   entryReason: "",
-  // Filled by Zed's proposal so governance can link the thesis + context.
+  // Filled by ZAR's proposal so governance can link the thesis + context.
   thesisId: "",
   session: "",
   referencePrice: "",
@@ -239,7 +239,7 @@ export default function SandboxWorkspace() {
     void refresh();
   }, [refresh]);
 
-  // Check open trades against live prices; Zed closes any that hit their
+  // Check open trades against live prices; ZAR closes any that hit their
   // target (win) or stop (loss). This is what proves the proposals.
   const resolveVsLive = useCallback(async () => {
     setError(null);
@@ -322,7 +322,7 @@ export default function SandboxWorkspace() {
     }
   }, [logForm, refresh]);
 
-  // Zed proposes the COMPLETE trade for the symbol you name — direction,
+  // ZAR proposes the COMPLETE trade for the symbol you name — direction,
   // thesis, market structure, liquidity read, and the concrete
   // entry/stop/target/size/risk numbers, all sized to clear governance.
   // It also links a persisted thesis so nothing comes back UNKNOWN. You
@@ -333,7 +333,7 @@ export default function SandboxWorkspace() {
     setNotice(null);
     setSuggesting(true);
     try {
-      // Symbol is optional — leave it blank and Zed scans live data to
+      // Symbol is optional — leave it blank and ZAR scans live data to
       // pick one itself.
       const res = await fetch("/api/trading/strategies/propose", {
         method: "POST",
@@ -364,7 +364,7 @@ export default function SandboxWorkspace() {
         symbol: s.symbol || f.symbol,
         direction: s.direction === "short" ? "short" : "long",
         timeframe: s.timeframe || f.timeframe,
-        setupName: s.setupType || "Zed proposal",
+        setupName: s.setupType || "ZAR proposal",
         entry: s.entry != null ? String(s.entry) : f.entry,
         stop: s.stop != null ? String(s.stop) : f.stop,
         target: s.target != null ? String(s.target) : f.target,
@@ -376,7 +376,7 @@ export default function SandboxWorkspace() {
       }));
       setSignal(s.signal || null);
       const picked = s.recommendedSymbol
-        ? `Zed picked ${s.recommendedSymbol.symbol}. `
+        ? `ZAR picked ${s.recommendedSymbol.symbol}. `
         : "";
       const md = s.marketData;
       if (md?.live) {
@@ -388,11 +388,11 @@ export default function SandboxWorkspace() {
         setNotice(`${picked}Built at your reference price. Review and tap Approve & log.`);
       } else {
         setNotice(
-          `${picked}No live feed was reachable, so Zed used a paper reference price. Enter a reference price above for real levels, or tap Approve & log.`,
+          `${picked}No live feed was reachable, so ZAR used a paper reference price. Enter a reference price above for real levels, or tap Approve & log.`,
         );
       }
     } catch (err: any) {
-      setError(err?.message || "Zed could not build the trade. Try again.");
+      setError(err?.message || "ZAR could not build the trade. Try again.");
     } finally {
       setSuggesting(false);
     }
@@ -451,7 +451,7 @@ export default function SandboxWorkspace() {
             Paper trading
           </h2>
           <p className="mt-1 text-[12.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Build, approve, and track simulated trades. Zed handles the trade build; paper governance is user controlled.
+            Build, approve, and track simulated trades. ZAR handles the trade build; paper governance is user controlled.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {dataStatus && (
@@ -596,7 +596,7 @@ export default function SandboxWorkspace() {
             type="button"
             onClick={() => void runBacktest()}
             disabled={backtesting || !lookupSymbol.trim()}
-            title="Test Zed's signal strategy over ~2 years of this symbol's price history"
+            title="Test ZAR's signal strategy over ~2 years of this symbol's price history"
             className="rounded-lg border border-white/15 bg-white/[0.05] px-3 py-1.5 text-[12.5px] text-white/80 hover:bg-white/[0.1] disabled:opacity-50"
           >
             {backtesting ? "Backtesting…" : "Backtest 2y"}
@@ -642,7 +642,7 @@ export default function SandboxWorkspace() {
       </div>
       {openTrades.length === 0 ? (
         <div className="mb-5 rounded-lg border border-dashed border-white/10 p-5 text-center text-[12.5px] text-white/40">
-          No open trades yet. Tap New trade and let Zed propose one.
+          No open trades yet. Tap New trade and let ZAR propose one.
         </div>
       ) : (
         <div className="mb-5 space-y-2">
@@ -725,7 +725,7 @@ function TradeCard({ trade, onClose }: { trade: PaperTrade; onClose: () => void 
             Entry ${trade.entry} · Stop ${trade.stop} · Target ${trade.target} · {rrPlanned.toFixed(2)}R planned
           </div>
           <div className="mt-1 text-[10.5px] uppercase tracking-[0.06em] text-white/35">
-            Zed manages: {(trade.managementStyle || "bracket").replace("_", " ")}
+            ZAR manages: {(trade.managementStyle || "bracket").replace("_", " ")}
           </div>
           {trade.entryReason && (
             <div className="mt-1.5 text-[11.5px] text-white/50 italic max-w-[62ch]">
@@ -989,7 +989,7 @@ function LogTradeForm({
   return (
     <div className="mb-5 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <div className="text-[13px] font-semibold text-white">New paper trade — Zed proposes, you approve</div>
+        <div className="text-[13px] font-semibold text-white">New paper trade — ZAR proposes, you approve</div>
         <button
           type="button"
           onClick={onCancel}
@@ -1000,11 +1000,11 @@ function LogTradeForm({
         </button>
       </div>
 
-      {/* Zed builds the whole trade for the symbol you name. */}
+      {/* ZAR builds the whole trade for the symbol you name. */}
       <div className="mb-4 rounded-lg border border-cyan-400/20 bg-cyan-400/[0.04] px-3 py-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-[12px] text-cyan-100/90 max-w-[46ch] leading-snug">
-            Not sure what to trade? Leave the symbol blank and Zed scans live data to
+            Not sure what to trade? Leave the symbol blank and ZAR scans live data to
             pick one, then fills in everything — direction, thesis, structure, and the
             entry / stop / target / size / risk. You just approve.
           </div>
@@ -1015,10 +1015,10 @@ function LogTradeForm({
             className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
           >
             {suggesting
-              ? "Zed is building…"
+              ? "ZAR is building…"
               : form.symbol.trim()
-                ? "Zed, build this trade"
-                : "Zed, pick & build a trade"}
+                ? "ZAR, build this trade"
+                : "ZAR, pick & build a trade"}
           </button>
         </div>
         <label className="mt-2 flex items-center gap-2">
@@ -1111,7 +1111,7 @@ function LogTradeForm({
       </button>
       {detailsOpen && (
         <div className="mt-2 grid gap-3 grid-cols-2 sm:grid-cols-3">
-          <FormField label="Zed manages">
+          <FormField label="ZAR manages">
             <select
               value={form.managementStyle}
               onChange={(e) => set("managementStyle")(e.target.value as NonNullable<PaperTrade["managementStyle"]>)}

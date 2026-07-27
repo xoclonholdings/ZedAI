@@ -164,7 +164,7 @@ export default function StrategyStage() {
       setNotice(
         editingId
           ? "Strategy updated. Re-run its governance review in the Validation stage."
-          : "Strategy saved. Zed auto-ran a governance review — verdict is on the row.",
+          : "Strategy saved. ZAR auto-ran a governance review — verdict is on the row.",
       );
       setEditingId(null);
       await refresh();
@@ -180,7 +180,7 @@ export default function StrategyStage() {
     setNotice(null);
     const symbol = form.symbol.trim().toUpperCase();
     if (!symbol) {
-      setError("Enter a symbol first, then let Zed generate the strategy.");
+      setError("Enter a symbol first, then let ZAR generate the strategy.");
       return;
     }
     setGenerating(true);
@@ -221,10 +221,10 @@ export default function StrategyStage() {
       });
       setNotice(
         body.basis ||
-          "Zed drafted this strategy. Review and edit every field before saving — nothing is saved automatically.",
+          "ZAR drafted this strategy. Review and edit every field before saving — nothing is saved automatically.",
       );
     } catch (err: any) {
-      setError(err?.message || "Zed could not generate a strategy. Try again.");
+      setError(err?.message || "ZAR could not generate a strategy. Try again.");
     } finally {
       setGenerating(false);
     }
@@ -297,7 +297,7 @@ export default function StrategyStage() {
     <StageShell
       eyebrow="Strategy"
       title="Your trading strategies"
-      description="Every strategy captures market structure, liquidity, entry / stop / target plans, and invalidation. Once saved, Zed runs a governance review automatically — you'll see the verdict on the row."
+      description="Every strategy captures market structure, liquidity, entry / stop / target plans, and invalidation. Once saved, ZAR runs a governance review automatically — you'll see the verdict on the row."
       onRefresh={() => void refresh()}
       refreshing={loading}
       action={
@@ -325,7 +325,7 @@ export default function StrategyStage() {
                 type="button"
                 onClick={() => void generate()}
                 disabled={generating}
-                title="Let Zed draft this strategy from its learned framework"
+                title="Let ZAR draft this strategy from its learned framework"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-[12px] font-medium text-cyan-200 hover:bg-cyan-400/20 disabled:opacity-50 transition-colors"
               >
                 <Sparkles size={13} />

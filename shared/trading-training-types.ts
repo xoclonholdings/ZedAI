@@ -1,6 +1,6 @@
 /**
- * Shared types for Zed's trading training: stage assessments
- * ("Test Zed"), material uploads, and provider integrations.
+ * Shared types for ZAR's trading training: stage assessments
+ * ("Test ZAR"), material uploads, and provider integrations.
  */
 
 import type { StageAssessmentKind, TradingStageId } from "./trading-progression";
@@ -156,7 +156,7 @@ export interface LiveTradingState {
 /**
  * A single Learn-stage knowledge section. There is one per required
  * curriculum area (market structure, liquidity, …). The user feeds
- * education into a section, then tests Zed on that section specifically.
+ * education into a section, then tests ZAR on that section specifically.
  */
 export interface KnowledgeAreaInfo {
   id: string;
@@ -164,11 +164,11 @@ export interface KnowledgeAreaInfo {
   requiredTopics: string[];
   /** How many ingested knowledge entries are bound to this section. */
   entryCount: number;
-  /** True once Zed has structured knowledge covering this section. */
+  /** True once ZAR has structured knowledge covering this section. */
   covered: boolean;
 }
 
-/** Result of testing Zed on one knowledge section. */
+/** Result of testing ZAR on one knowledge section. */
 export interface KnowledgeAreaAssessment {
   areaId: string;
   areaTitle: string;
@@ -224,7 +224,7 @@ export interface IntegrationProviderInfo {
    */
   fields: Array<{ key: string; label: string; secret?: boolean; optional?: boolean }>;
   /**
-   * Whether Zed can reach this account's website directly (used only to
+   * Whether ZAR can reach this account's website directly (used only to
    * do a light "is the site reachable" check on "Other account"). It
    * does not change how you connect — that's always username + password.
    */
@@ -263,21 +263,21 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
   {
     provider: "lucid",
     label: "Lucid",
-    purpose: "Zed signs in to your Lucid account and works in it for you.",
+    purpose: "ZAR signs in to your Lucid account and works in it for you.",
     fields: LOGIN_FIELDS,
     liveBridge: false,
   },
   {
     provider: "tradovate",
     label: "Tradovate",
-    purpose: "Zed signs in to your Tradovate account and works in it for you.",
+    purpose: "ZAR signs in to your Tradovate account and works in it for you.",
     fields: LOGIN_FIELDS,
     liveBridge: false,
   },
   {
     provider: "webull",
     label: "Webull",
-    purpose: "Zed connects to Webull OpenAPI for stocks, options, futures, crypto, and event-contract account rails.",
+    purpose: "ZAR connects to Webull OpenAPI for stocks, options, futures, crypto, and event-contract account rails.",
     fields: [
       { key: "appKey", label: "App key" },
       { key: "appSecret", label: "App secret", secret: true },
@@ -290,21 +290,21 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
   {
     provider: "kalshi",
     label: "Kalshi",
-    purpose: "Zed signs in to your Kalshi account for event/prediction (props) markets.",
+    purpose: "ZAR signs in to your Kalshi account for event/prediction (props) markets.",
     fields: LOGIN_FIELDS,
     liveBridge: false,
   },
   {
     provider: "polymarket",
     label: "Polymarket US",
-    purpose: "Zed connects to Polymarket US for event-market discovery, balances, positions, and approved order routing.",
+    purpose: "ZAR connects to Polymarket US for event-market discovery, balances, positions, and approved order routing.",
     fields: API_KEY_FIELDS,
     liveBridge: true,
   },
   {
     provider: "custom",
     label: "Other account",
-    purpose: "Any other site. Give Zed the web address and your login.",
+    purpose: "Any other site. Give ZAR the web address and your login.",
     fields: [
       { key: "baseUrl", label: "Website address" },
       ...LOGIN_FIELDS,

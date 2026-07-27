@@ -23,13 +23,13 @@ import {
 import type { StageAssessmentResult } from "@shared/trading-training-types";
 
 /**
- * Zed's training path — the staged pipeline along which ZED becomes a
+ * ZAR's training path — the staged pipeline along which ZED becomes a
  * capable trading intelligence. This is not a course the user climbs:
- * the user feeds Zed and makes decisions; Zed learns and is TESTED
+ * the user feeds ZAR and makes decisions; ZAR learns and is TESTED
  * before it may advance.
  *
  * Every stage is architected from day one. The active stage
- * determines what the workspace focuses on. Zed must pass a stage's
+ * determines what the workspace focuses on. ZAR must pass a stage's
  * test before the next stage unlocks.
  */
 
@@ -129,7 +129,7 @@ export default function TradingProgressionBanner({
             [stageId]: { score: result.score, passed: result.passed, assessedAt: result.assessedAt },
           },
         });
-        setNotice(result.passed ? "Zed passed. You can advance." : "Zed isn't ready yet.");
+        setNotice(result.passed ? "ZAR passed. You can advance." : "ZAR isn't ready yet.");
       } catch (err: any) {
         setError(err?.message || "Test failed");
       } finally {
@@ -152,7 +152,7 @@ export default function TradingProgressionBanner({
         if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
         apply(body.progression);
         setExpandedId(body.progression.currentStage);
-        setNotice("Stage unlocked. Zed advanced.");
+        setNotice("Stage unlocked. ZAR advanced.");
       } catch (err: any) {
         setError(err?.message || "Cannot advance yet");
       } finally {
@@ -169,7 +169,7 @@ export default function TradingProgressionBanner({
       <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
         <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-400/80 mb-1">
-            Zed's training
+            ZAR's training
           </div>
           <div className="text-[16px] font-semibold text-white tracking-[-0.01em]">
             {currentDef.label}
@@ -304,7 +304,7 @@ function StageRow({
       {expanded && (
         <div className="px-3 pb-3 pt-1 border-t border-white/[0.06]">
           <Block title="Your move">{stage.yourMove}</Block>
-          <Block title="What Zed does">{stage.whatZedDoes}</Block>
+          <Block title="What ZAR does">{stage.whatZedDoes}</Block>
           <div className="mt-3">
             <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/50 mb-1.5">Ready when</div>
             <ul className="space-y-1">
@@ -318,7 +318,7 @@ function StageRow({
           </div>
 
           <div className="mt-3 rounded-lg border border-white/[0.06] bg-black/20 p-2.5">
-            <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-1">How Zed is tested</div>
+            <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-1">How ZAR is tested</div>
             <p className="text-[11.5px] text-white/60 leading-snug">{stage.assessment.blurb}</p>
           </div>
 
@@ -341,7 +341,7 @@ function StageRow({
                 disabled={busy || locked}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-400/10 text-cyan-100 font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-400/20 disabled:opacity-40 transition-colors"
               >
-                {busy ? "Testing Zed…" : "Test Zed"}
+                {busy ? "Testing ZAR…" : "Test ZAR"}
               </button>
               {passed && stage.nextUnlocks && (
                 <button
@@ -381,7 +381,7 @@ function StageRow({
             </button>
           )}
           {!unlocked && (
-            <div className="mt-3 text-[11.5px] text-white/40">Zed unlocks this by passing the earlier stages.</div>
+            <div className="mt-3 text-[11.5px] text-white/40">ZAR unlocks this by passing the earlier stages.</div>
           )}
         </div>
       )}
@@ -401,7 +401,7 @@ function AssessmentResult({ result }: { result: StageAssessmentResult }) {
     >
       <div className="flex items-center justify-between gap-2">
         <span className="text-[12.5px] font-semibold text-white">
-          Zed scored {result.score}/100
+          ZAR scored {result.score}/100
           <span className="text-white/50 font-normal"> · needs {result.threshold}</span>
         </span>
         <span
@@ -432,7 +432,7 @@ function AssessmentResult({ result }: { result: StageAssessmentResult }) {
             onClick={() => setShowQuiz((v) => !v)}
             className="text-[11.5px] text-cyan-300 hover:text-cyan-200"
           >
-            {showQuiz ? "Hide" : "Show"} what Zed answered ({result.quiz.length})
+            {showQuiz ? "Hide" : "Show"} what ZAR answered ({result.quiz.length})
           </button>
           {showQuiz && (
             <div className="mt-2 space-y-2">

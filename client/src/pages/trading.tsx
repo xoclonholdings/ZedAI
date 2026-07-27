@@ -40,8 +40,8 @@ const FUNCTIONAL_STAGES: TradingStageId[] = [
 
 /**
  * The guided training stages (banner + stage tools) are the primary
- * surface. Below them, "Zed's records" holds the two things the stages
- * don't cover: Zed's governance audit trail. Everything else
+ * surface. Below them, "ZAR's records" holds the two things the stages
+ * don't cover: ZAR's governance audit trail. Everything else
  * (knowledge, strategies, paper trades,
  * performance) lives in the stage tools, so it isn't duplicated here.
  */
@@ -116,7 +116,7 @@ function GovernanceDecisionRow({ decision }: { decision: TradingGovernanceDecisi
         onClick={() => setDetailsOpen((v) => !v)}
         className="mt-2 text-xs text-cyan-300 hover:text-cyan-200"
       >
-        {detailsOpen ? "Hide" : "Show"} Zed's checklist &amp; evidence
+        {detailsOpen ? "Hide" : "Show"} ZAR's checklist &amp; evidence
       </button>
 
       {detailsOpen && (
@@ -201,7 +201,7 @@ export default function TradingPage() {
       setGovernanceDecisions(governanceData.decisions || []);
       setIncidents(incidentData.incidents || []);
     } catch (err: any) {
-      setError(err?.message || "Failed to load Zed's records");
+      setError(err?.message || "Failed to load ZAR's records");
     } finally {
       setLoading(false);
     }
@@ -285,7 +285,7 @@ export default function TradingPage() {
         )}
 
         <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-white/[0.06]">
-          <div className="text-[11.5px] uppercase tracking-[0.08em] text-white/40">Zed's records</div>
+          <div className="text-[11.5px] uppercase tracking-[0.08em] text-white/40">ZAR's records</div>
           <button
             type="button"
             onClick={() => setShowRecords((v) => !v)}
@@ -316,7 +316,7 @@ export default function TradingPage() {
 
         {recordsOpen &&
           (loading ? (
-            <div className="py-16 text-center text-sm text-muted-foreground">Loading Zed's records...</div>
+            <div className="py-16 text-center text-sm text-muted-foreground">Loading ZAR's records...</div>
           ) : (
             <>
               {tab === "governance" && (

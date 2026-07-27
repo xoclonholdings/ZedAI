@@ -5,9 +5,9 @@ import type { QualificationReport } from "@shared/trading-training-types";
 import { EmptyBox, NoticeBanner, StageShell } from "./stage-atoms";
 
 /**
- * Stage 6 — Qualification. A readiness scorecard computed from Zed's real
+ * Stage 6 — Qualification. A readiness scorecard computed from ZAR's real
  * performance: rule compliance, edge, drawdown control, consistency, and a
- * proven sample. Zed is qualified when every score is at target.
+ * proven sample. ZAR is qualified when every score is at target.
  */
 export default function QualificationStage() {
   const [report, setReport] = useState<QualificationReport | null>(null);
@@ -34,7 +34,7 @@ export default function QualificationStage() {
     <StageShell
       eyebrow="Qualification"
       title="Readiness scorecard"
-      description="Zed confirms it consistently satisfies professional evaluation requirements. Every discipline must reach target before live unlocks."
+      description="ZAR confirms it consistently satisfies professional evaluation requirements. Every discipline must reach target before live unlocks."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >

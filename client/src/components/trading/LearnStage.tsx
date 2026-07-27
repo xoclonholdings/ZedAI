@@ -16,9 +16,9 @@ import {
 /**
  * The Learn stage turns real sources (market education, rulebooks,
  * PDFs, videos, books) into structured
- * knowledge Zed can pull into every later stage.
+ * knowledge ZAR can pull into every later stage.
  *
- * The user pastes what they read; Zed's TradingKnowledgeBase
+ * The user pastes what they read; ZAR's TradingKnowledgeBase
  * ingests it into concepts/rules/examples with tags so retrieval
  * stays clean.
  */
@@ -123,7 +123,7 @@ export default function LearnStage() {
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       setForm(EMPTY_FORM);
       setShowForm(false);
-      setNotice("Knowledge stored. Zed will use it in later stages.");
+      setNotice("Knowledge stored. ZAR will use it in later stages.");
       await refresh();
     } catch (err: any) {
       setError(err?.message || "Could not save.");
@@ -172,7 +172,7 @@ export default function LearnStage() {
     <StageShell
       eyebrow="Learn"
       title="Your trading library"
-      description="Bring in what you read, watch, or take notes on. Zed structures it into concepts, rules, and examples so every later stage can reference the source."
+      description="Bring in what you read, watch, or take notes on. ZAR structures it into concepts, rules, and examples so every later stage can reference the source."
       onRefresh={() => void refresh()}
       refreshing={loading}
       action={
