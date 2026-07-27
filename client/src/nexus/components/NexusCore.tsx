@@ -31,6 +31,16 @@ const PURPLE = "#a855f7";
 const MAGENTA = "#ff3ec8";
 const CORE_HOT = "#ffe9fb";
 
+/**
+ * Shared between RotationRig's camera dolly and Planet's own Y-centering:
+ * the camera's framing when a planet is focused, so Planet can compute
+ * exactly where its own depth crosses the camera's viewing ray instead of
+ * guessing at a single world-Y that only happens to work for some domains.
+ */
+const FOCUS_CAM_Y = 0.6;
+const focusClearance = (portrait: boolean) => (portrait ? 5.6 : 4.3);
+const focusLookY = (portrait: boolean) => (portrait ? -1.6 : -0.35);
+
 export interface NexusDomain {
   id: string;
   label: string;
@@ -57,9 +67,14 @@ function domainPosition(d: NexusDomain): THREE.Vector3 {
 }
 
 function domainSnapTarget(d: NexusDomain): number {
-  const az = Math.atan2(Math.sin(d.angle) * Math.cos(d.inclination), Math.cos(d.angle));
-  // settle the focused planet front-right of the core, not dead-center at the camera
-  return wrapAngle(Math.PI / 2 - 0.85 - az);
+  // Solve for the Y-axis rig rotation that puts this domain's (x, z) at
+  // x=0, z>0 - dead-center, between the camera and the core. A rotation by
+  // theta maps (x,z) -> (x*cos(theta)+z*sin(theta), -x*sin(theta)+z*cos(theta));
+  // atan2(-x, z) is exactly the theta that zeroes the new x (with the new z
+  // positive, i.e. toward the camera, not behind the core).
+  const x = Math.cos(d.angle) * d.radius;
+  const z = Math.sin(d.angle) * Math.cos(d.inclination) * d.radius;
+  return wrapAngle(Math.atan2(-x, z));
 }
 
 /* ------------------------------------------------------------------ */
@@ -86,6 +101,7 @@ const galaxyVertex = /* glsl */ `
 `;
 
 const galaxyFragment = /* glsl */ `
+  uniform float uOpacity;
   varying vec3 vColor;
   varying float vAlpha;
 
@@ -93,7 +109,7 @@ const galaxyFragment = /* glsl */ `
     float d = distance(gl_PointCoord, vec2(0.5));
     float strength = pow(1.0 - clamp(d * 2.0, 0.0, 1.0), 3.0);
     if (strength < 0.001) discard;
-    gl_FragColor = vec4(vColor, strength * vAlpha);
+    gl_FragColor = vec4(vColor, strength * vAlpha * uOpacity);
   }
 `;
 
@@ -110,6 +126,7 @@ const coreVertex = /* glsl */ `
 
 const coreFragment = /* glsl */ `
   uniform float uTime;
+  uniform float uOpacity;
   uniform vec3 uColorA;
   uniform vec3 uColorB;
   varying vec3 vNormal;
@@ -118,7 +135,7 @@ const coreFragment = /* glsl */ `
     float fresnel = pow(1.0 - abs(dot(vNormal, vView)), 2.2);
     float pulse = 0.75 + 0.25 * sin(uTime * 1.6);
     vec3 col = mix(uColorA, uColorB, fresnel);
-    gl_FragColor = vec4(col, (0.18 + fresnel * 0.9) * pulse);
+    gl_FragColor = vec4(col, (0.18 + fresnel * 0.9) * pulse * uOpacity);
   }
 `;
 
@@ -139,6 +156,7 @@ const planetFragment = /* glsl */ `
   uniform vec3 uColor;
   uniform float uTime;
   uniform float uFocus;
+  uniform float uOpacity;
   varying vec3 vNormal;
   varying vec3 vView;
   varying vec3 vUnit;
@@ -150,7 +168,7 @@ const planetFragment = /* glsl */ `
     float bands = 0.5 + 0.5 * sin(vUnit.y * 9.0 + uTime * 0.25 + vUnit.x * 2.0);
     vec3 base = uColor * (0.14 + 0.72 * diff) * (0.86 + bands * 0.14);
     vec3 col = base + uColor * fresnel * (1.05 + uFocus * 0.9) + vec3(1.0) * fresnel * 0.1;
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(col, uOpacity);
   }
 `;
 
@@ -325,7 +343,7 @@ function makePointsMaterial(size: number): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     vertexShader: galaxyVertex,
     fragmentShader: galaxyFragment,
-    uniforms: { uTime: { value: 0 }, uSize: { value: size } },
+    uniforms: { uTime: { value: 0 }, uSize: { value: size }, uOpacity: { value: 1 } },
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
@@ -411,8 +429,10 @@ function Universe({ starCount }: { starCount: number }) {
 /* Galaxy (self-spinning, keeps the system alive)                       */
 /* ------------------------------------------------------------------ */
 
-function GalaxyField({ count }: { count: number }) {
+function GalaxyField({ count, focused }: { count: number; focused?: boolean }) {
   const spinRef = useRef<THREE.Group>(null);
+  const focusedRef = useRef(focused);
+  focusedRef.current = focused;
   const geometry = useMemo(
     () =>
       buildGalaxyGeometry({
@@ -446,6 +466,14 @@ function GalaxyField({ count }: { count: number }) {
     material.uniforms.uTime.value = clock.elapsedTime;
     dustMaterial.uniforms.uTime.value = clock.elapsedTime;
     if (spinRef.current) spinRef.current.rotation.y += delta * 0.03;
+
+    // The galaxy disk reads as "the Nexus core" as much as the CoreOrb mesh
+    // does - it has to fade too, or the focused planet never actually reads
+    // as the center once it's dominating the screen.
+    const fadeRate = Math.min(1, 3.2 * delta);
+    const opacityTarget = focusedRef.current ? 0.1 : 1;
+    material.uniforms.uOpacity.value += (opacityTarget - material.uniforms.uOpacity.value) * fadeRate;
+    dustMaterial.uniforms.uOpacity.value += (opacityTarget - dustMaterial.uniforms.uOpacity.value) * fadeRate;
   });
 
   return (
@@ -505,6 +533,7 @@ function Planet({
   onSelect,
   orbitScale,
   sizeScale,
+  focusMode,
 }: {
   domain: NexusDomain;
   index: number;
@@ -513,14 +542,21 @@ function Planet({
   onSelect: (domain: NexusDomain, index: number) => void;
   orbitScale: number;
   sizeScale: number;
+  /** True once any planet is focused - every OTHER planet recedes (shrinks + fades) so the focused one reads as singular and central. */
+  focusMode?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const moonRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Sprite>(null);
+  const focusModeRef = useRef(focusMode);
+  focusModeRef.current = focusMode;
+  const currentScaleRef = useRef(sizeScale);
   const position = useMemo(
     () => domainPosition(domain).multiplyScalar(orbitScale),
     [domain, orbitScale],
   );
+  const currentYRef = useRef(position.y);
+  const size = useThree((s) => s.size);
 
   const material = useMemo(
     () =>
@@ -531,7 +567,9 @@ function Planet({
           uColor: { value: new THREE.Color(domain.color) },
           uTime: { value: 0 },
           uFocus: { value: 0 },
+          uOpacity: { value: 1 },
         },
+        transparent: true,
       }),
     [domain.color],
   );
@@ -556,17 +594,45 @@ function Planet({
 
     const focused = focusedIndexRef.current === index;
     const target = focused ? 1 : 0;
-    material.uniforms.uFocus.value +=
-      (target - material.uniforms.uFocus.value) * Math.min(1, 5 * delta);
+    const easeRate = Math.min(1, 5 * delta);
+    material.uniforms.uFocus.value += (target - material.uniforms.uFocus.value) * easeRate;
 
-    const scale = sizeScale * (1 + material.uniforms.uFocus.value * 0.22);
-    g.scale.setScalar(scale);
-    g.position.y = position.y + Math.sin(t * 0.5 + index * 1.7) * 0.06;
+    // Only the focused planet is prominent - every other planet recedes
+    // (shrinks + fades) once anything is focused, so the singular focused
+    // planet reads as the center and everything else as clearly peripheral.
+    const peripheral = Boolean(focusModeRef.current) && !focused;
+    const opacityTarget = peripheral ? 0.3 : 1;
+    material.uniforms.uOpacity.value += (opacityTarget - material.uniforms.uOpacity.value) * easeRate;
+
+    const sizeTarget = focused
+      ? sizeScale * (1 + material.uniforms.uFocus.value * 0.42)
+      : peripheral
+        ? sizeScale * 0.4
+        : sizeScale;
+    currentScaleRef.current += (sizeTarget - currentScaleRef.current) * easeRate;
+    g.scale.setScalar(currentScaleRef.current);
+    // Every domain sits at its own fixed height AND depth on the ring (its
+    // own inclination/angle/radius) - when focused, ease toward wherever
+    // this exact camera ray crosses this domain's own depth, replicating
+    // RotationRig's camera dolly math (camY/clearance/lookY) so the
+    // computed point is the true screen-center for THIS domain's depth, not
+    // a single fixed Y that only happens to work for some radii.
+    const aspect = size.width / Math.max(1, size.height);
+    const portrait = aspect < 0.8;
+    const camZ = domain.radius * orbitScale + focusClearance(portrait);
+    const lookY = focusLookY(portrait);
+    const frontDistance = Math.hypot(position.x, position.z);
+    const rayT = (camZ - frontDistance) / camZ;
+    const frameCenterY = FOCUS_CAM_Y + rayT * (lookY - FOCUS_CAM_Y);
+    const yBaseTarget = focused ? frameCenterY : position.y;
+    currentYRef.current += (yBaseTarget - currentYRef.current) * easeRate;
+    g.position.y = currentYRef.current + Math.sin(t * 0.5 + index * 1.7) * 0.06;
     g.rotation.y += delta * (0.15 + index * 0.02);
 
     if (glowRef.current) {
       const m = glowRef.current.material as THREE.SpriteMaterial;
-      m.opacity = 0.4 + material.uniforms.uFocus.value * 0.3 + Math.sin(t * 1.4 + index) * 0.05;
+      const base = 0.4 + material.uniforms.uFocus.value * 0.3 + Math.sin(t * 1.4 + index) * 0.05;
+      m.opacity = peripheral ? base * 0.35 : base;
     }
     if (moonRef.current) moonRef.current.rotation.y += delta * 0.9;
   });
@@ -641,11 +707,14 @@ function CoreOrb({
   interaction,
   onCoreTap,
   energyColor,
+  focused,
 }: {
   label: string;
   interaction: InteractionRef;
   onCoreTap?: () => void;
   energyColor?: string | null;
+  /** True once a planet is focused (Target/Orbit/Hub) - the core recedes so the planet reads as the center, not Nexus. */
+  focused?: boolean;
 }) {
   const coreMaterial = useMemo(
     () =>
@@ -654,6 +723,7 @@ function CoreOrb({
         fragmentShader: coreFragment,
         uniforms: {
           uTime: { value: 0 },
+          uOpacity: { value: 1 },
           uColorA: { value: new THREE.Color(MAGENTA) },
           uColorB: { value: new THREE.Color(CYAN) },
         },
@@ -669,7 +739,11 @@ function CoreOrb({
     [],
   );
   const labelTexture = useMemo(() => makeLabelTexture(label, "#ffffff"), [label]);
+  const groupRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Sprite>(null);
+  const labelMatRef = useRef<THREE.SpriteMaterial>(null);
+  const focusedRef = useRef(focused);
+  focusedRef.current = focused;
   const energyRef = useRef({ a: new THREE.Color(MAGENTA), b: new THREE.Color(CYAN), halo: new THREE.Color("#ffffff") });
 
   useEffect(() => {
@@ -700,10 +774,26 @@ function CoreOrb({
     const e = energyRef.current;
     (coreMaterial.uniforms.uColorA.value as THREE.Color).lerp(e.a, k);
     (coreMaterial.uniforms.uColorB.value as THREE.Color).lerp(e.b, k);
+
+    // Recede (fade + shrink, never fully vanish) once a planet is focused -
+    // the focused planet becomes the center, not Nexus.
+    const fadeRate = Math.min(1, 3.2 * delta);
+    const opacityTarget = focusedRef.current ? 0.16 : 1;
+    const scaleTarget = focusedRef.current ? 0.55 : 1;
+    coreMaterial.uniforms.uOpacity.value += (opacityTarget - coreMaterial.uniforms.uOpacity.value) * fadeRate;
+    if (groupRef.current) {
+      const nextScale = groupRef.current.scale.x + (scaleTarget - groupRef.current.scale.x) * fadeRate;
+      groupRef.current.scale.setScalar(nextScale);
+    }
+    if (labelMatRef.current) {
+      labelMatRef.current.opacity += (opacityTarget - labelMatRef.current.opacity) * fadeRate;
+    }
     if (haloRef.current) {
-      const s = 3.1 + Math.sin(clock.elapsedTime * 1.6) * 0.22;
-      haloRef.current.scale.setScalar(s);
-      (haloRef.current.material as THREE.SpriteMaterial).color.lerp(e.halo, k);
+      const breathe = 3.1 + Math.sin(clock.elapsedTime * 1.6) * 0.22;
+      haloRef.current.scale.setScalar(breathe);
+      const haloMat = haloRef.current.material as THREE.SpriteMaterial;
+      haloMat.color.lerp(e.halo, k);
+      haloMat.opacity += (opacityTarget * 0.85 - haloMat.opacity) * fadeRate;
     }
   });
 
@@ -713,7 +803,7 @@ function CoreOrb({
   };
 
   return (
-    <group>
+    <group ref={groupRef}>
       <mesh
         material={coreMaterial}
         onClick={handleClick}
@@ -733,7 +823,7 @@ function CoreOrb({
       </sprite>
       <pointLight intensity={2.2} distance={9} color={MAGENTA} />
       <sprite scale={[1.7, 0.42, 1]} position={[0, 0, 0.01]}>
-        <spriteMaterial map={labelTexture} transparent depthWrite={false} />
+        <spriteMaterial ref={labelMatRef} map={labelTexture} transparent depthWrite={false} />
       </sprite>
     </group>
   );
@@ -752,6 +842,9 @@ function RotationRig({
   onFocusChange,
   tilt,
   zoom,
+  focusMode,
+  onSwipeCommit,
+  orbitScale,
   children,
 }: {
   domains: NexusDomain[];
@@ -762,6 +855,10 @@ function RotationRig({
   onFocusChange?: (domain: NexusDomain, index: number) => void;
   tilt: number;
   zoom: number;
+  /** True once a planet is already focused - swiping commits to the new planet immediately instead of only offering an ambient preview. */
+  focusMode?: boolean;
+  onSwipeCommit?: (index: number) => void;
+  orbitScale: number;
   children: React.ReactNode;
 }) {
   const rigRef = useRef<THREE.Group>(null);
@@ -772,6 +869,10 @@ function RotationRig({
   const lastFocusRef = useRef(-1);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
+  const focusModeRef = useRef(focusMode);
+  focusModeRef.current = focusMode;
+  const onSwipeCommitRef = useRef(onSwipeCommit);
+  onSwipeCommitRef.current = onSwipeCommit;
 
   const snapTargets = useMemo(() => domains.map(domainSnapTarget), [domains]);
   // Domain indices in angular order around the ring - "next"/"previous" during
@@ -829,6 +930,10 @@ function RotationRig({
         const direction = d.dragAccum > 0 ? 1 : -1;
         d.activeIndex = stepActiveIndex(d.activeIndex, direction);
         d.dragAccum -= direction * STEP_PX;
+        // Already zoomed into a planet: a swipe commits to the next one
+        // immediately (Hub content follows), rather than only offering an
+        // ambient preview the user has to tap to confirm.
+        if (focusModeRef.current) onSwipeCommitRef.current?.(d.activeIndex);
       }
     };
     const onUp = (e: PointerEvent) => {
@@ -872,7 +977,18 @@ function RotationRig({
     rig.rotation.y += wrapAngle(target - ry) * Math.min(1, 6 * delta);
 
     if (tiltGroup) {
-      tiltGroup.rotation.x = THREE.MathUtils.lerp(tiltGroup.rotation.x, d.tilt, 0.12);
+      // The ring's fixed tilt mixes each planet's local Y and Z into world
+      // Y - harmless while browsing (nothing needs a consistent framing),
+      // but once a planet is focused its local Z varies by domain (a
+      // function of that domain's own orbital radius), so the SAME local Y
+      // target lands at a different world-Y per domain. Leveling the tilt
+      // to zero while focused removes that mixing, so Planet's local-Y
+      // centering (see Planet's useFrame) lands every domain in the same
+      // framed spot, not just the ones with a forgiving radius.
+      const tiltXTarget = focusModeRef.current ? 0 : d.tilt;
+      const tiltZTarget = focusModeRef.current ? 0 : -0.08;
+      tiltGroup.rotation.x = THREE.MathUtils.lerp(tiltGroup.rotation.x, tiltXTarget, 0.12);
+      tiltGroup.rotation.z = THREE.MathUtils.lerp(tiltGroup.rotation.z, tiltZTarget, 0.12);
     }
 
     // camera dolly for domain-entry zoom (portrait devices sit further back -
@@ -880,12 +996,27 @@ function RotationRig({
     // portrait needs real extra headroom, not just a touch more than landscape)
     const aspect = size.width / Math.max(1, size.height);
     const baseZ = aspect < 0.8 ? 13.4 : 9.6;
-    const targetZ = baseZ / zoomRef.current;
-    const targetY = zoomRef.current > 1.05 ? 0.6 : aspect < 0.8 ? 1.9 : 1.5;
+    const focused = zoomRef.current > 1.05;
+    // Domains sit on rings of wildly different radii (2.2-6.4). Dollying to
+    // a fixed distance-from-origin put wide-orbit domains almost on top of
+    // the camera (barely any clearance left once the focused planet swings
+    // to the front) while narrow-orbit ones had room to spare. Framing off
+    // the focused domain's own radius instead gives every domain the same
+    // real clearance, regardless of where it happens to orbit.
+    const focusedDomain = domains[focusIdx];
+    const clearance = focusClearance(aspect < 0.8);
+    const targetZ = focused && focusedDomain
+      ? focusedDomain.radius * orbitScale + clearance
+      : baseZ / zoomRef.current;
+    // The camera's vertical framing is fixed regardless of which domain is
+    // focused - Planet centers its own world Y toward wherever this exact
+    // camera ray crosses its own depth (see Planet's useFrame), so every
+    // domain lands in the same framed spot instead of the camera having to
+    // chase each domain's own orbital tilt.
+    const targetY = focused ? FOCUS_CAM_Y : aspect < 0.8 ? 1.9 : 1.5;
     camera.position.z += (targetZ - camera.position.z) * Math.min(1, 4.5 * delta);
     camera.position.y += (targetY - camera.position.y) * Math.min(1, 4.5 * delta);
-    // portrait: lift the system further above the command console
-    camera.lookAt(0, aspect < 0.8 ? -1.6 : -0.35, 0);
+    camera.lookAt(0, focusLookY(aspect < 0.8), 0);
 
     onRotate?.(rig.rotation.y);
   });
@@ -1044,6 +1175,21 @@ export interface NexusCoreSceneProps {
   zoom?: number;
   warp?: boolean;
   atmosphere?: string | null;
+  /** True once a planet is already focused (Target/Orbit/Hub, not Home). */
+  focusMode?: boolean;
+  /** Fires when a swipe commits to a new planet while already focused. */
+  onSwipeCommit?: (domain: NexusDomain, index: number) => void;
+  /** Fires on a direct tap of the planet that's already focused/centered - distinct from selecting a different one. */
+  onFocusedTap?: (domain: NexusDomain, index: number) => void;
+  /**
+   * The domain id the surrounding page considers focused (route/ZAR/Back-
+   * driven, not just a local tap or swipe). The scene's own rotation state
+   * only otherwise updates from its own gestures - this keeps it in sync
+   * when the route changes some other way (a direct link, ZAR navigation,
+   * Back from a workspace), so the right planet is the one that visually
+   * centers, not whichever one a stale gesture last touched.
+   */
+  focusedDomainId?: string | null;
 }
 
 export function NexusCoreScene({
@@ -1059,6 +1205,10 @@ export function NexusCoreScene({
   zoom = 1,
   warp = false,
   atmosphere = null,
+  focusMode = false,
+  onSwipeCommit,
+  onFocusedTap,
+  focusedDomainId = null,
 }: NexusCoreSceneProps) {
   // The system always starts facing Workspaces, never wherever a domain
   // happens to hash-land - falls back to the first domain if Workspaces
@@ -1075,6 +1225,19 @@ export function NexusCoreScene({
   });
   const focusedIndexRef = useRef(initialActiveIndex);
   const size = useThree((s) => s.size);
+
+  // Keep the scene's own rotation focus in sync with whatever the page
+  // considers focused, for changes that didn't originate from a tap/swipe
+  // right here (a direct link, Back from a workspace, ZAR navigating by
+  // itself) - otherwise the visually "centered" planet can silently drift
+  // out of sync with the real focused node the Hub is showing.
+  useEffect(() => {
+    if (!focusedDomainId) return;
+    const index = domains.findIndex((d) => d.id === focusedDomainId);
+    if (index >= 0 && interaction.current.activeIndex !== index) {
+      interaction.current.activeIndex = index;
+    }
+  }, [focusedDomainId, domains]);
   const aspect = size.width / Math.max(1, size.height);
   const isPortrait = aspect < 0.8;
   // mobile-first: compress orbits + enlarge planets so the system stays in frame
@@ -1082,6 +1245,13 @@ export function NexusCoreScene({
   const sizeScale = isPortrait ? 1.05 : 1;
 
   const handleSelect = (domain: NexusDomain, index: number) => {
+    // Tapping the planet that's already front-and-center (while already
+    // zoomed in) means "go in", not "re-select the same thing" - the Hub's
+    // own action row remains how you choose among ambiguous options.
+    if (focusMode && focusedIndexRef.current === index) {
+      onFocusedTap?.(domain, index);
+      return;
+    }
     interaction.current.activeIndex = index;
     onDomainSelect?.(domain, index);
   };
@@ -1100,8 +1270,11 @@ export function NexusCoreScene({
         onFocusChange={onFocusChange}
         tilt={tilt}
         zoom={zoom}
+        focusMode={focusMode}
+        onSwipeCommit={(index) => onSwipeCommit?.(domains[index], index)}
+        orbitScale={orbitScale}
       >
-        <GalaxyField count={particleCount} />
+        <GalaxyField count={particleCount} focused={focusMode} />
         {domains.map((d, i) => (
           <Planet
             key={d.id}
@@ -1112,9 +1285,10 @@ export function NexusCoreScene({
             onSelect={handleSelect}
             orbitScale={orbitScale}
             sizeScale={sizeScale}
+            focusMode={focusMode}
           />
         ))}
-        <CoreOrb label={label} interaction={interaction} onCoreTap={onCoreTap} energyColor={atmosphere} />
+        <CoreOrb label={label} interaction={interaction} onCoreTap={onCoreTap} energyColor={atmosphere} focused={focusMode} />
       </RotationRig>
     </>
   );

@@ -1,21 +1,19 @@
-import { ArrowUpRight, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
 import { useNexus } from "../state/NexusProvider";
 import { createFocusedNodeView } from "../viewport/NexusViewportModel";
 
 export interface NexusHubOverlayProps {
-  /** STATE 4 (Enter): call with the gateway action's route rather than navigating directly, so Warp can play first. */
-  readonly onEnterAction: (route: string | null) => void;
   readonly onBack: () => void;
 }
 
 /**
- * The Hub reveal (STATE 3), in the official Emergent overlay language: a
- * floating pill row over the universe, not a side card. Extends Emergent's
- * own "domain-overlay" title pill with a matching action-pill stack, since
- * the reference demo never had real actions to reveal - only a title.
+ * The Hub reveal (STATE 3): just the back-to-Nexus pill and the focused
+ * domain's name, floating over the universe. Entering a domain happens by
+ * tapping the centered planet itself (see NexusRootPage's handleFocusedTap)
+ * - no separate action-pill row to choose from.
  */
-export function NexusHubOverlay({ onEnterAction, onBack }: NexusHubOverlayProps) {
+export function NexusHubOverlay({ onBack }: NexusHubOverlayProps) {
   const { capabilityRegistry, viewportSnapshot } = useNexus();
   const focusedNode = viewportSnapshot.focusedNode;
   if (!focusedNode) return null;
@@ -50,27 +48,6 @@ export function NexusHubOverlay({ onEnterAction, onBack }: NexusHubOverlayProps)
           {view.title.toUpperCase()}
         </span>
       </div>
-
-      {view.actions.length > 0 && (
-        <div
-          className="pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          role="list"
-          aria-label={`${view.title} gateway actions`}
-        >
-          {view.actions.map((action) => (
-            <button
-              key={`${view.nodeId}:${action.label}`}
-              type="button"
-              role="listitem"
-              onClick={() => onEnterAction(action.route)}
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-3.5 py-1.5 text-[12px] font-medium text-white/85 backdrop-blur-md transition hover:border-cyan-200/35 hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
-            >
-              {action.label}
-              <ArrowUpRight size={13} className="shrink-0 text-cyan-100/70" aria-hidden="true" />
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

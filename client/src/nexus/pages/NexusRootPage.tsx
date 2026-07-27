@@ -12,7 +12,7 @@ import { isNexusRootNodeId, routeForNexusNode } from "../graph/rootConstellation
 import { nexusDomainsFromRootNodes } from "../scene/nexusDomainAdapter";
 import { canUseNexusWebgl, type NexusInteractionStage } from "../scene/nexusSceneContract";
 import { useNexus } from "../state/NexusProvider";
-import { shouldShowNexusDeveloperInspector } from "../viewport/NexusViewportModel";
+import { createFocusedNodeView, shouldShowNexusDeveloperInspector } from "../viewport/NexusViewportModel";
 import { resolveNexusEnterAction, resolveNexusStageOnRouteChange } from "./nexusInteractionStageModel";
 
 /** How long the "target" beat holds before Orbit's camera movement begins - brief but real, not instant. */
@@ -31,7 +31,7 @@ export default function NexusRootPage() {
   const params = useParams<{ nodeId?: string }>();
   const [location, navigate] = useLocation();
   const { user } = useAuth();
-  const { focusNode, clearFocus, snapshot, viewportSnapshot } = useNexus();
+  const { focusNode, clearFocus, snapshot, viewportSnapshot, capabilityRegistry } = useNexus();
   const routeNodeId = isNexusRootNodeId(params.nodeId) ? params.nodeId : null;
   const hasUnknownRouteNode = Boolean(params.nodeId && !routeNodeId);
   const displayName = user?.personalization?.displayName ?? user?.displayName ?? user?.firstName ?? user?.username ?? "there";
@@ -110,6 +110,10 @@ export default function NexusRootPage() {
   useEffect(() => {
     const wasFirstRun = isFirstRouteEffect.current;
     isFirstRouteEffect.current = false;
+    // A swipe committing to a new planet while already zoomed in re-runs
+    // this effect (routeNodeId changes) same as a tap does - this is what
+    // tells it "skip the re-entrance, we're already there."
+    const wasAlreadyFocused = stage !== "home";
 
     clearTargetTimer();
     clearOrbitTimer();
@@ -130,6 +134,7 @@ export default function NexusRootPage() {
       routeNodeId,
       reducedMotion,
       isFirstRenderForMount: wasFirstRun,
+      wasAlreadyFocused,
     });
     setStage(decision.stage);
     if (decision.stage === "orbit") {
@@ -188,8 +193,24 @@ export default function NexusRootPage() {
     }, reducedMotion ? 0 : WARP_DURATION_MS);
   }, [navigate, reducedMotion]);
 
+  // A direct tap on the planet that's already front-and-center (already
+  // zoomed in) activates Warp straight away - there's no separate action
+  // row to choose from, so this is the only way in. Self-loop actions
+  // (a node with no real page yet) are skipped in favor of its first real
+  // external destination.
+  const handleFocusedTap = useCallback((domain: NexusDomain) => {
+    const node = viewportSnapshot.focusedNode;
+    if (!node || node.id !== domain.id) return;
+    const view = createFocusedNodeView(node, capabilityRegistry);
+    const selfLoop = `/nexus/${domain.id}`;
+    const realAction = view.actions.find((action) => action.route && action.route !== selfLoop);
+    if (!realAction) return;
+    enterWorkspace(realAction.route);
+  }, [viewportSnapshot.focusedNode, capabilityRegistry, enterWorkspace]);
+
   const focusedNode = viewportSnapshot.focusedNode;
-  const atmosphereColor = stage !== "home" ? focusedNode?.metadata.visual.color ?? null : null;
+  const focusMode = stage !== "home";
+  const atmosphereColor = focusMode ? focusedNode?.metadata.visual.color ?? null : null;
   const showHub = stage === "hub" || stage === "enter";
 
   return (
@@ -202,9 +223,13 @@ export default function NexusRootPage() {
             onFocusChange={setAmbientDomain}
             onDomainSelect={handleDomainSelect}
             onCoreTap={goHome}
-            zoom={stage !== "home" ? 1.8 : 1}
+            zoom={focusMode ? 1.8 : 1}
             warp={stage === "enter"}
             atmosphere={atmosphereColor}
+            focusMode={focusMode}
+            onSwipeCommit={handleDomainSelect}
+            onFocusedTap={handleFocusedTap}
+            focusedDomainId={focusMode ? focusedNode?.id ?? null : null}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-white/50">
@@ -272,7 +297,7 @@ export default function NexusRootPage() {
       </header>
 
       {/* STATE 3 (Hub): the gateway reveal, still inside Nexus. */}
-      {showHub && <NexusHubOverlay onEnterAction={enterWorkspace} onBack={goHome} />}
+      {showHub && <NexusHubOverlay onBack={goHome} />}
 
       {/* Floating communication console - the universe stays visible behind it. */}
       <div

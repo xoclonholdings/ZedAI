@@ -1,6 +1,5 @@
 import {
   Archive,
-  Brain,
   ChevronRight,
   Lock,
   SlidersHorizontal,
@@ -40,13 +39,6 @@ const menuItems: MenuItem[] = [
     description: "Your name, how the app looks, and how Zed talks back.",
     icon: User,
     color: "text-cyan-400",
-  },
-  {
-    key: "memory",
-    label: "About you",
-    description: "What Zed remembers about you between conversations.",
-    icon: Brain,
-    color: "text-blue-400",
   },
   {
     key: "workspace",

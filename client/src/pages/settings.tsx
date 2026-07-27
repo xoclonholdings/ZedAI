@@ -8,7 +8,6 @@ import { useAuth } from "@/components/auth/UseAuth";
 
 import AccountSecuritySettings from "@/components/settings/AccountSecuritySettings";
 import ArchivedChatsSettings from "@/components/settings/ArchivedChatsSettings";
-import MyMemorySettings from "@/components/settings/MyMemorySettings";
 import PersonalizationSettings from "@/components/settings/PersonalizationSettings";
 import RulesSettings from "@/components/settings/RulesSettings";
 import SettingsMainMenu from "@/components/settings/SettingsMainMenu";
@@ -23,7 +22,6 @@ interface SettingsUser {
 const SECTION_TITLE: Record<string, string> = {
   preferences: "Preferences",
   workspace: "Projects & workspaces",
-  memory: "About you",
   security: "Sign-in & session",
   archived: "Archived chats",
 };
@@ -79,7 +77,6 @@ export default function SettingsPage() {
           <PersonalizationSettings appSettings={appSettings} setAppSettings={setAppSettings} />
         )}
         {section === "workspace" && <RulesSettings />}
-        {section === "memory" && <MyMemorySettings />}
         {section === "security" && <AccountSecuritySettings />}
         {section === "archived" && <ArchivedChatsSettings />}
       </div>

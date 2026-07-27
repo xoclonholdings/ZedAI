@@ -15,20 +15,26 @@ import type { NexusInteractionStage } from "../scene/nexusSceneContract";
  *
  * - Home (routeNodeId null): stage is "home", nothing to wait on.
  * - Reduced motion: straight to "hub" - no camera animation to wait through.
+ * - Already focused on a (possibly different) node - a swipe committing to
+ *   the next planet while already zoomed in: straight to "hub", no
+ *   re-entrance replay. The camera's already there; only the focused node
+ *   (and its Hub content) changes.
  * - First render for this mount (direct load of /nexus/:nodeId, including
  *   Back from a workspace): straight to "orbit" with a short entrance
  *   settle - nothing was just tapped, so Target would just replay an
  *   transition that didn't happen.
- * - Otherwise (an actual tap while already mounted): "target" first, brief
- *   but real, before Orbit's camera movement begins.
+ * - Otherwise (an actual tap while already mounted, from Home): "target"
+ *   first, brief but real, before Orbit's camera movement begins.
  */
 export function resolveNexusStageOnRouteChange(input: {
   readonly routeNodeId: string | null;
   readonly reducedMotion: boolean;
   readonly isFirstRenderForMount: boolean;
+  readonly wasAlreadyFocused?: boolean;
 }): { readonly stage: NexusInteractionStage; readonly awaitsTargetBeat: boolean } {
   if (!input.routeNodeId) return { stage: "home", awaitsTargetBeat: false };
   if (input.reducedMotion) return { stage: "hub", awaitsTargetBeat: false };
+  if (input.wasAlreadyFocused) return { stage: "hub", awaitsTargetBeat: false };
   if (input.isFirstRenderForMount) return { stage: "orbit", awaitsTargetBeat: false };
   return { stage: "target", awaitsTargetBeat: true };
 }

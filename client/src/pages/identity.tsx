@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ChevronDown, ChevronLeft, ChevronUp, Fingerprint, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/UseAuth";
+import MyMemorySettings from "@/components/settings/MyMemorySettings";
 
 interface NoteSummary {
   slug: string;
@@ -157,6 +158,10 @@ export default function IdentityPage() {
             {user?.displayName || user?.username || "Current user"}
           </div>
           {user?.email && <div className="text-[13px] text-white/50">{user.email}</div>}
+        </section>
+
+        <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <MyMemorySettings />
         </section>
 
         <header className="mb-4 flex items-center justify-between">

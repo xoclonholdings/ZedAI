@@ -34,6 +34,16 @@ test("direct loading of /nexus/:nodeId (or Back from a workspace) skips Target a
   assert.deepEqual(result, { stage: "orbit", awaitsTargetBeat: false });
 });
 
+test("swiping to a new planet while already focused lands straight on Hub - no Target/Orbit replay", () => {
+  const result = resolveNexusStageOnRouteChange({
+    routeNodeId: "projects",
+    reducedMotion: false,
+    isFirstRenderForMount: false,
+    wasAlreadyFocused: true,
+  });
+  assert.deepEqual(result, { stage: "hub", awaitsTargetBeat: false });
+});
+
 test("reduced motion reaches a usable Hub immediately, whether tapped or directly loaded", () => {
   const tapped = resolveNexusStageOnRouteChange({
     routeNodeId: "memory",

@@ -120,9 +120,9 @@ test("the official scene is fed all eight real manifest nodes, never a hardcoded
  * NexusRootPage's target/orbit/hub sequencing - that sequencing depends on
  * effects and timers this SSR-only harness never runs (see
  * pages/__tests__/nexusInteractionStageModel.test.ts for the sequencing
- * logic itself). The overlay's own rendering - every action discoverable,
- * not just the first, on both desktop and mobile since it's one overlay for
- * both - is independent of which stage revealed it.
+ * logic itself). The overlay is just the back pill and the focused domain's
+ * name now - entering a domain happens by tapping the centered planet
+ * itself (NexusRootPage's handleFocusedTap), not a separate action row.
  */
 function renderHubOverlay(registry?: NexusCapabilityRegistry) {
   const queryClient = new QueryClient({
@@ -132,14 +132,14 @@ function renderHubOverlay(registry?: NexusCapabilityRegistry) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NexusProvider capabilityRegistry={registry}>
-          <NexusHubOverlay onEnterAction={() => {}} onBack={() => {}} />
+          <NexusHubOverlay onBack={() => {}} />
         </NexusProvider>
       </AuthProvider>
     </QueryClientProvider>,
   );
 }
 
-test("the Hub reveal exposes every available action, not only the first", () => {
+test("the Hub reveal has no action-pill row - only the back pill and the focused domain's name", () => {
   const registry = new NexusCapabilityRegistry([
     identityCapability("alpha", "Alpha Action", "/learning"),
     identityCapability("beta", "Beta Action", "/projects"),
@@ -148,9 +148,9 @@ test("the Hub reveal exposes every available action, not only the first", () => 
   const html = renderHubOverlay(registry);
 
   for (const label of ["Alpha Action", "Beta Action", "Gamma Action"]) {
-    assert.match(html, new RegExp(`>${label}<`), `${label} should be discoverable, not just the first`);
+    assert.doesNotMatch(html, new RegExp(`>${label}<`), `${label} should not render as a separate action pill`);
   }
-  assert.match(html, /aria-label="Back to Nexus"/, "Back to Nexus stays visible alongside the action pills");
+  assert.match(html, /aria-label="Back to Nexus"/, "Back to Nexus stays visible");
 });
 
 function identityCapability(name: string, label: string, route: string): NexusCapabilityDefinition {
