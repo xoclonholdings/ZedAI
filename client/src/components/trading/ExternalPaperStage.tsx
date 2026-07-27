@@ -165,25 +165,6 @@ export default function ExternalPaperStage() {
     }
   };
 
-  const testNativeWebull = async () => {
-    setTesting(true);
-    setError(null);
-    setNotice(null);
-    try {
-      const res = await fetch("/api/trading/webull/test-native", {
-        method: "POST",
-        credentials: "include",
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.result?.message || body?.error || `HTTP ${res.status}`);
-      setNotice(body.result?.message || "Native signing test succeeded.");
-    } catch (err: any) {
-      setError(err?.message || "Native signing test failed");
-    } finally {
-      setTesting(false);
-    }
-  };
-
   const proposeWebullPaperOrder = async () => {
     setProposing(true);
     setError(null);
@@ -300,18 +281,6 @@ export default function ExternalPaperStage() {
             testing={testing}
             onTest={() => void testWebull()}
           />
-
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void testNativeWebull()}
-              disabled={testing}
-              title="Test the native (no-Python) request signing against Webull"
-              className="rounded-lg border border-white/15 bg-white/[0.05] px-3 py-1.5 text-[12px] text-white/70 hover:bg-white/[0.1] disabled:opacity-50"
-            >
-              {testing ? "Testing…" : "Test native signing"}
-            </button>
-          </div>
 
           <WebullPaperOrderCard
             connected={Boolean(status?.connected)}

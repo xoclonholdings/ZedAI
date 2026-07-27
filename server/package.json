@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "npm install --prefix ../shared && node scripts/installWebullSdk.cjs",
+    "postinstall": "npm install --prefix ../shared",
     "dev": "tsx watch --ignore '../client/**' index.ts",
     "start": "tsx index.ts",
     "smoke": "tsx scripts/smokeCheck.ts",
