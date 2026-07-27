@@ -23,7 +23,7 @@ import {
 import type { StageAssessmentResult } from "@shared/trading-training-types";
 
 /**
- * ZAR's training path — the staged pipeline along which ZED becomes a
+ * ZAR's training path — the staged pipeline along which ZAR becomes a
  * capable trading intelligence. This is not a course the user climbs:
  * the user feeds ZAR and makes decisions; ZAR learns and is TESTED
  * before it may advance.
@@ -31,6 +31,10 @@ import type { StageAssessmentResult } from "@shared/trading-training-types";
  * Every stage is architected from day one. The active stage
  * determines what the workspace focuses on. ZAR must pass a stage's
  * test before the next stage unlocks.
+ *
+ * The 8 stages are picked from one dropdown rather than stacked as
+ * separate cards — only the selected stage's detail renders below it,
+ * so the page never grows a long list of same-shaped panels.
  */
 
 const STAGE_ICON: Record<TradingStageId, typeof BookOpen> = {
@@ -52,7 +56,7 @@ export default function TradingProgressionBanner({
   onProgressionChange?: (progression: TradingProgression) => void;
 } = {}) {
   const [progression, setProgression] = useState<TradingProgression>(DEFAULT_PROGRESSION);
-  const [expandedId, setExpandedId] = useState<TradingStageId | null>(null);
+  const [selectedId, setSelectedId] = useState<TradingStageId | null>(null);
   const [results, setResults] = useState<Partial<Record<TradingStageId, StageAssessmentResult>>>({});
   const [busyStage, setBusyStage] = useState<TradingStageId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -87,10 +91,15 @@ export default function TradingProgressionBanner({
     [progression.currentStage],
   );
 
-  // Expand the current stage by default so its test/actions are visible.
+  // Default the dropdown to the current stage so its test/actions are visible.
   useEffect(() => {
-    setExpandedId((v) => v ?? currentDef.id);
+    setSelectedId((v) => v ?? currentDef.id);
   }, [currentDef.id]);
+
+  const selectedStage = useMemo(
+    () => TRADING_STAGES.find((s) => s.id === selectedId) || currentDef,
+    [selectedId, currentDef],
+  );
 
   const setCurrent = useCallback(
     async (stageId: TradingStageId) => {
@@ -151,7 +160,7 @@ export default function TradingProgressionBanner({
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
         apply(body.progression);
-        setExpandedId(body.progression.currentStage);
+        setSelectedId(body.progression.currentStage);
         setNotice("Stage unlocked. ZAR advanced.");
       } catch (err: any) {
         setError(err?.message || "Cannot advance yet");
@@ -198,34 +207,47 @@ export default function TradingProgressionBanner({
         </div>
       )}
 
-      <div className="space-y-1.5">
-        {TRADING_STAGES.map((stage) => (
-          <StageRow
-            key={stage.id}
-            stage={stage}
-            progression={progression}
-            expanded={expandedId === stage.id}
-            result={results[stage.id]}
-            busy={busyStage === stage.id}
-            onToggle={() => setExpandedId((v) => (v === stage.id ? null : stage.id))}
-            onFocus={() => void setCurrent(stage.id)}
-            onOpenTool={onOpenStageTool}
-            onTest={() => void runTest(stage.id)}
-            onAdvance={() => void advance(stage.id)}
-          />
-        ))}
-      </div>
+      <label className="block">
+        <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Stage</div>
+        <select
+          value={selectedStage.id}
+          onChange={(e) => setSelectedId(e.target.value as TradingStageId)}
+          className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[13px] text-white outline-none focus:border-cyan-400/50"
+        >
+          {TRADING_STAGES.map((stage) => {
+            const unlocked = progression.unlockedStages.includes(stage.id);
+            const done = Boolean(progression.stageProgress[stage.id]?.completedAt);
+            const tag =
+              stage.id === progression.currentStage ? " — current" : done ? " — done" : !unlocked ? " — locked" : "";
+            return (
+              <option key={stage.id} value={stage.id} className="bg-neutral-900">
+                {stage.order}. {stage.label}
+                {tag}
+              </option>
+            );
+          })}
+        </select>
+      </label>
+
+      <StageDetail
+        stage={selectedStage}
+        progression={progression}
+        result={results[selectedStage.id]}
+        busy={busyStage === selectedStage.id}
+        onFocus={() => void setCurrent(selectedStage.id)}
+        onOpenTool={onOpenStageTool}
+        onTest={() => void runTest(selectedStage.id)}
+        onAdvance={() => void advance(selectedStage.id)}
+      />
     </section>
   );
 }
 
-function StageRow({
+function StageDetail({
   stage,
   progression,
-  expanded,
   result,
   busy,
-  onToggle,
   onFocus,
   onOpenTool,
   onTest,
@@ -233,10 +255,8 @@ function StageRow({
 }: {
   stage: TradingStageDefinition;
   progression: TradingProgression;
-  expanded: boolean;
   result?: StageAssessmentResult;
   busy: boolean;
-  onToggle: () => void;
   onFocus: () => void;
   onOpenTool?: () => void;
   onTest: () => void;
@@ -252,15 +272,11 @@ function StageRow({
 
   return (
     <div
-      className={`rounded-lg border transition-colors ${
+      className={`mt-3 rounded-lg border p-3 ${
         isCurrent ? "border-cyan-400/40 bg-cyan-400/[0.06]" : "border-white/10 bg-white/[0.02]"
       }`}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full text-left px-3 py-2.5 flex items-center gap-3"
-      >
+      <div className="flex items-center gap-3">
         <div
           className={`shrink-0 w-7 h-7 rounded-full border flex items-center justify-center ${
             done
@@ -272,118 +288,107 @@ function StageRow({
         >
           {done ? <Check size={13} /> : unlocked ? <Icon size={13} /> : <Lock size={12} />}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-[13.5px] font-medium ${unlocked ? "text-white" : "text-white/50"}`}>
-              {stage.order}. {stage.label}
-            </span>
-            {isCurrent && (
-              <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full bg-cyan-400/15 text-cyan-300 px-2 py-0.5">
-                current
-              </span>
-            )}
-            {done && (
-              <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full bg-emerald-400/15 text-emerald-300 px-2 py-0.5">
-                done
-              </span>
-            )}
-            {!unlocked && (
-              <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full bg-white/[0.06] text-white/40 px-2 py-0.5">
-                locked
-              </span>
-            )}
-          </div>
-          {!expanded && (
-            <div className={`mt-0.5 text-[12px] leading-snug truncate ${unlocked ? "text-white/50" : "text-white/30"}`}>
-              {stage.purpose}
-            </div>
-          )}
-        </div>
-      </button>
-
-      {expanded && (
-        <div className="px-3 pb-3 pt-1 border-t border-white/[0.06]">
-          <Block title="Your move">{stage.yourMove}</Block>
-          <Block title="What ZAR does">{stage.whatZedDoes}</Block>
-          <div className="mt-3">
-            <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/50 mb-1.5">Ready when</div>
-            <ul className="space-y-1">
-              {stage.readyWhen.map((c, i) => (
-                <li key={i} className="text-[12.5px] text-white/70 leading-snug flex gap-2">
-                  <span className="shrink-0 mt-1 w-1 h-1 rounded-full bg-cyan-400/60" />
-                  <span>{c}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="mt-3 rounded-lg border border-white/[0.06] bg-black/20 p-2.5">
-            <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-1">How ZAR is tested</div>
-            <p className="text-[11.5px] text-white/60 leading-snug">{stage.assessment.blurb}</p>
-          </div>
-
-          {/* Actions — the current stage always hands you the action. */}
+        <div className="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+          <span className={`text-[13.5px] font-medium ${unlocked ? "text-white" : "text-white/50"}`}>
+            {stage.order}. {stage.label}
+          </span>
           {isCurrent && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {onOpenTool && !locked && (
-                <button
-                  type="button"
-                  onClick={onOpenTool}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 transition-colors active:opacity-80"
-                >
-                  Open this stage
-                  <ArrowRight size={12} />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={onTest}
-                disabled={busy || locked}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-400/10 text-cyan-100 font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-400/20 disabled:opacity-40 transition-colors"
-              >
-                {busy ? "Testing ZAR…" : "Test ZAR"}
-              </button>
-              {passed && stage.nextUnlocks && (
-                <button
-                  type="button"
-                  onClick={onAdvance}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-emerald-300 disabled:opacity-50 transition-colors"
-                >
-                  Advance
-                  <ArrowRight size={12} />
-                </button>
-              )}
-            </div>
+            <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full bg-cyan-400/15 text-cyan-300 px-2 py-0.5">
+              current
+            </span>
           )}
-
-          {locked && (
-            <div className="mt-2 text-[11.5px] text-white/40">
-              This stage can't be tested until its provider integrations are connected.
-            </div>
-          )}
-
-          {/* Latest test result */}
-          {result && <AssessmentResult result={result} />}
-          {!result && record && (
-            <div className="mt-2 text-[11.5px] text-white/45">
-              Last test: {record.score}/100 — {record.passed ? "passed" : "not passed"}.
-            </div>
-          )}
-
-          {unlocked && !isCurrent && (
-            <button
-              type="button"
-              onClick={onFocus}
-              className="mt-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white transition-colors"
-            >
-              Focus on this stage
-            </button>
+          {done && (
+            <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full bg-emerald-400/15 text-emerald-300 px-2 py-0.5">
+              done
+            </span>
           )}
           {!unlocked && (
-            <div className="mt-3 text-[11.5px] text-white/40">ZAR unlocks this by passing the earlier stages.</div>
+            <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full bg-white/[0.06] text-white/40 px-2 py-0.5">
+              locked
+            </span>
           )}
         </div>
+      </div>
+
+      <Block title="Your move">{stage.yourMove}</Block>
+      <Block title="What ZAR does">{stage.whatZedDoes}</Block>
+      <div className="mt-3">
+        <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/50 mb-1.5">Ready when</div>
+        <ul className="space-y-1">
+          {stage.readyWhen.map((c, i) => (
+            <li key={i} className="text-[12.5px] text-white/70 leading-snug flex gap-2">
+              <span className="shrink-0 mt-1 w-1 h-1 rounded-full bg-cyan-400/60" />
+              <span>{c}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-3 rounded-lg border border-white/[0.06] bg-black/20 p-2.5">
+        <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-1">How ZAR is tested</div>
+        <p className="text-[11.5px] text-white/60 leading-snug">{stage.assessment.blurb}</p>
+      </div>
+
+      {/* Actions — the current stage always hands you the action. */}
+      {isCurrent && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {onOpenTool && !locked && (
+            <button
+              type="button"
+              onClick={onOpenTool}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 transition-colors active:opacity-80"
+            >
+              Open this stage
+              <ArrowRight size={12} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onTest}
+            disabled={busy || locked}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-400/10 text-cyan-100 font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-400/20 disabled:opacity-40 transition-colors"
+          >
+            {busy ? "Testing ZAR…" : "Test ZAR"}
+          </button>
+          {passed && stage.nextUnlocks && (
+            <button
+              type="button"
+              onClick={onAdvance}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-emerald-300 disabled:opacity-50 transition-colors"
+            >
+              Advance
+              <ArrowRight size={12} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {locked && (
+        <div className="mt-2 text-[11.5px] text-white/40">
+          This stage can't be tested until its provider integrations are connected.
+        </div>
+      )}
+
+      {/* Latest test result */}
+      {result && <AssessmentResult result={result} />}
+      {!result && record && (
+        <div className="mt-2 text-[11.5px] text-white/45">
+          Last test: {record.score}/100 — {record.passed ? "passed" : "not passed"}.
+        </div>
+      )}
+
+      {unlocked && !isCurrent && (
+        <button
+          type="button"
+          onClick={onFocus}
+          className="mt-3 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white transition-colors"
+        >
+          Focus on this stage
+        </button>
+      )}
+      {!unlocked && (
+        <div className="mt-3 text-[11.5px] text-white/40">ZAR unlocks this by passing the earlier stages.</div>
       )}
     </div>
   );
