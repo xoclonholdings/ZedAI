@@ -67,7 +67,6 @@ export default function LearningStudioPage() {
   const [editableBlueprint, setEditableBlueprint] = useState<LearningBlueprint | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [files, setFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [approving, setApproving] = useState(false);
   const [revising, setRevising] = useState(false);
@@ -116,7 +115,6 @@ export default function LearningStudioPage() {
   }, []);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
     setError(null);
     try {
       const [projectsRes] = await Promise.all([
@@ -130,8 +128,6 @@ export default function LearningStudioPage() {
       if (id) await refreshDetail(id);
     } catch (err: any) {
       setError(err?.message || "Failed to load Learning Studio.");
-    } finally {
-      setLoading(false);
     }
   }, [id, refreshDetail, refreshPaths]);
 
