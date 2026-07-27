@@ -183,9 +183,82 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
   },
 };
 
+const WORKSPACE_INDEX_ORDER = ["research", "operations", "finance", "marketing", "education"] as const;
+
+/**
+ * The bare /workspace route (no :workspace param) - lists every real
+ * workspace instead of silently defaulting into Research. This is what the
+ * Nexus "Workspaces" domain's real action route (/workspace) resolves to.
+ */
+function WorkspaceIndex() {
+  const [, navigate] = useLocation();
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/nexus")}
+          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+        >
+          <ChevronLeft size={16} className="mr-1" />
+          Nexus
+        </Button>
+        <div className="flex items-center gap-2">
+          <Layers size={16} className="text-cyan-300" />
+          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+            Workspaces
+          </span>
+        </div>
+        <span className="w-14" />
+      </div>
+
+      <main className="mx-auto max-w-2xl space-y-3 p-4 pb-24">
+        <p className="px-1 text-sm leading-6 text-muted-foreground">
+          Domain operating spaces Zed works within. Pick one to open its desk.
+        </p>
+        {WORKSPACE_INDEX_ORDER.map((slug) => {
+          const config = WORKSPACES[slug];
+          const Icon = config.icon;
+          return (
+            <button
+              key={slug}
+              type="button"
+              onClick={() => navigate(`/workspaces/${slug}`)}
+              className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200">
+                <Icon size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-semibold text-white">{config.label}</div>
+                <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">{config.purpose}</p>
+              </div>
+            </button>
+          );
+        })}
+      </main>
+    </div>
+  );
+}
+
 export default function WorkspacePage() {
   const [, navigate] = useLocation();
-  const { workspace = "research" } = useParams<{ workspace?: string }>();
+  const { workspace } = useParams<{ workspace?: string }>();
+
+  if (!workspace) return <WorkspaceIndex />;
+
+  return <WorkspaceDetail workspace={workspace} navigate={navigate} />;
+}
+
+function WorkspaceDetail({
+  workspace,
+  navigate,
+}: {
+  readonly workspace: string;
+  readonly navigate: (path: string) => void;
+}) {
   const config = WORKSPACES[workspace] || WORKSPACES.research;
   const Icon = config.icon;
   const [items, setItems] = useState<PublishedWorkItem[]>([]);

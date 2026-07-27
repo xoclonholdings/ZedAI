@@ -340,10 +340,14 @@ interface InteractionState {
   active: boolean;
   lastX: number;
   lastY: number;
-  velocity: number;
   tilt: number;
   moved: number;
-  overrideIndex: number | null;
+  /** Accumulated horizontal drag since the last committed step - a paging
+   *  gesture, not a free-spin. */
+  dragAccum: number;
+  /** The one authoritative "which planet is front-and-center" index - set by
+   *  a step (drag past threshold) or a direct tap, never by raw drag delta. */
+  activeIndex: number;
 }
 
 type InteractionRef = MutableRefObject<InteractionState>;
@@ -770,34 +774,66 @@ function RotationRig({
   zoomRef.current = zoom;
 
   const snapTargets = useMemo(() => domains.map(domainSnapTarget), [domains]);
+  // Domain indices in angular order around the ring - "next"/"previous" during
+  // a drag means the angular neighbor, not array order (angles are hashed per
+  // node identity, not evenly spaced).
+  const angularOrder = useMemo(
+    () => domains.map((_, i) => i).sort((a, b) => snapTargets[a] - snapTargets[b]),
+    [domains, snapTargets],
+  );
+  const STEP_PX = 70;
+
+  // Set the initial pose directly to the starting domain's target once on
+  // mount - no startup sweep from a meaningless [0,0,0].
+  useEffect(() => {
+    if (rigRef.current) {
+      rigRef.current.rotation.y = snapTargets[interaction.current.activeIndex] ?? 0;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!interactive) return;
     const el = gl.domElement;
     const d = interaction.current;
 
+    const stepActiveIndex = (domainIndex: number, direction: 1 | -1) => {
+      const pos = angularOrder.indexOf(domainIndex);
+      const nextPos = (pos + direction + angularOrder.length) % angularOrder.length;
+      return angularOrder[nextPos];
+    };
+
     const onDown = (e: PointerEvent) => {
       d.active = true;
       d.lastX = e.clientX;
       d.lastY = e.clientY;
-      d.velocity = 0;
       d.moved = 0;
-      d.overrideIndex = null;
+      d.dragAccum = 0;
       el.setPointerCapture?.(e.pointerId);
     };
     const onMove = (e: PointerEvent) => {
-      if (!d.active || !rigRef.current) return;
+      if (!d.active) return;
       const dx = e.clientX - d.lastX;
       const dy = e.clientY - d.lastY;
       d.lastX = e.clientX;
       d.lastY = e.clientY;
       d.moved += Math.abs(dx) + Math.abs(dy);
-      rigRef.current.rotation.y += dx * 0.0055;
-      d.velocity = dx * 0.0055;
       d.tilt = THREE.MathUtils.clamp(d.tilt + dy * 0.003, 0.12, 0.95);
+
+      // Paging, not free scroll: the rig never follows raw drag distance -
+      // it only steps to the next/previous planet once the drag crosses a
+      // fixed pixel threshold, so it's always settled on a real planet,
+      // never a meaningless in-between orientation.
+      d.dragAccum += dx;
+      while (Math.abs(d.dragAccum) >= STEP_PX) {
+        const direction = d.dragAccum > 0 ? 1 : -1;
+        d.activeIndex = stepActiveIndex(d.activeIndex, direction);
+        d.dragAccum -= direction * STEP_PX;
+      }
     };
     const onUp = (e: PointerEvent) => {
       d.active = false;
+      d.dragAccum = 0;
       el.releasePointerCapture?.(e.pointerId);
     };
 
@@ -813,7 +849,7 @@ function RotationRig({
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
     };
-  }, [gl, interactive, interaction]);
+  }, [gl, interactive, interaction, angularOrder]);
 
   useFrame((_, delta) => {
     const rig = rigRef.current;
@@ -822,35 +858,18 @@ function RotationRig({
     const d = interaction.current;
     const ry = rig.rotation.y;
 
-    // nearest domain by current orientation
-    let nearest = 0;
-    let best = Infinity;
-    for (let i = 0; i < snapTargets.length; i++) {
-      const dist = Math.abs(wrapAngle(ry - snapTargets[i]));
-      if (dist < best) {
-        best = dist;
-        nearest = i;
-      }
-    }
-
-    const focusIdx = d.overrideIndex ?? nearest;
+    const focusIdx = d.activeIndex;
     focusedIndexRef.current = focusIdx;
     if (focusIdx !== lastFocusRef.current) {
       lastFocusRef.current = focusIdx;
       onFocusChange?.(domains[focusIdx], focusIdx);
     }
 
-    if (!d.active) {
-      if (Math.abs(d.velocity) > 0.004) {
-        rig.rotation.y += d.velocity;
-        d.velocity *= Math.pow(0.05, delta);
-      } else {
-        d.velocity = 0;
-        // ease to the focused domain — no meaningless orientations
-        const target = snapTargets[focusIdx];
-        rig.rotation.y += wrapAngle(target - ry) * Math.min(1, 5.5 * delta);
-      }
-    }
+    // Always ease toward the active planet's target, whether idle or mid-drag -
+    // there is no free-spinning state, only a settled planet or a transition
+    // between two settled planets.
+    const target = snapTargets[focusIdx];
+    rig.rotation.y += wrapAngle(target - ry) * Math.min(1, 6 * delta);
 
     if (tiltGroup) {
       tiltGroup.rotation.x = THREE.MathUtils.lerp(tiltGroup.rotation.x, d.tilt, 0.12);
@@ -1039,16 +1058,20 @@ export function NexusCoreScene({
   warp = false,
   atmosphere = null,
 }: NexusCoreSceneProps) {
+  // The system always starts facing Workspaces, never wherever a domain
+  // happens to hash-land - falls back to the first domain if Workspaces
+  // isn't present (defensive; production manifests always include it).
+  const initialActiveIndex = Math.max(0, domains.findIndex((d) => d.id === "workspaces"));
   const interaction = useRef<InteractionState>({
     active: false,
     lastX: 0,
     lastY: 0,
-    velocity: 0,
     tilt,
     moved: 0,
-    overrideIndex: null,
+    dragAccum: 0,
+    activeIndex: initialActiveIndex,
   });
-  const focusedIndexRef = useRef(0);
+  const focusedIndexRef = useRef(initialActiveIndex);
   const size = useThree((s) => s.size);
   const aspect = size.width / Math.max(1, size.height);
   const isPortrait = aspect < 0.8;
@@ -1057,8 +1080,7 @@ export function NexusCoreScene({
   const sizeScale = isPortrait ? 1.05 : 1;
 
   const handleSelect = (domain: NexusDomain, index: number) => {
-    interaction.current.overrideIndex = index;
-    interaction.current.velocity = 0;
+    interaction.current.activeIndex = index;
     onDomainSelect?.(domain, index);
   };
 

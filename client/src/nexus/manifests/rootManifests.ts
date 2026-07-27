@@ -120,11 +120,10 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
         dependencies: [dependency("identity.collaboration-context", "Workspace behavior consumes confirmed relationship context.")],
         terms: ["workspace", "domain", "scope", "mode"],
       }),
-      capability("workspaces", "switcher", "Workspace Switcher", "Reserve navigation between domain operating spaces.", {
+      capability("workspaces", "switcher", "Workspace Switcher", "List and navigate between every domain operating space.", {
         actionKind: "navigate",
         actionRoute: "/workspace",
         dependencies: [dependency("workspaces.scope", "Switching operates over workspace scope.")],
-        status: "scaffolded",
         terms: ["workspace", "switch", "domain", "navigation"],
       }),
     ],
