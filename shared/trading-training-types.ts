@@ -277,7 +277,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
   {
     provider: "webull",
     label: "Webull",
-    purpose: "ZAR connects to Webull OpenAPI for stocks, options, futures, crypto, and event-contract account rails.",
+    purpose: "Zed connects to Webull OpenAPI for stocks, options, futures, crypto, and event-contract account rails.",
     fields: [
       { key: "appKey", label: "App key" },
       { key: "appSecret", label: "App secret", secret: true },
@@ -297,7 +297,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderInfo[] = [
   {
     provider: "polymarket",
     label: "Polymarket US",
-    purpose: "ZAR connects to Polymarket US for event-market discovery, balances, positions, and approved order routing.",
+    purpose: "Zed connects to Polymarket US for event-market discovery, balances, positions, and approved order routing.",
     fields: API_KEY_FIELDS,
     liveBridge: true,
   },

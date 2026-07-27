@@ -451,7 +451,7 @@ export default function SandboxWorkspace() {
             Paper trading
           </h2>
           <p className="mt-1 text-[12.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Build, approve, and track simulated trades. ZAR handles the trade build; paper governance is user controlled.
+            Build, approve, and track simulated trades. Zed handles the trade build; paper governance is user controlled.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {dataStatus && (
@@ -725,7 +725,7 @@ function TradeCard({ trade, onClose }: { trade: PaperTrade; onClose: () => void 
             Entry ${trade.entry} · Stop ${trade.stop} · Target ${trade.target} · {rrPlanned.toFixed(2)}R planned
           </div>
           <div className="mt-1 text-[10.5px] uppercase tracking-[0.06em] text-white/35">
-            ZAR manages: {(trade.managementStyle || "bracket").replace("_", " ")}
+            Zed manages: {(trade.managementStyle || "bracket").replace("_", " ")}
           </div>
           {trade.entryReason && (
             <div className="mt-1.5 text-[11.5px] text-white/50 italic max-w-[62ch]">
@@ -1058,7 +1058,7 @@ function LogTradeForm({
             <option value="short" className="bg-neutral-900">Short</option>
           </select>
         </FormField>
-        <FormField label="ZAR manages">
+        <FormField label="Zed manages">
           <select
             value={form.managementStyle}
             onChange={(e) => set("managementStyle")(e.target.value as NonNullable<PaperTrade["managementStyle"]>)}
