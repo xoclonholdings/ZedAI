@@ -47,9 +47,14 @@ function buildLaneReasoningModels(): Partial<Record<ProviderLane, Partial<Record
 }
 
 const DEFAULT_LIGHTNING_BASE_URL = "https://lightning.ai/api/v1";
+// Primary model first, fallback(s) after. LightningProvider tries each
+// model in this order and moves to the next on any failed response
+// (including a low-balance/quota error from Lightning), so listing
+// gemma-4 first with gpt-oss-120b after makes gpt-oss-120b the automatic
+// fallback.
 const DEFAULT_LIGHTNING_MODELS = [
-  "lightning-ai/gpt-oss-120b",
   "lightning-ai/gemma-4-31B-it",
+  "lightning-ai/gpt-oss-120b",
 ];
 const LIGHTNING_DEPLOYMENT_DEFAULT_LABEL = "Lightning deployment default";
 
