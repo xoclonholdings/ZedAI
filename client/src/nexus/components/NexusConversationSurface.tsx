@@ -9,6 +9,7 @@ import { useNexusChatSession } from "../communication/useNexusChatSession";
 import { useNexusDictation } from "../communication/useNexusDictation";
 import { NexusDrawCanvas } from "./communication/NexusDrawCanvas";
 import { NexusFileUpload } from "./communication/NexusFileUpload";
+import { NexusMemoryUpload } from "./communication/NexusMemoryUpload";
 import { NexusVoiceDock } from "./communication/NexusVoiceDock";
 import ResearchDocuments from "@/components/research/ResearchDocuments";
 import { useNexus } from "../state/NexusProvider";
@@ -26,6 +27,9 @@ import {
  * slot's content changes.
  */
 type NexusDockMode = "talk" | "image" | "draw" | "doc" | "upload" | "history";
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const IMAGE_ACCEPT = "image/*";
 
 export function NexusConversationSurface() {
   const [, navigate] = useLocation();
@@ -75,9 +79,12 @@ export function NexusConversationSurface() {
         setActiveMode("talk");
         return;
       case "image":
-      case "upload":
-        setActiveMode(modeId);
+        setActiveMode("image");
         void conversationController.openFileUpload();
+        return;
+      case "upload":
+        // A memory upload isn't a chat attachment - no conversation needed.
+        setActiveMode("upload");
         return;
       case "doc":
         setActiveMode("doc");
@@ -149,12 +156,15 @@ export function NexusConversationSurface() {
           <NexusVoiceDock dictation={dictation} isResponding={conversationController.isStreaming} />
         )}
 
-        {(activeMode === "image" || activeMode === "upload") && (
+        {activeMode === "image" && (
           conversationController.showFileUpload && conversationController.activeUploadConversationId ? (
             <NexusFileUpload
               conversationId={conversationController.activeUploadConversationId}
               onUpload={conversationController.handleFileUpload}
               onClose={() => setActiveMode("talk")}
+              accept={IMAGE_ACCEPT}
+              allowedTypes={IMAGE_TYPES}
+              label="Tap to upload an image"
             />
           ) : (
             <div className="flex h-[104px] items-center justify-center rounded-xl border border-white/10 bg-black/40 text-[12px] text-white/45">
@@ -162,6 +172,8 @@ export function NexusConversationSurface() {
             </div>
           )
         )}
+
+        {activeMode === "upload" && <NexusMemoryUpload onDone={() => setActiveMode("talk")} />}
 
         {activeMode === "doc" && <ResearchDocuments />}
 

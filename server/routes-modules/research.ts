@@ -1,3 +1,4 @@
+import fs from "fs/promises";
 import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
@@ -13,6 +14,7 @@ import {
   type ResearchAction,
   type ResearchResult,
 } from "../services/research/ResearchEngine";
+import { processFile, upload } from "../services/fileProcessor";
 import { getWebSearchStatus, webSearch } from "../services/WebSearchService";
 
 /**
@@ -89,6 +91,7 @@ export function registerResearchRoutes(app: Express): void {
         instruction: String(req.body?.instruction || ""),
         title: req.body?.title ? String(req.body.title) : undefined,
         sources: req.body?.sources ? String(req.body.sources) : undefined,
+        docType: req.body?.docType ? String(req.body.docType) : undefined,
       });
       res.json(draft);
     } catch {
@@ -125,6 +128,47 @@ export function registerResearchRoutes(app: Express): void {
       res.status(500).json({ error: err?.message || "Failed to file document" });
     }
   });
+
+  // File an existing document as-is, instead of having Zed draft one - the
+  // same text-extraction pipeline chat/memory uploads use, filed straight
+  // into Zed's Files so it shows up next to drafted documents.
+  app.post(
+    "/api/research/documents/upload",
+    isAuthenticated,
+    upload.array("files"),
+    async (req: any, res) => {
+      const files = (req.files as Express.Multer.File[] | undefined) || [];
+      if (files.length === 0) {
+        return res.status(400).json({ error: "Attach at least one file." });
+      }
+      try {
+        const userId = userIdFrom(req);
+        const documents = [];
+        for (const file of files) {
+          const processed = await processFile(file.path, file.mimetype).catch((err) => ({
+            extractedContent: "",
+            error: err?.message || "processing failed",
+          } as any));
+          await fs.unlink(file.path).catch(() => {});
+          if (!processed?.extractedContent?.trim()) {
+            return res.status(422).json({
+              error: `Couldn't read ${file.originalname} as text (${processed?.error || "unsupported file type"}).`,
+            });
+          }
+          documents.push(
+            await saveResearchDocument({
+              userId,
+              title: file.originalname.replace(/\.[^.]+$/, ""),
+              content: processed.extractedContent,
+            }),
+          );
+        }
+        res.json({ documents });
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || "Failed to file the document" });
+      }
+    },
+  );
 
   app.delete("/api/research/documents/:id", isAuthenticated, async (req: any, res) => {
     try {

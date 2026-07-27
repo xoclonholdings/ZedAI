@@ -168,9 +168,11 @@ export async function createResearchDocument(input: {
   instruction: string;
   title?: string;
   sources?: string;
+  docType?: string;
 }): Promise<DocumentDraft> {
   const instruction = String(input.instruction || "").trim();
   const sourceText = String(input.sources || "").trim();
+  const docType = String(input.docType || "").trim();
 
   const memory = await buildWorkspaceMemoryContext("research", instruction).catch(() => ({
     prompt: "",
@@ -180,11 +182,13 @@ export async function createResearchDocument(input: {
 
   const prompt = [
     memory.used ? `${memory.prompt}\n` : "",
-    `Write this up as a clean, readable document a normal person could open later and get everything they need.`,
+    docType
+      ? `Write this up as a ${docType.toLowerCase()} - a clean, readable document a normal person could open later and get everything they need.`
+      : `Write this up as a clean, readable document a normal person could open later and get everything they need.`,
     input.title ? `Suggested title: ${input.title}` : "",
     `What it should cover: ${instruction || "Write up the research below."}`,
     sourceText ? `\nMaterial to base it on:\n"""\n${sourceText.slice(0, 8000)}\n"""` : "",
-    `\nUse plain language and clear headings. Start with a one-line title on the first line, then the body. No jargon, no invented facts.`,
+    `\nUse plain language and whatever structure actually fits a ${docType || "document"} (headings only if that's normal for this type - a letter or resume shouldn't get markdown headers). Start with a one-line title on the first line, then the body. No jargon, no invented facts.`,
   ]
     .filter(Boolean)
     .join("\n");

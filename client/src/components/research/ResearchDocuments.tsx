@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, FileText, FolderKanban, GraduationCap, HardDrive, Lock, RotateCcw, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, FileText, FolderKanban, GraduationCap, HardDrive, Loader2, Lock, RotateCcw, Trash2, Upload } from "lucide-react";
 
 /**
  * Create / Document, then File it.
@@ -21,6 +21,8 @@ interface FiledDoc {
   content: string;
 }
 
+const DOC_TYPES = ["Report", "Memo", "Letter", "Summary", "Proposal", "Resume", "Contract", "Notes"];
+
 export default function ResearchDocuments({
   seedInstruction = "",
   seedSources = "",
@@ -32,6 +34,7 @@ export default function ResearchDocuments({
   const [instruction, setInstruction] = useState("");
   const [title, setTitle] = useState("");
   const [sources, setSources] = useState("");
+  const [docType, setDocType] = useState(DOC_TYPES[0]);
   const [drafting, setDrafting] = useState(false);
   const [draft, setDraft] = useState<{ title: string; content: string } | null>(null);
   const [draftFailed, setDraftFailed] = useState<string | null>(null);
@@ -40,6 +43,9 @@ export default function ResearchDocuments({
   const [filing, setFiling] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [projects, setProjects] = useState<ProjectLite[]>([]);
   const [docs, setDocs] = useState<FiledDoc[]>([]);
@@ -74,6 +80,7 @@ export default function ResearchDocuments({
     setInstruction(seedInstruction);
     setSources(seedSources);
     setTitle("");
+    setDocType(DOC_TYPES[0]);
     setDraft(null);
     setDraftFailed(null);
     setNotice(null);
@@ -94,7 +101,7 @@ export default function ResearchDocuments({
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instruction, title: title.trim() || undefined, sources }),
+        body: JSON.stringify({ instruction, title: title.trim() || undefined, sources, docType }),
       });
       const body = await res.json().catch(() => ({}));
       if (body.ok === false) {
@@ -108,7 +115,35 @@ export default function ResearchDocuments({
     } finally {
       setDrafting(false);
     }
-  }, [instruction, title, sources]);
+  }, [instruction, title, sources, docType]);
+
+  const uploadDocument = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploading(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("files", file));
+      const res = await fetch("/api/research/documents/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      setNotice(
+        body.documents?.length === 1
+          ? `Filed "${body.documents[0].title}" to Zed's Files.`
+          : `Filed ${body.documents?.length ?? 0} documents to Zed's Files.`,
+      );
+      await loadDocs();
+    } catch (err: any) {
+      setError(err?.message || "Couldn't file that document. Try again.");
+    } finally {
+      setUploading(false);
+    }
+  }, [loadDocs]);
 
   const file = useCallback(async () => {
     if (!draft) return;
@@ -179,13 +214,37 @@ export default function ResearchDocuments({
           {docs.length > 0 && <span className="text-[11px] text-white/40">{docs.length} filed</span>}
         </div>
         {!open && (
-          <button
-            type="button"
-            onClick={openForm}
-            className="rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 transition-colors"
-          >
-            Create a document
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/80 hover:text-white transition-colors disabled:opacity-50"
+            >
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+              {uploading ? "Filing…" : "Upload a document"}
+            </button>
+            <button
+              type="button"
+              onClick={openForm}
+              className="rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 transition-colors"
+            >
+              Create a document
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.txt,.md,.csv"
+              onChange={(e) => {
+                const files = e.target.files ? Array.from(e.target.files) : [];
+                e.target.value = "";
+                if (files.length > 0) void uploadDocument(files);
+              }}
+              className="hidden"
+              aria-label="Choose a document to file"
+            />
+          </div>
         )}
       </div>
 
@@ -204,6 +263,20 @@ export default function ResearchDocuments({
         <div className="mt-3 space-y-2">
           {!draft ? (
             <>
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-[11.5px] text-white/40">Type:</span>
+                <select
+                  value={docType}
+                  onChange={(e) => setDocType(e.target.value)}
+                  className={`${input} w-auto`}
+                >
+                  {DOC_TYPES.map((t) => (
+                    <option key={t} value={t} className="bg-neutral-900">
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <input
                 type="text"
                 value={title}

@@ -33,16 +33,33 @@ export function NexusDrawCanvas({ ensureConversationId, onSent }: NexusDrawCanva
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ratio = window.devicePixelRatio || 1;
-    const width = canvas.clientWidth;
-    canvas.width = width * ratio;
-    canvas.height = CANVAS_HEIGHT * ratio;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.scale(ratio, ratio);
-      ctx.fillStyle = "#0b0a1a";
-      ctx.fillRect(0, 0, width, CANVAS_HEIGHT);
+
+    // Sized via ResizeObserver rather than a one-time clientWidth read - on
+    // mobile this mounts inside a slot that's still settling its layout
+    // (mode-switch transition, dynamic viewport), so a mount-only read can
+    // grab a stale/zero width and leave the backing buffer CSS-stretched
+    // (blurry, off-scale strokes) instead of matching the real rendered size.
+    function resize() {
+      const ratio = window.devicePixelRatio || 1;
+      const width = canvas!.clientWidth;
+      if (!width) return;
+      const targetWidth = Math.round(width * ratio);
+      const targetHeight = Math.round(CANVAS_HEIGHT * ratio);
+      if (canvas!.width === targetWidth && canvas!.height === targetHeight) return;
+      canvas!.width = targetWidth;
+      canvas!.height = targetHeight;
+      const ctx = canvas!.getContext("2d");
+      if (ctx) {
+        ctx.scale(ratio, ratio);
+        ctx.fillStyle = "#0b0a1a";
+        ctx.fillRect(0, 0, width, CANVAS_HEIGHT);
+      }
     }
+
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, []);
 
   const sendMutation = useMutation({

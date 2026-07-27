@@ -8,10 +8,15 @@ interface NexusFileUploadProps {
   readonly conversationId: string;
   readonly onUpload: (files: File[], result: { conversationId?: string; files?: unknown[] }) => void;
   readonly onClose: () => void;
+  /** Restricts the native file picker. Defaults to every type this route accepts. */
+  readonly accept?: string;
+  /** Client-side type gate matching `accept`. Defaults to every type this route accepts. */
+  readonly allowedTypes?: readonly string[];
+  readonly label?: string;
 }
 
 const MAX_SIZE = 32 * 1024 * 1024 * 1024;
-const ALLOWED_TYPES = [
+const DEFAULT_ALLOWED_TYPES = [
   "text/plain",
   "text/csv",
   "application/pdf",
@@ -24,13 +29,21 @@ const ALLOWED_TYPES = [
   "application/json",
   "text/markdown",
 ];
+const DEFAULT_ACCEPT = ".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.json";
 
 /**
  * The dock's compact upload trigger - real upload (POST to the conversation's
  * /upload route), sized to fit the same fixed slot the mic/composer occupy,
  * not the full drag-and-drop panel a standalone chat page would show.
  */
-export function NexusFileUpload({ conversationId, onUpload, onClose }: NexusFileUploadProps) {
+export function NexusFileUpload({
+  conversationId,
+  onUpload,
+  onClose,
+  accept = DEFAULT_ACCEPT,
+  allowedTypes = DEFAULT_ALLOWED_TYPES,
+  label = "Tap to upload files",
+}: NexusFileUploadProps) {
   const [uploadingCount, setUploadingCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -88,7 +101,7 @@ export function NexusFileUpload({ conversationId, onUpload, onClose }: NexusFile
         toast({ title: "File too large", description: `${file.name} exceeds 32GB limit`, variant: "destructive" });
         return false;
       }
-      if (!ALLOWED_TYPES.includes(file.type)) {
+      if (!allowedTypes.includes(file.type)) {
         toast({ title: "Unsupported file type", description: `${file.name} is not a supported file type`, variant: "destructive" });
         return false;
       }
@@ -119,7 +132,7 @@ export function NexusFileUpload({ conversationId, onUpload, onClose }: NexusFile
       ) : (
         <>
           <Upload size={18} className="text-white/45" />
-          <span className="text-[13px] font-medium text-white">Tap to upload files</span>
+          <span className="text-[13px] font-medium text-white">{label}</span>
         </>
       )}
       <input
@@ -128,7 +141,7 @@ export function NexusFileUpload({ conversationId, onUpload, onClose }: NexusFile
         multiple
         onChange={handleFileInput}
         className="hidden"
-        accept=".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.json"
+        accept={accept}
         aria-label="Choose files to upload"
       />
     </button>

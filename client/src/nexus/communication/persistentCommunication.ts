@@ -45,7 +45,7 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       "client/src/components/research/ResearchDocuments.tsx",
     ]),
     mode("upload", "Upload", "create.upload", "available", "/chat", [
-      "client/src/nexus/components/communication/NexusFileUpload.tsx",
+      "client/src/nexus/components/communication/NexusMemoryUpload.tsx",
     ]),
   ],
   capabilities: [
@@ -82,14 +82,14 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       aliases: ["create.doc"],
       replacesCapabilityIds: ["create.draft-work"],
     }),
-    communicationCapability("upload", "create.upload", "Upload Communication", "Attach supported files through the existing conversation upload surface.", {
+    communicationCapability("upload", "create.upload", "Upload Communication", "Teach Zed from files - zips, datasets, documents - through the existing memory upload surface, independent of any conversation.", {
       actionKind: "upload",
       actionRoute: "/chat",
       dependencies: [
         dependency("identity.current-principal", "Uploads belong to the authenticated user."),
-        dependency("tools.execution-policy", "Uploaded content must remain governed by execution policy."),
+        dependency("memory.relevant-context", "Uploaded content merges into the user's retained memory."),
       ],
-      terms: ["create", "upload", "attach", "file", "source"],
+      terms: ["create", "upload", "learn", "teach", "memory", "zip", "dataset"],
     }),
   ],
   metadata: {
