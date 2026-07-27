@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CheckCircle2, GraduationCap, Upload } from "lucide-react";
 
 import type {
@@ -9,7 +9,6 @@ import type {
 import {
   NoticeBanner,
   StageShell,
-  inputClass,
   textareaClass,
 } from "./stage-atoms";
 
@@ -19,6 +18,9 @@ import {
  * feed ZAR education for that topic, then test ZAR on that section
  * specifically. Feeding and testing here reuse ZAR's existing
  * TradingKnowledgeBase and assessment engine; nothing new is duplicated.
+ *
+ * Areas are picked from one dropdown rather than stacked as separate
+ * cards, so only the selected area's feed/test panel is on screen.
  */
 
 function scoreClass(score: number, passed: boolean): string {
@@ -36,6 +38,7 @@ function verdictClass(verdict: string): string {
 
 export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
   const [areas, setAreas] = useState<KnowledgeAreaInfo[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,6 +61,12 @@ export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    setSelectedId((v) => (v && areas.some((a) => a.id === v) ? v : areas[0]?.id ?? null));
+  }, [areas]);
+
+  const selectedArea = useMemo(() => areas.find((a) => a.id === selectedId) || null, [areas, selectedId]);
+
   return (
     <StageShell
       eyebrow="Learn"
@@ -68,16 +77,31 @@ export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
     >
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
 
-      <div className="space-y-3">
-        {areas.map((area) => (
-          <SectionCard key={area.id} area={area} onChanged={refresh} onFed={onFed} />
-        ))}
-      </div>
+      {areas.length > 0 && (
+        <label className="block">
+          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Section</div>
+          <select
+            value={selectedId ?? ""}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[13px] text-white outline-none focus:border-cyan-400/50"
+          >
+            {areas.map((area) => (
+              <option key={area.id} value={area.id} className="bg-neutral-900">
+                {area.title} {area.covered ? `— ${area.entryCount} fed` : "— not fed yet"}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {selectedArea && (
+        <SectionDetail key={selectedArea.id} area={selectedArea} onChanged={refresh} onFed={onFed} />
+      )}
     </StageShell>
   );
 }
 
-function SectionCard({
+function SectionDetail({
   area,
   onChanged,
   onFed,
@@ -86,7 +110,6 @@ function SectionCard({
   onChanged: () => void;
   onFed?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -147,7 +170,6 @@ function SectionCard({
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       setAssessment(body.assessment as KnowledgeAreaAssessment);
-      setOpen(true);
     } catch (err: any) {
       setError(err?.message || "Section test failed");
     } finally {
@@ -156,7 +178,7 @@ function SectionCard({
   }, [area.id]);
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
+    <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
       <div className="flex items-start justify-between gap-2 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -186,96 +208,85 @@ function SectionCard({
             {area.requiredTopics.join(" · ")}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/70 hover:text-white transition-colors"
-          >
-            {open ? "Close" : "Feed"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void test()}
-            disabled={testing}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-2.5 py-1 text-[11.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
-          >
-            {testing ? "Testing…" : "Test ZAR"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => void test()}
+          disabled={testing}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-2.5 py-1 text-[11.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
+        >
+          {testing ? "Testing…" : "Test ZAR"}
+        </button>
       </div>
 
-      {open && (
-        <div className="mt-3 space-y-2 border-t border-white/[0.06] pt-3">
-          {notice && <NoticeBanner kind="success">{notice}</NoticeBanner>}
-          {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
+      <div className="mt-3 space-y-2 border-t border-white/[0.06] pt-3">
+        {notice && <NoticeBanner kind="success">{notice}</NoticeBanner>}
+        {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
 
-          <div className="text-[11px] uppercase tracking-[0.08em] text-white/50">
-            Upload education for {area.title}
+        <div className="text-[11px] uppercase tracking-[0.08em] text-white/50">
+          Upload education for {area.title}
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
+          placeholder={`Paste notes, a transcript, or a summary about ${area.title.toLowerCase()}.`}
+          className={textareaClass}
+        />
+        <input
+          ref={fileRef}
+          type="file"
+          multiple
+          onChange={(e) => setFiles(Array.from(e.target.files || []))}
+          className="block w-full text-[12px] text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-400 file:px-3 file:py-1.5 file:text-black file:font-medium hover:file:bg-cyan-300"
+        />
+        {files.length > 0 && (
+          <div className="text-[11px] text-white/50">
+            {files.length} file{files.length === 1 ? "" : "s"} selected
           </div>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={3}
-            placeholder={`Paste notes, a transcript, or a summary about ${area.title.toLowerCase()}.`}
-            className={textareaClass}
-          />
-          <input
-            ref={fileRef}
-            type="file"
-            multiple
-            onChange={(e) => setFiles(Array.from(e.target.files || []))}
-            className="block w-full text-[12px] text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-400 file:px-3 file:py-1.5 file:text-black file:font-medium hover:file:bg-cyan-300"
-          />
-          {files.length > 0 && (
-            <div className="text-[11px] text-white/50">
-              {files.length} file{files.length === 1 ? "" : "s"} selected
+        )}
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => void feed()}
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
+          >
+            <Upload size={13} />
+            {uploading ? "Feeding ZAR…" : "Feed this section"}
+          </button>
+        </div>
+
+        {assessment && (
+          <div className="mt-2 rounded-lg border border-white/10 bg-black/30 p-3">
+            <div className="text-[12px] text-white/80">{assessment.summary}</div>
+            <div className="mt-2 space-y-1">
+              {assessment.breakdown.map((b, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 text-[11.5px] text-white/55">
+                  <span>{b.label}</span>
+                  <span className="text-white/70">
+                    {b.points}
+                    {b.max ? `/${b.max}` : ""}
+                  </span>
+                </div>
+              ))}
             </div>
-          )}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void feed()}
-              disabled={uploading}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
-            >
-              <Upload size={13} />
-              {uploading ? "Feeding ZAR…" : "Feed this section"}
-            </button>
-          </div>
-
-          {assessment && (
-            <div className="mt-2 rounded-lg border border-white/10 bg-black/30 p-3">
-              <div className="text-[12px] text-white/80">{assessment.summary}</div>
-              <div className="mt-2 space-y-1">
-                {assessment.breakdown.map((b, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 text-[11.5px] text-white/55">
-                    <span>{b.label}</span>
-                    <span className="text-white/70">
-                      {b.points}
-                      {b.max ? `/${b.max}` : ""}
-                    </span>
+            {assessment.quiz.length > 0 && (
+              <div className="mt-2.5 space-y-2 border-t border-white/[0.06] pt-2.5">
+                {assessment.quiz.map((q, i) => (
+                  <div key={i} className="text-[11.5px]">
+                    <div className="text-white/70">{q.question}</div>
+                    <div className="mt-0.5 text-white/50 leading-snug">{q.answer}</div>
+                    <div className={`mt-0.5 uppercase tracking-[0.06em] ${verdictClass(q.verdict)}`}>
+                      {q.verdict}
+                      {q.note ? ` — ${q.note}` : ""}
+                    </div>
                   </div>
                 ))}
               </div>
-              {assessment.quiz.length > 0 && (
-                <div className="mt-2.5 space-y-2 border-t border-white/[0.06] pt-2.5">
-                  {assessment.quiz.map((q, i) => (
-                    <div key={i} className="text-[11.5px]">
-                      <div className="text-white/70">{q.question}</div>
-                      <div className="mt-0.5 text-white/50 leading-snug">{q.answer}</div>
-                      <div className={`mt-0.5 uppercase tracking-[0.06em] ${verdictClass(q.verdict)}`}>
-                        {q.verdict}
-                        {q.note ? ` — ${q.note}` : ""}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
