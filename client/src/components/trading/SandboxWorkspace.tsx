@@ -979,6 +979,8 @@ function LogTradeForm({
   signal: TradingSignal | null;
   onCancel: () => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [reasoningOpen, setReasoningOpen] = useState(false);
   const set =
     <K extends keyof typeof EMPTY_LOG_FORM>(key: K) =>
     (v: (typeof EMPTY_LOG_FORM)[K]) =>
@@ -1058,27 +1060,6 @@ function LogTradeForm({
             <option value="short" className="bg-neutral-900">Short</option>
           </select>
         </FormField>
-        <FormField label="Zed manages">
-          <select
-            value={form.managementStyle}
-            onChange={(e) => set("managementStyle")(e.target.value as NonNullable<PaperTrade["managementStyle"]>)}
-            className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
-          >
-            <option value="bracket" className="bg-neutral-900">Bracket</option>
-            <option value="stop_only" className="bg-neutral-900">Stop only</option>
-            <option value="target_only" className="bg-neutral-900">Target only</option>
-            <option value="manual" className="bg-neutral-900">Manual</option>
-          </select>
-        </FormField>
-        <FormField label="Setup (optional)">
-          <input
-            type="text"
-            value={form.setupName}
-            onChange={(e) => set("setupName")(e.target.value)}
-            placeholder="Breakout / pullback"
-            className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
-          />
-        </FormField>
         <FormField label="Entry">
           <input
             type="number"
@@ -1119,38 +1100,85 @@ function LogTradeForm({
             className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 tabular-nums"
           />
         </FormField>
-        <FormField label="Risk ($, auto)">
-          <input
-            type="number"
-            step="0.01"
-            value={form.riskAmount}
-            onChange={(e) => set("riskAmount")(e.target.value)}
-            placeholder="150"
-            className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 tabular-nums"
-          />
-        </FormField>
-        <FormField label="Timeframe">
-          <input
-            type="text"
-            value={form.timeframe}
-            onChange={(e) => set("timeframe")(e.target.value)}
-            placeholder="daily / 4h / 1h"
-            className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
-          />
-        </FormField>
       </div>
 
-      <div className="mt-3">
-        <div className="text-[11.5px] uppercase tracking-[0.08em] text-white/50 mb-1">
-          Why are you taking this trade? (thesis)
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((v) => !v)}
+        className="mt-3 flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-white/40 hover:text-white/70"
+      >
+        {detailsOpen ? "Hide" : "More"} details (setup, timeframe, risk, management)
+      </button>
+      {detailsOpen && (
+        <div className="mt-2 grid gap-3 grid-cols-2 sm:grid-cols-3">
+          <FormField label="Zed manages">
+            <select
+              value={form.managementStyle}
+              onChange={(e) => set("managementStyle")(e.target.value as NonNullable<PaperTrade["managementStyle"]>)}
+              className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+            >
+              <option value="bracket" className="bg-neutral-900">Bracket</option>
+              <option value="stop_only" className="bg-neutral-900">Stop only</option>
+              <option value="target_only" className="bg-neutral-900">Target only</option>
+              <option value="manual" className="bg-neutral-900">Manual</option>
+            </select>
+          </FormField>
+          <FormField label="Setup (optional)">
+            <input
+              type="text"
+              value={form.setupName}
+              onChange={(e) => set("setupName")(e.target.value)}
+              placeholder="Breakout / pullback"
+              className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+            />
+          </FormField>
+          <FormField label="Risk ($, auto)">
+            <input
+              type="number"
+              step="0.01"
+              value={form.riskAmount}
+              onChange={(e) => set("riskAmount")(e.target.value)}
+              placeholder="150"
+              className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 tabular-nums"
+            />
+          </FormField>
+          <FormField label="Timeframe">
+            <input
+              type="text"
+              value={form.timeframe}
+              onChange={(e) => set("timeframe")(e.target.value)}
+              placeholder="daily / 4h / 1h"
+              className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+            />
+          </FormField>
         </div>
-        <textarea
-          value={form.entryReason}
-          onChange={(e) => set("entryReason")(e.target.value)}
-          rows={3}
-          placeholder="Trend continuation off the 20 EMA. Bought after intraday consolidation, tight risk, expected move to prior swing high."
-          className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 leading-snug resize-y placeholder:text-white/30"
-        />
+      )}
+
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setReasoningOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 text-[11.5px] text-white/60 hover:text-white/90"
+        >
+          <span className="truncate text-left">
+            {form.entryReason.trim()
+              ? form.entryReason.trim().split("\n")[0].slice(0, 90)
+              : "Why are you taking this trade? (required)"}
+          </span>
+          <span className="shrink-0 text-[10.5px] uppercase tracking-[0.06em] text-cyan-300/80">
+            {reasoningOpen ? "Hide" : form.entryReason.trim() ? "Edit" : "Add"}
+          </span>
+        </button>
+        {reasoningOpen && (
+          <textarea
+            value={form.entryReason}
+            onChange={(e) => set("entryReason")(e.target.value)}
+            rows={4}
+            autoFocus
+            placeholder="Trend continuation off the 20 EMA. Bought after intraday consolidation, tight risk, expected move to prior swing high."
+            className="mt-2 w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-2.5 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 leading-snug resize-y placeholder:text-white/30"
+          />
+        )}
       </div>
 
       <div className="mt-4 flex items-center justify-end gap-2">

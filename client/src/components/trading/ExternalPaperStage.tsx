@@ -444,6 +444,8 @@ function WebullPaperOrderCard({
   onPropose: () => void;
   onSubmit: () => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [reasoningOpen, setReasoningOpen] = useState(false);
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
       <div className="flex items-start justify-between gap-2">
@@ -488,32 +490,62 @@ function WebullPaperOrderCard({
         <Input label="Stop" value={form.stop} onChange={(stop) => setForm((v) => ({ ...v, stop }))} />
         <Input label="Target" value={form.target} onChange={(target) => setForm((v) => ({ ...v, target }))} />
         <Input label="Size" value={form.size} onChange={(size) => setForm((v) => ({ ...v, size }))} />
-        <Input label="Risk amount" value={form.riskAmount} onChange={(riskAmount) => setForm((v) => ({ ...v, riskAmount }))} />
-        <Input label="Asset class" value={form.assetClass} onChange={(assetClass) => setForm((v) => ({ ...v, assetClass }))} />
-        <Input label="Timeframe" value={form.timeframe} onChange={(timeframe) => setForm((v) => ({ ...v, timeframe }))} />
-        <Input label="Setup" value={form.setupName} onChange={(setupName) => setForm((v) => ({ ...v, setupName }))} />
-        <label className="block sm:col-span-2">
-          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Zed manages</div>
-          <select
-            value={form.managementStyle}
-            onChange={(event) => setForm((v) => ({ ...v, managementStyle: event.target.value as NonNullable<PaperTrade["managementStyle"]> }))}
-            className="w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none focus:border-cyan-400/50"
-          >
-            <option value="bracket" className="bg-neutral-900">Bracket: target + stop</option>
-            <option value="stop_only" className="bg-neutral-900">Stop only</option>
-            <option value="target_only" className="bg-neutral-900">Target only</option>
-            <option value="manual" className="bg-neutral-900">Manual close</option>
-          </select>
-        </label>
-        <label className="block sm:col-span-2">
-          <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Zed thesis</div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((v) => !v)}
+        className="mt-3 flex items-center gap-1 text-[11px] uppercase tracking-[0.08em] text-white/40 hover:text-white/70"
+      >
+        {detailsOpen ? "Hide" : "More"} details (setup, timeframe, risk, management)
+      </button>
+      {detailsOpen && (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <Input label="Risk amount" value={form.riskAmount} onChange={(riskAmount) => setForm((v) => ({ ...v, riskAmount }))} />
+          <Input label="Asset class" value={form.assetClass} onChange={(assetClass) => setForm((v) => ({ ...v, assetClass }))} />
+          <Input label="Timeframe" value={form.timeframe} onChange={(timeframe) => setForm((v) => ({ ...v, timeframe }))} />
+          <Input label="Setup" value={form.setupName} onChange={(setupName) => setForm((v) => ({ ...v, setupName }))} />
+          <label className="block sm:col-span-2">
+            <div className="mb-1 text-[10.5px] uppercase tracking-[0.08em] text-white/50">Zed manages</div>
+            <select
+              value={form.managementStyle}
+              onChange={(event) => setForm((v) => ({ ...v, managementStyle: event.target.value as NonNullable<PaperTrade["managementStyle"]> }))}
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none focus:border-cyan-400/50"
+            >
+              <option value="bracket" className="bg-neutral-900">Bracket: target + stop</option>
+              <option value="stop_only" className="bg-neutral-900">Stop only</option>
+              <option value="target_only" className="bg-neutral-900">Target only</option>
+              <option value="manual" className="bg-neutral-900">Manual close</option>
+            </select>
+          </label>
+        </div>
+      )}
+
+      <div className="mt-3">
+        <button
+          type="button"
+          onClick={() => setReasoningOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 text-[11.5px] text-white/60 hover:text-white/90"
+        >
+          <span className="truncate text-left">
+            {form.entryReason.trim()
+              ? form.entryReason.trim().split("\n")[0].slice(0, 90)
+              : "Why is Zed taking this trade? (required)"}
+          </span>
+          <span className="shrink-0 text-[10.5px] uppercase tracking-[0.06em] text-cyan-300/80">
+            {reasoningOpen ? "Hide" : form.entryReason.trim() ? "Edit" : "Add"}
+          </span>
+        </button>
+        {reasoningOpen && (
           <textarea
             value={form.entryReason}
             onChange={(event) => setForm((v) => ({ ...v, entryReason: event.target.value }))}
+            rows={4}
+            autoFocus
             placeholder="Why Zed is taking this Webull paper trade"
-            className="min-h-20 w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-cyan-400/50"
+            className="mt-2 min-h-20 w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[12.5px] text-white outline-none placeholder:text-white/25 focus:border-cyan-400/50"
           />
-        </label>
+        )}
       </div>
 
       <div className="mt-3 flex justify-end">
