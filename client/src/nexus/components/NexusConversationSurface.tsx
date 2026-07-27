@@ -22,9 +22,11 @@ import {
   resolveNexusClientAction,
   type NexusClientAction,
 } from "../actions/NexusClientActions";
+import { NexusDrawCanvas } from "./communication/NexusDrawCanvas";
 import { NexusFileUpload } from "./communication/NexusFileUpload";
 import { NexusMessageComposer } from "./communication/NexusMessageComposer";
 import { NexusVoiceDock } from "./communication/NexusVoiceDock";
+import ResearchDocuments from "@/components/research/ResearchDocuments";
 import { routeForNexusNode } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
 import {
@@ -46,7 +48,7 @@ const EMPTY_MESSAGES: Message[] = [];
  * History/Memory row) never changes shape or grows - only the slot's
  * content changes.
  */
-type NexusDockMode = "talk" | "text" | "image" | "doc" | "upload" | "history" | "memory";
+type NexusDockMode = "talk" | "text" | "image" | "draw" | "doc" | "upload" | "history" | "memory";
 
 export function NexusConversationSurface({ conversationId }: NexusConversationSurfaceProps) {
   const [, navigate] = useLocation();
@@ -238,10 +240,15 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
         setActiveMode("talk");
         return;
       case "image":
-      case "doc":
       case "upload":
         setActiveMode(modeId);
         void conversationController.openFileUpload();
+        return;
+      case "doc":
+        setActiveMode("doc");
+        return;
+      case "draw":
+        setActiveMode("draw");
         return;
       default:
         setStatus(`${modeId} is not available yet`);
@@ -323,7 +330,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
           />
         )}
 
-        {(activeMode === "image" || activeMode === "doc" || activeMode === "upload") && (
+        {(activeMode === "image" || activeMode === "upload") && (
           conversationController.showFileUpload && conversationController.activeUploadConversationId ? (
             <NexusFileUpload
               conversationId={conversationController.activeUploadConversationId}
@@ -335,6 +342,18 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
               Preparing upload...
             </div>
           )
+        )}
+
+        {activeMode === "doc" && <ResearchDocuments />}
+
+        {activeMode === "draw" && (
+          <NexusDrawCanvas
+            ensureConversationId={conversationController.ensureUploadConversation}
+            onSent={(result) => {
+              conversationController.handleFileUpload(undefined, result);
+              setActiveMode("talk");
+            }}
+          />
         )}
 
         {activeMode === "history" && (

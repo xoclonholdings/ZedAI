@@ -45,6 +45,7 @@ export interface NexusConversationController {
   readonly sendMessage: (message: string) => Promise<void>;
   readonly abort: () => void;
   readonly openFileUpload: () => Promise<void>;
+  readonly ensureUploadConversation: () => Promise<string | undefined>;
   readonly closeFileUpload: () => void;
   readonly handleFileUpload: (files?: File[], result?: { conversationId?: string }) => void;
   readonly archiveConversation: () => Promise<void>;
@@ -252,6 +253,24 @@ export function useNexusConversationController({
     setShowFileUpload(true);
   }
 
+  /**
+   * Ensures a real conversation exists to attach into and returns its id
+   * directly - for callers (like the Draw canvas) that need the id
+   * immediately to POST an attachment, rather than waiting on a re-render
+   * to see openFileUpload's state update.
+   */
+  async function ensureUploadConversation(): Promise<string | undefined> {
+    if (activeUploadConversationId) return activeUploadConversationId;
+    try {
+      const newConversationId = await createConversation("Attachment", { navigateToChat: false });
+      setUploadConversationId(newConversationId);
+      return newConversationId;
+    } catch (error) {
+      console.error("Failed to create conversation for attachment:", error);
+      return undefined;
+    }
+  }
+
   async function copyMessage(message: Message) {
     await navigator.clipboard.writeText(message.content);
   }
@@ -288,6 +307,7 @@ export function useNexusConversationController({
     sendMessage,
     abort: () => abortRef.current?.abort(),
     openFileUpload,
+    ensureUploadConversation,
     closeFileUpload: () => setShowFileUpload(false),
     handleFileUpload,
     archiveConversation,

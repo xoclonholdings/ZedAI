@@ -38,9 +38,11 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
     mode("image", "Image", "create.image", "available", "/chat", [
       "client/src/nexus/components/communication/NexusFileUpload.tsx",
     ]),
-    mode("draw", "Draw", "create.draw", "scaffolded", null, []),
+    mode("draw", "Draw", "create.draw", "available", "/chat", [
+      "client/src/nexus/components/communication/NexusDrawCanvas.tsx",
+    ]),
     mode("doc", "Doc", "create.document", "available", "/chat", [
-      "client/src/nexus/components/communication/NexusFileUpload.tsx",
+      "client/src/components/research/ResearchDocuments.tsx",
     ]),
     mode("upload", "Upload", "create.upload", "available", "/chat", [
       "client/src/nexus/components/communication/NexusFileUpload.tsx",
@@ -66,18 +68,17 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       dependencies: [dependency("create.upload", "Image communication uses the upload surface.")],
       terms: ["create", "image", "picture", "visual", "attach"],
     }),
-    communicationCapability("draw", "create.draw", "Draw Communication", "Reserve drawing input as a future global communication mode.", {
-      actionKind: "write",
-      actionRoute: null,
-      dependencies: [dependency("create.image", "Future drawing output should behave as visual input.")],
-      status: "scaffolded",
-      terms: ["create", "draw", "sketch", "canvas"],
-    }),
-    communicationCapability("doc", "create.document", "Document Communication", "Attach document files through the existing conversation upload surface.", {
+    communicationCapability("draw", "create.draw", "Draw Communication", "Sketch quick markup and send it as a real attachment through the existing upload surface.", {
       actionKind: "upload",
       actionRoute: "/chat",
-      dependencies: [dependency("create.upload", "Document communication uses the upload surface.")],
-      terms: ["create", "doc", "document", "pdf", "file"],
+      dependencies: [dependency("create.image", "Drawing output behaves as visual input.")],
+      terms: ["create", "draw", "sketch", "canvas", "markup"],
+    }),
+    communicationCapability("doc", "create.document", "Document Communication", "Write up and file a new document through the existing research document authoring surface.", {
+      actionKind: "write",
+      actionRoute: "/chat",
+      dependencies: coreCreationDependencies(),
+      terms: ["create", "doc", "document", "write", "draft", "file"],
       aliases: ["create.doc"],
       replacesCapabilityIds: ["create.draft-work"],
     }),
