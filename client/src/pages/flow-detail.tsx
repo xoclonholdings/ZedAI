@@ -17,8 +17,8 @@ export default function FlowDetailPage() {
   const [launching, setLaunching] = useState(false);
   const [brief, setBrief] = useState("");
 
-  const backPath = workspace ? `/workspaces/${workspace}` : "/chat";
-  const backLabel = workspace ? "Workspace" : "Chat";
+  const backPath = workspace ? `/workspaces/${workspace}` : "/nexus";
+  const backLabel = workspace ? "Workspace" : "Nexus";
 
   useEffect(() => {
     if (!id) return;

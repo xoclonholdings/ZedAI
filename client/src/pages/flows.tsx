@@ -75,11 +75,11 @@ export default function FlowsPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/nexus")}
           className="text-muted-foreground hover:text-foreground zed-button rounded-xl"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Chat
+          Nexus
         </Button>
         <div className="flex items-center gap-2">
           <Workflow size={16} className="text-cyan-300" />

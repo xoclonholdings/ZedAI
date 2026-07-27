@@ -86,13 +86,13 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
     summary: "The source-backed knowledge and relationship graph surface.",
     icon: "Network",
     color: "#60a5fa",
-    currentSurfacePath: "/learning",
+    currentSurfacePath: "/knowledge",
     consumes: ["knowledge_authority", "retrieval_context"],
     tags: ["knowledge", "sources", "graph"],
     capabilities: [
       capability("knowledge", "source-library", "Source Library", "Represent authoritative knowledge records and source references.", {
         actionKind: "read",
-        actionRoute: "/learning",
+        actionRoute: "/knowledge",
         dependencies: [dependency("identity.current-principal", "Knowledge access remains owner-aware.")],
         terms: ["knowledge", "source", "library", "record"],
       }),

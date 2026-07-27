@@ -87,11 +87,11 @@ export default function ProjectDetailPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/nexus")}
           className="text-muted-foreground hover:text-foreground zed-button rounded-xl"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Chat
+          Nexus
         </Button>
         <div className="flex items-center gap-2 min-w-0">
           {project && (

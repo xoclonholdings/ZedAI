@@ -167,11 +167,11 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/home")}
+          onClick={() => navigate("/nexus")}
           className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Home
+          Nexus
         </Button>
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-cyan-300" />

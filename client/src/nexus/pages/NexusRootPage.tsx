@@ -27,13 +27,7 @@ const ORBIT_SETTLE_MS = 900;
 /** How long Warp plays before the real workspace route loads. */
 const WARP_DURATION_MS = 380;
 
-interface NexusRootPageProps {
-  readonly communicationConversationId?: string | null;
-}
-
-export default function NexusRootPage({
-  communicationConversationId,
-}: NexusRootPageProps = {}) {
+export default function NexusRootPage() {
   const params = useParams<{ nodeId?: string }>();
   const [location, navigate] = useLocation();
   const { user } = useAuth();
@@ -286,7 +280,7 @@ export default function NexusRootPage({
         data-nexus-region="communication"
       >
         <div className="w-full max-w-[760px]">
-          <NexusCommunicationDock conversationId={communicationConversationId} />
+          <NexusCommunicationDock />
         </div>
       </div>
 

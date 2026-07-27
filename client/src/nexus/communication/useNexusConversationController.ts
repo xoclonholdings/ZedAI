@@ -12,7 +12,6 @@ export interface UseNexusConversationControllerArgs {
   readonly messages: readonly Message[];
   readonly files: readonly DBFile[];
   readonly conversationId?: string;
-  readonly selectedProjectId?: string | null;
   readonly workspaceContext?: AgentTarget;
   readonly workspaceLabel?: string | null;
   readonly workspaceSlug?: string | null;
@@ -59,7 +58,6 @@ export function useNexusConversationController({
   messages,
   files,
   conversationId,
-  selectedProjectId,
   workspaceContext,
   workspaceLabel,
   workspaceSlug,
@@ -180,7 +178,6 @@ export function useNexusConversationController({
     await sendAgentMessage({
       message: trimmed,
       convId: activeConversationId,
-      projectId: selectedProjectId || undefined,
       agentTarget: workspaceContext,
       workspaceId: workspaceSlug || undefined,
       context: {

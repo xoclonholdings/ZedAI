@@ -178,11 +178,11 @@ export default function TradingPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/nexus")}
           className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Chat
+          Nexus
         </Button>
         <div className="flex items-center gap-2">
           <LineChart size={16} className="text-cyan-300" />

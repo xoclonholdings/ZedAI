@@ -1,99 +1,46 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, FileText, Image, Layers, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
+import { Clock, FileText, Image, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
-import { useLocationSearch } from "@/lib/useLocationSearch";
-import {
-  persistWorkspace,
-  resolveWorkspace,
-  WORKSPACE_AGENT,
-  WORKSPACE_LABEL,
-  type WorkspaceSlug,
-} from "@/lib/workspaceContext";
-import type { AgentTarget, Conversation, Message, File as DBFile } from "@shared/schema";
-import type { FilingProject } from "@/types/conversation";
-import { useNexusConversationController } from "../communication/useNexusConversationController";
+import type { Conversation } from "@shared/schema";
+import { useNexusChatSession } from "../communication/useNexusChatSession";
 import { useNexusDictation } from "../communication/useNexusDictation";
-import {
-  extractNexusClientActions,
-  resolveDeterministicNexusClientAction,
-  resolveNexusClientAction,
-  type NexusClientAction,
-} from "../actions/NexusClientActions";
 import { NexusDrawCanvas } from "./communication/NexusDrawCanvas";
 import { NexusFileUpload } from "./communication/NexusFileUpload";
-import { NexusMessageComposer } from "./communication/NexusMessageComposer";
 import { NexusVoiceDock } from "./communication/NexusVoiceDock";
 import ResearchDocuments from "@/components/research/ResearchDocuments";
-import { routeForNexusNode } from "../graph/rootConstellation";
 import { useNexus } from "../state/NexusProvider";
 import {
   communicationModeViews,
   type NexusCommunicationModeView,
 } from "../viewport/NexusViewportModel";
 
-export interface NexusConversationSurfaceProps {
-  readonly conversationId?: string | null;
-}
-
-/** Stable identity so a data-less query doesn't feed a new [] into effects every render. */
-const EMPTY_MESSAGES: Message[] = [];
-
 /**
  * What's showing in the console's one content slot, where the mic sits by
- * default - Text/Talk/Image/Doc/Upload/History/Memory Context all just swap
- * this slot's content. The dock around it (status row, mode row, this slot,
- * History/Memory row) never changes shape or grows - only the slot's
- * content changes.
+ * default - Talk/Image/Doc/Upload/History all just swap this slot's content.
+ * Text opens the real chat page instead of a slot (interim, per the redesign
+ * note), so it isn't a slot mode here. The dock around the slot (status row,
+ * mode row, this slot, History row) never changes shape or grows - only the
+ * slot's content changes.
  */
-type NexusDockMode = "talk" | "text" | "image" | "draw" | "doc" | "upload" | "history" | "memory";
+type NexusDockMode = "talk" | "image" | "draw" | "doc" | "upload" | "history";
 
-export function NexusConversationSurface({ conversationId }: NexusConversationSurfaceProps) {
+export function NexusConversationSurface() {
   const [, navigate] = useLocation();
-  const {
-    capabilityRegistry,
-    communicationLayer,
-    navigateToNode,
-    snapshot,
-    viewportSnapshot,
-  } = useNexus();
-  const [activeConversationId, setActiveConversationId] = useState<string | undefined>(
-    normalizeConversationId(conversationId),
-  );
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const { viewportSnapshot, communicationLayer } = useNexus();
   const [status, setStatus] = useState("Ready");
-  // A deep link into a specific conversation opens straight to its composer;
-  // otherwise the mic is the default slot content.
-  const [activeMode, setActiveMode] = useState<NexusDockMode>(
-    () => (normalizeConversationId(conversationId) ? "text" : "talk"),
-  );
-  const search = useLocationSearch();
-  const workspaceSlug = useMemo<WorkspaceSlug | null>(
-    () => resolveWorkspace(search),
-    [search],
-  );
-  const learningContext = useMemo(() => {
-    const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
-    return {
-      learningPathId: params.get("learningPathId") || params.get("learningPath"),
-      lessonId: params.get("lessonId") || params.get("lesson"),
-    };
-  }, [search]);
+  const [activeMode, setActiveMode] = useState<NexusDockMode>("talk");
 
-  useEffect(() => {
-    setActiveConversationId(normalizeConversationId(conversationId));
-  }, [conversationId]);
+  const goToChat = useCallback((conversationId?: string) => {
+    navigate(conversationId ? `/chat/${conversationId}` : "/chat");
+  }, [navigate]);
 
-  useEffect(() => {
-    if (workspaceSlug) persistWorkspace(workspaceSlug);
-  }, [workspaceSlug]);
+  const { controller: conversationController, activeConversationId } = useNexusChatSession(undefined, {
+    onModeAction: (modeId) => handleModeSelect(modeId),
+  });
 
-  const workspaceContext: AgentTarget | undefined = workspaceSlug
-    ? WORKSPACE_AGENT[workspaceSlug]
-    : undefined;
-  const workspaceLabel = workspaceSlug ? WORKSPACE_LABEL[workspaceSlug] : null;
   const modes = useMemo(() => communicationModeViews(communicationLayer), [communicationLayer]);
   const focusedLabel = viewportSnapshot.focusedNode?.label ?? "Nexus";
   // Workspace selection subtly tints the console's accent (spec: "may influence
@@ -105,135 +52,23 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
     refetchInterval: 30000,
   });
 
-  const { data: projects = [], refetch: refetchProjects } = useQuery<FilingProject[]>({
-    queryKey: ["/api/projects"],
-    queryFn: async () => {
-      const res = await fetch("/api/projects", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load projects");
-      const data = await res.json();
-      return data.projects || [];
-    },
-  });
-
-  const { data: currentConversation } = useQuery<Conversation>({
-    queryKey: ["/api/conversations", activeConversationId],
-    enabled: !!activeConversationId,
-  });
-
-  const { data: messages = EMPTY_MESSAGES } = useQuery<Message[]>({
-    queryKey: ["/api/conversations", activeConversationId, "messages"],
-    enabled: !!activeConversationId,
-    refetchInterval: 5000,
-  });
-
-  const { data: files = [] } = useQuery<DBFile[]>({
-    queryKey: ["/api/conversations", activeConversationId, "files"],
-    enabled: !!activeConversationId,
-  });
-
-  const applyClientAction = useCallback((action: NexusClientAction) => {
-    const result = resolveNexusClientAction(action, snapshot, capabilityRegistry, communicationLayer);
-    if (!result.accepted) {
-      console.warn("[Nexus] Ignored client action", { reasonCode: result.reasonCode, action });
-      setStatus("Ignored an unavailable Nexus action");
-      return result;
-    }
-
-    if (action.type === "focus-node" && result.resolution?.nodeId) {
-      navigateToNode(result.resolution.nodeId, "zar");
-      navigate(result.resolution.route);
-      setStatus(`Focused ${result.resolution.label}`);
-      return result;
-    }
-
-    if (action.type === "open-capability" && result.resolution) {
-      if (result.resolution.nodeId) {
-        navigateToNode(result.resolution.nodeId, "zar");
-      }
-      navigate(result.resolution.route);
-      setStatus(`Opened ${result.resolution.label}`);
-      return result;
-    }
-
-    if (action.type === "open-communication" && result.resolution) {
-      handleModeSelect(action.modeId);
-      setStatus(`Opened ${result.resolution.label}`);
-      return result;
-    }
-
-    if (action.type === "navigate-route") {
-      navigate(action.route);
-      setStatus("Navigation updated");
-      return result;
-    }
-
-    return result;
-  }, [capabilityRegistry, communicationLayer, navigate, navigateToNode, snapshot]);
-
-  const handleBeforeSend = useCallback((message: string) => {
-    const exactAction = resolveDeterministicNexusClientAction(
-      message,
-      snapshot,
-      capabilityRegistry,
-      communicationLayer,
-    );
-    if (!exactAction) return false;
-
-    const result = applyClientAction(exactAction);
-    return result.accepted;
-  }, [applyClientAction, capabilityRegistry, communicationLayer, snapshot]);
-
-  const handleAgentResponse = useCallback((data: unknown) => {
-    const actions = extractNexusClientActions(data);
-    if (actions.length === 0) return;
-    for (const action of actions) applyClientAction(action);
-  }, [applyClientAction]);
-
-  async function handleAssignProject(conversationIdToAssign: string, projectId: string | null) {
-    const response = await fetch(`/api/conversations/${conversationIdToAssign}/project`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ projectId }),
-    });
-
-    if (response.ok) {
-      setSelectedProjectId(projectId);
-      await refetchProjects();
-    }
-  }
-
-  const conversationController = useNexusConversationController({
-    conversation: currentConversation,
-    messages,
-    files,
-    conversationId: activeConversationId,
-    selectedProjectId,
-    workspaceContext,
-    workspaceLabel,
-    workspaceSlug,
-    learningPathId: learningContext.learningPathId,
-    lessonId: learningContext.lessonId,
-    onBeforeSend: handleBeforeSend,
-    onAgentResponse: handleAgentResponse,
-    onConversationIdChange: setActiveConversationId,
-  });
-
   // Owned here (not inside NexusVoiceDock) so the "Talk" mode button below
   // can trigger the exact same dictation toggle as the persistent mic button.
+  // A finished dictation hands its transcript to the real chat page (as a
+  // draft, via query param) rather than an inline composer, since Text no
+  // longer has one.
   const dictation = useNexusDictation((text) => {
-    conversationController.setComposerValue(text);
-    setActiveMode("text");
+    goToChat();
+    navigate(`/chat?draft=${encodeURIComponent(text)}`, { replace: true });
   });
 
-  // Each mode button performs the real action it names, in the console's own
-  // one content slot, using the console's real surfaces (composer, dictation,
-  // file upload) - never navigating anywhere, since the dock is a persistent
-  // overlay, not a page of its own.
+  // Each mode button performs the real action it names. Text leaves the
+  // dock entirely for the real chat page; the rest use the console's own
+  // one content slot, since the dock is a persistent overlay, not a page.
   function handleModeSelect(modeId: string) {
     switch (modeId) {
       case "text":
-        setActiveMode("text");
+        goToChat(activeConversationId);
         return;
       case "talk":
         dictation.toggle();
@@ -314,22 +149,6 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
           <NexusVoiceDock dictation={dictation} isResponding={conversationController.isStreaming} />
         )}
 
-        {activeMode === "text" && (
-          <NexusMessageComposer
-            value={conversationController.composerValue}
-            onValueChange={conversationController.setComposerValue}
-            onSend={(message) => void conversationController.sendMessage(message)}
-            onAbort={conversationController.abort}
-            isStreaming={conversationController.isStreaming}
-            onOpenFileUpload={() => {
-              setActiveMode("upload");
-              void conversationController.openFileUpload();
-            }}
-            editModeLabel={conversationController.editingMessageId ? "Editing message draft" : null}
-            onCancelEdit={conversationController.editingMessageId ? conversationController.cancelEdit : undefined}
-          />
-        )}
-
         {(activeMode === "image" || activeMode === "upload") && (
           conversationController.showFileUpload && conversationController.activeUploadConversationId ? (
             <NexusFileUpload
@@ -366,10 +185,7 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
                   <button
                     key={conversation.id}
                     type="button"
-                    onClick={() => {
-                      setActiveConversationId(conversation.id);
-                      setActiveMode("text");
-                    }}
+                    onClick={() => goToChat(conversation.id)}
                     className={cn(
                       "block w-full truncate rounded-lg px-3 py-2 text-left text-[13px] transition",
                       activeConversationId === conversation.id
@@ -384,51 +200,9 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
             )}
           </div>
         )}
-
-        {activeMode === "memory" && (
-          <div className="flex flex-wrap gap-2 rounded-xl border border-white/10 bg-black/40 p-2.5">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedProjectId(null);
-                if (activeConversationId) void handleAssignProject(activeConversationId, null);
-              }}
-              className={cn(
-                "shrink-0 rounded-full border px-3 py-1.5 text-[12px] transition",
-                selectedProjectId === null
-                  ? "border-white/22 bg-white/[0.08] text-white"
-                  : "border-white/[0.08] bg-white/[0.03] text-white/52 hover:text-white",
-              )}
-            >
-              All context
-            </button>
-            {projects.length === 0 ? (
-              <span className="px-1 py-1.5 text-[12px] text-white/40">No projects yet.</span>
-            ) : (
-              projects.slice(0, 6).map((project) => (
-                <button
-                  key={project.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedProjectId(project.id);
-                    if (activeConversationId) void handleAssignProject(activeConversationId, project.id);
-                  }}
-                  className={cn(
-                    "max-w-[180px] shrink-0 truncate rounded-full border px-3 py-1.5 text-[12px] transition",
-                    selectedProjectId === project.id
-                      ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
-                      : "border-white/[0.08] bg-white/[0.03] text-white/52 hover:text-white",
-                  )}
-                >
-                  {project.name}
-                </button>
-              ))
-            )}
-          </div>
-        )}
       </div>
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => setActiveMode((value) => (value === "history" ? "talk" : "history"))}
@@ -441,19 +215,6 @@ export function NexusConversationSurface({ conversationId }: NexusConversationSu
           )}
         >
           <Clock size={14} /> History
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMode((value) => (value === "memory" ? "talk" : "memory"))}
-          aria-pressed={activeMode === "memory"}
-          className={cn(
-            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
-            activeMode === "memory"
-              ? "border-amber-200/35 bg-amber-200/[0.1] text-amber-50"
-              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
-          )}
-        >
-          Memory Context <Layers size={14} />
         </button>
       </div>
     </section>
@@ -506,15 +267,4 @@ function iconForMode(modeId: string) {
     default:
       return MessageCircle;
   }
-}
-
-function normalizeConversationId(value: string | null | undefined): string | undefined {
-  if (!value || value === "undefined" || value === "null") return undefined;
-  return value;
-}
-
-export function routeForNexusClientAction(action: NexusClientAction): string | null {
-  if (action.type === "focus-node") return routeForNexusNode(action.nodeId);
-  if (action.type === "navigate-route") return action.route;
-  return null;
 }

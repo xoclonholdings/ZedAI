@@ -1,8 +1,5 @@
-import {
-  NexusConversationSurface,
-  type NexusConversationSurfaceProps,
-} from "./NexusConversationSurface";
+import { NexusConversationSurface } from "./NexusConversationSurface";
 
-export function NexusCommunicationDock(props: NexusConversationSurfaceProps) {
-  return <NexusConversationSurface {...props} />;
+export function NexusCommunicationDock() {
+  return <NexusConversationSurface />;
 }

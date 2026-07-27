@@ -78,11 +78,11 @@ export default function ProjectsPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate("/workspaces/operations")}
+          onClick={() => navigate("/nexus")}
           className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Operations
+          Nexus
         </Button>
         <div className="flex items-center gap-2">
           <Briefcase size={16} className="text-cyan-300" />

@@ -1,5 +1,5 @@
 import { Component, type ReactNode, useEffect } from "react";
-import { Switch, Route, useParams } from "wouter";
+import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { queryClient } from "./lib/queryClient";
@@ -33,6 +33,8 @@ import LearningStudioPage from "@/pages/learning-studio";
 import SettingsPage from "@/pages/settings";
 import ConnectPage from "@/pages/connect";
 import IdentityPage from "@/pages/identity";
+import ChatPage from "@/pages/chat";
+import KnowledgePage from "@/pages/knowledge";
 
 installApiFetchPatch();
 
@@ -86,7 +88,7 @@ function Router() {
       </Route>
 
       <Route path="/chat/:id?">
-        {isAuthenticated ? <NexusChatRoute /> : <Login />}
+        {isAuthenticated ? <ChatPage /> : <Login />}
       </Route>
 
       <Route path="/home">
@@ -181,6 +183,10 @@ function Router() {
         {isAuthenticated ? <IdentityPage /> : <Login />}
       </Route>
 
+      <Route path="/knowledge">
+        {isAuthenticated ? <KnowledgePage /> : <Login />}
+      </Route>
+
       <Route path="/projects/:id">
         {isAuthenticated ? <ProjectDetailPage /> : <Login />}
       </Route>
@@ -216,12 +222,6 @@ function Router() {
       <Route component={NotFound} />
     </Switch>
   );
-}
-
-function NexusChatRoute() {
-  const { id } = useParams<{ id?: string }>();
-  const conversationId = !id || id === "undefined" || id === "null" ? null : id;
-  return <NexusRootPage communicationConversationId={conversationId} />;
 }
 
 function GlobalErrorHooks() {

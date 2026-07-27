@@ -80,7 +80,7 @@ export default function Admin() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/chat")}
+            onClick={() => navigate("/nexus")}
             className="shrink-0 text-muted-foreground hover:text-foreground zed-button rounded-xl"
           >
             <ChevronLeft size={16} className="mr-1" />

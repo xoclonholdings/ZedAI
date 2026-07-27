@@ -34,7 +34,7 @@ export default function RulesSettings() {
         >
           <button
             type="button"
-            onClick={() => navigate("/chat")}
+            onClick={() => navigate("/projects")}
             className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/80 hover:text-white transition-colors active:opacity-80"
           >
             Open Projects

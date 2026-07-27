@@ -875,15 +875,17 @@ function RotationRig({
       tiltGroup.rotation.x = THREE.MathUtils.lerp(tiltGroup.rotation.x, d.tilt, 0.12);
     }
 
-    // camera dolly for domain-entry zoom (portrait devices sit further back)
+    // camera dolly for domain-entry zoom (portrait devices sit further back -
+    // the floating console covers the bottom third of the viewport there, so
+    // portrait needs real extra headroom, not just a touch more than landscape)
     const aspect = size.width / Math.max(1, size.height);
-    const baseZ = aspect < 0.8 ? 10.6 : 8.8;
+    const baseZ = aspect < 0.8 ? 13.4 : 9.6;
     const targetZ = baseZ / zoomRef.current;
-    const targetY = zoomRef.current > 1.05 ? 0.6 : 1.4;
+    const targetY = zoomRef.current > 1.05 ? 0.6 : aspect < 0.8 ? 1.9 : 1.5;
     camera.position.z += (targetZ - camera.position.z) * Math.min(1, 4.5 * delta);
     camera.position.y += (targetY - camera.position.y) * Math.min(1, 4.5 * delta);
-    // portrait: lift the system above the command console
-    camera.lookAt(0, aspect < 0.8 ? -1.05 : -0.3, 0);
+    // portrait: lift the system further above the command console
+    camera.lookAt(0, aspect < 0.8 ? -1.6 : -0.35, 0);
 
     onRotate?.(rig.rotation.y);
   });
