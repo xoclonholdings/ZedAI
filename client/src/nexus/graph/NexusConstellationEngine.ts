@@ -73,28 +73,6 @@ export class NexusConstellationEngine {
     }) as NexusGraphState;
   }
 
-  expandNode(state: NexusGraphState, nodeId: NexusNodeId): NexusGraphState {
-    this.assertRegistered(nodeId);
-    return deepFreeze({
-      ...state,
-      expandedNodeIds: unique([...state.expandedNodeIds, nodeId]),
-    }) as NexusGraphState;
-  }
-
-  collapseNode(state: NexusGraphState, nodeId: NexusNodeId): NexusGraphState {
-    this.assertRegistered(nodeId);
-    return deepFreeze({
-      ...state,
-      expandedNodeIds: state.expandedNodeIds.filter((id) => id !== nodeId),
-    }) as NexusGraphState;
-  }
-
-  toggleNode(state: NexusGraphState, nodeId: NexusNodeId): NexusGraphState {
-    return state.expandedNodeIds.includes(nodeId)
-      ? this.collapseNode(state, nodeId)
-      : this.expandNode(state, nodeId);
-  }
-
   snapshot(state: NexusGraphState): NexusGraphSnapshot {
     const activeNode = state.activeNodeId ? this.nodeRegistry.get(state.activeNodeId) ?? null : null;
     return deepFreeze({

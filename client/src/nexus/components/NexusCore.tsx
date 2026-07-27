@@ -21,16 +21,6 @@ import {
 import { renderToStaticMarkup } from "react-dom/server";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import {
-  BookOpen,
-  Brain,
-  Fingerprint,
-  FolderOpen,
-  LayoutGrid,
-  Plug,
-  Settings as SettingsIcon,
-  Wrench,
-} from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* Palette & domains                                                    */
@@ -55,18 +45,6 @@ export interface NexusDomain {
   usage?: number;
   icon?: ComponentType<{ color?: string; size?: number | string; strokeWidth?: number | string }> | ElementType;
 }
-
-// chakra-aligned domain identities (rings are earned through usage)
-export const DEFAULT_DOMAINS: NexusDomain[] = [
-  { id: "identity", label: "IDENTITY", color: "#e8ecf4", size: 0.22, radius: 2.65, inclination: 0.19, angle: 0.42, icon: Fingerprint },
-  { id: "memory", label: "MEMORY", color: "#8b5cf6", size: 0.31, radius: 3.45, inclination: -0.13, angle: 1.28, icon: Brain },
-  { id: "knowledge", label: "KNOWLEDGE", color: "#22d3ee", size: 0.26, radius: 4.35, inclination: 0.09, angle: 2.02, icon: BookOpen },
-  { id: "projects", label: "PROJECTS", color: "#eab308", size: 0.18, radius: 2.95, inclination: -0.23, angle: 2.88, icon: FolderOpen },
-  { id: "workspaces", label: "WORKSPACES", color: "#34d399", size: 0.24, radius: 3.85, inclination: 0.16, angle: 3.52, moon: true, icon: LayoutGrid },
-  { id: "connect", label: "CONNECT", color: "#fb923c", size: 0.28, radius: 4.62, inclination: -0.08, angle: 4.46, icon: Plug },
-  { id: "tools", label: "TOOLS", color: "#ef4444", size: 0.16, radius: 2.32, inclination: 0.26, angle: 5.02, moon: true, icon: Wrench },
-  { id: "settings", label: "SETTINGS", color: "#6366f1", size: 0.2, radius: 3.15, inclination: -0.19, angle: 5.86, icon: SettingsIcon },
-];
 
 const wrapAngle = (x: number) => Math.atan2(Math.sin(x), Math.cos(x));
 
@@ -1037,7 +1015,7 @@ export interface NexusCoreSceneProps {
   onFocusChange?: (domain: NexusDomain, index: number) => void;
   onDomainSelect?: (domain: NexusDomain, index: number) => void;
   onCoreTap?: () => void;
-  domains?: NexusDomain[];
+  domains: NexusDomain[];
   interactive?: boolean;
   particleCount?: number;
   label?: string;
@@ -1052,7 +1030,7 @@ export function NexusCoreScene({
   onFocusChange,
   onDomainSelect,
   onCoreTap,
-  domains = DEFAULT_DOMAINS,
+  domains,
   interactive = true,
   particleCount = 42000,
   label = "NEXUS",

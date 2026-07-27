@@ -27,10 +27,7 @@ import {
 } from "../viewport/NexusViewportModel";
 
 type NexusAction =
-  | { type: "activate"; nodeId: NexusNodeId }
-  | { type: "expand"; nodeId: NexusNodeId }
-  | { type: "collapse"; nodeId: NexusNodeId }
-  | { type: "toggle"; nodeId: NexusNodeId };
+  | { type: "activate"; nodeId: NexusNodeId };
 
 type NexusViewportAction =
   | { type: "focus"; nodeId: NexusNodeId; source: NexusViewportNavigationSource }
@@ -52,9 +49,6 @@ interface NexusContextValue {
   readonly focusAdjacentNode: (direction: "previous" | "next", source?: NexusViewportNavigationSource) => NexusNodeId | null;
   readonly navigateToNode: (nodeId: NexusNodeId, source?: NexusViewportNavigationSource) => void;
   readonly panViewport: (deltaX: number, deltaY: number, source?: NexusViewportNavigationSource) => void;
-  readonly expandNode: (nodeId: NexusNodeId) => void;
-  readonly collapseNode: (nodeId: NexusNodeId) => void;
-  readonly toggleNode: (nodeId: NexusNodeId) => void;
 }
 
 const NexusContext = createContext<NexusContextValue | null>(null);
@@ -76,12 +70,6 @@ export function NexusProvider({
     switch (action.type) {
       case "activate":
         return engine.activateNode(state, action.nodeId);
-      case "expand":
-        return engine.expandNode(state, action.nodeId);
-      case "collapse":
-        return engine.collapseNode(state, action.nodeId);
-      case "toggle":
-        return engine.toggleNode(state, action.nodeId);
       default:
         return state;
     }
@@ -148,9 +136,6 @@ export function NexusProvider({
     focusAdjacentNode,
     navigateToNode: (nodeId, source = "zar") => focusNode(nodeId, source),
     panViewport: (deltaX, deltaY, source = "touch") => dispatchViewport({ type: "pan", deltaX, deltaY, source }),
-    expandNode: (nodeId) => dispatch({ type: "expand", nodeId }),
-    collapseNode: (nodeId) => dispatch({ type: "collapse", nodeId }),
-    toggleNode: (nodeId) => dispatch({ type: "toggle", nodeId }),
   }), [
     capabilityRegistry,
     clearFocus,
