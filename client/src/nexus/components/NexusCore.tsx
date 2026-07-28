@@ -198,14 +198,19 @@ function makeGlowTexture(inner: string, mid: string): THREE.CanvasTexture {
  * and a three.js sprite is always camera-facing on its own - no Billboard
  * wrapper needed either.
  */
+/** Canvas dims for the core's wordmark texture - kept alongside the sprite scale below so the two stay in the same aspect ratio. */
+const LABEL_CANVAS_WIDTH = 512;
+const LABEL_CANVAS_HEIGHT = 176;
+/** Fraction of the canvas width the glyphs themselves should span - end to end across the orb, per the brand mark. */
+const LABEL_FILL_RATIO = 0.94;
+
 function makeLabelTexture(text: string): THREE.CanvasTexture {
-  const width = 512;
-  const height = 128;
+  const width = LABEL_CANVAS_WIDTH;
+  const height = LABEL_CANVAS_HEIGHT;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
-  ctx.font = "800 56px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.lineJoin = "round";
@@ -213,43 +218,72 @@ function makeLabelTexture(text: string): THREE.CanvasTexture {
   const cx = width / 2;
   const cy = height / 2;
 
+  // Largest font size that still fits the target width, so the wordmark
+  // spans end to end across the orb instead of floating with margin.
+  const targetWidth = width * LABEL_FILL_RATIO;
+  let fontSize = 140;
+  let fontSpec = "";
+  do {
+    fontSpec = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
+    ctx.font = fontSpec;
+    if (ctx.measureText(spaced).width <= targetWidth) break;
+    fontSize -= 2;
+  } while (fontSize > 24);
+  ctx.font = fontSpec;
+
+  // Soft dark backing plate, wide and blurred, so the mark reads as a
+  // distinct object sitting on the sun rather than blending into its
+  // bright, ever-shifting energy - drawn well oversized via a heavy blur,
+  // not a crisp shape.
+  ctx.shadowColor = "rgba(5,2,14,0.95)";
+  ctx.shadowBlur = 26;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.fillStyle = "rgba(5,2,14,0.95)";
+  ctx.fillText(spaced, cx, cy);
+  ctx.fillText(spaced, cx, cy);
+
   // Recessed shadow beneath the glyphs, offset down-right for depth.
   ctx.shadowColor = "rgba(8,3,18,0.9)";
   ctx.shadowBlur = 10;
   ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 3;
+  ctx.shadowOffsetY = 4;
   ctx.fillStyle = "rgba(8,3,18,0.85)";
-  ctx.fillText(spaced, cx, cy + 2);
+  ctx.fillText(spaced, cx, cy + 3);
 
-  // Dark outline so the mark stays legible against any energy color.
+  // Thick dark outline so the mark stays sharply defined against any energy color.
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 0;
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = "rgba(8,3,18,0.75)";
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = "rgba(5,2,14,0.92)";
   ctx.strokeText(spaced, cx, cy);
 
-  // Brand gradient fill (matches the official ZAR wordmark).
-  const gradient = ctx.createLinearGradient(width * 0.12, 0, width * 0.88, 0);
-  gradient.addColorStop(0, "#a78bfa");
-  gradient.addColorStop(0.55, "#e879f9");
-  gradient.addColorStop(1, "#67e8f9");
+  // Brand gradient fill: violet -> blue -> pale cyan (matches the official ZAR wordmark).
+  const gradient = ctx.createLinearGradient(width * 0.06, 0, width * 0.94, 0);
+  gradient.addColorStop(0, "#8a63f2");
+  gradient.addColorStop(0.45, "#5a9bff");
+  gradient.addColorStop(1, "#d8faff");
   ctx.shadowColor = "rgba(20,8,40,0.55)";
   ctx.shadowBlur = 6;
   ctx.shadowOffsetY = 1;
   ctx.fillStyle = gradient;
   ctx.fillText(spaced, cx, cy);
 
-  // Thin bright emboss highlight, offset up-left.
+  // Bright emboss highlight along the top edge, offset up-left, for the glossy 3D pop.
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = "rgba(255,255,255,0.4)";
-  ctx.strokeText(spaced, cx - 1, cy - 1);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(255,255,255,0.7)";
+  ctx.strokeText(spaced, cx - 1.5, cy - 1.5);
 
   const texture = new THREE.CanvasTexture(canvas);
+  // Canvas 2D draws in sRGB; without tagging the texture as such, the
+  // renderer's linear pipeline treats these bytes as already-linear and
+  // re-applies gamma on output, washing the brand gradient toward white.
+  texture.colorSpace = THREE.SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
 }
@@ -842,13 +876,14 @@ function CoreOrb({
     <group ref={groupRef}>
       <mesh
         material={coreMaterial}
+        renderOrder={0}
         onClick={handleClick}
         onPointerOver={() => (document.body.style.cursor = "pointer")}
         onPointerOut={() => (document.body.style.cursor = "")}
       >
         <sphereGeometry args={[0.62, 48, 48]} />
       </mesh>
-      <sprite ref={haloRef} scale={[3.1, 3.1, 3.1]}>
+      <sprite ref={haloRef} renderOrder={1} scale={[3.1, 3.1, 3.1]}>
         <spriteMaterial
           map={haloTexture}
           transparent
@@ -858,8 +893,22 @@ function CoreOrb({
         />
       </sprite>
       <pointLight intensity={2.2} distance={9} color={MAGENTA} />
-      <sprite scale={[1.7, 0.42, 1]} position={[0, 0, 0.01]}>
-        <spriteMaterial ref={labelMatRef} map={labelTexture} transparent depthWrite={false} />
+      {/*
+        renderOrder guarantees the wordmark draws last (on top) regardless
+        of automatic depth-sort among transparent siblings - the core and
+        halo are both additive-blended, and at only a 0.01 z-epsilon apart
+        the sort can flip and let their glow paint over the label, washing
+        its brand gradient toward white.
+      */}
+      <sprite renderOrder={2} scale={[1.2, 1.2 * (LABEL_CANVAS_HEIGHT / LABEL_CANVAS_WIDTH), 1]} position={[0, 0, 0.01]}>
+        <spriteMaterial
+          ref={labelMatRef}
+          map={labelTexture}
+          transparent
+          depthWrite={false}
+          depthTest={false}
+          toneMapped={false}
+        />
       </sprite>
     </group>
   );
