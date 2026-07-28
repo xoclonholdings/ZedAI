@@ -149,7 +149,7 @@ function Router() {
       </Route>
 
       <Route path="/inbox">
-        {isAuthenticated ? <InboxPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="connect"><InboxPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/flows">
@@ -205,19 +205,19 @@ function Router() {
       </Route>
 
       <Route path="/decisions">
-        {isAuthenticated ? <DecisionsListPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><DecisionsListPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/decisions/:id">
-        {isAuthenticated ? <DecisionDetailPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><DecisionDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/timeline">
-        {isAuthenticated ? <TimelinePage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><TimelinePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/discovery">
-        {isAuthenticated ? <DiscoveryPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><DiscoveryPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route component={NotFound} />

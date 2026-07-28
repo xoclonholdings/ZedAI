@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { GraduationCap, Plus, Upload, X } from "lucide-react";
+import { useLocation } from "wouter";
+import { BookOpen, GraduationCap, Plus, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ function friendlyType(t: string): string {
 }
 
 export default function LearningPage() {
+  const [, navigate] = useLocation();
   const [graph, setGraph] = useState<ObjectGraph | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +142,14 @@ export default function LearningPage() {
               {scopeLabel}
             </Badge>
           </div>
+          <button
+            type="button"
+            onClick={() => navigate("/learning/studio")}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
+          >
+            <BookOpen size={15} />
+            Open Learning Studio
+          </button>
         </section>
 
         {notice && (

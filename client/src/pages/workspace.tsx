@@ -8,6 +8,7 @@ import {
   History,
   Inbox,
   Layers,
+  LayoutDashboard,
   LineChart,
   MessageSquare,
   PenTool,
@@ -197,6 +198,21 @@ function WorkspaceIndex() {
       <p className="px-1 text-sm leading-6 text-muted-foreground">
         Domain operating spaces Zed works within. Pick one to open its desk.
       </p>
+      <button
+        type="button"
+        onClick={() => navigate("/knowledge-map")}
+        className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-emerald-200">
+          <LayoutDashboard size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-white">Full Dashboard</div>
+          <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">
+            Discovery feed, projects, budget, trading, and approvals in one view.
+          </p>
+        </div>
+      </button>
       {WORKSPACE_INDEX_ORDER.map((slug) => {
         const config = WORKSPACES[slug];
         const Icon = config.icon;

@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronRight, LineChart, Link2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronRight, Inbox as InboxIcon, LineChart, Link2, Lock } from "lucide-react";
 
 import type {
   IntegrationProvider,
   IntegrationProviderInfo,
   TradingIntegration,
 } from "@shared/trading-training-types";
+
+interface ConnectCategorySummary {
+  id: string;
+  label: string;
+  connected: boolean;
+  accountCount: number;
+  status: string;
+}
 
 const STATUS_CLS: Record<string, string> = {
   connected: "bg-emerald-400/15 text-emerald-300",
@@ -15,12 +24,12 @@ const STATUS_CLS: Record<string, string> = {
   disconnected: "bg-white/10 text-white/40",
 };
 
-// Every real per-user connectable account in the app today is a trading/
-// market-data provider (TradingIntegrationsStore) - there's no per-user
-// backend yet for email, calendar, social, or storage accounts (those only
-// exist as a single admin-wide config, not something an individual user
-// connects). Grouping what's real into sub-categories rather than
-// inventing categories the backend can't back.
+// The only accounts a regular user connects directly, per-user, are
+// trading/market-data (TradingIntegrationsStore, /api/trading/integrations).
+// Everything else (email, social, CRM, payments, ...) is configured once,
+// admin-wide, in Settings > Advanced > Integrations - shown below as
+// read-only status via /api/connect/categories, with editing left to
+// whoever has admin access.
 const CATEGORIES: Array<{ label: string; providers: IntegrationProvider[] }> = [
   { label: "Trading Brokers", providers: ["lucid", "tradovate", "webull"] },
   { label: "Prediction Markets", providers: ["kalshi", "polymarket"] },
@@ -30,11 +39,13 @@ const CATEGORIES: Array<{ label: string; providers: IntegrationProvider[] }> = [
 /**
  * The real Connect surface, reachable from Nexus's "Connect" domain.
  *
- * Talks to the same per-user integrations backend the Trading workspace's
- * Accounts tab already uses (/api/trading/integrations) - the only
- * production-real "connect an external account" system in the app today.
- * Connecting or disconnecting here is reflected there too, since both
- * read and write the same account state.
+ * Combines two real backends: the per-user trading/market-data accounts
+ * (/api/trading/integrations, the only accounts an individual user connects
+ * directly) and a read-only summary of the admin-wide integrations
+ * (/api/connect/categories) - email, social publishing, CRM, payments,
+ * accounting, cloud storage, deployment, telephony, firewall, business
+ * operations - so this page reflects everything ZAR can actually act
+ * through, not just trading accounts.
  */
 export default function ConnectPage() {
   const [, navigate] = useLocation();
@@ -59,6 +70,10 @@ export default function ConnectPage() {
     void load();
   }, [load]);
 
+  const { data: connectCategories } = useQuery<{ categories: ConnectCategorySummary[]; isAdmin: boolean }>({
+    queryKey: ["/api/connect/categories"],
+  });
+
   const connectedCount = integrations.filter((i) => i.status !== "disconnected").length;
 
   return (
@@ -77,7 +92,7 @@ export default function ConnectPage() {
         <button
           type="button"
           onClick={() => navigate("/trading")}
-          className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 via-purple-500/10 to-black p-4 text-left transition-colors hover:border-white/20"
+          className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 via-purple-500/10 to-black p-4 text-left transition-colors hover:border-white/20"
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/15 text-fuchsia-300">
             <LineChart size={18} />
@@ -86,6 +101,23 @@ export default function ConnectPage() {
             <div className="font-semibold text-white">Trading Intelligence</div>
             <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
               Theses, journals, paper trades, and performance built on these connections.
+            </p>
+          </div>
+          <ChevronRight size={16} className="shrink-0 text-white/40" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate("/inbox")}
+          className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-black p-4 text-left transition-colors hover:border-white/20"
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-300">
+            <InboxIcon size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-semibold text-white">Email Inbox</div>
+            <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
+              Read what's come in and see what ZAR flagged for attention.
             </p>
           </div>
           <ChevronRight size={16} className="shrink-0 text-white/40" />
@@ -121,10 +153,48 @@ export default function ConnectPage() {
           </div>
         )}
 
-        <p className="mt-6 text-center text-[11.5px] leading-snug text-white/30">
-          More account categories (email, calendar, social, storage) aren't
-          connectable per-user yet - only trading/market-data accounts are today.
-        </p>
+        {connectCategories && connectCategories.categories.length > 0 && (
+          <section className="mt-6">
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40">
+              Business &amp; Platform Integrations
+            </div>
+            <div className="space-y-2">
+              {connectCategories.categories.map((category) => (
+                <div
+                  key={category.id}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-medium text-white">{category.label}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[9.5px] uppercase tracking-[0.06em] ${
+                          category.connected ? STATUS_CLS.connected : STATUS_CLS.disconnected
+                        }`}
+                      >
+                        {category.connected ? `connected${category.accountCount > 1 ? ` (${category.accountCount})` : ""}` : category.status}
+                      </span>
+                    </div>
+                  </div>
+                  {connectCategories.isAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/admin")}
+                      className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/70 transition-colors hover:text-white"
+                    >
+                      Manage
+                    </button>
+                  ) : (
+                    <span className="flex shrink-0 items-center gap-1 text-[10.5px] text-white/35">
+                      <Lock size={11} />
+                      Admin-managed
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
     </div>
   );
 }

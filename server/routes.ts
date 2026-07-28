@@ -13,6 +13,8 @@ import { registerIntakeRoutes } from "./services/intake/registerIntakeRoutes";
 import { registerProjectRoutes } from "./routes-modules/projects";
 import { registerResearchRoutes } from "./routes-modules/research";
 import { registerBrowserRoutes } from "./routes-modules/browser";
+import { registerFlowSuggestionRoutes } from "./routes-modules/flow-suggestions";
+import { registerConnectRoutes } from "./routes-modules/connect";
 import { registerWorkspaceDeskRoutes } from "./routes-modules/workspace-desk";
 import { registerDiagnosticsRoutes } from "./routes-modules/diagnostics";
 import { registerAiHostTestRoute } from "./routes-modules/ai-host-test";
@@ -78,6 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerProjectRoutes(app);
   registerResearchRoutes(app);
   registerBrowserRoutes(app);
+  registerFlowSuggestionRoutes(app);
+  registerConnectRoutes(app);
   registerWorkspaceDeskRoutes(app);
   registerOrchestrateAndMiscRoutes(app, {
     isDatabaseHealthy: () => isDatabaseHealthy,

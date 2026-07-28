@@ -2,11 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   AlertTriangle,
-  BookOpen,
   CalendarClock,
   CheckSquare,
-  ChevronLeft,
-  FileText,
   FolderKanban,
   Gavel,
   GitBranch,
@@ -157,36 +154,20 @@ export default function TimelinePage() {
   }, [filtered]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <CalendarClock size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            Timeline
-          </span>
+    <main className="mx-auto max-w-3xl space-y-4">
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => void refresh()}
+            disabled={loading}
+            className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+            aria-label="Refresh"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => void refresh()}
-          disabled={loading}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-          aria-label="Refresh"
-        >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-        </Button>
-      </div>
 
-      <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
             <CalendarClock size={14} />
@@ -291,8 +272,7 @@ export default function TimelinePage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </main>
   );
 }
 

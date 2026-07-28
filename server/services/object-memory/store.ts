@@ -288,14 +288,27 @@ export async function readAppliedGraph(scope?: ObjectMemoryScope): Promise<Objec
     if (isDatabaseRequired()) throw error;
   }
 
-  if (isDatabaseRequired()) return null;
-
+  // Postgres has no row for this scope yet - fall back to the committed
+  // seed file rather than reporting an empty graph. This matters even when
+  // the database is authoritative: a graph applied via the CLI's --apply
+  // path before this environment ever had DATABASE_URL configured leaves
+  // real data sitting on disk (checked into git under hub/user-memory/)
+  // with nothing in Postgres to show for it.
+  let fileGraph: ObjectGraph | null;
   try {
     const raw = await fs.readFile(graphPathFor(scope), "utf-8");
-    return JSON.parse(raw) as ObjectGraph;
+    fileGraph = JSON.parse(raw) as ObjectGraph;
   } catch {
-    return null;
+    fileGraph = null;
   }
+
+  if (fileGraph && isDatabaseRequired()) {
+    // Backfill once so future reads/writes go through Postgres like normal -
+    // best-effort, never blocks the read that's already in hand.
+    void writeAppState("object-memory:applied-graph", scopeKey, fileGraph).catch(() => {});
+  }
+
+  return fileGraph;
 }
 
 export async function resolveObjectMemoryUserId(

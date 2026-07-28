@@ -6,6 +6,7 @@ hub/config/admin-settings.json
 hub/flows/
 hub/logs/
 hub/shared-memory/browser-sessions/
+hub/shared-memory/flow-suggestions/
 hub/shared-memory/curation/
 hub/shared-memory/foundation-reparse/
 hub/shared-memory/execution/

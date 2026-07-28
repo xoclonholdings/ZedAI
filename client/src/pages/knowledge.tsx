@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link as LinkIcon, Network } from "lucide-react";
+import { useLocation } from "wouter";
+import { Compass, History, Link as LinkIcon, Network, Scale } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { AnyMemoryObject, BaseObject, ObjectGraph } from "@shared/object-memory-types";
@@ -23,6 +24,7 @@ function friendlyRel(t: string): string {
  * Knowledge is for browsing what's already there and where it came from.
  */
 export default function KnowledgePage() {
+  const [, navigate] = useLocation();
   const [graph, setGraph] = useState<ObjectGraph | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +100,33 @@ export default function KnowledgePage() {
             </Badge>
           </div>
         </section>
+
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/discovery")}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2 py-3 text-center transition-colors hover:bg-white/[0.06]"
+          >
+            <Compass size={16} className="text-blue-300" />
+            <span className="text-[11.5px] font-medium text-white/80">Discovery</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/decisions")}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2 py-3 text-center transition-colors hover:bg-white/[0.06]"
+          >
+            <Scale size={16} className="text-blue-300" />
+            <span className="text-[11.5px] font-medium text-white/80">Decisions</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/timeline")}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-2 py-3 text-center transition-colors hover:bg-white/[0.06]"
+          >
+            <History size={16} className="text-blue-300" />
+            <span className="text-[11.5px] font-medium text-white/80">Timeline</span>
+          </button>
+        </div>
 
         {error && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-300">
