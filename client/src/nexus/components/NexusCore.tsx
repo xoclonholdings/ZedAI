@@ -17,6 +17,7 @@ import {
   type CSSProperties,
   type ElementType,
   type MutableRefObject,
+  type ReactNode,
 } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as THREE from "three";
@@ -1507,6 +1508,24 @@ function AtmosphereVeil({ color }: { color: string | null }) {
   );
 }
 
+/**
+ * Mounts `children` ~350ms after this component itself first mounts.
+ * Used for the scene's purely ambient extras (meteor belt, shooting stars,
+ * satellites) - each is another shader/material the GPU has to compile,
+ * which is real synchronous cost during the scene's first mount, right on
+ * the critical path from login to a usable galaxy. None of them need to be
+ * present in the very first frame, so keeping them off that critical path
+ * (they fade in a beat later instead) costs nothing visually.
+ */
+function DeferredAmbience({ children }: { children: ReactNode }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setReady(true), 350);
+    return () => window.clearTimeout(id);
+  }, []);
+  return ready ? <>{children}</> : null;
+}
+
 /* ------------------------------------------------------------------ */
 /* Public scene (for embedding into an existing Canvas)                */
 /* ------------------------------------------------------------------ */
@@ -1548,7 +1567,12 @@ export function NexusCoreScene({
   onCoreTap,
   domains,
   interactive = true,
-  particleCount = 42000,
+  // Was 42000 - on a throttled/mobile-class CPU, building + first-uploading
+  // this many points (plus the galaxy/core/planet shader compiles that
+  // can't be avoided) measurably delayed the first paint after login, since
+  // the whole mount is synchronous main-thread work. Visually the galaxy
+  // reads just as full at this density.
+  particleCount = 20000,
   label = "ZAR",
   tilt = 0.44,
   zoom = 1,
@@ -1608,9 +1632,11 @@ export function NexusCoreScene({
   return (
     <>
       <Universe starCount={Math.max(600, Math.floor(particleCount * 0.05))} />
-      <MeteorBelt />
-      <ShootingStars />
-      <Satellites />
+      <DeferredAmbience>
+        <MeteorBelt />
+        <ShootingStars />
+        <Satellites />
+      </DeferredAmbience>
       <WarpField active={warp} />
       <AtmosphereVeil color={atmosphere} />
       <RotationRig
