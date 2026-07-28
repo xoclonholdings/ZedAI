@@ -21,6 +21,8 @@ export interface BrowserVisit {
   url: string;
   title?: string;
   text?: string;
+  /** Sanitized, script-free reader-view HTML - see WebContentService.sanitizeReaderHtml. */
+  sanitizedHtml?: string;
   status?: number;
   error?: string;
   source: "user" | "zar";

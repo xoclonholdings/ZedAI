@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { ConsoleIdentity } from "./consoleIdentity";
 import { ConsoleActivator } from "./ConsoleActivator";
 import { ConsoleDock } from "./ConsoleDock";
+import { ConsoleLogoutButton } from "./ConsoleLogoutButton";
 
 /**
  * The ZEBULON Console Framework shell - the one composition every console
@@ -36,7 +37,10 @@ export function ConsoleShell({
 
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-safe-sm sm:px-6 sm:pt-5">
         <div className="pointer-events-auto min-w-0">{headerLeft}</div>
-        <div className="pointer-events-auto flex shrink-0 flex-col items-end gap-2">{headerRightExtra}</div>
+        <div className="pointer-events-auto flex shrink-0 flex-col items-end gap-2">
+          <ConsoleLogoutButton />
+          {headerRightExtra}
+        </div>
       </header>
 
       <div

@@ -36,6 +36,7 @@ export function registerBrowserRoutes(app: Express): void {
         url: page.url,
         title: page.title,
         text: page.text,
+        sanitizedHtml: page.sanitizedHtml,
         status: page.status,
         source: "user",
       });

@@ -9,10 +9,31 @@ interface BrowserVisit {
   url: string;
   title?: string;
   text?: string;
+  sanitizedHtml?: string;
   status?: number;
   error?: string;
   source: "user" | "zar";
   visitedAt: string;
+}
+
+/**
+ * Wraps the server-sanitized fragment in a minimal dark-themed document for
+ * the reader iframe. The iframe itself carries the real security boundary
+ * (sandboxed, no scripts) - this is just presentation.
+ */
+function buildReaderDocument(sanitizedHtml: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 12px; font: 13px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background: #0a0718; color: rgba(255,255,255,0.82); }
+    a { color: #67e8f9; }
+    img { max-width: 100%; height: auto; border-radius: 8px; }
+    h1, h2, h3, h4, h5, h6 { color: #fff; line-height: 1.3; }
+    pre { background: rgba(255,255,255,0.06); border-radius: 6px; padding: 8px; overflow-x: auto; }
+    code { background: rgba(255,255,255,0.06); border-radius: 4px; padding: 0 3px; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid rgba(255,255,255,0.12); padding: 4px 6px; }
+  </style></head><body>${sanitizedHtml}</body></html>`;
 }
 
 interface BrowserSession {
@@ -93,8 +114,8 @@ export function NexusLiveBrowser() {
       </div>
 
       {current ? (
-        <div className="max-h-[220px] overflow-y-auto rounded-lg border border-white/10 bg-black/30 p-2.5">
-          <div className="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-white/40">
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
+          <div className="flex items-center gap-1.5 px-2.5 pt-2.5 text-[10px] uppercase tracking-[0.14em] text-white/40">
             {current.source === "zar" ? (
               <Sparkles size={11} className="shrink-0 text-violet-300" aria-hidden="true" />
             ) : (
@@ -103,27 +124,39 @@ export function NexusLiveBrowser() {
             {current.source === "zar" ? "ZAR visited" : "You visited"}
           </div>
           {current.error ? (
-            <div className="flex items-start gap-1.5 text-[12.5px] text-red-300">
+            <div className="flex items-start gap-1.5 p-2.5 pt-1 text-[12.5px] text-red-300">
               <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
               {current.error}
             </div>
           ) : (
             <>
-              <a
-                href={current.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1 text-[13px] font-medium text-cyan-100 hover:text-cyan-50"
-              >
-                <span className="truncate">{current.title || current.url}</span>
-                <ExternalLink size={11} className="shrink-0 text-white/40" aria-hidden="true" />
-              </a>
-              <div className="mt-0.5 truncate text-[11px] text-white/40">{current.url}</div>
-              {current.text && (
-                <p className="mt-2 whitespace-pre-line text-[12px] leading-relaxed text-white/70">
-                  {current.text.slice(0, 600)}
-                  {current.text.length > 600 ? "…" : ""}
-                </p>
+              <div className="px-2.5 pb-2 pt-1">
+                <a
+                  href={current.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1 text-[13px] font-medium text-cyan-100 hover:text-cyan-50"
+                >
+                  <span className="truncate">{current.title || current.url}</span>
+                  <ExternalLink size={11} className="shrink-0 text-white/40" aria-hidden="true" />
+                </a>
+                <div className="mt-0.5 truncate text-[11px] text-white/40">{current.url}</div>
+              </div>
+              {current.sanitizedHtml ? (
+                <iframe
+                  title={current.title || current.url}
+                  srcDoc={buildReaderDocument(current.sanitizedHtml)}
+                  sandbox="allow-popups"
+                  referrerPolicy="no-referrer"
+                  className="h-[220px] w-full border-0 bg-[#0a0718]"
+                />
+              ) : (
+                current.text && (
+                  <p className="max-h-[220px] overflow-y-auto whitespace-pre-line px-2.5 pb-2.5 text-[12px] leading-relaxed text-white/70">
+                    {current.text.slice(0, 600)}
+                    {current.text.length > 600 ? "…" : ""}
+                  </p>
+                )
               )}
             </>
           )}

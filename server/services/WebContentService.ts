@@ -1,5 +1,6 @@
 import dns from "dns/promises";
 import net from "net";
+import sanitizeHtml from "sanitize-html";
 
 export interface WebTarget {
   original: string;
@@ -10,6 +11,8 @@ export interface WebPageResult {
   url: string;
   title?: string;
   text: string;
+  /** Sanitized, script-free reader-view markup - safe to render directly (see sanitizeReaderHtml). */
+  sanitizedHtml?: string;
   status: number;
   contentType?: string;
   links?: string[];
@@ -186,6 +189,67 @@ async function assertSafeHttpUrl(rawUrl: string): Promise<URL> {
   return parsed;
 }
 
+const READER_ALLOWED_TAGS = [
+  "p", "br", "hr",
+  "h1", "h2", "h3", "h4", "h5", "h6",
+  "ul", "ol", "li",
+  "a", "strong", "b", "em", "i", "u", "s", "mark", "small", "sub", "sup",
+  "blockquote", "pre", "code",
+  "img", "figure", "figcaption",
+  "table", "thead", "tbody", "tfoot", "tr", "td", "th",
+  "span", "div",
+];
+
+/**
+ * Turns raw fetched HTML into safe, isolated reader-view markup: strips
+ * script/style/event handlers/forms/frames entirely (sanitize-html's
+ * allowlist, not a denylist), resolves relative links/images against the
+ * page's own URL, and forces every link to open in a new tab without
+ * granting it a reference back to this window. The result is only ever
+ * rendered inside a script-disabled sandboxed iframe client-side - two
+ * independent layers, since neither one alone should be trusted blind.
+ */
+function sanitizeReaderHtml(html: string, baseUrl: string): string {
+  const resolve = (value: string | undefined): string | undefined => {
+    if (!value) return undefined;
+    try {
+      const resolved = new URL(value, baseUrl);
+      return resolved.protocol === "http:" || resolved.protocol === "https:" ? resolved.toString() : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const clean = sanitizeHtml(html, {
+    allowedTags: READER_ALLOWED_TAGS,
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt"],
+      "*": ["title"],
+    },
+    allowedSchemes: ["http", "https"],
+    allowProtocolRelative: false,
+    transformTags: {
+      a: (tagName, attribs) => ({
+        tagName,
+        attribs: {
+          ...(resolve(attribs.href) ? { href: resolve(attribs.href)! } : {}),
+          target: "_blank",
+          rel: "noopener noreferrer nofollow",
+        },
+      }),
+      img: (tagName, attribs) => {
+        const src = resolve(attribs.src);
+        return src ? { tagName, attribs: { src, alt: attribs.alt || "" } } : { tagName: "span", attribs: {} };
+      },
+    },
+    exclusiveFilter: (frame) => frame.tag === "img" && !frame.attribs.src,
+    nonTextTags: ["script", "style", "textarea", "noscript", "svg", "canvas", "iframe", "object", "embed", "form"],
+  });
+
+  return clean.slice(0, 80_000);
+}
+
 async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
@@ -220,8 +284,10 @@ async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
 
     const contentType = res.headers.get("content-type") || "";
     const raw = await res.text();
-    const parsed = contentType.includes("html") ? htmlToText(raw) : { text: raw.replace(/\s+/g, " ").trim() };
-    const links = contentType.includes("html") ? extractLinks(raw, currentUrl) : [];
+    const isHtml = contentType.includes("html");
+    const parsed = isHtml ? htmlToText(raw) : { text: raw.replace(/\s+/g, " ").trim() };
+    const links = isHtml ? extractLinks(raw, currentUrl) : [];
+    const sanitizedHtml = isHtml ? sanitizeReaderHtml(raw.slice(0, 400_000), currentUrl) : undefined;
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
@@ -231,6 +297,7 @@ async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
       url: currentUrl,
       title: parsed.title,
       text: parsed.text.slice(0, 12_000),
+      sanitizedHtml,
       status: res.status,
       contentType,
       links,
