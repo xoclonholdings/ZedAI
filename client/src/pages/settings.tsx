@@ -45,15 +45,17 @@ export default function SettingsPage() {
 
   return (
     <div className={`mx-auto max-w-2xl px-4 ${compact ? "py-4" : "py-6"}`}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => (section === "main" ? navigate("/nexus") : setSection("main"))}
-        className="mb-4 rounded-xl text-muted-foreground hover:text-foreground zed-button"
-      >
-        <ChevronLeft size={16} className="mr-1" />
-        {section === "main" ? "Nexus" : "Settings"}
-      </Button>
+      {section !== "main" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSection("main")}
+          className="mb-4 rounded-xl text-muted-foreground hover:text-foreground zed-button"
+        >
+          <ChevronLeft size={16} className="mr-1" />
+          Settings
+        </Button>
+      )}
       {section === "main" && <SettingsMainMenu isAdmin={isAdmin} onNavigate={handleNavigate} />}
       {section === "preferences" && (
         <PersonalizationSettings appSettings={appSettings} setAppSettings={setAppSettings} />
