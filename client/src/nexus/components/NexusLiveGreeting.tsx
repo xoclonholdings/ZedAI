@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-const AFFIRMATIONS = [
-  "Small steps compound into orbit.",
-  "Clarity first, velocity second.",
-  "You don't need permission to begin.",
-  "Momentum is built one decision at a time.",
-  "Today is raw material - shape it.",
-  "Discipline is choosing what you want most over what you want now.",
-  "The mission continues whether you feel ready or not.",
-  "Every system you build outlives the mood you built it in.",
-  "Progress hides inside the boring parts.",
-  "Steady hands, clear orders, one system at a time.",
-];
+type PartOfDay = "morning" | "afternoon" | "evening";
 
-const ROTATE_MS = 9000;
+/** Exactly one line per part of day - not a rotating pool, per the "only 3 quotes a day" spec. */
+const PART_OF_DAY_QUOTE: Record<PartOfDay, string> = {
+  morning: "Small steps compound into orbit.",
+  afternoon: "Clarity first, velocity second.",
+  evening: "The mission continues whether you feel ready or not.",
+};
+
 const CLOCK_TICK_MS = 15000;
+
+function partOfDay(date: Date): PartOfDay {
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 17) return "afternoon";
+  return "evening";
+}
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
@@ -29,13 +31,14 @@ function formatDateLine(date: Date): string {
 
 /**
  * Replaces the old static "Good evening / How can I assist you today?"
- * lines - the console's live vitals: current time, date, day of week, and a
- * slowly rotating affirmation, so the header reads as a living instrument
- * rather than a fixed greeting.
+ * lines - the console's live vitals: current time, date, day of week, and
+ * one of exactly three affirmations (morning/afternoon/evening), so the
+ * header reads as a living instrument rather than a fixed greeting. Compact
+ * and right-aligned so it stays visually secondary to the brand/domain name
+ * on the header's other side.
  */
 export function NexusLiveGreeting({ visible }: { readonly visible: boolean }) {
   const [now, setNow] = useState(() => new Date());
-  const [quoteIndex, setQuoteIndex] = useState(() => Math.floor(Math.random() * AFFIRMATIONS.length));
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -43,30 +46,25 @@ export function NexusLiveGreeting({ visible }: { readonly visible: boolean }) {
     return () => window.clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setQuoteIndex((value) => (value + 1) % AFFIRMATIONS.length);
-    }, ROTATE_MS);
-    return () => window.clearInterval(id);
-  }, []);
+  const part = partOfDay(now);
 
   return (
-    <div className="transition-opacity duration-300" style={{ opacity: visible ? 1 : 0 }}>
-      <div className="flex items-baseline gap-2">
-        <span className="text-base font-semibold text-white sm:text-lg">{formatTime(now)}</span>
-        <span className="truncate text-[13px] text-white/50">{formatDateLine(now)}</span>
+    <div className="text-right transition-opacity duration-300" style={{ opacity: visible ? 1 : 0 }}>
+      <div className="flex items-baseline justify-end gap-1.5">
+        <span className="text-[12px] font-semibold text-white sm:text-[13px]">{formatTime(now)}</span>
+        <span className="truncate text-[10px] text-white/50">{formatDateLine(now)}</span>
       </div>
-      <div className="mt-0.5 h-[18px] overflow-hidden">
+      <div className="mt-0.5 h-[14px] overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.p
-            key={quoteIndex}
-            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            key={part}
+            initial={reducedMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -5 }}
             transition={{ duration: 0.4 }}
-            className="truncate text-[13px] text-white/45"
+            className="max-w-[46vw] truncate text-[10px] text-white/45 sm:max-w-[220px]"
           >
-            {AFFIRMATIONS[quoteIndex]}
+            {PART_OF_DAY_QUOTE[part]}
           </motion.p>
         </AnimatePresence>
       </div>
