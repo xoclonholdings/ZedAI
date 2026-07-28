@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, FileText, Image, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
+import { Clock, FileText, Globe, Image, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ import { useNexusChatSession } from "../communication/useNexusChatSession";
 import { useNexusDictation } from "../communication/useNexusDictation";
 import { NexusDrawCanvas } from "./communication/NexusDrawCanvas";
 import { NexusFileUpload } from "./communication/NexusFileUpload";
+import { NexusLiveBrowser } from "./communication/NexusLiveBrowser";
 import { NexusMemoryUpload } from "./communication/NexusMemoryUpload";
 import { NexusVoiceDock } from "./communication/NexusVoiceDock";
 import ResearchDocuments from "@/components/research/ResearchDocuments";
@@ -20,13 +21,14 @@ import {
 
 /**
  * What's showing in the console's one content slot, where the mic sits by
- * default - Talk/Image/Doc/Upload/History all just swap this slot's content.
- * Text opens the real chat page instead of a slot (interim, per the redesign
- * note), so it isn't a slot mode here. The dock around the slot (status row,
- * mode row, this slot, History row) never changes shape or grows - only the
- * slot's content changes.
+ * default - Talk/Image/Doc/Upload/History/Browse all just swap this slot's
+ * content. Text opens the real chat page instead of a slot (interim, per the
+ * redesign note), so it isn't a slot mode here. Browse is a coded placeholder
+ * only - there's no live-browsing backend endpoint yet. The dock around the
+ * slot (status row, mode row, this slot, footer row) never changes shape or
+ * grows - only the slot's content changes.
  */
-export type NexusDockMode = "talk" | "image" | "draw" | "doc" | "upload" | "history";
+export type NexusDockMode = "talk" | "image" | "draw" | "doc" | "upload" | "history" | "browse";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const IMAGE_ACCEPT = "image/*";
@@ -192,6 +194,8 @@ export function NexusConversationSurface({
           />
         )}
 
+        {activeMode === "browse" && <NexusLiveBrowser />}
+
         {activeMode === "history" && (
           <div className="max-h-[220px] overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-2">
             {conversations.length === 0 ? (
@@ -219,7 +223,20 @@ export function NexusConversationSurface({
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveMode((value) => (value === "browse" ? "talk" : "browse"))}
+          aria-pressed={activeMode === "browse"}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
+            activeMode === "browse"
+              ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
+              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
+          )}
+        >
+          <Globe size={14} /> Browse
+        </button>
         <button
           type="button"
           onClick={() => setActiveMode((value) => (value === "history" ? "talk" : "history"))}
