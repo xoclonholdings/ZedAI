@@ -121,6 +121,38 @@ export function webullCredentialCandidates(record: WebullConnection): WebullCred
   return candidates;
 }
 
+/**
+ * Which candidate to actually use for a live request (status display,
+ * order signing) — not just `candidates[0]`.
+ *
+ * `webullCredentialCandidates` always sorts "Render env" first. That's
+ * fine for a connection *test*, which tries every candidate and falls
+ * back on failure — but `getWebullStatus` and `placeWebullOrder` don't
+ * loop; they need one answer. Always taking the first (env) candidate
+ * meant a stale or mismatched Render-level WEBULL_APP_KEY/SECRET could
+ * keep silently being used to sign real orders even after the user's own
+ * saved credentials were confirmed working by a real test — "Test" says
+ * connected, but every order still fails, because the two paths were
+ * using different key pairs. `testWebullConnection` persists which
+ * source last verified successfully (`credentialSource`); prefer that
+ * one here so status and signing agree with the last real test.
+ */
+export function resolveActiveWebullCredential(record: WebullConnection): WebullCredentialCandidate | undefined {
+  const candidates = webullCredentialCandidates(record);
+  if (!candidates.length) return undefined;
+  const preferredSource = value(record, "credentialSource") as WebullCredentialCandidate["source"] | "";
+  if (preferredSource) {
+    const preferredEndpoint = value(record, "endpoint");
+    const exact = candidates.find(
+      (c) => c.source === preferredSource && (!preferredEndpoint || c.endpoint === preferredEndpoint),
+    );
+    if (exact) return exact;
+    const bySource = candidates.find((c) => c.source === preferredSource);
+    if (bySource) return bySource;
+  }
+  return candidates[0];
+}
+
 export async function getWebullConnection(userId: string): Promise<WebullConnection> {
   return TradingIntegrationsStore.getConnection(userId, WEBULL_PROVIDER);
 }

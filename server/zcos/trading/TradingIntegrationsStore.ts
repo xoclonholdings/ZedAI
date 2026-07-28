@@ -226,6 +226,32 @@ export const TradingIntegrationsStore = {
     await writeAll(userId, records);
     return sanitize(records[index]);
   },
+
+  /**
+   * Record the outcome of a *real* provider-specific test (e.g. Webull's
+   * live account-list call) — for providers with a real `liveBridge`,
+   * this replaces the generic `test()` above, which only checks that
+   * required fields are non-empty and can't actually tell a wrong
+   * credential pair from a working one.
+   */
+  async recordTestResult(
+    userId: string,
+    provider: IntegrationProvider,
+    outcome: { status: IntegrationStatus; result: string },
+  ): Promise<TradingIntegration> {
+    const records = await readAll(userId);
+    const index = records.findIndex((r) => r.provider === provider);
+    if (index < 0) throw new Error(`${integrationProviderInfo(provider)?.label || provider} is not connected yet.`);
+    records[index] = {
+      ...records[index],
+      status: outcome.status,
+      lastTestedAt: now(),
+      lastResult: outcome.result,
+      updatedAt: now(),
+    };
+    await writeAll(userId, records);
+    return sanitize(records[index]);
+  },
 };
 
 async function probeUrl(url: string): Promise<{ ok: boolean; message: string }> {

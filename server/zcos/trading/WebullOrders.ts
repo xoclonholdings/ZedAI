@@ -5,7 +5,7 @@ import { getWebullStatus } from "./WebullAuth";
 import {
   explainWebullAuthFailure,
   getWebullConnection,
-  webullCredentialCandidates,
+  resolveActiveWebullCredential,
   webullFetch,
 } from "./WebullShared";
 
@@ -67,7 +67,7 @@ export async function placeWebullOrder(userId: string, input: WebullOrderInput):
     };
   }
   const connection = await getWebullConnection(userId);
-  const candidate = webullCredentialCandidates(connection)[0];
+  const candidate = resolveActiveWebullCredential(connection);
   if (!candidate) {
     return { ok: false, environment: status.mode, message: "No Webull credentials available." };
   }

@@ -88,12 +88,28 @@ export async function testWebullConnection(userId: string): Promise<{
     const liveIds = result.accounts.map((account) => account.id);
     const selectedAccountId =
       savedAccountId && liveIds.includes(savedAccountId) ? savedAccountId : result.accounts[0]?.id;
+
+    // Always record which credential source and endpoint just verified —
+    // not only when the account id changes. getWebullStatus/placeWebullOrder
+    // prefer this over always defaulting to the env-var candidate, so a
+    // stale/mismatched Render-level key pair can't keep silently signing
+    // real requests after the user's own saved credentials are confirmed
+    // working here.
+    const fieldsToSave: Record<string, string> = {
+      endpoint: candidate.endpoint,
+      environment: candidate.mode,
+      credentialSource: candidate.source,
+    };
     if (selectedAccountId && selectedAccountId !== savedAccountId) {
-      await TradingIntegrationsStore.connect({
-        userId,
-        provider: WEBULL_PROVIDER,
-        fields: { accountId: selectedAccountId, endpoint: candidate.endpoint, environment: candidate.mode },
-      });
+      fieldsToSave.accountId = selectedAccountId;
+    }
+    const changed =
+      connection?.fields?.endpoint !== fieldsToSave.endpoint ||
+      connection?.fields?.environment !== fieldsToSave.environment ||
+      connection?.fields?.credentialSource !== fieldsToSave.credentialSource ||
+      Boolean(fieldsToSave.accountId);
+    if (changed) {
+      await TradingIntegrationsStore.connect({ userId, provider: WEBULL_PROVIDER, fields: fieldsToSave });
     }
     return {
       ok: true,

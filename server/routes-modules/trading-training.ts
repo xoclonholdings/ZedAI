@@ -11,6 +11,7 @@ import {
 } from "../zcos/trading/TradingAssessmentEngine";
 import { TRADING_KNOWLEDGE_AREAS } from "../zcos/trading/TradingCurriculum";
 import { TradingIntegrationsStore } from "../zcos/trading/TradingIntegrationsStore";
+import { testWebullConnection } from "../zcos/trading/WebullBridge";
 import { advanceStage, recordAssessment } from "../services/TradingProgressionStore";
 import { TRADING_STAGES, type TradingStageId } from "../../shared/trading-progression";
 import {
@@ -220,6 +221,23 @@ export function registerTradingTrainingRoutes(app: Express): void {
     try {
       const provider = String(req.params.provider) as IntegrationProvider;
       if (!PROVIDER_IDS.has(provider)) return res.status(400).json({ error: "Unknown provider" });
+
+      // Webull has a real live bridge — the generic test below only checks
+      // that required fields are non-empty, which can't distinguish a
+      // working credential pair from a wrong/expired one. Route it through
+      // the same live account-list call the Webull-specific UI uses, so
+      // "Test" here means the same thing everywhere it's clicked.
+      if (provider === "webull") {
+        const userId = userIdFrom(req);
+        const result = await testWebullConnection(userId);
+        const integration = await TradingIntegrationsStore.recordTestResult(userId, provider, {
+          status: result.ok ? "connected" : "error",
+          result: result.message,
+        });
+        if (!result.ok) return res.status(502).json({ error: result.message, integration });
+        return res.json({ integration });
+      }
+
       const integration = await TradingIntegrationsStore.test(userIdFrom(req), provider);
       res.json({ integration });
     } catch (err: any) {

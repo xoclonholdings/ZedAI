@@ -5,16 +5,15 @@ import {
   endpointFor,
   environmentMode,
   getWebullConnection,
+  resolveActiveWebullCredential,
   resolvedSecretValue,
   resolvedValue,
-  webullCredentialCandidates,
 } from "./WebullShared";
 
 /** Connection status + saved credential summary — never returns secrets. */
 export async function getWebullStatus(userId: string): Promise<ExecutionAdapterStatus> {
   const connection = await getWebullConnection(userId);
-  const credentials = webullCredentialCandidates(connection);
-  const activeCredentials = credentials[0];
+  const activeCredentials = resolveActiveWebullCredential(connection);
   const appKey = activeCredentials?.appKey || "";
   const appSecret = activeCredentials?.appSecret || "";
   const accessToken = resolvedValue(connection, "accessToken", "WEBULL_ACCESS_TOKEN");
