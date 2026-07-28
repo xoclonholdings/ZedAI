@@ -10,6 +10,7 @@ import {
   type WebFetchResponse,
 } from "../../services/WebContentService";
 import { storeResearchBrief, querySimilarResearch } from "../../services/ChromaService";
+import { BrowserSessionStore } from "../../services/BrowserSessionStore";
 import { REPO_ROOT, HUB_LOG_DIR } from "../../utils/repoPaths";
 
 const SKILL_PATH = path.resolve(REPO_ROOT, "server/agents/intelligence/SKILL.md");
@@ -100,6 +101,18 @@ export class IntelligenceAgent {
 
     const directWeb = await fetchWebTargetsFromText(request.query);
     const directWebBlock = formatWebPagesForPrompt(directWeb);
+
+    // ZAR's own browsing shows up in the same live browser the user sees -
+    // every page it actually fetched while researching gets recorded here.
+    for (const page of directWeb.pages) {
+      await BrowserSessionStore.recordVisit(request.userId, {
+        url: page.url,
+        title: page.title,
+        text: page.text,
+        status: page.status,
+        source: "zar",
+      }).catch(() => {});
+    }
     const expandedQueries = this.expandKeywords(request.query);
     const searchResponses = await Promise.all(expandedQueries.map((query) => webSearch(query, 4)));
     const primarySearch = searchResponses[0];

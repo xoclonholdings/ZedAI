@@ -1,3 +1,6 @@
+import dns from "dns/promises";
+import net from "net";
+
 export interface WebTarget {
   original: string;
   url: string;
@@ -121,31 +124,111 @@ function extractLinks(html: string, baseUrl: string): string[] {
   return Array.from(links).slice(0, 100);
 }
 
+/**
+ * SSRF guard - the web-fetch capability (both the agent's own research
+ * lookups and the user-facing live browser) must never be usable to reach
+ * internal/private network addresses, cloud metadata endpoints, or
+ * non-http(s) schemes. Every fetch and every redirect hop is re-checked,
+ * since a hostname can resolve to a private IP even when it doesn't look
+ * like one (DNS rebinding).
+ */
+function isPrivateOrReservedIp(ip: string): boolean {
+  if (net.isIPv4(ip)) {
+    const [a, b] = ip.split(".").map(Number);
+    if (a === 127 || a === 10 || a === 0) return true;
+    if (a === 169 && b === 254) return true; // link-local, incl. cloud metadata (169.254.169.254)
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true; // carrier-grade NAT
+    return false;
+  }
+  if (net.isIPv6(ip)) {
+    const lower = ip.toLowerCase();
+    if (lower === "::1" || lower === "::") return true;
+    if (lower.startsWith("fe80:")) return true;
+    if (lower.startsWith("fc") || lower.startsWith("fd")) return true;
+    const mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapped) return isPrivateOrReservedIp(mapped[1]);
+    return false;
+  }
+  return true; // unrecognized format - fail closed
+}
+
+const BLOCKED_HOSTNAMES = new Set(["localhost", "metadata.google.internal"]);
+
+async function assertSafeHttpUrl(rawUrl: string): Promise<URL> {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error("That doesn't look like a valid URL.");
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Only http/https URLs can be fetched.");
+  }
+  const hostname = parsed.hostname.toLowerCase();
+  if (BLOCKED_HOSTNAMES.has(hostname)) {
+    throw new Error("That host can't be reached.");
+  }
+  if (net.isIP(hostname)) {
+    if (isPrivateOrReservedIp(hostname)) throw new Error("That host can't be reached.");
+    return parsed;
+  }
+  let records: Array<{ address: string }>;
+  try {
+    records = await dns.lookup(hostname, { all: true });
+  } catch {
+    throw new Error("Couldn't resolve that host.");
+  }
+  if (records.length === 0 || records.some((record) => isPrivateOrReservedIp(record.address))) {
+    throw new Error("That host can't be reached.");
+  }
+  return parsed;
+}
+
 async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
 
   try {
-    const res = await fetch(target.url, {
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "ZED-AI/1.0 (+https://zed-ai.online)",
-        Accept: "text/html,application/xhtml+xml,application/xml,text/plain;q=0.9,*/*;q=0.8",
-      },
-    });
+    await assertSafeHttpUrl(target.url);
+    let currentUrl = target.url;
+    let res!: Response;
+    let hops = 0;
+
+    for (;;) {
+      res = await fetch(currentUrl, {
+        redirect: "manual",
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "ZED-AI/1.0 (+https://zed-ai.online)",
+          Accept: "text/html,application/xhtml+xml,application/xml,text/plain;q=0.9,*/*;q=0.8",
+        },
+      });
+
+      const location = res.headers.get("location");
+      if (res.status >= 300 && res.status < 400 && location) {
+        hops += 1;
+        if (hops > 5) throw new Error("Too many redirects.");
+        const next = new URL(location, currentUrl).toString();
+        await assertSafeHttpUrl(next);
+        currentUrl = next;
+        continue;
+      }
+      break;
+    }
 
     const contentType = res.headers.get("content-type") || "";
     const raw = await res.text();
     const parsed = contentType.includes("html") ? htmlToText(raw) : { text: raw.replace(/\s+/g, " ").trim() };
-    const links = contentType.includes("html") ? extractLinks(raw, res.url || target.url) : [];
+    const links = contentType.includes("html") ? extractLinks(raw, currentUrl) : [];
 
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }
 
     return {
-      url: res.url || target.url,
+      url: currentUrl,
       title: parsed.title,
       text: parsed.text.slice(0, 12_000),
       status: res.status,
@@ -156,6 +239,18 @@ async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/**
+ * Fetch a single, user- or agent-supplied URL directly - the shared
+ * primitive behind both the live browser's "Go" action and ZAR's own
+ * research lookups, so both go through the exact same safety checks and
+ * extraction logic.
+ */
+export async function fetchSingleUrl(rawUrl: string): Promise<WebPageResult> {
+  const target = normalizeTarget(rawUrl.trim());
+  if (!target) throw new Error("That doesn't look like a valid URL.");
+  return fetchOnePage(target);
 }
 
 const PAGE_TYPE_ALIASES: Record<string, string[]> = {
