@@ -2,12 +2,20 @@ import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
 import { getConnectCategorySummary } from "../services/admin-settings/connectSummary";
+import { computeIntegrationGaps, dismissIntegrationGap } from "../services/IntegrationGapEngine";
+
+function userIdFrom(req: any): string {
+  return req.user?.claims?.sub || "unknown";
+}
 
 /**
  * Read-only summary of the admin-wide integrations for the user-facing
  * Connect page - see connectSummary.ts. Editing stays admin-only via the
  * existing /api/admin/settings/integrations route; this only tells a
  * regular user what's already connected and how many accounts.
+ *
+ * Also serves IntegrationGapEngine's prompts: real, detected "you asked for
+ * this but it isn't connected" notices, dismissable per user.
  */
 export function registerConnectRoutes(app: Express): void {
   app.get("/api/connect/categories", isAuthenticated, async (req: any, res) => {
@@ -16,6 +24,24 @@ export function registerConnectRoutes(app: Express): void {
       res.json({ categories, isAdmin: Boolean(req.user?.claims?.isAdmin) });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to load connect categories" });
+    }
+  });
+
+  app.get("/api/connect/gaps", isAuthenticated, async (req: any, res) => {
+    try {
+      const gaps = await computeIntegrationGaps(userIdFrom(req));
+      res.json({ gaps });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to compute integration gaps" });
+    }
+  });
+
+  app.post("/api/connect/gaps/:id/dismiss", isAuthenticated, async (req: any, res) => {
+    try {
+      await dismissIntegrationGap(userIdFrom(req), String(req.params.id));
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "Failed to dismiss" });
     }
   });
 }

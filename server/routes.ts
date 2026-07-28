@@ -15,6 +15,7 @@ import { registerResearchRoutes } from "./routes-modules/research";
 import { registerBrowserRoutes } from "./routes-modules/browser";
 import { registerFlowSuggestionRoutes } from "./routes-modules/flow-suggestions";
 import { registerConnectRoutes } from "./routes-modules/connect";
+import { registerUserSecretsRoutes } from "./routes-modules/user-secrets";
 import { registerWorkspaceDeskRoutes } from "./routes-modules/workspace-desk";
 import { registerDiagnosticsRoutes } from "./routes-modules/diagnostics";
 import { registerAiHostTestRoute } from "./routes-modules/ai-host-test";
@@ -82,6 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerBrowserRoutes(app);
   registerFlowSuggestionRoutes(app);
   registerConnectRoutes(app);
+  registerUserSecretsRoutes(app);
   registerWorkspaceDeskRoutes(app);
   registerOrchestrateAndMiscRoutes(app, {
     isDatabaseHealthy: () => isDatabaseHealthy,

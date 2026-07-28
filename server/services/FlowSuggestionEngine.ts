@@ -1,8 +1,8 @@
 import { createHash } from "crypto";
 
-import { storage } from "../storage/databaseStorage";
 import { FlowStore } from "./FlowStore";
 import { FlowSuggestionStore } from "./FlowSuggestionStore";
+import { gatherUserRequestCandidates, type UserRequestCandidate } from "./UserRequestSignals";
 import type { FlowCategory, FlowDefinition } from "../../shared/flow-types";
 
 /**
@@ -22,8 +22,6 @@ const MIN_OCCURRENCES = 3;
 const RECENCY_WINDOW_MS = 45 * 24 * 60 * 60 * 1000; // 45 days
 const CLUSTER_SIMILARITY_THRESHOLD = 0.5;
 const EXISTING_FLOW_OVERLAP_THRESHOLD = 0.45;
-const MAX_CANDIDATES = 500;
-const MAX_CONVERSATIONS = 40;
 const MAX_SUGGESTIONS = 5;
 
 const STOPWORDS = new Set([
@@ -33,12 +31,6 @@ const STOPWORDS = new Set([
   "help", "zed", "zar", "me", "us", "we", "about", "into", "up", "out", "so", "how", "what",
   "when", "if", "then", "than", "as", "by", "from", "some", "any", "all",
 ]);
-
-interface Candidate {
-  text: string;
-  at: number;
-  source: "chat" | "run";
-}
 
 interface Cluster {
   tokens: Set<string>;
@@ -82,7 +74,7 @@ function jaccard(a: Set<string>, b: Set<string>): number {
   return union === 0 ? 0 : intersection / union;
 }
 
-function clusterCandidates(candidates: Candidate[]): Cluster[] {
+function clusterCandidates(candidates: UserRequestCandidate[]): Cluster[] {
   const clusters: Cluster[] = [];
   for (const candidate of candidates) {
     const tokens = tokenize(candidate.text);
@@ -133,54 +125,10 @@ function suggestionIdFor(tokens: Set<string>): string {
   return createHash("sha1").update(key).digest("hex").slice(0, 16);
 }
 
-async function gatherCandidates(userId: string): Promise<Candidate[]> {
-  const candidates: Candidate[] = [];
-
-  try {
-    const conversations = await storage.getConversationsByUser(userId);
-    const recent = [...conversations]
-      .sort((a, b) => {
-        const aTime = a.updatedAt ? new Date(a.updatedAt as unknown as string).getTime() : 0;
-        const bTime = b.updatedAt ? new Date(b.updatedAt as unknown as string).getTime() : 0;
-        return bTime - aTime;
-      })
-      .slice(0, MAX_CONVERSATIONS);
-
-    for (const conversation of recent) {
-      const messages = await storage.getMessagesByConversation(conversation.id).catch(() => []);
-      for (const message of messages) {
-        if (message.role !== "user" || !message.content?.trim()) continue;
-        const at = message.createdAt ? new Date(message.createdAt as unknown as string).getTime() : Date.now();
-        candidates.push({ text: message.content.trim(), at, source: "chat" });
-      }
-      if (candidates.length >= MAX_CANDIDATES) break;
-    }
-  } catch {
-    /* offline/fallback storage - proceed with whatever else we have */
-  }
-
-  try {
-    const runs = await FlowStore.listRuns({ userId, limit: 200 });
-    for (const run of runs) {
-      const brief = (run.context as Record<string, unknown> | undefined)?.userBrief;
-      if (typeof brief === "string" && brief.trim()) {
-        candidates.push({
-          text: brief.trim(),
-          at: new Date(run.startedAt).getTime(),
-          source: "run",
-        });
-      }
-    }
-  } catch {
-    /* flow store unavailable - proceed with whatever else we have */
-  }
-
-  return candidates.slice(0, MAX_CANDIDATES);
-}
 
 export async function computeFlowSuggestions(userId: string): Promise<FlowSuggestion[]> {
   const [candidates, dismissed, existingFlows] = await Promise.all([
-    gatherCandidates(userId),
+    gatherUserRequestCandidates(userId),
     FlowSuggestionStore.getDismissed(userId),
     FlowStore.listPublished().catch(() => [] as FlowDefinition[]),
   ]);

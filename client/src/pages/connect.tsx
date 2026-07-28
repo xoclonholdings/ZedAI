@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Inbox as InboxIcon, LineChart, Link2, Lock } from "lucide-react";
 
+import { apiRequest } from "@/lib/queryClient";
+import { IntegrationGapCard, type IntegrationGap } from "@/components/connect/IntegrationGapCard";
+import { SecretsVault } from "@/components/connect/SecretsVault";
 import type {
   IntegrationProvider,
   IntegrationProviderInfo,
@@ -74,6 +77,25 @@ export default function ConnectPage() {
     queryKey: ["/api/connect/categories"],
   });
 
+  const queryClient = useQueryClient();
+  const { data: gapsData } = useQuery<{ gaps: IntegrationGap[] }>({
+    queryKey: ["/api/connect/gaps"],
+  });
+  const gaps = gapsData?.gaps ?? [];
+  const [secretsPrefill, setSecretsPrefill] = useState<string | undefined>(undefined);
+
+  const dismissGap = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("POST", `/api/connect/gaps/${id}/dismiss`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/connect/gaps"] }),
+  });
+
+  function openSecretsForGap(gap: IntegrationGap) {
+    setSecretsPrefill(`${gap.label} access`);
+    document.getElementById("secrets-vault")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const connectedCount = integrations.filter((i) => i.status !== "disconnected").length;
 
   return (
@@ -122,6 +144,21 @@ export default function ConnectPage() {
           </div>
           <ChevronRight size={16} className="shrink-0 text-white/40" />
         </button>
+
+        {gaps.length > 0 && (
+          <div className="mb-6 space-y-2.5">
+            {gaps.map((gap) => (
+              <IntegrationGapCard
+                key={gap.id}
+                gap={gap}
+                isAdmin={Boolean(connectCategories?.isAdmin)}
+                onManage={() => navigate("/admin")}
+                onAddCredentials={() => openSecretsForGap(gap)}
+                onDismiss={() => dismissGap.mutate(gap.id)}
+              />
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <p className="text-[13px] text-white/40">Loading...</p>
@@ -195,6 +232,8 @@ export default function ConnectPage() {
             </div>
           </section>
         )}
+
+        <SecretsVault prefillLabel={secretsPrefill} />
     </div>
   );
 }

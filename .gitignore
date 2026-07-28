@@ -7,6 +7,8 @@ hub/flows/
 hub/logs/
 hub/shared-memory/browser-sessions/
 hub/shared-memory/flow-suggestions/
+hub/shared-memory/integration-gaps/
+hub/user-memory/*/secrets.json
 hub/shared-memory/curation/
 hub/shared-memory/foundation-reparse/
 hub/shared-memory/execution/
