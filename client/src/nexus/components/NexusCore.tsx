@@ -113,6 +113,24 @@ const galaxyFragment = /* glsl */ `
   }
 `;
 
+const shootingStarVertex = /* glsl */ `
+  attribute float aEnd;
+  varying float vEnd;
+  void main() {
+    vEnd = aEnd;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const shootingStarFragment = /* glsl */ `
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying float vEnd;
+  void main() {
+    gl_FragColor = vec4(uColor, vEnd * uOpacity);
+  }
+`;
+
 const coreVertex = /* glsl */ `
   varying vec3 vNormal;
   varying vec3 vView;
@@ -369,6 +387,37 @@ function buildGalaxyGeometry(opts: GalaxyOptions): THREE.BufferGeometry {
   return geo;
 }
 
+/** A flattened ring band around the Y axis - the meteor belt, sitting between the domains' orbits and the far starfield. */
+function buildBeltGeometry(count: number, radius: number, thickness: number, palette: string[]): THREE.BufferGeometry {
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+  const scales = new Float32Array(count);
+  const rands = new Float32Array(count);
+  const cols = palette.map((p) => new THREE.Color(p));
+
+  for (let i = 0; i < count; i++) {
+    const i3 = i * 3;
+    const angle = Math.random() * Math.PI * 2;
+    const r = radius + (Math.random() - 0.5) * thickness;
+    positions[i3] = Math.cos(angle) * r;
+    positions[i3 + 1] = (Math.random() - 0.5) * thickness * 0.22;
+    positions[i3 + 2] = Math.sin(angle) * r;
+    const c = cols[Math.floor(Math.random() * cols.length)];
+    colors[i3] = c.r;
+    colors[i3 + 1] = c.g;
+    colors[i3 + 2] = c.b;
+    scales[i] = 0.25 + Math.random() * 0.55;
+    rands[i] = Math.random();
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("aColor", new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
+  geo.setAttribute("aRand", new THREE.BufferAttribute(rands, 1));
+  return geo;
+}
+
 function buildScatterGeometry(
   count: number,
   minR: number,
@@ -551,6 +600,221 @@ function GalaxyField({ count, focused }: { count: number; focused?: boolean }) {
       <points geometry={geometry} material={material} />
       <points geometry={dustGeometry} material={dustMaterial} />
     </group>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Space character: meteor belt, shooting stars, satellites             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A warm rocky ring just beyond the domains' orbits - close and bright
+ * enough to read as a distinct belt, not lost in the far starfield.
+ * Drifts independently of the drag rig.
+ *
+ * Point size is much bigger than the galaxy dust's (22 vs. ~9) because this
+ * ring is far sparser and sits alone against the nebula backdrop rather
+ * than in a dense cluster - at the galaxy's point size it was there (a
+ * console dump of its geometry confirmed the points), just too small and
+ * faint next to everything else to actually notice.
+ */
+function MeteorBelt() {
+  const groupRef = useRef<THREE.Group>(null);
+  const geometry = useMemo(
+    () => buildBeltGeometry(650, 7.0, 0.8, ["#ffb066", "#ff8c3d", "#ffcf9e", "#f5a05a"]),
+    [],
+  );
+  const material = useMemo(() => makePointsMaterial(22), []);
+
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      material.dispose();
+    },
+    [geometry, material],
+  );
+
+  useFrame(({ clock }, delta) => {
+    material.uniforms.uTime.value = clock.elapsedTime;
+    if (groupRef.current) groupRef.current.rotation.y += delta * 0.012;
+  });
+
+  return (
+    <group ref={groupRef} rotation={[0.16, 0, 0.06]}>
+      <points geometry={geometry} material={material} />
+    </group>
+  );
+}
+
+/**
+ * Picks a short diagonal chord through the outer sky for one streak's
+ * flight path. Z is forced negative (away from the camera, which settles
+ * 9.6-13.4 units out depending on aspect/zoom) rather than sampled over a
+ * full circle, so a streak never has to travel through the narrow gap
+ * right in front of the lens.
+ */
+function pickShootingStarPath(): { start: THREE.Vector3; end: THREE.Vector3 } {
+  const theta = Math.random() * Math.PI * 2;
+  const height = -3 + Math.random() * 10;
+  const radius = 9 + Math.random() * 7;
+  const start = new THREE.Vector3(Math.cos(theta) * radius, height, -Math.abs(Math.sin(theta)) * radius - 3);
+  const dir = new THREE.Vector3(Math.random() - 0.5, -(0.35 + Math.random() * 0.5), (Math.random() - 0.5) * 0.5).normalize();
+  const length = 5 + Math.random() * 4;
+  const end = start.clone().addScaledVector(dir, length);
+  return { start, end };
+}
+
+/**
+ * One shooting star: waits offscreen for a random interval, then streaks
+ * along a short chord and fades, forever. A real 3D line segment (not a
+ * camera-billboarded sprite) so it foreshortens correctly from any angle
+ * without needing to track the camera's screen-space orientation.
+ */
+function ShootingStar({ initialDelay }: { initialDelay: number }) {
+  const geometry = useMemo(() => {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(6), 3));
+    geo.setAttribute("aEnd", new THREE.BufferAttribute(new Float32Array([0, 1]), 1));
+    return geo;
+  }, []);
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: shootingStarVertex,
+        fragmentShader: shootingStarFragment,
+        uniforms: { uColor: { value: new THREE.Color("#e8f7ff") }, uOpacity: { value: 0 } },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        toneMapped: false,
+      }),
+    [],
+  );
+  const state = useRef({ delay: initialDelay, t: -1, duration: 0.8, path: pickShootingStarPath() });
+  // THREE.Line, not the JSX <line> intrinsic - that resolves to the DOM/SVG
+  // element in this project's JSX namespace, not react-three-fiber's.
+  const lineObject = useMemo(() => new THREE.Line(geometry, material), [geometry, material]);
+
+  useEffect(
+    () => () => {
+      geometry.dispose();
+      material.dispose();
+    },
+    [geometry, material],
+  );
+
+  useFrame((_, delta) => {
+    const s = state.current;
+    if (s.t < 0) {
+      s.delay -= delta;
+      if (s.delay > 0) return;
+      s.path = pickShootingStarPath();
+      s.duration = 0.55 + Math.random() * 0.5;
+      s.t = 0;
+    }
+
+    s.t += delta / s.duration;
+    if (s.t >= 1) {
+      s.t = -1;
+      s.delay = 3 + Math.random() * 8;
+      material.uniforms.uOpacity.value = 0;
+      return;
+    }
+
+    const trailFraction = 0.35;
+    const head = s.path.start.clone().lerp(s.path.end, s.t);
+    const tail = s.path.start.clone().lerp(s.path.end, Math.max(0, s.t - trailFraction));
+    const pos = geometry.attributes.position as THREE.BufferAttribute;
+    pos.setXYZ(0, tail.x, tail.y, tail.z);
+    pos.setXYZ(1, head.x, head.y, head.z);
+    pos.needsUpdate = true;
+
+    // Fade in over the first ~15% of flight, out over the last ~25%.
+    const fade = Math.min(1, s.t * 7) * Math.min(1, (1 - s.t) * 4);
+    material.uniforms.uOpacity.value = fade;
+  });
+
+  return <primitive object={lineObject} />;
+}
+
+function ShootingStars({ count = 3 }: { count?: number }) {
+  const delays = useMemo(() => Array.from({ length: count }, (_, i) => i * 2.6 + Math.random() * 3), [count]);
+  return (
+    <>
+      {delays.map((delay, i) => (
+        <ShootingStar key={i} initialDelay={delay} />
+      ))}
+    </>
+  );
+}
+
+interface SatelliteConfig {
+  radius: number;
+  speed: number;
+  phase: number;
+  inclination: number;
+  y: number;
+}
+
+/** A tiny artificial drifter - body, two panels, a blinking light - on its own slow tilted orbit, distinct from the domain planets. */
+function Satellite({ radius, speed, phase, inclination, y }: SatelliteConfig) {
+  const groupRef = useRef<THREE.Group>(null);
+  const blinkRef = useRef<THREE.Sprite>(null);
+  const glowTexture = useMemo(() => makeGlowTexture("rgba(200,255,255,0.95)", "rgba(120,200,255,0)"), []);
+
+  useEffect(() => () => glowTexture.dispose(), [glowTexture]);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime * speed + phase;
+    const baseX = Math.cos(t) * radius;
+    const baseZ = Math.sin(t) * radius;
+    if (groupRef.current) {
+      groupRef.current.position.set(baseX, y + baseZ * Math.sin(inclination) * 0.4, baseZ * Math.cos(inclination));
+      groupRef.current.rotation.y = -t;
+    }
+    if (blinkRef.current) {
+      const mat = blinkRef.current.material as THREE.SpriteMaterial;
+      mat.opacity = 0.3 + 0.7 * Math.max(0, Math.sin(clock.elapsedTime * 3 + phase * 5));
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      <mesh>
+        <boxGeometry args={[0.12, 0.06, 0.06]} />
+        <meshBasicMaterial color="#cbd5e1" toneMapped={false} />
+      </mesh>
+      <mesh position={[0.16, 0, 0]}>
+        <planeGeometry args={[0.2, 0.08]} />
+        <meshBasicMaterial color="#3b82f6" toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[-0.16, 0, 0]}>
+        <planeGeometry args={[0.2, 0.08]} />
+        <meshBasicMaterial color="#3b82f6" toneMapped={false} side={THREE.DoubleSide} />
+      </mesh>
+      <sprite ref={blinkRef} scale={[0.16, 0.16, 1]} position={[0, 0.06, 0.04]}>
+        <spriteMaterial map={glowTexture} transparent depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      </sprite>
+    </group>
+  );
+}
+
+// Radii stay comfortably under the camera's settled distance (9.6-13.4,
+// depending on aspect/zoom - see RotationRig) so a satellite's orbit never
+// carries it through the gap right in front of the lens.
+const SATELLITE_CONFIGS: SatelliteConfig[] = [
+  { radius: 5.4, speed: 0.09, phase: 0, inclination: 0.35, y: 2.1 },
+  { radius: 6.6, speed: -0.06, phase: 2.1, inclination: -0.22, y: -1.6 },
+  { radius: 4.6, speed: 0.12, phase: 4.4, inclination: 0.55, y: 3.4 },
+];
+
+function Satellites() {
+  return (
+    <>
+      {SATELLITE_CONFIGS.map((config, i) => (
+        <Satellite key={i} {...config} />
+      ))}
+    </>
   );
 }
 
@@ -1344,6 +1608,9 @@ export function NexusCoreScene({
   return (
     <>
       <Universe starCount={Math.max(600, Math.floor(particleCount * 0.05))} />
+      <MeteorBelt />
+      <ShootingStars />
+      <Satellites />
       <WarpField active={warp} />
       <AtmosphereVeil color={atmosphere} />
       <RotationRig
