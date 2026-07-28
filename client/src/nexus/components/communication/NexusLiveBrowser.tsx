@@ -3,37 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Globe, Loader2, Send, Sparkles, User } from "lucide-react";
 
 import { apiRequest } from "@/lib/queryClient";
+import { useConsoleBrowser } from "@/console/ConsoleBrowserContext";
 
 interface BrowserVisit {
   id: string;
   url: string;
   title?: string;
-  text?: string;
-  sanitizedHtml?: string;
-  status?: number;
   error?: string;
   source: "user" | "zar";
-  visitedAt: string;
-}
-
-/**
- * Wraps the server-sanitized fragment in a minimal dark-themed document for
- * the reader iframe. The iframe itself carries the real security boundary
- * (sandboxed, no scripts) - this is just presentation.
- */
-function buildReaderDocument(sanitizedHtml: string): string {
-  return `<!doctype html><html><head><meta charset="utf-8"><style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 12px; font: 13px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background: #0a0718; color: rgba(255,255,255,0.82); }
-    a { color: #67e8f9; }
-    img { max-width: 100%; height: auto; border-radius: 8px; }
-    h1, h2, h3, h4, h5, h6 { color: #fff; line-height: 1.3; }
-    pre { background: rgba(255,255,255,0.06); border-radius: 6px; padding: 8px; overflow-x: auto; }
-    code { background: rgba(255,255,255,0.06); border-radius: 4px; padding: 0 3px; }
-    table { border-collapse: collapse; width: 100%; }
-    td, th { border: 1px solid rgba(255,255,255,0.12); padding: 4px 6px; }
-  </style></head><body>${sanitizedHtml}</body></html>`;
 }
 
 interface BrowserSession {
@@ -50,16 +27,19 @@ function normalizeInputUrl(value: string): string {
 }
 
 /**
- * The console's live browser. Real fetches, not a mock: "Go" (or picking a
- * recent visit) calls POST /api/browser/navigate, which safely fetches the
- * page server-side and records it. The session is polled the same way the
- * dock already polls conversations, so a page ZAR visits on its own (via
- * IntelligenceAgent's research lookups) shows up here too, live, without the
- * user having to do anything.
+ * The dock's Browse slot - just the address bar and recent visits. The
+ * actual fetched page renders full-size in the console's main content
+ * region (ConsoleBrowserFullPage), the same place every other workspace
+ * renders, not cramped inside the dock. "Go" (or picking a recent visit)
+ * calls POST /api/browser/navigate, which safely fetches the page
+ * server-side and records it; the session is polled the same way the dock
+ * already polls conversations, so a page ZAR visits on its own (via
+ * IntelligenceAgent's research lookups) shows up here too, live.
  */
 export function NexusLiveBrowser() {
   const [input, setInput] = useState("");
   const queryClient = useQueryClient();
+  const { openFullPage, setLoading } = useConsoleBrowser();
 
   const { data: session } = useQuery<BrowserSession>({
     queryKey: SESSION_QUERY_KEY,
@@ -72,6 +52,7 @@ export function NexusLiveBrowser() {
       return res.json();
     },
     onSettled: () => {
+      setLoading(false);
       void queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
     },
   });
@@ -79,6 +60,8 @@ export function NexusLiveBrowser() {
   function go(rawUrl?: string) {
     const url = normalizeInputUrl(rawUrl ?? input);
     if (!url || navigate.isPending) return;
+    setLoading(true);
+    openFullPage();
     navigate.mutate(url);
   }
 
@@ -113,56 +96,26 @@ export function NexusLiveBrowser() {
         </button>
       </div>
 
-      {current ? (
-        <div className="overflow-hidden rounded-lg border border-white/10 bg-black/30">
-          <div className="flex items-center gap-1.5 px-2.5 pt-2.5 text-[10px] uppercase tracking-[0.14em] text-white/40">
-            {current.source === "zar" ? (
-              <Sparkles size={11} className="shrink-0 text-violet-300" aria-hidden="true" />
-            ) : (
-              <User size={11} className="shrink-0 text-cyan-300" aria-hidden="true" />
-            )}
-            {current.source === "zar" ? "ZAR visited" : "You visited"}
-          </div>
+      {current && (
+        <button
+          type="button"
+          onClick={openFullPage}
+          className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-left text-[12px] text-white/70 hover:bg-white/5"
+        >
           {current.error ? (
-            <div className="flex items-start gap-1.5 p-2.5 pt-1 text-[12.5px] text-red-300">
-              <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden="true" />
-              {current.error}
-            </div>
+            <AlertTriangle size={12} className="shrink-0 text-red-300" aria-hidden="true" />
+          ) : current.source === "zar" ? (
+            <Sparkles size={12} className="shrink-0 text-violet-300" aria-hidden="true" />
           ) : (
-            <>
-              <div className="px-2.5 pb-2 pt-1">
-                <a
-                  href={current.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-[13px] font-medium text-cyan-100 hover:text-cyan-50"
-                >
-                  <span className="truncate">{current.title || current.url}</span>
-                  <ExternalLink size={11} className="shrink-0 text-white/40" aria-hidden="true" />
-                </a>
-                <div className="mt-0.5 truncate text-[11px] text-white/40">{current.url}</div>
-              </div>
-              {current.sanitizedHtml ? (
-                <iframe
-                  title={current.title || current.url}
-                  srcDoc={buildReaderDocument(current.sanitizedHtml)}
-                  sandbox="allow-popups"
-                  referrerPolicy="no-referrer"
-                  className="h-[220px] w-full border-0 bg-[#0a0718]"
-                />
-              ) : (
-                current.text && (
-                  <p className="max-h-[220px] overflow-y-auto whitespace-pre-line px-2.5 pb-2.5 text-[12px] leading-relaxed text-white/70">
-                    {current.text.slice(0, 600)}
-                    {current.text.length > 600 ? "…" : ""}
-                  </p>
-                )
-              )}
-            </>
+            <User size={12} className="shrink-0 text-cyan-300" aria-hidden="true" />
           )}
-        </div>
-      ) : (
-        <p className="rounded-lg border border-white/10 bg-black/30 p-3 text-center text-[12px] text-white/40">
+          <span className="truncate">{current.error ? "Failed to load" : current.title || current.url}</span>
+          <ExternalLink size={11} className="ml-auto shrink-0 text-white/30" aria-hidden="true" />
+        </button>
+      )}
+
+      {!current && (
+        <p className="rounded-lg border border-white/10 bg-black/30 p-2.5 text-center text-[12px] text-white/40">
           Nothing browsed yet - type a URL above, or ask ZAR to look something up.
         </p>
       )}

@@ -21,10 +21,12 @@ import {
 
 /**
  * What's showing in the console's one content slot, where the mic sits by
- * default - Talk/Image/Doc/Upload/History/Browse all just swap this slot's
- * content. Text opens the real chat page instead of a slot (interim, per the
- * redesign note), so it isn't a slot mode here. Browse is a coded placeholder
- * only - there's no live-browsing backend endpoint yet. The dock around the
+ * default - Talk/Image/Doc/Upload/History all swap this slot's content.
+ * Browse swaps in just its compact address bar here (NexusLiveBrowser); the
+ * fetched page itself renders full-size in the console's main content
+ * region instead (ConsoleBrowserFullPage), the same place every workspace
+ * renders. Text opens the real chat page instead of a slot (interim, per
+ * the redesign note), so it isn't a slot mode here. The dock around the
  * slot (status row, mode row, this slot, footer row) never changes shape or
  * grows - only the slot's content changes.
  */

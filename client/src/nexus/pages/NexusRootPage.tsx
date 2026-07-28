@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 
 import { ConsoleShell } from "@/console/ConsoleShell";
+import { ConsoleLogoutButton } from "@/console/ConsoleLogoutButton";
 import { ZAR_NEXUS_CONSOLE } from "@/console/consoleIdentity";
 import NexusCore from "../components/NexusCore";
 import { NexusDeveloperInspector } from "../components/NexusDeveloperInspector";
@@ -219,36 +220,33 @@ export default function NexusRootPage() {
       onDockPowerChange={setDockPowered}
       headerLeft={
         <div className="min-w-0">
-          <div className="leading-none">
+          <div className="flex items-center gap-2 leading-none">
             <span className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
               ZCOS
             </span>
+            <ConsoleLogoutButton />
           </div>
           <div className="-mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.22em] text-white/40">
             Zebulon Commander
           </div>
-          <div className="mt-2">
-            <NexusLiveGreeting visible={stage === "home"} />
-          </div>
+          {stage === "home" && ambientDomain ? (
+            <div
+              className="mt-2 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 backdrop-blur"
+              style={{ animation: "nexus-settle 300ms ease both" }}
+            >
+              <span
+                className="block h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ background: ambientDomain.color, boxShadow: `0 0 8px 2px ${ambientDomain.color}88` }}
+                aria-hidden="true"
+              />
+              <span className="text-[10px] font-medium tracking-[0.2em] text-white/70">
+                {ambientDomain.label}
+              </span>
+            </div>
+          ) : null}
         </div>
       }
-      headerRightExtra={
-        stage === "home" && ambientDomain ? (
-          <div
-            className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 backdrop-blur"
-            style={{ animation: "nexus-settle 300ms ease both" }}
-          >
-            <span
-              className="block h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ background: ambientDomain.color, boxShadow: `0 0 8px 2px ${ambientDomain.color}88` }}
-              aria-hidden="true"
-            />
-            <span className="text-[10px] font-medium tracking-[0.2em] text-white/70">
-              {ambientDomain.label}
-            </span>
-          </div>
-        ) : undefined
-      }
+      headerRightExtra={<NexusLiveGreeting visible={stage === "home"} />}
     >
       {/* Celestial system - fills the entire viewport. This IS the application screen. */}
       <div className="absolute inset-0" data-nexus-region="scene">
