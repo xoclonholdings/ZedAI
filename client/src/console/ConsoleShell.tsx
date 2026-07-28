@@ -86,7 +86,7 @@ function ConsoleShellBody({
         data-console-region="dock"
         data-nexus-region="communication"
       >
-        <div className="flex w-full max-w-[760px] flex-col items-center gap-2">
+        <div className="flex w-full max-w-[760px] flex-col items-end gap-2">
           <ConsoleActivator active={dockPowered} onToggle={() => onDockPowerChange(!dockPowered)} accent={identity.accent} />
           <div className="w-full">
             <ConsoleDock powered={dockPowered} onPowerChange={onDockPowerChange} accent={identity.accent} />
