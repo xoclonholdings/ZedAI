@@ -41,16 +41,21 @@ export async function hydrateAdminSettingsFromDb(): Promise<void> {
 
 /**
  * Reads admin-settings.json, runs it through mergeSettings to apply
- * defaults and forward-migrations, then writes the canonical form
- * back so disk and memory stay in sync. Falls back to defaults if
- * the file is missing or unparseable.
+ * defaults and forward-migrations, then writes the canonical form back
+ * only if that actually changed something (a fresh migration, a missing
+ * default) — this is called on every login and every authenticated
+ * request that touches settings, so re-writing an unchanged multi-KB
+ * file every time was pure wasted disk I/O in the common case. Falls
+ * back to defaults if the file is missing or unparseable.
  */
 export async function loadAdminSettings(): Promise<AdminSettings> {
   assertProductionEnvConfiguration();
   try {
     const raw = await fs.readFile(SETTINGS_PATH, "utf-8");
     const settings = mergeSettings(JSON.parse(raw));
-    await writeSettings(settings);
+    if (JSON.stringify(settings) !== JSON.stringify(JSON.parse(raw))) {
+      await writeSettings(settings);
+    }
     return settings;
   } catch {
     const settings = mergeSettings(undefined);
