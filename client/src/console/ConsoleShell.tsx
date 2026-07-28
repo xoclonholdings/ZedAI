@@ -7,11 +7,13 @@ import { ConsoleDock } from "./ConsoleDock";
 /**
  * The ZEBULON Console Framework shell - the one composition every console
  * screen shares, regardless of galaxy: a full-viewport backdrop/content
- * layer (`children`), a floating header with the Console Activator always
- * in the same top-right spot, and the persistent ConsoleDock pinned to the
- * bottom. Callers supply the backdrop/main content and the left-hand header
- * content (home's ZAR wordmark, or a workspace's back-to-Nexus control) -
- * this component only owns the parts that must stay identical everywhere.
+ * layer (`children`), a floating header, and the Console Activator sitting
+ * directly above the persistent ConsoleDock at the bottom - the activator
+ * powers the dock, so it lives right next to what it controls rather than
+ * off in the header. Callers supply the backdrop/main content and the
+ * left-hand header content (home's wordmark, or a workspace's back-to-Nexus
+ * control) - this component only owns the parts that must stay identical
+ * everywhere.
  */
 export function ConsoleShell({
   identity,
@@ -34,10 +36,7 @@ export function ConsoleShell({
 
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-safe-sm sm:px-6 sm:pt-5">
         <div className="pointer-events-auto min-w-0">{headerLeft}</div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <ConsoleActivator active={dockPowered} onToggle={() => onDockPowerChange(!dockPowered)} accent={identity.accent} />
-          {headerRightExtra}
-        </div>
+        <div className="pointer-events-auto flex shrink-0 flex-col items-end gap-2">{headerRightExtra}</div>
       </header>
 
       <div
@@ -45,8 +44,11 @@ export function ConsoleShell({
         data-console-region="dock"
         data-nexus-region="communication"
       >
-        <div className="w-full max-w-[760px]">
-          <ConsoleDock powered={dockPowered} onPowerChange={onDockPowerChange} accent={identity.accent} />
+        <div className="flex w-full max-w-[760px] flex-col items-center gap-2">
+          <ConsoleActivator active={dockPowered} onToggle={() => onDockPowerChange(!dockPowered)} accent={identity.accent} />
+          <div className="w-full">
+            <ConsoleDock powered={dockPowered} onPowerChange={onDockPowerChange} accent={identity.accent} />
+          </div>
         </div>
       </div>
     </div>

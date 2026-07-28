@@ -109,7 +109,7 @@ export function NexusConversationSurface({
         borderColor: `${accentColor}40`,
         clipPath: "polygon(0 22px, 7% 22px, 10% 0, 90% 0, 93% 22px, 100% 22px, 100% 100%, 0 100%)",
       }}
-      aria-label="Persistent ZAR communication"
+      aria-label="Persistent NEXUS communication"
     >
       {/* edge accent lights - the console's own identity, in Emergent's visual language */}
       <div
@@ -130,7 +130,7 @@ export function NexusConversationSurface({
           aria-hidden="true"
         />
         <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/55">
-          ZAR
+          NEXUS
         </span>
         <span className="text-[11px] text-emerald-400">&middot; Online</span>
         {status !== "Ready" && (

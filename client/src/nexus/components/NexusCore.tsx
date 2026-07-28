@@ -198,21 +198,57 @@ function makeGlowTexture(inner: string, mid: string): THREE.CanvasTexture {
  * and a three.js sprite is always camera-facing on its own - no Billboard
  * wrapper needed either.
  */
-function makeLabelTexture(text: string, color: string): THREE.CanvasTexture {
+function makeLabelTexture(text: string): THREE.CanvasTexture {
   const width = 512;
   const height = 128;
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
-  ctx.font = "700 52px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.font = "800 56px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.shadowColor = "#1b0b33";
-  ctx.shadowBlur = 14;
-  ctx.fillStyle = color;
-  const spaced = text.split("").join(" ");
-  ctx.fillText(spaced, width / 2, height / 2);
+  ctx.lineJoin = "round";
+  const spaced = text.split("").join("\u2009");
+  const cx = width / 2;
+  const cy = height / 2;
+
+  // Recessed shadow beneath the glyphs, offset down-right for depth.
+  ctx.shadowColor = "rgba(8,3,18,0.9)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 2;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = "rgba(8,3,18,0.85)";
+  ctx.fillText(spaced, cx, cy + 2);
+
+  // Dark outline so the mark stays legible against any energy color.
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(8,3,18,0.75)";
+  ctx.strokeText(spaced, cx, cy);
+
+  // Brand gradient fill (matches the official ZAR wordmark).
+  const gradient = ctx.createLinearGradient(width * 0.12, 0, width * 0.88, 0);
+  gradient.addColorStop(0, "#a78bfa");
+  gradient.addColorStop(0.55, "#e879f9");
+  gradient.addColorStop(1, "#67e8f9");
+  ctx.shadowColor = "rgba(20,8,40,0.55)";
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 1;
+  ctx.fillStyle = gradient;
+  ctx.fillText(spaced, cx, cy);
+
+  // Thin bright emboss highlight, offset up-left.
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgba(255,255,255,0.4)";
+  ctx.strokeText(spaced, cx - 1, cy - 1);
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
@@ -738,7 +774,7 @@ function CoreOrb({
     () => makeGlowTexture("rgba(255,180,250,0.95)", "rgba(168,85,247,0.45)"),
     [],
   );
-  const labelTexture = useMemo(() => makeLabelTexture(label, "#ffffff"), [label]);
+  const labelTexture = useMemo(() => makeLabelTexture(label), [label]);
   const groupRef = useRef<THREE.Group>(null);
   const haloRef = useRef<THREE.Sprite>(null);
   const labelMatRef = useRef<THREE.SpriteMaterial>(null);
@@ -1200,7 +1236,7 @@ export function NexusCoreScene({
   domains,
   interactive = true,
   particleCount = 42000,
-  label = "NEXUS",
+  label = "ZAR",
   tilt = 0.44,
   zoom = 1,
   warp = false,

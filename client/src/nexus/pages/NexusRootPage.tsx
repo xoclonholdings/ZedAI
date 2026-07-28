@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 
-import { useAuth } from "@/components/auth/UseAuth";
 import { ConsoleShell } from "@/console/ConsoleShell";
 import { ZAR_NEXUS_CONSOLE } from "@/console/consoleIdentity";
 import NexusCore from "../components/NexusCore";
 import { NexusDeveloperInspector } from "../components/NexusDeveloperInspector";
 import { NexusHubOverlay } from "../components/NexusHubOverlay";
+import { NexusLiveGreeting } from "../components/NexusLiveGreeting";
 import type { NexusDomain } from "../components/NexusCore";
 import { isNexusRootNodeId, routeForNexusNode } from "../graph/rootConstellation";
 import { nexusDomainsFromRootNodes } from "../scene/nexusDomainAdapter";
@@ -30,12 +30,9 @@ const WARP_DURATION_MS = 380;
 export default function NexusRootPage() {
   const params = useParams<{ nodeId?: string }>();
   const [location, navigate] = useLocation();
-  const { user } = useAuth();
   const { focusNode, clearFocus, snapshot, viewportSnapshot, capabilityRegistry } = useNexus();
   const routeNodeId = isNexusRootNodeId(params.nodeId) ? params.nodeId : null;
   const hasUnknownRouteNode = Boolean(params.nodeId && !routeNodeId);
-  const displayName = user?.personalization?.displayName ?? user?.displayName ?? user?.firstName ?? user?.username ?? "there";
-  const greeting = useMemo(() => timeOfDayGreeting(new Date().getHours()), []);
   const showInspector = useMemo(() => shouldShowNexusDeveloperInspector({
     isDevelopment: Boolean((import.meta as { env?: { DEV?: boolean } }).env?.DEV),
     queryString: typeof window === "undefined" ? "" : window.location.search,
@@ -222,21 +219,17 @@ export default function NexusRootPage() {
       onDockPowerChange={setDockPowered}
       headerLeft={
         <div className="min-w-0">
-          <div className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
-            ZAR
+          <div className="leading-none">
+            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
+              ZCOS
+            </span>
           </div>
-          <h1
-            className="mt-1 truncate text-base font-medium text-white transition-opacity duration-300 sm:text-lg"
-            style={{ opacity: stage === "home" ? 1 : 0 }}
-          >
-            {greeting}, {displayName}
-          </h1>
-          <p
-            className="truncate text-[13px] text-white/45 transition-opacity duration-300"
-            style={{ opacity: stage === "home" ? 1 : 0 }}
-          >
-            How can I assist you today?
-          </p>
+          <div className="-mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.22em] text-white/40">
+            Zebulon Commander
+          </div>
+          <div className="mt-2">
+            <NexusLiveGreeting visible={stage === "home"} />
+          </div>
         </div>
       }
       headerRightExtra={
@@ -303,11 +296,4 @@ export default function NexusRootPage() {
       `}</style>
     </ConsoleShell>
   );
-}
-
-function timeOfDayGreeting(hour: number): string {
-  if (hour < 5) return "Good night";
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
 }

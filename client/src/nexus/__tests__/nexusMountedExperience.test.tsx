@@ -35,14 +35,15 @@ function renderNexusCommunication() {
   );
 }
 
-test("mounted Nexus communication surface is ZAR-facing, defaults to the mic slot, and omits the legacy shell", () => {
+test("mounted Nexus communication surface is NEXUS-facing, defaults to the mic slot, and omits the legacy shell", () => {
   // The dock's one content slot defaults to the mic (Talk) - Text opens the
   // real chat page instead of an inline composer, and there's no separate
   // Memory Context layer (Memory is its own Nexus planet).
   const html = renderNexusCommunication();
 
-  assert.match(html, /Persistent ZAR communication/);
-  assert.match(html, /Online/, "the official ZAR . Online status reads exactly as approved");
+  assert.match(html, /Persistent NEXUS communication/);
+  assert.match(html, /NEXUS/, "the dock carries the NEXUS console label");
+  assert.match(html, /Online/, "the connectivity indicator's Online status reads exactly as approved");
   assert.match(html, /data-nexus-voice=/, "the mic slot is the default content");
   assert.match(html, /Voice input unavailable|Talk to ZAR/);
   assert.doesNotMatch(html, /Ask ZAR/, "no composer/empty-state text shows in the dock");
