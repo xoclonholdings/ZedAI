@@ -56,19 +56,34 @@ function useNexusLiveMoment() {
 }
 
 /**
- * The console's live time + date - confined to a narrow column so it never
- * stretches toward screen-center; meant to sit on the same row as the
- * brand wordmark on the header's other side.
+ * The console's live time - sized to match the ZCOS wordmark since it sits
+ * on that same row, confined to a narrow column so it never stretches
+ * toward screen-center.
  */
 export function NexusLiveClock({ visible }: { readonly visible: boolean }) {
   const { now } = useNexusLiveMoment();
   return (
     <div
-      className="flex max-w-[54vw] items-baseline justify-end gap-1.5 transition-opacity duration-300 sm:max-w-[240px]"
+      className="max-w-[54vw] text-right text-2xl font-extrabold tracking-tight text-white transition-opacity duration-300 sm:max-w-[240px] sm:text-3xl"
       style={{ opacity: visible ? 1 : 0 }}
     >
-      <span className="shrink-0 text-[12px] font-semibold text-white sm:text-[13px]">{formatTime(now)}</span>
-      <span className="truncate text-[10px] text-white/50">{formatDateLine(now)}</span>
+      {formatTime(now)}
+    </div>
+  );
+}
+
+/**
+ * The live date - its own line beneath the time, meant to sit on the same
+ * row as "Zebulon Commander" beneath ZCOS.
+ */
+export function NexusLiveDate({ visible }: { readonly visible: boolean }) {
+  const { now } = useNexusLiveMoment();
+  return (
+    <div
+      className="max-w-[54vw] truncate text-right text-[10px] text-white/50 transition-opacity duration-300 sm:max-w-[240px]"
+      style={{ opacity: visible ? 1 : 0 }}
+    >
+      {formatDateLine(now)}
     </div>
   );
 }
