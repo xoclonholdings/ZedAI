@@ -71,7 +71,7 @@ export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
     <StageShell
       eyebrow="Learn"
       title="Teach ZAR, section by section"
-      description="Each section is a required area of ZAR's trading framework. Feed education into a section, then test ZAR on that section specifically. ZAR structures what you give it and is graded only on what it actually learned."
+      description="Each section is a required area of ZAR's trading framework. Add educational material to a section, then test ZAR on it specifically. ZAR organizes what you provide and is graded only on what it actually learned."
       onRefresh={() => void refresh()}
       refreshing={loading}
     >
@@ -87,7 +87,7 @@ export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
           >
             {areas.map((area) => (
               <option key={area.id} value={area.id} className="bg-neutral-900">
-                {area.title} {area.covered ? `— ${area.entryCount} fed` : "— not fed yet"}
+                {area.title} {area.covered ? `— ${area.entryCount} added` : "— not started"}
               </option>
             ))}
           </select>
@@ -147,7 +147,7 @@ function SectionDetail({
       setFiles([]);
       if (fileRef.current) fileRef.current.value = "";
       setNotice(
-        `ZAR ingested ${body?.totals?.sources || 0} source(s) into ${area.title}. Test ZAR when ready.`,
+        `ZAR added ${body?.totals?.sources || 0} source(s) to ${area.title}. Test ZAR when ready.`,
       );
       onFed?.();
       onChanged();
@@ -186,11 +186,11 @@ function SectionDetail({
             <span className="text-[13.5px] font-semibold text-white">{area.title}</span>
             {area.covered ? (
               <span className="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 bg-cyan-400/15 text-cyan-200">
-                <CheckCircle2 size={11} /> {area.entryCount} fed
+                <CheckCircle2 size={11} /> {area.entryCount} added
               </span>
             ) : (
               <span className="text-[10.5px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 bg-white/10 text-white/40">
-                Not fed yet
+                Not started
               </span>
             )}
             {assessment && (
@@ -252,7 +252,7 @@ function SectionDetail({
             className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[12.5px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
           >
             <Upload size={13} />
-            {uploading ? "Feeding ZAR…" : "Feed this section"}
+            {uploading ? "Adding to ZAR…" : "Add to this section"}
           </button>
         </div>
 

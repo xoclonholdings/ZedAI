@@ -132,8 +132,8 @@ export default function EvaluationStage() {
 
           {!report.providerConnected && (
             <p className="text-[11px] text-white/40 leading-snug">
-              No evaluation provider bridge is live yet, so this runs on ZAR's own trade engine.
-              Connect a supported evaluation bridge when it is available to run it under a real provider.
+              No evaluation provider is connected yet, so this runs on ZAR's own system.
+              Connect a supported evaluation provider when it's available to run it under a real broker.
             </p>
           )}
         </div>

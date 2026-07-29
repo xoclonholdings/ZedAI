@@ -112,7 +112,7 @@ export default function LiveStage() {
           </button>
 
           <p className="text-[11px] text-white/40 leading-snug">
-            Live order routing requires a broker execution bridge such as Webull. Until it's enabled,
+            Live order routing requires a connected broker such as Webull. Until it's enabled,
             ZAR stays in a governed, ready state and does not place real orders.
           </p>
         </div>

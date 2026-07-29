@@ -91,7 +91,7 @@ export function registerTradingTrainingRoutes(app: Express): void {
 
         if (inputs.length === 0) {
           return res.status(400).json({
-            error: "Nothing to ingest. Attach a file or send { source, title, text }.",
+            error: "Nothing to add. Attach a file or send { source, title, text }.",
           });
         }
 

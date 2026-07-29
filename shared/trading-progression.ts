@@ -3,7 +3,7 @@
  *
  * This is NOT a course the user climbs. It is the path along which
  * ZED becomes a capable trading intelligence. The user's job is to
- * feed ZAR material and make decisions; ZAR learns, structures,
+ * provide ZAR with material and make decisions; ZAR learns, structures,
  * analyzes, and governs. Each stage describes what ZAR can do once
  * trained, and ZAR must PASS a stage assessment before the next
  * stage unlocks.
@@ -26,9 +26,9 @@ export type TradingStageId =
 
 /**
  * How ZAR is tested before it may advance out of a stage.
- * - knowledge_quiz: ZAR is quizzed on what it ingested and graded.
+ * - knowledge_quiz: ZAR is quizzed on the material it was given, and graded.
  * - data_check: deterministic gate on real artifacts ZAR produced.
- * - locked: the stage's integrations aren't wired yet, so it can't
+ * - locked: the stage's integrations aren't connected yet, so it can't
  *   be assessed and stays locked (honest — no fake pass).
  */
 export type StageAssessmentKind = "knowledge_quiz" | "data_check" | "locked";
@@ -45,7 +45,7 @@ export interface TradingStageDefinition {
   label: string;
   shortLabel: string;
   purpose: string;
-  /** What YOU do — always some flavor of "feed / decide", never "study". */
+  /** What YOU do — always some flavor of "provide / decide", never "study". */
   yourMove: string;
   /** What ZED does with it. */
   whatZedDoes: string;
@@ -63,18 +63,18 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     shortLabel: "Learn",
     purpose: "Train ZAR's foundational market knowledge before it builds strategy.",
     yourMove:
-      "Feed ZAR sources — strategy notes, rulebooks, market education, PDFs, videos, and your own examples. That's your whole job here.",
+      "Provide ZAR with sources — strategy notes, rulebooks, market education, PDFs, videos, and your own examples. That's your whole job here.",
     whatZedDoes:
-      "Ingests each source and structures it into concepts, rules, examples, mistakes, and a glossary it reuses in every later stage.",
+      "Reviews each source and organizes it into concepts, rules, examples, common mistakes, and a glossary it reuses in every later stage.",
     readyWhen: [
       "ZAR has structured knowledge across the required areas (market structure, liquidity, risk, and the rest).",
-      "ZAR passes the knowledge test on the material you fed it.",
+      "ZAR passes the knowledge test on the material you provided.",
     ],
     assessment: {
       kind: "knowledge_quiz",
       passThreshold: 70,
       blurb:
-        "ZAR is scored on how much of the required curriculum it has ingested, then quizzed on that material. It must score 70+ to move on.",
+        "ZAR is scored on how much of the required curriculum it has covered, then quizzed on that material. It must score 70+ to move on.",
     },
     nextUnlocks: "strategy",
   },
@@ -151,9 +151,9 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose:
       "ZAR proves the same strategy on a real broker's paper/demo account — real platform mechanics and live data, no money — before any funded risk.",
     yourMove:
-      "Connect Webull paper trading so ZAR can trade on real platform rails.",
+      "Connect Webull paper trading so ZAR can trade on a real broker platform.",
     whatZedDoes:
-      "Runs the governed strategy on the connected paper account against live data, tracks the external sample, and compares it to the internal results to confirm the edge holds off ZAR's own simulator.",
+      "Runs the approved strategy on the connected paper account against live data, tracks the results, and compares them to the internal test run to confirm the edge holds up outside ZAR's own simulation.",
     readyWhen: [
       "A paper/demo provider is connected.",
       "A solid external paper sample (30+) with positive expectancy and no rule violations.",
@@ -173,9 +173,9 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     shortLabel: "Funded",
     purpose: "ZAR runs a funded-account evaluation — the challenge with real payout stakes.",
     yourMove:
-      "Connect a funded-account provider when that bridge is available so ZAR can run the challenge under real evaluation rules.",
+      "Connect a funded-account provider once that integration is available so ZAR can run the challenge under real evaluation rules.",
     whatZedDoes:
-      "Tracks the funded objective (profit target, daily-loss and drawdown limits, minimum trading days), imports trades when a provider bridge is live or runs on its own engine when it isn't, and reports how far you are from passing.",
+      "Tracks the funded objective (profit target, daily-loss and drawdown limits, minimum trading days), imports trades when a provider connection is live or runs on its own system when it isn't, and reports how far you are from passing.",
     readyWhen: [
       "A provider connection is healthy (or manual sync is current).",
       "The funded objective is met without breaking rules.",
@@ -184,7 +184,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
       kind: "data_check",
       passThreshold: 100,
       blurb:
-        "ZAR must meet the funded profit objective across the minimum trading days without breaching the daily-loss or drawdown limits. Runs on ZAR's own engine until a provider bridge is connected.",
+        "ZAR must meet the funded profit objective across the minimum trading days without breaching the daily-loss or drawdown limits. Runs on ZAR's own system until a provider connection is set up.",
     },
     nextUnlocks: "qualification",
   },
@@ -219,7 +219,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     yourMove:
       "Authorize ZAR to execute within the risk framework it proved out through the earlier stages.",
     whatZedDoes:
-      "Runs broker connectivity, portfolio and execution engines, the risk engine, position/order monitoring, trade authorization, analytics, a kill switch, and drawdown controls — all inside the discipline built in the earlier stages.",
+      "Runs broker connectivity, portfolio and execution management, risk monitoring, position/order tracking, trade authorization, analytics, a kill switch, and drawdown controls — all inside the discipline built in the earlier stages.",
     readyWhen: [
       "Continuous readiness reviews keep the system qualified.",
       "Kill switch and drawdown controls stay armed.",
@@ -228,7 +228,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
       kind: "data_check",
       passThreshold: 100,
       blurb:
-        "Unlocks when qualification is passed and a broker is connected. ZAR operates the full risk framework and kill switch; live order routing runs through the broker bridge once enabled.",
+        "Unlocks when qualification is passed and a broker is connected. ZAR operates the full risk framework and kill switch; live order routing runs through the broker connection once enabled.",
     },
   },
 ];

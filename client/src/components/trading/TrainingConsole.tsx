@@ -77,7 +77,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
     setNotice(null);
     setResult(null);
     if (files.length === 0) {
-      setError("Choose at least one file to feed ZAR.");
+      setError("Choose at least one file to add.");
       return;
     }
     setUploading(true);
@@ -95,7 +95,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       setResult(body as MaterialUploadResult);
       setFiles([]);
       if (fileRef.current) fileRef.current.value = "";
-      setNotice("ZAR ingested your material. Run the test when you're ready.");
+      setNotice("ZAR added your material. Run the test when you're ready.");
       onFed?.();
     } catch (err: any) {
       setError(err?.message || "Upload failed");
@@ -107,8 +107,8 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
   return (
     <StageShell
       eyebrow="Train ZAR"
-      title="Feed & connect"
-      description="Upload material for ZAR to ingest, and connect the providers it should reach. ZAR learns from everything you give it here."
+      title="Train & connect"
+      description="Upload material for ZAR to learn from, and connect the providers it should reach."
     >
       {notice && <NoticeBanner kind="success">{notice}</NoticeBanner>}
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
@@ -117,7 +117,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
       <div className="mb-4 flex flex-wrap gap-1.5">
         {(
           [
-            ["feed", "Feed ZAR"],
+            ["feed", "Train ZAR"],
             ["accounts", "Accounts"],
             ["data", "Data keys"],
             ["execution", "Execution"],
@@ -181,12 +181,12 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
             className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
           >
             <Upload size={13} />
-            {uploading ? "Feeding ZAR…" : "Feed ZAR"}
+            {uploading ? "Adding to ZAR…" : "Add material"}
           </button>
         </div>
         {result && (
           <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/[0.04] p-3 text-[12px] text-emerald-100">
-            Ingested {result.totals.sources} source{result.totals.sources === 1 ? "" : "s"} →{" "}
+            Added {result.totals.sources} source{result.totals.sources === 1 ? "" : "s"} →{" "}
             {result.totals.concepts} concepts, {result.totals.rules} rules.
             <ul className="mt-1.5 space-y-0.5 text-emerald-200/80">
               {result.ingested.map((i) => (
@@ -208,7 +208,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
           Trading connections
         </div>
         <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
-          Connect only the services that have an explicit bridge. Webull is the primary paper-trading connection.
+          Connect only the services that support a live integration. Webull is the primary paper-trading connection.
         </p>
         {providers.length === 0 ? (
           <EmptyBox>Loading providers…</EmptyBox>
@@ -495,8 +495,8 @@ function MarketDataKeysPanel() {
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <p className="text-[10.5px] text-white/35 leading-snug max-w-[46ch]">
-          Tradovate futures data &amp; order routing is a separate bridge — connect the
-          Tradovate login in the account dropdown above; the live futures feed is the next build.
+          Tradovate futures data &amp; order routing is a separate integration — connect the
+          Tradovate login in the account dropdown above; the live futures feed is coming soon.
         </p>
         <button
           type="button"
