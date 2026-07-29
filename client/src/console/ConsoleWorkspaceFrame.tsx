@@ -15,21 +15,30 @@ import { ZAR_NEXUS_CONSOLE } from "./consoleIdentity";
  * content renders as workspace content inside the console instead of as a
  * bare standalone page. The route, its data fetching, and its business logic
  * are untouched - only the presentation chrome around it changes.
+ *
+ * Some routes (Trading Intelligence) aren't one of the 8 galaxy domains and
+ * have no NexusRootNodeId to look a label/accent up from - `label`/`accent`
+ * let those pages use the same frame anyway, without inventing a fake root
+ * node for them.
  */
 export function ConsoleWorkspaceFrame({
   nodeId,
+  label: labelOverride,
+  accent: accentOverride,
   children,
 }: {
-  readonly nodeId: NexusRootNodeId;
+  readonly nodeId?: NexusRootNodeId;
+  readonly label?: string;
+  readonly accent?: string;
   readonly children: ReactNode;
 }) {
   const [, navigate] = useLocation();
   const [dockPowered, setDockPowered] = useState(false);
   const reducedMotion = useReducedMotion();
 
-  const manifest = nexusRootManifestRegistry.getManifest(nodeId);
-  const label = manifest?.label ?? nodeId;
-  const accent = manifest?.visual.color ?? ZAR_NEXUS_CONSOLE.accent;
+  const manifest = nodeId ? nexusRootManifestRegistry.getManifest(nodeId) : undefined;
+  const label = labelOverride ?? manifest?.label ?? nodeId ?? "Workspace";
+  const accent = accentOverride ?? manifest?.visual.color ?? ZAR_NEXUS_CONSOLE.accent;
   const identity = { ...ZAR_NEXUS_CONSOLE, accent };
 
   return (

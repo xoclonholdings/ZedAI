@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
 import {
-  ChevronLeft,
-  LineChart,
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
@@ -162,7 +159,6 @@ function Panel({ title, children, icon }: { title: string; children: React.React
 }
 
 export default function TradingPage() {
-  const [, navigate] = useLocation();
   const [currentStage, setCurrentStage] = useState<TradingStageId | null>(null);
   const [showRecords, setShowRecords] = useState<boolean>(false);
   const [tab, setTab] = useState<RecordsTab>("governance");
@@ -224,23 +220,8 @@ export default function TradingPage() {
   const recordsOpen = showRecords || !currentStage || !FUNCTIONAL_STAGES.includes(currentStage);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <LineChart size={16} className="text-cyan-300" />
-          <span className="bg-gradient-to-r from-emerald-300 via-cyan-300 to-fuchsia-400 bg-clip-text font-bold text-transparent">
-            Trading Intelligence
-          </span>
-        </div>
+    <>
+      <div className="flex justify-end">
         <Button
           variant="ghost"
           size="sm"
@@ -252,7 +233,7 @@ export default function TradingPage() {
         </Button>
       </div>
 
-      <main className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
+      <main className="mx-auto max-w-6xl space-y-4">
         <TradingProgressionBanner
           onProgressionChange={(p) => setCurrentStage(p.currentStage)}
           onOpenStageTool={() =>
@@ -370,6 +351,6 @@ export default function TradingPage() {
             </>
           ))}
       </main>
-    </div>
+    </>
   );
 }

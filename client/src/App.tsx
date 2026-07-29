@@ -113,11 +113,23 @@ function Router() {
       </Route>
 
       <Route path="/trading">
-        {isAuthenticated ? <TradingPage /> : <Login />}
+        {isAuthenticated ? (
+          <ConsoleWorkspaceFrame label="Trading Intelligence" accent="#22d3ee">
+            <TradingPage />
+          </ConsoleWorkspaceFrame>
+        ) : (
+          <Login />
+        )}
       </Route>
 
       <Route path="/trading/">
-        {isAuthenticated ? <TradingPage /> : <Login />}
+        {isAuthenticated ? (
+          <ConsoleWorkspaceFrame label="Trading Intelligence" accent="#22d3ee">
+            <TradingPage />
+          </ConsoleWorkspaceFrame>
+        ) : (
+          <Login />
+        )}
       </Route>
 
       <Route path="/budget">

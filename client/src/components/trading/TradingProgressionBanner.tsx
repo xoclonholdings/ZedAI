@@ -3,6 +3,8 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  ChevronDown,
+  ChevronUp,
   Compass,
   Layers,
   Lock,
@@ -270,13 +272,27 @@ function StageDetail({
   const passed = Boolean(result?.passed ?? record?.passed);
   const locked = stage.assessment.kind === "locked";
 
+  // Full detail (your move / what ZAR does / ready when / how tested) is a
+  // lot of copy to dump for every stage at once - open by default only for
+  // the stage actually in progress; done/locked stages start collapsed to
+  // a one-line summary, with the detail still a tap away.
+  const [detailsOpen, setDetailsOpen] = useState(isCurrent);
+  useEffect(() => {
+    if (isCurrent) setDetailsOpen(true);
+  }, [isCurrent]);
+
   return (
     <div
       className={`mt-3 rounded-lg border p-3 ${
         isCurrent ? "border-cyan-400/40 bg-cyan-400/[0.06]" : "border-white/10 bg-white/[0.02]"
       }`}
     >
-      <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((v) => !v)}
+        className="flex w-full items-center gap-3 text-left"
+        aria-expanded={detailsOpen}
+      >
         <div
           className={`shrink-0 w-7 h-7 rounded-full border flex items-center justify-center ${
             done
@@ -308,8 +324,19 @@ function StageDetail({
             </span>
           )}
         </div>
-      </div>
+        {detailsOpen ? (
+          <ChevronUp size={15} className="shrink-0 text-white/40" />
+        ) : (
+          <ChevronDown size={15} className="shrink-0 text-white/40" />
+        )}
+      </button>
 
+      {!detailsOpen && (
+        <p className="mt-2 truncate text-[12px] text-white/45">{stage.purpose}</p>
+      )}
+
+      {detailsOpen && (
+        <>
       <Block title="Your move">{stage.yourMove}</Block>
       <Block title="What ZAR does">{stage.whatZedDoes}</Block>
       <div className="mt-3">
@@ -328,6 +355,8 @@ function StageDetail({
         <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40 mb-1">How ZAR is tested</div>
         <p className="text-[11.5px] text-white/60 leading-snug">{stage.assessment.blurb}</p>
       </div>
+        </>
+      )}
 
       {/* Actions — the current stage always hands you the action. */}
       {isCurrent && (
