@@ -15,7 +15,7 @@ import type { WorkspaceDeskEntry, WorkspaceDeskSpec } from "@shared/workspace-de
 
 /**
  * The working surface for Education / Operations / Marketing. You hand
- * Zed a subject, Zed grounds in the workspace's memory, and returns a
+ * ZAR a subject, ZAR grounds in the workspace's memory, and returns a
  * structured entry that stacks up durably here. Same shape everywhere,
  * domain-specific sections per workspace.
  */
@@ -29,7 +29,7 @@ function EntryCard({
 }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+    <div className="zed-glass rounded-2xl p-4">
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={() => setOpen((v) => !v)} className="min-w-0 flex-1 text-left">
           <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
   const run = useCallback(async () => {
     setError(null);
     if (!topic.trim()) {
-      setError("Type a subject for Zed to work on.");
+      setError("Type a subject for ZAR to work on.");
       return;
     }
     setWorking(true);
@@ -137,7 +137,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
       setSources("");
       setShowSources(false);
     } catch (err: any) {
-      setError(err?.message || "Zed could not build this. Try again.");
+      setError(err?.message || "ZAR could not build this. Try again.");
     } finally {
       setWorking(false);
     }
@@ -174,7 +174,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
         </Button>
       </div>
 
-      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-4">
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-4 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
         <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">{title}</div>
         <p className="mt-1 text-[13px] text-white/60 leading-snug">{spec?.blurb || ""}</p>
         <div className="mt-3 space-y-2">
@@ -185,16 +185,16 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) void run();
             }}
-            placeholder={spec?.placeholder || "What should Zed work on?"}
-            className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
+            placeholder={spec?.placeholder || "What should ZAR work on?"}
+            className="zed-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30"
           />
           {showSources ? (
             <textarea
               value={sources}
               onChange={(e) => setSources(e.target.value)}
               rows={4}
-              placeholder="Optional: paste notes or a document for Zed to ground this in."
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50 resize-y"
+              placeholder="Optional: paste notes or a document for ZAR to ground this in."
+              className="zed-input w-full rounded-xl px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 resize-y"
             />
           ) : (
             <button
@@ -212,7 +212,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
               className="inline-flex items-center gap-1.5 text-[12px] text-white/50 hover:text-white/80"
             >
               <MessageSquare size={13} />
-              Ask Zed directly
+              Ask ZAR directly
             </button>
             <Button onClick={() => void run()} disabled={working} className="rounded-xl zed-gradient">
               <Sparkles size={14} className="mr-1.5" />
@@ -230,8 +230,8 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
         </div>
       )}
       {working && (
-        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-cyan-100">
-          Zed is grounding in this workspace's memory and building your entry…
+        <div className="zed-glow rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-cyan-100">
+          ZAR is grounding in this workspace's memory and building your entry…
         </div>
       )}
 
@@ -242,8 +242,8 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
         {loading ? (
           <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>
         ) : entries.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-5 text-sm text-muted-foreground">
-            Nothing here yet. Give Zed a subject above and your work will collect here.
+          <div className="zed-glass rounded-2xl p-5 text-sm text-muted-foreground">
+            Nothing here yet. Give ZAR a subject above and your work will collect here.
           </div>
         ) : (
           <div className="space-y-3">

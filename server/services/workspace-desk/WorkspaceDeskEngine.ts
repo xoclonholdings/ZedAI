@@ -13,7 +13,7 @@ import { readAppState, writeAppState } from "../appState";
  * saves it durably so the desk fills up over time.
  *
  * Honesty: entries are drafts grounded in workspace memory + the user's
- * sources + Zed's knowledge — never fabricated metrics or citations.
+ * sources + ZAR's knowledge — never fabricated metrics or citations.
  */
 
 const MAX_ENTRIES = 100;
@@ -127,7 +127,7 @@ export async function generateDeskEntry(input: GenerateDeskInput): Promise<Works
   ].filter(Boolean);
   const basis = `Draft grounded in ${
     groundedBits.length ? groundedBits.join(" + ") + " and " : ""
-  }Zed's knowledge. No live data — verify anything time-sensitive.`;
+  }ZAR's knowledge. No live data — verify anything time-sensitive.`;
 
   const entry: WorkspaceDeskEntry = {
     id: randomUUID(),

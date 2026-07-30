@@ -103,7 +103,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
       {
         label: "Projects",
         description:
-          "File conversations, sources, and instructions per initiative. Each project keeps its own memory so Zed answers in-context.",
+          "File conversations, sources, and instructions per initiative. Each project keeps its own memory so ZAR answers in-context.",
         href: "/projects",
         icon: FolderKanban,
         accent: "cyan",
@@ -111,7 +111,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
       {
         label: "Flow Library",
         description:
-          "Published tools and multi-step flows — the reusable playbooks Zed can run on demand.",
+          "Published tools and multi-step flows — the reusable playbooks ZAR can run on demand.",
         href: "/flows",
         icon: Wrench,
         accent: "fuchsia",
@@ -119,7 +119,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
       {
         label: "Run History",
         description:
-          "Every flow Zed has executed, with inputs, outputs, and traces. Audit what happened and rerun what worked.",
+          "Every flow ZAR has executed, with inputs, outputs, and traces. Audit what happened and rerun what worked.",
         href: "/runs",
         icon: History,
         accent: "emerald",
@@ -132,7 +132,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
   marketing: {
     label: "Marketing",
     purpose:
-      "Grow your audience — inbox triage, campaigns, and content flows. Zed pulls emails and messages into one place so you decide, not sort.",
+      "Grow your audience — inbox triage, campaigns, and content flows. ZAR pulls emails and messages into one place so you decide, not sort.",
     icon: PenTool,
     categories: ["marketing", "content", "social", "pr"],
     empty: "No marketing flows are published yet.",
@@ -140,7 +140,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
       {
         label: "Inbox",
         description:
-          "Zed reads incoming email, classifies urgency, and surfaces what actually needs your reply.",
+          "ZAR reads incoming email, classifies urgency, and surfaces what actually needs your reply.",
         href: "/inbox",
         icon: Inbox,
         accent: "cyan",
@@ -158,7 +158,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
   education: {
     label: "Education",
     purpose:
-      "Learn new skills. Zed builds paths, practices, assessments, and remembers what you've taught it.",
+      "Learn new skills. ZAR builds paths, practices, assessments, and remembers what you've taught it.",
     icon: GraduationCap,
     categories: ["learning", "personal_development"],
     empty: "No learning flows are published yet.",
@@ -166,7 +166,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
       {
         label: "Create Learning Path",
         description:
-          "Turn a topic, file, project, or workspace into an approved blueprint, starter lesson, quiz, and course-aware Zed chat.",
+          "Turn a topic, file, project, or workspace into an approved blueprint, starter lesson, quiz, and course-aware ZAR chat.",
         href: "/learning/studio",
         icon: GraduationCap,
         accent: "fuchsia",
@@ -174,7 +174,7 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
       {
         label: "Knowledge Library",
         description:
-          "Everything Zed remembers about you and your work. Add notes or upload files; Zed structures it into objects it can recall.",
+          "Everything ZAR remembers about you and your work. Add notes or upload files; ZAR structures it into objects it can recall.",
         href: "/learning",
         icon: BookOpen,
         accent: "cyan",
@@ -196,14 +196,14 @@ function WorkspaceIndex() {
   return (
     <main className="mx-auto max-w-2xl space-y-3">
       <p className="px-1 text-sm leading-6 text-muted-foreground">
-        Domain operating spaces Zed works within. Pick one to open its desk.
+        Domain operating spaces ZAR works within. Pick one to open its desk.
       </p>
       <button
         type="button"
         onClick={() => navigate("/knowledge-map")}
-        className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+        className="zed-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.25)]"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-emerald-200">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]">
           <LayoutDashboard size={18} />
         </div>
         <div className="min-w-0 flex-1">
@@ -221,9 +221,9 @@ function WorkspaceIndex() {
             key={slug}
             type="button"
             onClick={() => navigate(`/workspaces/${slug}`)}
-            className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+            className="zed-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(139,0,255,0.3)]"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200 shadow-[0_0_12px_rgba(103,232,249,0.35)]">
               <Icon size={18} />
             </div>
             <div className="min-w-0 flex-1">
@@ -293,7 +293,7 @@ function WorkspaceDetail({
 
   return (
     <main className="mx-auto max-w-3xl space-y-4">
-      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
           <Icon size={14} />
           Workspace
@@ -309,7 +309,7 @@ function WorkspaceDetail({
         className="w-full rounded-xl zed-gradient"
       >
         <MessageSquare size={14} className="mr-2" />
-        Ask Zed in {config.label}
+        Ask ZAR in {config.label}
       </Button>
 
       <WorkspaceLibrary workspace={workspace} label={`${config.label} library`} />
@@ -335,7 +335,7 @@ function WorkspaceDetail({
                   key={sub.href}
                   type="button"
                   onClick={() => navigate(sub.href)}
-                  className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+                  className="zed-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <SubIcon size={15} className={accentText} />
@@ -356,7 +356,7 @@ function WorkspaceDetail({
         {loading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
         ) : workspaceItems.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
+          <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
             {config.empty}
           </div>
         ) : (
@@ -366,7 +366,7 @@ function WorkspaceDetail({
                 key={item.id}
                 type="button"
                 onClick={() => navigate(`/workspaces/${workspace}/tools/${item.id}`)}
-                className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+                className="zed-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
               >
                 <div className="text-sm font-semibold text-foreground">{item.userFacingLabel}</div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.userFacingBlurb}</p>

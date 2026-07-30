@@ -8,7 +8,7 @@ import ResearchDocuments from "@/components/research/ResearchDocuments";
 /**
  * The Research workspace.
  *
- * Search is the front door. After Zed looks something up, he offers a few
+ * Search is the front door. After ZAR looks something up, he offers a few
  * plain things to do with it — give the short version, check if it's
  * legit, save it for later, or whatever you type. Or nothing.
  */
@@ -40,8 +40,8 @@ export default function ResearchDesk() {
   const [otherOpen, setOtherOpen] = useState(false);
   const [otherText, setOtherText] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
-  const [zedText, setZedText] = useState<string | null>(null);
-  const [zedFailed, setZedFailed] = useState(false);
+  const [zarText, setZarText] = useState<string | null>(null);
+  const [zarFailed, setZarFailed] = useState(false);
   const [lastAct, setLastAct] = useState<{ action: "summarize" | "verify" | "other"; instruction?: string } | null>(null);
 
   const [saved, setSaved] = useState<SavedItem[]>([]);
@@ -62,7 +62,7 @@ export default function ResearchDesk() {
   const run = useCallback(async () => {
     setError(null);
     setNote(null);
-    setZedText(null);
+    setZarText(null);
     if (!query.trim()) {
       setError("Type what you want to look up.");
       return;
@@ -85,7 +85,7 @@ export default function ResearchDesk() {
       if ((body.results || []).length === 0) {
         setNote(
           body.source === "none"
-            ? "No search is connected yet. Add a Brave or Serper key so Zed can look things up."
+            ? "No search is connected yet. Add a Brave or Serper key so ZAR can look things up."
             : "Nothing came back for that. Try different words.",
         );
       }
@@ -100,8 +100,8 @@ export default function ResearchDesk() {
     async (action: "summarize" | "verify" | "other", instruction?: string) => {
       setError(null);
       setBusy(action);
-      setZedText(null);
-      setZedFailed(false);
+      setZarText(null);
+      setZarFailed(false);
       setLastAct({ action, instruction });
       try {
         const res = await fetch("/api/research/act", {
@@ -111,17 +111,17 @@ export default function ResearchDesk() {
           body: JSON.stringify({ action, query: lastQuery, results, instruction }),
         });
         const body = await res.json().catch(() => ({}));
-        // Zed always speaks in plain language via body.text; body.ok tells
+        // ZAR always speaks in plain language via body.text; body.ok tells
         // us whether it worked so we can show a "try again".
-        setZedText(body.text || "I couldn't finish that. Mind trying again?");
-        setZedFailed(body.ok === false);
+        setZarText(body.text || "I couldn't finish that. Mind trying again?");
+        setZarFailed(body.ok === false);
         if (body.ok !== false) {
           setOtherOpen(false);
           setOtherText("");
         }
       } catch {
-        setZedText("I couldn't reach my brain just now. Give it a moment and try again.");
-        setZedFailed(true);
+        setZarText("I couldn't reach my brain just now. Give it a moment and try again.");
+        setZarFailed(true);
       } finally {
         setBusy(null);
       }
@@ -136,7 +136,7 @@ export default function ResearchDesk() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: lastQuery, note: zedText || "", results }),
+        body: JSON.stringify({ query: lastQuery, note: zarText || "", results }),
       });
       const body = await res.json().catch(() => ({}));
       if (res.ok && body.item) {
@@ -148,7 +148,7 @@ export default function ResearchDesk() {
     } finally {
       setBusy(null);
     }
-  }, [lastQuery, zedText, results]);
+  }, [lastQuery, zarText, results]);
 
   const removeSaved = useCallback(async (id: string) => {
     setSaved((prev) => prev.filter((s) => s.id !== id));
@@ -164,7 +164,7 @@ export default function ResearchDesk() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-4">
-      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-4">
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-4 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
@@ -176,7 +176,7 @@ export default function ResearchDesk() {
                 if (e.key === "Enter") void run();
               }}
               placeholder="Look something up…"
-              className="w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
+              className="zed-input w-full rounded-xl pl-9 pr-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30"
             />
           </div>
           <Button onClick={() => void run()} disabled={searching} className="rounded-xl zed-gradient">
@@ -192,9 +192,9 @@ export default function ResearchDesk() {
         <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-sm text-white/60">{note}</div>
       )}
 
-      {/* Zed's "want me to…" suggestions */}
+      {/* ZAR's "want me to…" suggestions */}
       {suggestOpen && (
-        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-3">
+        <div className="zed-glow rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-3">
           <div className="text-[13px] text-white/80 mb-2">Want me to…</div>
           <div className="flex flex-wrap gap-2">
             <button className={chip} disabled={!!busy} onClick={() => void act("summarize")}>
@@ -213,7 +213,7 @@ export default function ResearchDesk() {
               className={chip}
               onClick={() => {
                 setSuggestOpen(false);
-                setZedText(null);
+                setZarText(null);
                 setOtherOpen(false);
               }}
             >
@@ -229,8 +229,8 @@ export default function ResearchDesk() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && otherText.trim()) void act("other", otherText.trim());
                 }}
-                placeholder="Tell Zed what to do with this…"
-                className="flex-1 rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
+                placeholder="Tell ZAR what to do with this…"
+                className="zed-input flex-1 rounded-lg px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30"
               />
               <button
                 className={chip}
@@ -244,16 +244,18 @@ export default function ResearchDesk() {
         </div>
       )}
 
-      {/* Zed's answer */}
-      {zedText && (
+      {/* ZAR's answer */}
+      {zarText && (
         <div
-          className={`rounded-2xl border p-4 ${
-            zedFailed ? "border-amber-400/30 bg-amber-400/[0.05]" : "border-white/10 bg-black/30"
+          className={`rounded-2xl border p-4 backdrop-blur-md ${
+            zarFailed
+              ? "border-amber-400/30 bg-amber-400/[0.05]"
+              : "border-purple-500/20 bg-black/70 shadow-[0_0_15px_rgba(139,0,255,0.3)]"
           }`}
         >
-          <div className="whitespace-pre-line text-[13.5px] text-white/85 leading-relaxed">{zedText}</div>
+          <div className="whitespace-pre-line text-[13.5px] text-white/85 leading-relaxed">{zarText}</div>
           <div className="mt-3 flex justify-end gap-2">
-            {zedFailed ? (
+            {zarFailed ? (
               <button
                 className={chip}
                 disabled={!!busy}
@@ -285,7 +287,7 @@ export default function ResearchDesk() {
                 href={r.url}
                 target="_blank"
                 rel="noreferrer"
-                className="block rounded-2xl border border-white/10 bg-black/30 p-3.5 transition-all hover:border-cyan-400/40 hover:bg-white/5"
+                className="zed-glass block rounded-2xl p-3.5 transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)]"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-[14px] font-semibold text-white leading-snug">{r.title}</div>
@@ -305,7 +307,7 @@ export default function ResearchDesk() {
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Saved for later</div>
           <div className="space-y-2">
             {saved.map((s) => (
-              <div key={s.id} className="rounded-2xl border border-white/10 bg-black/30 p-3.5">
+              <div key={s.id} className="zed-glass rounded-2xl p-3.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-white">
@@ -350,7 +352,7 @@ export default function ResearchDesk() {
       <ResearchDocuments
         seedInstruction={lastQuery ? `Write up my research on "${lastQuery}".` : ""}
         seedSources={
-          zedText ||
+          zarText ||
           (results.length > 0
             ? results.map((r) => `- ${r.title}\n  ${r.snippet}\n  ${r.url}`).join("\n")
             : "")

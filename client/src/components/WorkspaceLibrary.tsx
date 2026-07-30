@@ -57,7 +57,7 @@ export default function WorkspaceLibrary({
     setError(null);
     setNotice(null);
     if (files.length === 0 && !content.trim()) {
-      setError("Paste some notes or attach a file to teach Zed.");
+      setError("Paste some notes or attach a file to teach ZAR.");
       return;
     }
     setSubmitting(true);
@@ -93,7 +93,7 @@ export default function WorkspaceLibrary({
       const added = body?.totals?.newObjects ?? 0;
       setNotice(
         added > 0
-          ? `Zed learned ${added} thing${added === 1 ? "" : "s"} into ${friendlyType(workspace)} memory.`
+          ? `ZAR learned ${added} thing${added === 1 ? "" : "s"} into ${friendlyType(workspace)} memory.`
           : "Saved into this memory scope.",
       );
       setTitle("");
@@ -110,7 +110,7 @@ export default function WorkspaceLibrary({
   }, [files, content, title, workspace, refresh]);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-black/30 p-4">
+    <section className="zed-glass rounded-2xl p-4">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -130,7 +130,7 @@ export default function WorkspaceLibrary({
         )}
       </button>
       <p className="mt-1 text-[11.5px] text-white/40 leading-snug">
-        Teach Zed about {friendlyType(workspace)}. It's kept in this user's memory scope and shown
+        Teach ZAR about {friendlyType(workspace)}. It's kept in this user's memory scope and shown
         here when tagged to the workspace.
       </p>
 
@@ -151,13 +151,13 @@ export default function WorkspaceLibrary({
             <button
               type="button"
               onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 hover:shadow-[0_0_16px_rgba(103,232,249,0.5)] transition-all"
             >
               <Plus size={13} />
               Add knowledge
             </button>
           ) : (
-            <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-3 space-y-2">
+            <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.03] p-3 space-y-2 backdrop-blur-sm">
               <div className="flex items-center justify-between">
                 <div className="text-[12.5px] font-semibold text-white">Add knowledge</div>
                 <button
@@ -174,14 +174,14 @@ export default function WorkspaceLibrary({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Title (optional)"
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50"
+                className="zed-input w-full rounded-lg px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30"
               />
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={4}
                 placeholder={`Paste notes, a summary, or a transcript about ${friendlyType(workspace).toLowerCase()}.`}
-                className="w-full rounded-lg border border-white/10 bg-black/40 px-2.5 py-2 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-cyan-400/50 resize-y"
+                className="zed-input w-full rounded-lg px-2.5 py-2 text-[13px] text-white outline-none placeholder:text-white/30 resize-y"
               />
               <input
                 ref={fileRef}
@@ -195,10 +195,10 @@ export default function WorkspaceLibrary({
                   type="button"
                   onClick={() => void submit()}
                   disabled={submitting}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 hover:shadow-[0_0_16px_rgba(103,232,249,0.5)] disabled:opacity-50 transition-all"
                 >
                   <Upload size={13} />
-                  {submitting ? "Teaching Zed…" : "Add to library"}
+                  {submitting ? "Teaching ZAR…" : "Add to library"}
                 </button>
               </div>
             </div>

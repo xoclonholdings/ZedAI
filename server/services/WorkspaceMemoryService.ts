@@ -3,9 +3,9 @@ import { readAppliedGraph, resolveObjectMemoryUserId } from "./object-memory/sto
 /**
  * Workspace-memory retrieval.
  *
- * Whenever Zed works on a request inside a workspace, it must first run
+ * Whenever ZAR works on a request inside a workspace, it must first run
  * through that user's workspace knowledge so its work is grounded in what
- * they taught Zed there.
+ * they taught ZAR there.
  *
  * Objects added through a workspace library carry
  * `properties.workspace = <slug>`. This service pulls the current user's
@@ -70,7 +70,7 @@ export async function buildWorkspaceMemoryContext(
 
   const prompt = [
     `## Workspace memory — ${slug} (${mine.length} item${mine.length === 1 ? "" : "s"})`,
-    `Before you do anything, ground this request in what the user has taught Zed in the ${slug} workspace. Use it as authoritative context; if it conflicts with a general assumption, the workspace knowledge wins. Do not restate it unless asked.`,
+    `Before you do anything, ground this request in what the user has taught ZAR in the ${slug} workspace. Use it as authoritative context; if it conflicts with a general assumption, the workspace knowledge wins. Do not restate it unless asked.`,
     "",
     ...lines,
   ].join("\n");
