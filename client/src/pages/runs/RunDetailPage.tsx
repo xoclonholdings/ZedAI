@@ -98,8 +98,8 @@ export function RunDetailPage() {
   }, [run?.status]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
+    <>
+      <div className="flex items-center justify-between gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -109,7 +109,7 @@ export function RunDetailPage() {
           <ChevronLeft size={16} className="mr-1" />
           History
         </Button>
-        <span className="max-w-[60vw] truncate font-medium">{run?.flowName || "History Item"}</span>
+        <span className="max-w-[45vw] truncate text-sm font-medium text-white/80">{run?.flowName || "History Item"}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -121,7 +121,7 @@ export function RunDetailPage() {
         </Button>
       </div>
 
-      <div className="mx-auto max-w-3xl space-y-3 p-4 pb-24">
+      <div className="mx-auto max-w-3xl space-y-3">
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
             {error}
@@ -238,7 +238,7 @@ export function RunDetailPage() {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }
 

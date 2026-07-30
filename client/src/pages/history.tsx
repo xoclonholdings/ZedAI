@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Clock, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,23 +57,8 @@ export default function HistoryPage() {
   const isEmpty = conversations.length === 0 && flowRuns.length === 0;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <Clock size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            History
-          </span>
-        </div>
+    <>
+      <div className="flex justify-end">
         <Button
           variant="ghost"
           size="sm"
@@ -85,7 +70,7 @@ export default function HistoryPage() {
         </Button>
       </div>
 
-      <main className="mx-auto max-w-3xl space-y-5 p-4 pb-24">
+      <main className="mx-auto max-w-3xl space-y-5">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
           <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">Saved Activity</div>
           <h1 className="mt-2 text-2xl font-semibold">History</h1>
@@ -185,6 +170,6 @@ export default function HistoryPage() {
           </>
         )}
       </main>
-    </div>
+    </>
   );
 }

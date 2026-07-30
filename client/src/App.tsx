@@ -105,7 +105,7 @@ function Router() {
       </Route>
 
       <Route path="/knowledge-map">
-        {isAuthenticated ? <HomePage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><HomePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/admin">
@@ -133,11 +133,11 @@ function Router() {
       </Route>
 
       <Route path="/budget">
-        {isAuthenticated ? <BudgetPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><BudgetPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/budget/">
-        {isAuthenticated ? <BudgetPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><BudgetPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/workspaces/:workspace/tools/:id">
@@ -153,11 +153,11 @@ function Router() {
       </Route>
 
       <Route path="/history/:runId">
-        {isAuthenticated ? <RunDetailPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><RunDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/history">
-        {isAuthenticated ? <HistoryPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><HistoryPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/inbox">
@@ -173,11 +173,11 @@ function Router() {
       </Route>
 
       <Route path="/runs">
-        {isAuthenticated ? <RunsListPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><RunsListPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/runs/:runId">
-        {isAuthenticated ? <RunDetailPage /> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><RunDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/projects">

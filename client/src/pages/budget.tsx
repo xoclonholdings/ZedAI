@@ -290,8 +290,8 @@ export default function BudgetPage() {
   const currentStage = readiness?.stage;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
+    <>
+      <div className="flex items-center justify-between gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -299,14 +299,8 @@ export default function BudgetPage() {
           className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
         >
           <ChevronLeft size={16} className="mr-1" />
-          Finance
+          Finance workspace
         </Button>
-        <div className="flex items-center gap-2">
-          <Wallet size={16} className="text-cyan-300" />
-          <span className="bg-gradient-to-r from-emerald-300 via-cyan-300 to-fuchsia-400 bg-clip-text font-bold text-transparent">
-            Budget Management
-          </span>
-        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -318,7 +312,7 @@ export default function BudgetPage() {
         </Button>
       </div>
 
-      <main className="mx-auto max-w-6xl space-y-4 p-4 md:p-6">
+      <main className="mx-auto max-w-6xl space-y-4">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
             <Coins size={14} />
@@ -685,7 +679,7 @@ export default function BudgetPage() {
           </>
         )}
       </main>
-    </div>
+    </>
   );
 }
 

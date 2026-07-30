@@ -278,39 +278,36 @@ export default function HomePage() {
   const pendingAllocation = budget?.pendingAllocation ?? 0;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-20 border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">Home</div>
-            <div className="text-[15.5px] font-semibold tracking-[-0.01em] text-white truncate">
-              Hi, {displayName}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/chat")}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white transition-colors"
-            >
-              <MessageSquare size={12} />
-              Chat
-            </button>
-            <button
-              type="button"
-              onClick={() => void refresh()}
-              disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-colors"
-              aria-label="Refresh"
-            >
-              <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-              <span className="sr-only sm:not-sr-only">Refresh</span>
-            </button>
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-[15.5px] font-semibold tracking-[-0.01em] text-white truncate">
+            Hi, {displayName}
           </div>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/chat")}
+            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white transition-colors"
+          >
+            <MessageSquare size={12} />
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-colors"
+            aria-label="Refresh"
+          >
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+            <span className="sr-only sm:not-sr-only">Refresh</span>
+          </button>
+        </div>
+      </div>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+      <main className="max-w-3xl mx-auto space-y-4">
         {/* Approvals banner */}
         {isAdmin && approvalsCount > 0 && (
           <section className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-4 flex items-start gap-3">
@@ -546,7 +543,7 @@ export default function HomePage() {
           Memory, settings, and workspace context persist across visits.
         </div>
       </main>
-    </div>
+    </>
   );
 }
 

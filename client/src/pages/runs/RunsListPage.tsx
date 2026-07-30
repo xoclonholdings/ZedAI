@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Clock, RefreshCw } from "lucide-react";
+import { ChevronLeft, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,8 +39,8 @@ export function RunsListPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
+    <>
+      <div className="flex items-center justify-between gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -50,10 +50,6 @@ export function RunsListPage() {
           <ChevronLeft size={16} className="mr-1" />
           History
         </Button>
-        <div className="flex items-center gap-2">
-          <Clock size={16} className="text-cyan-300" />
-          <span className="font-medium">Activity History</span>
-        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -65,7 +61,7 @@ export function RunsListPage() {
         </Button>
       </div>
 
-      <div className="mx-auto max-w-3xl space-y-3 p-4 pb-24">
+      <div className="mx-auto max-w-3xl space-y-3">
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
             {error}
@@ -98,6 +94,6 @@ export function RunsListPage() {
           ))
         )}
       </div>
-    </div>
+    </>
   );
 }
