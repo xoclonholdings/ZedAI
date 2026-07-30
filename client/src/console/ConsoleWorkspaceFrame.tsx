@@ -25,11 +25,13 @@ export function ConsoleWorkspaceFrame({
   nodeId,
   label: labelOverride,
   accent: accentOverride,
+  flush,
   children,
 }: {
   readonly nodeId?: NexusRootNodeId;
   readonly label?: string;
   readonly accent?: string;
+  readonly flush?: boolean;
   readonly children: ReactNode;
 }) {
   const [, navigate] = useLocation();
@@ -85,7 +87,7 @@ export function ConsoleWorkspaceFrame({
         transition={{ duration: reducedMotion ? 0 : 0.42, ease: [0.16, 1, 0.3, 1] }}
       >
         <div className="mx-auto h-full max-w-3xl">
-          <ConsoleGlassPanel>{children}</ConsoleGlassPanel>
+          <ConsoleGlassPanel flush={flush}>{children}</ConsoleGlassPanel>
         </div>
       </motion.div>
     </ConsoleShell>

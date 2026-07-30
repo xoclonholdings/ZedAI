@@ -89,7 +89,13 @@ function Router() {
       </Route>
 
       <Route path="/chat/:id?">
-        {isAuthenticated ? <ChatPage /> : <Login />}
+        {isAuthenticated ? (
+          <ConsoleWorkspaceFrame label="Chat" accent="#c084fc" flush>
+            <ChatPage />
+          </ConsoleWorkspaceFrame>
+        ) : (
+          <Login />
+        )}
       </Route>
 
       <Route path="/home">

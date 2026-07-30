@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
-import { ChevronLeft } from "lucide-react";
 
 import { useLocationSearch } from "@/lib/useLocationSearch";
 import { useNexusChatSession } from "@/nexus/communication/useNexusChatSession";
@@ -12,11 +11,12 @@ function normalizeConversationId(value: string | null | undefined): string | und
 }
 
 /**
- * The real chat page ZAR's "Text" mode opens to - interim, per the user's
- * explicit "for now, we will redesign later." Reuses the same session logic
- * (useNexusChatSession) and runtime UI the console's inline composer was
- * built on, so workspace/learning context and ZAR-driven navigation behave
- * identically here and in the dock.
+ * The real chat page ZAR's "Text" mode opens to. Reuses the same session
+ * logic (useNexusChatSession) and runtime UI the console's inline composer
+ * was built on, so workspace/learning context and ZAR-driven navigation
+ * behave identically here and in the dock. Rendered inside
+ * ConsoleWorkspaceFrame (flush), so it only needs to fill its bounded
+ * parent - no page-level chrome or viewport sizing of its own.
  */
 export default function ChatPage() {
   const { id } = useParams<{ id?: string }>();
@@ -48,24 +48,5 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <div className="flex h-[100dvh] w-full flex-col bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <button
-          type="button"
-          onClick={() => navigate("/nexus")}
-          className="flex items-center gap-1 rounded-xl px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ChevronLeft size={16} />
-          Nexus
-        </button>
-        <span className="truncate text-[13px] font-medium text-white/70">{controller.title}</span>
-        <div className="h-9 w-9" aria-hidden="true" />
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 pt-2 sm:px-3">
-        <NexusConversationRuntime controller={controller} />
-      </div>
-    </div>
-  );
+  return <NexusConversationRuntime controller={controller} />;
 }
