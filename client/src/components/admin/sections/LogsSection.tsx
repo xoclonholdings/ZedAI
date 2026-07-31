@@ -47,7 +47,7 @@ const EVENT_LABEL: Record<string, string> = {
   "approval.queued": "Waiting for your approval",
   "approval.approved": "You approved something",
   "approval.rejected": "You rejected something",
-  "policy.external_api.consulted": "Zed checked policy before calling out",
+  "policy.external_api.consulted": "ZAR checked policy before calling out",
   "policy.external_api.denied": "Policy blocked an outbound call",
   "subsystem.priority.classify": "Priority classifier ran",
   "subsystem.scheduler.schedule": "Deferred action scheduled",
@@ -153,7 +153,7 @@ export default function LogsSection() {
             Activity & errors
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            A running feed of what Zed did and what went wrong. Errors go to the top of the list. Tap any row to see the details.
+            A running feed of what ZAR did and what went wrong. Errors go to the top of the list. Tap any row to see the details.
           </p>
         </div>
         <button

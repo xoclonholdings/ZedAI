@@ -94,7 +94,7 @@ export const defaultIntegrations: IntegrationsSettings = {
     apiBaseUrl: "https://api.github.com",
     accounts: [],
     notes:
-      "GitHub integration for repository status, pull requests, issues, and future IDE/operator workflows. Add one entry per repository you want ZED to access.",
+      "GitHub integration for repository status, pull requests, issues, and future IDE/operator workflows. Add one entry per repository you want ZAR to access.",
   },
   email: {
     enabled: false,
@@ -136,7 +136,7 @@ export const defaultIntegrations: IntegrationsSettings = {
     publicHealthPath: "/api/firewall/public-status",
     zedAiWebhookBaseUrl: "",
     notes:
-      "Fantasma Firewall integration for private VPN polling, custom-domain operator access, and future security workflow handoffs into ZED.",
+      "Fantasma Firewall integration for private VPN polling, custom-domain operator access, and future security workflow handoffs into ZAR.",
   },
   businessOperations: {
     enabled: true,
@@ -257,7 +257,7 @@ export const defaultIntegrations: IntegrationsSettings = {
 };
 
 /**
- * Sensible first-run values for the "How Zed sounds" surface.
+ * Sensible first-run values for the "How ZAR sounds" surface.
  * Chosen so a fresh install feels neutral — not too casual, not too
  * professional; balanced tone; treats you as a thinking partner.
  */
@@ -275,7 +275,7 @@ export const defaultVoiceSettings: VoiceSettings = {
 /**
  * Conservative defaults: anything that reaches out externally or
  * touches money / data / credentials defaults to "ask." Internal
- * scheduling / task creation defaults to "auto" so Zed feels
+ * scheduling / task creation defaults to "auto" so ZAR feels
  * useful out of the box without any config.
  */
 export const defaultApprovalSettings: ApprovalSettings = {

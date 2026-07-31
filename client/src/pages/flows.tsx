@@ -162,7 +162,7 @@ export default function FlowsPage() {
                   <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
                     <Badge
                       variant="secondary"
-                      className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
+                      className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
                     >
                       {flow.stageCount} stage{flow.stageCount === 1 ? "" : "s"}
                     </Badge>
@@ -170,7 +170,7 @@ export default function FlowsPage() {
                       <Badge
                         key={a}
                         variant="secondary"
-                        className="zed-glass border-purple-500/30 text-purple-200 text-[9px] uppercase tracking-[0.16em]"
+                        className="zar-glass border-purple-500/30 text-purple-200 text-[9px] uppercase tracking-[0.16em]"
                       >
                         {a}
                       </Badge>

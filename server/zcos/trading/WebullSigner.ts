@@ -6,7 +6,7 @@ import { createHash, createHmac, randomUUID } from "crypto";
  *
  * Every request is signed with HMAC-SHA1 over a canonical string built
  * from the path, query params, and the signing headers — there is no
- * separate access-token exchange. This lets Zed sign Webull calls from
+ * separate access-token exchange. This lets ZAR sign Webull calls from
  * pure Node, removing the Python SDK subprocess (and its 3.8-3.13 runtime
  * constraint) entirely.
  *

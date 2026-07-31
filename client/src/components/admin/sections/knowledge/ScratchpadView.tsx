@@ -25,14 +25,14 @@ export function ScratchpadView({
 }) {
   return (
     <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Edit3 size={16} className="text-purple-300" />
             Persistent Working Notes
           </CardTitle>
           <CardDescription>
-            Capture active operating context that Zed should keep across sessions.
+            Capture active operating context that ZAR should keep across sessions.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -44,8 +44,8 @@ export function ScratchpadView({
               rows={12}
               value={draft.content}
               onChange={(e) => setDraft((prev) => ({ ...prev, content: e.target.value }))}
-              className="zed-glass border-white/10 text-sm"
-              placeholder="Capture active priorities, immediate context, findings, or decisions Zed should retain."
+              className="zar-glass border-white/10 text-sm"
+              placeholder="Capture active priorities, immediate context, findings, or decisions ZAR should retain."
             />
           </label>
           <LabeledInput
@@ -64,12 +64,12 @@ export function ScratchpadView({
             ) : null}
           </div>
           <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-xs leading-6 text-muted-foreground">
-            Working notes persist as part of Zed's operating memory unless you explicitly delete them.
+            Working notes persist as part of ZAR's operating memory unless you explicitly delete them.
           </div>
         </CardContent>
       </Card>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="text-base">Saved Working Notes</CardTitle>
           <CardDescription>

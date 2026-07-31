@@ -9,13 +9,13 @@ import { recommendFlowForMessage } from "./FlowRecommender";
 /**
  * ZCOS-owned autonomous orchestration boundary.
  *
- * ZED sends user intent here. ZCOS decides routing, memory/context use,
+ * ZAR sends user intent here. ZCOS decides routing, memory/context use,
  * agent dispatch, optional flow acceleration, and approval metadata.
  * Legacy manual targetAgent values are ignored unless they come with a
  * workspace id. That keeps normal chat outcome-driven while preserving
  * workspace lane intent.
  */
-export class ZedAutonomousOrchestrator {
+export class ZarAutonomousOrchestrator {
   static async route(request: OrchestratorRequest): Promise<OrchestratorResponse> {
     const workspaceTarget =
       typeof request.context?.workspaceId === "string" && request.context.workspaceId.trim()

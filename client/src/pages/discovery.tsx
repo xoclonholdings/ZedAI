@@ -44,14 +44,14 @@ const MODES: Array<{
   {
     id: "conflicts",
     label: "Conflicts",
-    hint: "Two facts Zed can't reconcile.",
+    hint: "Two facts ZAR can't reconcile.",
     icon: AlertTriangle,
     accent: "amber",
   },
   {
     id: "open-questions",
     label: "Open questions",
-    hint: "Things Zed noticed but hasn't answered.",
+    hint: "Things ZAR noticed but hasn't answered.",
     icon: HelpCircle,
     accent: "cyan",
   },
@@ -202,7 +202,7 @@ export default function DiscoveryPage() {
             size="sm"
             onClick={() => void refresh()}
             disabled={loading}
-            className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+            className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
             aria-label="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -275,7 +275,7 @@ export default function DiscoveryPage() {
         ) : mode === "duplicates" ? (
           duplicateGroups.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-              No duplicates. Everything Zed knows is unique.
+              No duplicates. Everything ZAR knows is unique.
             </div>
           ) : (
             <div className="space-y-3">

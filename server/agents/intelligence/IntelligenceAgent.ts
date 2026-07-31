@@ -131,9 +131,9 @@ export class IntelligenceAgent {
         keyFindings: [
           "I can visit and read a webpage when a URL is present in the request or recent conversation context.",
           "This request refers to a website, but no specific URL was available to fetch.",
-          "I should ask for the URL instead of claiming ZED has no browsing capability.",
+          "I should ask for the URL instead of claiming ZAR has no browsing capability.",
         ],
-        implications: "ZED needs the exact link before it can verify or summarize that website.",
+        implications: "ZAR needs the exact link before it can verify or summarize that website.",
         recommendedAction: "Send the website URL, then ask me to visit, inspect, summarize, or audit it.",
         sources: [],
         agent: "IntelligenceAgent",
@@ -165,7 +165,7 @@ ${directWebBlock}
 
 ${searchBlock}
 
-Use direct webpage content first when it is available. Search results are secondary. Use supplied project memory when it is relevant. Keep the answer compact and mobile-readable. Do not use tables unless explicitly requested. Never claim that ZED has no browsing or real-time network access when direct webpage content or search context is present. If no URL or source context is available, ask for the exact URL.
+Use direct webpage content first when it is available. Search results are secondary. Use supplied project memory when it is relevant. Keep the answer compact and mobile-readable. Do not use tables unless explicitly requested. Never claim that ZAR has no browsing or real-time network access when direct webpage content or search context is present. If no URL or source context is available, ask for the exact URL.
 
 Return this internal parse format exactly so the app can render it naturally:
 SUBJECT: [short topic]

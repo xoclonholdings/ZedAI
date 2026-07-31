@@ -52,7 +52,7 @@ export function UserLoginForm({ onSuccess }: { onSuccess: () => Promise<void> })
             placeholder="Enter username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="zed-input pl-10"
+            className="zar-input pl-10"
             disabled={isLoading}
             autoFocus
           />
@@ -71,7 +71,7 @@ export function UserLoginForm({ onSuccess }: { onSuccess: () => Promise<void> })
             placeholder="Enter password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="zed-input pl-10 pr-10"
+            className="zar-input pl-10 pr-10"
             disabled={isLoading}
           />
           <KeyRound
@@ -92,7 +92,7 @@ export function UserLoginForm({ onSuccess }: { onSuccess: () => Promise<void> })
 
       <Button
         type="submit"
-        className="w-full zed-gradient text-white hover:zed-gradient-hover"
+        className="w-full zar-gradient text-white hover:zar-gradient-hover"
         disabled={isLoading}
       >
         {isLoading ? (

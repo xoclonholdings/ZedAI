@@ -111,7 +111,7 @@ export default function WorkspaceLibrary({
   }, [files, content, title, workspace, refresh]);
 
   return (
-    <section className="zed-glass rounded-2xl p-4">
+    <section className="zar-glass rounded-2xl p-4">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -175,14 +175,14 @@ export default function WorkspaceLibrary({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Title (optional)"
-                className="zed-input w-full rounded-lg px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30"
+                className="zar-input w-full rounded-lg px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30"
               />
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={4}
                 placeholder={`Paste notes, a summary, or a transcript about ${friendlyType(workspace).toLowerCase()}.`}
-                className="zed-input w-full rounded-lg px-2.5 py-2 text-[13px] text-white outline-none placeholder:text-white/30 resize-y"
+                className="zar-input w-full rounded-lg px-2.5 py-2 text-[13px] text-white outline-none placeholder:text-white/30 resize-y"
               />
               <input
                 ref={fileRef}

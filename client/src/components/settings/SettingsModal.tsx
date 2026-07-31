@@ -81,14 +81,14 @@ export default function SettingsModal() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className={`w-full justify-start zed-button ${compact ? "py-2 text-xs" : ""}`}>
+        <Button variant="ghost" size="sm" className={`w-full justify-start zar-button ${compact ? "py-2 text-xs" : ""}`}>
           <Settings className="mr-2 h-4 w-4" />
           Settings
         </Button>
       </DialogTrigger>
 
       <DialogContent
-        className={`zed-glass border-white/10 flex flex-col overflow-hidden
+        className={`zar-glass border-white/10 flex flex-col overflow-hidden
           w-[calc(100vw-1rem)] sm:w-full max-w-2xl
           h-[calc(100vh-2rem)] sm:h-auto sm:max-h-[90vh]
           ${compact ? "p-3 sm:p-4" : "p-4 sm:p-6"}`}
@@ -98,7 +98,7 @@ export default function SettingsModal() {
             <img src={zLogoPath} alt="Z" className="h-4 w-4" />
             <span>
               <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-                ZED
+                ZAR
               </span>{" "}
               Settings
             </span>

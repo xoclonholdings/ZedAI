@@ -126,7 +126,7 @@ export const TRADING_BUILD_SEQUENCE: TradingBuildStep[] = [
   {
     order: 1,
     name: "Broker Integration",
-    purpose: "Make paper account status, positions, orders, and approval controls available to ZED.",
+    purpose: "Make paper account status, positions, orders, and approval controls available to ZAR.",
   },
   {
     order: 2,

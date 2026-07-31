@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCw, ShieldCheck, SlidersHorizontal, X } from "lucide-react";
 
-import { zedErrorMessage } from "@shared/error-contract";
+import { zarErrorMessage } from "@shared/error-contract";
 import type {
   PaperTrade,
   PaperTradingGovernanceCheckSetting,
@@ -81,7 +81,7 @@ function rr(v?: number | null): string {
 }
 
 function responseError(body: any, fallback: string): string {
-  return zedErrorMessage(body?.errorDetail, body?.error || fallback);
+  return zarErrorMessage(body?.errorDetail, body?.error || fallback);
 }
 
 export default function SandboxWorkspace() {

@@ -2,7 +2,7 @@
   "id": 10,
   "key": "risk_model",
   "value": "{\"tiers\":[\"low\",\"medium\",\"high\",\"critical\"],\"definitions\":{\"low\":\"Read-only operations, internal drafts, memory writes\",\"medium\":\"External API calls, scheduled content, calendar writes\",\"high\":\"Email sends, social posts going live, code commits\",\"critical\":\"Production deployments, financial transactions, credential changes\"},\"enforcement\":{\"critical_requires\":[\"explicit_admin_approval\",\"audit_log_entry\",\"confirmation_step\"]}}",
-  "description": "ZED risk model from core.memory.json",
+  "description": "ZAR risk model from core.memory.json",
   "adminOnly": true,
   "createdAt": "2026-04-09T02:08:22.694Z",
   "updatedAt": "2026-04-09T02:14:28.678Z"

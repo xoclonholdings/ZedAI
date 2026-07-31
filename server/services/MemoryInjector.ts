@@ -64,7 +64,7 @@ async function loadWorking(): Promise<string> {
   try {
     const raw = await fs.readFile(WORKING_MEMORY, "utf-8");
     const trimmed = raw.trim();
-    if (!trimmed || trimmed === "# Working Memory — Active Tasks\n*ZED Operations Agent — Working Context*\n\n<!-- This file is updated by OperationsAgent during each session -->\n<!-- Format: ## [ISO timestamp] User: [userId] -->\n\n## Session Initialized\nSystem ready. No active tasks.") {
+    if (!trimmed || trimmed === "# Working Memory — Active Tasks\n*ZAR Operations Agent — Working Context*\n\n<!-- This file is updated by OperationsAgent during each session -->\n<!-- Format: ## [ISO timestamp] User: [userId] -->\n\n## Session Initialized\nSystem ready. No active tasks.") {
       return "No active tasks recorded yet.";
     }
     return trimmed.slice(-MAX_WORKING_CHARS);
@@ -138,7 +138,7 @@ export async function injectMemory(agentName: string, options?: InjectMemoryOpti
     includeFoundation ? loadFoundation(options?.userId) : Promise.resolve("Admin-only foundation memory is not included in this context."),
   ]);
 
-  const formatted = `## ZED Hub Memory Context
+  const formatted = `## ZAR Hub Memory Context
 **Agent**: ${agentName}
 
 ### Active Priorities (Working Memory)

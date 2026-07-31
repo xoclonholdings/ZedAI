@@ -16,7 +16,7 @@ export async function getSessionMiddleware() {
   const isHostedCrossOrigin = Boolean(frontendOrigin);
 
   return session({
-    name: "zed.sid",
+    name: "zar.sid",
     proxy: isHostedCrossOrigin,
     secret: settings.auth.sessionSecret,
     store: new FileSessionStore(),

@@ -37,14 +37,14 @@ export function ProjectView({
 }) {
   return (
     <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Plus size={16} className="text-emerald-300" />
             Durable Project Memory
           </CardTitle>
           <CardDescription>
-            Store long-lived business, product, and operating knowledge that ZED should retrieve
+            Store long-lived business, product, and operating knowledge that ZAR should retrieve
             consistently.
           </CardDescription>
         </CardHeader>
@@ -93,8 +93,8 @@ export function ProjectView({
               rows={14}
               value={draft.content}
               onChange={(e) => setDraft((prev) => ({ ...prev, content: e.target.value }))}
-              className="zed-glass border-white/10 text-sm"
-              placeholder="Write the durable knowledge ZED should retain and retrieve later."
+              className="zar-glass border-white/10 text-sm"
+              placeholder="Write the durable knowledge ZAR should retain and retrieve later."
             />
           </label>
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
@@ -134,7 +134,7 @@ export function ProjectView({
         </CardContent>
       </Card>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="text-base">Stored Project Memory</CardTitle>
           <CardDescription>Review, edit, or remove durable memory entries.</CardDescription>

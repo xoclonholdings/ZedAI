@@ -1,7 +1,7 @@
 /**
  * TaskLifecycleManager
  *
- * Phase 4 of Zed's Execution Layer.
+ * Phase 4 of ZAR's Execution Layer.
  *
  * Tracks the full life of an execution task:
  *

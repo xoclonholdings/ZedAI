@@ -112,7 +112,7 @@ ConversationID: ${request.conversationId || "none"}`.trim();
     const policy = await decideApprovalPolicy(request.message);
 
     if (policy.mode === "never") {
-      const refusalReply = policy.refusalReply || "Zed isn't allowed to do that per your Settings.";
+      const refusalReply = policy.refusalReply || "ZAR isn't allowed to do that per your Settings.";
       await this.writeToMemory(request, refusalReply, [
         {
           type: "policy_refused",
@@ -137,7 +137,7 @@ ConversationID: ${request.conversationId || "none"}`.trim();
     }
 
     // Stream-then-buffer per SPEC.md line 111: provider streams to
-    // server, server buffers, presentZedResponse (applied upstream)
+    // server, server buffers, presentZarResponse (applied upstream)
     // acts on complete text before it reaches the client. Gains
     // provider-timeout resilience without changing user-visible UX.
     const reply = await generateBufferedStreamFromProvider(
@@ -188,7 +188,7 @@ ConversationID: ${request.conversationId || "none"}`.trim();
         providerStatus: emailEnabled ? "enabled" : "disabled",
         dispatchPayload: {
           to,
-          subject: "Message from ZED",
+          subject: "Message from ZAR",
           body: saying || message,
         },
       };

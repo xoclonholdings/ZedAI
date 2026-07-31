@@ -24,13 +24,13 @@
   --ring: hsl(266, 85%, 58%);
   --radius: 1rem;
 
-  /* ZED Brand Colors */
-  --zed-purple: hsl(266, 85%, 58%);
-  --zed-cyan: hsl(195, 100%, 50%);
-  --zed-pink: hsl(320, 85%, 60%);
-  --zed-gradient: linear-gradient(135deg, hsl(266, 85%, 58%) 0%, hsl(195, 100%, 50%) 50%, hsl(320, 85%, 60%) 100%);
-  --zed-glass: rgba(255, 255, 255, 0.05);
-  --zed-glow: 0 0 50px rgba(138, 43, 226, 0.3);
+  /* ZAR Brand Colors */
+  --zar-purple: hsl(266, 85%, 58%);
+  --zar-cyan: hsl(195, 100%, 50%);
+  --zar-pink: hsl(320, 85%, 60%);
+  --zar-gradient: linear-gradient(135deg, hsl(266, 85%, 58%) 0%, hsl(195, 100%, 50%) 50%, hsl(320, 85%, 60%) 100%);
+  --zar-glass: rgba(255, 255, 255, 0.05);
+  --zar-glow: 0 0 50px rgba(138, 43, 226, 0.3);
 }
 
 @layer base {
@@ -191,20 +191,20 @@
     transition: none !important;
   }
 
-  /* ZED Cyberpunk Gradient */
-  .zed-gradient {
+  /* ZAR Cyberpunk Gradient */
+  .zar-gradient {
     background: linear-gradient(135deg, #8B00FF 0%, #00BFFF 50%, #FF1493 100%);
     border: 1px solid rgba(139, 0, 255, 0.3);
     box-shadow: 0 0 20px rgba(139, 0, 255, 0.5), inset 0 0 20px rgba(0, 191, 255, 0.2);
   }
   
-  .zed-gradient-hover {
+  .zar-gradient-hover {
     background: linear-gradient(135deg, #9A00FF 0%, #1EC5FF 50%, #FF69B4 100%);
     box-shadow: 0 0 30px rgba(139, 0, 255, 0.7), inset 0 0 30px rgba(0, 191, 255, 0.3);
   }
 
   /* Cyberpunk Glass Effect */
-  .zed-glass {
+  .zar-glass {
     backdrop-filter: blur(10px) saturate(120%);
     background: rgba(0, 0, 0, 0.7);
     border: 1px solid rgba(139, 0, 255, 0.2);
@@ -212,11 +212,11 @@
   }
 
   /* Floating Animation */
-  .zed-float {
-    animation: zed-float 8s ease-in-out infinite;
+  .zar-float {
+    animation: zar-float 8s ease-in-out infinite;
   }
 
-  @keyframes zed-float {
+  @keyframes zar-float {
     0%, 100% { transform: translateY(0) rotate(0deg); }
     25% { transform: translateY(-8px) rotate(1deg); }
     50% { transform: translateY(-4px) rotate(-1deg); }
@@ -224,25 +224,25 @@
   }
 
   /* Pulse Glow Effect */
-  .zed-glow {
-    box-shadow: var(--zed-glow);
-    animation: zed-pulse-glow 3s ease-in-out infinite alternate;
+  .zar-glow {
+    box-shadow: var(--zar-glow);
+    animation: zar-pulse-glow 3s ease-in-out infinite alternate;
   }
 
-  @keyframes zed-pulse-glow {
+  @keyframes zar-pulse-glow {
     from { box-shadow: 0 0 20px rgba(139, 0, 255, 0.3); }
     to { box-shadow: 0 0 40px rgba(139, 0, 255, 0.6), 0 0 60px rgba(0, 191, 255, 0.3); }
   }
   
   /* Cyberpunk Button Styles */
-  .zed-button {
+  .zar-button {
     background: rgba(0, 0, 0, 0.8);
     border: 1px solid rgba(139, 0, 255, 0.3);
     color: #FFFFFF;
     transition: all 0.3s ease;
   }
   
-  .zed-button:hover {
+  .zar-button:hover {
     background: rgba(139, 0, 255, 0.1);
     border-color: rgba(139, 0, 255, 0.6);
     box-shadow: 0 0 15px rgba(139, 0, 255, 0.4);
@@ -250,30 +250,30 @@
   }
   
   /* Cyberpunk Input Styles */
-  .zed-input {
+  .zar-input {
     background: rgba(0, 0, 0, 0.9);
     border: 1px solid rgba(139, 0, 255, 0.3);
     color: #FFFFFF;
   }
   
-  .zed-input:focus {
+  .zar-input:focus {
     border-color: rgba(139, 0, 255, 0.8);
     box-shadow: 0 0 10px rgba(139, 0, 255, 0.5);
   }
   
   /* Cyberpunk Avatar */
-  .zed-avatar {
+  .zar-avatar {
     background: linear-gradient(135deg, #8B00FF 0%, #00BFFF 100%);
     box-shadow: 0 0 10px rgba(139, 0, 255, 0.5);
   }
 
   /* Shimmer Effect */
-  .zed-shimmer {
+  .zar-shimmer {
     position: relative;
     overflow: hidden;
   }
 
-  .zed-shimmer::before {
+  .zar-shimmer::before {
     content: '';
     position: absolute;
     top: 0;
@@ -281,24 +281,24 @@
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    animation: zed-shimmer 3s infinite;
+    animation: zar-shimmer 3s infinite;
   }
 
-  @keyframes zed-shimmer {
+  @keyframes zar-shimmer {
     0% { left: -100%; }
     100% { left: 100%; }
   }
 
   /* Morphing Border */
-  .zed-morph-border {
+  .zar-morph-border {
     position: relative;
     border: 2px solid transparent;
     background: linear-gradient(var(--card), var(--card)) padding-box,
-                var(--zed-gradient) border-box;
-    animation: zed-morph 6s ease-in-out infinite;
+                var(--zar-gradient) border-box;
+    animation: zar-morph 6s ease-in-out infinite;
   }
 
-  @keyframes zed-morph {
+  @keyframes zar-morph {
     0%, 100% { border-radius: 1rem; }
     25% { border-radius: 2rem 1rem 2rem 1rem; }
     50% { border-radius: 1rem 2rem 1rem 2rem; }
@@ -306,38 +306,38 @@
   }
 
   /* Typing Indicator */
-  .zed-typing {
-    animation: zed-typing 2s ease-in-out infinite;
+  .zar-typing {
+    animation: zar-typing 2s ease-in-out infinite;
   }
 
-  @keyframes zed-typing {
+  @keyframes zar-typing {
     0%, 20% { opacity: 0.3; transform: scale(0.8); }
     50% { opacity: 1; transform: scale(1.1); }
     80%, 100% { opacity: 0.3; transform: scale(0.8); }
   }
 
   /* Message Bubble Enhancement */
-  .zed-message {
+  .zar-message {
     backdrop-filter: blur(10px);
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
     transition: all 0.3s ease;
   }
 
-  .zed-message:hover {
+  .zar-message:hover {
     background: rgba(255, 255, 255, 0.05);
     transform: translateY(-2px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   }
 
   /* Avatar Gradient */
-  .zed-avatar {
-    background: var(--zed-gradient);
+  .zar-avatar {
+    background: var(--zar-gradient);
     position: relative;
     overflow: hidden;
   }
 
-  .zed-avatar::before {
+  .zar-avatar::before {
     content: '';
     position: absolute;
     top: -50%;
@@ -345,43 +345,43 @@
     width: 200%;
     height: 200%;
     background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: zed-avatar-spin 4s linear infinite;
+    animation: zar-avatar-spin 4s linear infinite;
   }
 
-  @keyframes zed-avatar-spin {
+  @keyframes zar-avatar-spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
 
   /* Enhanced Input Field */
-  .zed-input {
+  .zar-input {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     transition: all 0.3s ease;
   }
 
-  .zed-input:focus {
+  .zar-input:focus {
     background: rgba(255, 255, 255, 0.05);
     border-color: hsl(266, 85%, 58%);
     box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.2);
   }
 
   /* Sidebar Enhancement */
-  .zed-sidebar {
+  .zar-sidebar {
     background: linear-gradient(180deg, hsl(240, 10%, 8%) 0%, hsl(240, 6%, 6%) 100%);
     backdrop-filter: blur(20px);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   /* Button Enhancements */
-  .zed-button {
+  .zar-button {
     position: relative;
     overflow: hidden;
     transition: all 0.3s ease;
   }
 
-  .zed-button::before {
+  .zar-button::before {
     content: '';
     position: absolute;
     top: 0;
@@ -392,7 +392,7 @@
     transition: all 0.5s ease;
   }
 
-  .zed-button:hover::before {
+  .zar-button:hover::before {
     left: 100%;
   }
 
@@ -646,12 +646,12 @@
 }
 
 @media (max-width: 768px) {
-  .zed-button {
+  .zar-button {
     min-height: 44px;
     padding: 0.75rem 1rem;
   }
   
-  .zed-input {
+  .zar-input {
     min-height: 48px;
     font-size: 16px; /* Prevents zoom on iOS */
   }

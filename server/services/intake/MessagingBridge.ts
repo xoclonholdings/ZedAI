@@ -2,7 +2,7 @@
  * MessagingBridge
  *
  * Inbound: routes any incoming message (whatsapp / telegram / discord /
- * sms / slack) through ExternalCommandGateway so it becomes a Zed task
+ * sms / slack) through ExternalCommandGateway so it becomes a ZAR task
  * with approval gating, just like a chat message.
  *
  * Outbound: real provider sends. Configuration comes from env vars and

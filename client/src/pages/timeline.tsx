@@ -162,7 +162,7 @@ export default function TimelinePage() {
             size="sm"
             onClick={() => void refresh()}
             disabled={loading}
-            className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+            className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
             aria-label="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -176,7 +176,7 @@ export default function TimelinePage() {
           </div>
           <h1 className="mt-2 text-2xl font-semibold">How things have progressed</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Everything Zed has learned or updated, most recent first. Focus on progress rather
+            Everything ZAR has learned or updated, most recent first. Focus on progress rather
             than chat logs.
           </p>
         </section>
@@ -216,7 +216,7 @@ export default function TimelinePage() {
           <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-            Nothing to show yet. As Zed learns, updates land here in order.
+            Nothing to show yet. As ZAR learns, updates land here in order.
           </div>
         ) : (
           <div className="relative">

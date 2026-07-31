@@ -53,7 +53,7 @@ export function CoreView({
         rows={rows}
         value={foundationProfile[key]}
         onChange={(e) => setFoundationProfile((prev) => ({ ...prev, [key]: e.target.value }))}
-        className="zed-glass border-white/10 text-sm"
+        className="zar-glass border-white/10 text-sm"
         placeholder={placeholder}
       />
     </label>
@@ -61,14 +61,14 @@ export function CoreView({
 
   return (
     <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <BrainCircuit size={16} className="text-cyan-300" />
             Foundation Profile
           </CardTitle>
           <CardDescription>
-            Curate the global company-level knowledge ZED should use across brand, products,
+            Curate the global company-level knowledge ZAR should use across brand, products,
             mission, and strategic direction.
           </CardDescription>
         </CardHeader>
@@ -86,14 +86,14 @@ export function CoreView({
             "priorities",
             "Strategic Priorities",
             6,
-            "Near-term priorities, current focus areas, and what ZED should optimize toward.",
+            "Near-term priorities, current focus areas, and what ZAR should optimize toward.",
           )}
 
           <Card className="border-white/10 bg-black/20">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Foundation Memory Preview</CardTitle>
               <CardDescription>
-                This is the structured core-memory document ZED will retrieve from the global
+                This is the structured core-memory document ZAR will retrieve from the global
                 foundation layer.
               </CardDescription>
             </CardHeader>
@@ -116,7 +116,7 @@ export function CoreView({
         </CardContent>
       </Card>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Layers size={16} className="text-cyan-300" />
@@ -148,7 +148,7 @@ export function CoreView({
               rows={16}
               value={coreDraft.value}
               onChange={(e) => setCoreDraft((prev) => ({ ...prev, value: e.target.value }))}
-              className="zed-glass border-white/10 font-mono text-xs"
+              className="zar-glass border-white/10 font-mono text-xs"
               placeholder="Store structured JSON, YAML-ish text, or canonical memory text here."
             />
           </label>
@@ -185,7 +185,7 @@ export function CoreView({
         </CardContent>
       </Card>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="text-base">Current Core Memory</CardTitle>
           <CardDescription>

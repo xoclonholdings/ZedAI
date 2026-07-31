@@ -66,7 +66,7 @@ const DEFAULTS: VoiceSettings = {
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-export function HowZedSounds() {
+export function HowZarSounds() {
   const [voice, setVoice] = useState<VoiceSettings>(DEFAULTS);
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<SaveStatus>("idle");
@@ -176,10 +176,10 @@ export function HowZedSounds() {
       <header className="mb-6 flex w-full min-w-0 max-w-full flex-wrap items-start justify-between gap-4 overflow-hidden">
         <div className="min-w-0 flex-1">
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
-            How Zed sounds
+            How ZAR sounds
           </h2>
           <p className="mt-1.5 max-w-full break-words text-[13.5px] leading-snug text-white/50 [overflow-wrap:anywhere] sm:max-w-[62ch]">
-            Set the voice Zed uses when it talks to you. These shape tone, formality, and what Zed avoids saying on every response.
+            Set the voice ZAR uses when it talks to you. These shape tone, formality, and what ZAR avoids saying on every response.
           </p>
         </div>
         <SaveIndicator status={status} errorMessage={errorMessage} />
@@ -196,7 +196,7 @@ export function HowZedSounds() {
       <SettingGroup title="Personality">
         <SettingRow
           label="Tone"
-          description="The default emotional register Zed answers in."
+          description="The default emotional register ZAR answers in."
         >
           <LabeledSelect<VoiceTone>
             value={voice.tone}
@@ -207,7 +207,7 @@ export function HowZedSounds() {
 
         <SettingRow
           label="Formality"
-          description="Casual chat vs. a professional colleague. Zed adapts, but this is the resting point."
+          description="Casual chat vs. a professional colleague. ZAR adapts, but this is the resting point."
         >
           <LabeledSlider
             value={voice.formality}
@@ -220,7 +220,7 @@ export function HowZedSounds() {
 
         <SettingRow
           label="Perspective"
-          description="How Zed positions itself when giving an opinion."
+          description="How ZAR positions itself when giving an opinion."
         >
           <LabeledSelect<VoicePerspective>
             value={voice.perspective}
@@ -230,10 +230,10 @@ export function HowZedSounds() {
         </SettingRow>
       </SettingGroup>
 
-      <SettingGroup title="How Zed writes">
+      <SettingGroup title="How ZAR writes">
         <SettingRow
           label="Default response length"
-          description="Zed follows this unless a question clearly needs more or less."
+          description="ZAR follows this unless a question clearly needs more or less."
         >
           <Segmented<VoiceResponseLength>
             options={LENGTH_OPTIONS}
@@ -245,7 +245,7 @@ export function HowZedSounds() {
 
         <SettingRow
           label="Show reasoning by default"
-          description="Adds a short “why” after answers. Off means Zed just gives the result."
+          description="Adds a short “why” after answers. Off means ZAR just gives the result."
         >
           <Toggle
             checked={voice.showReasoning}
@@ -280,7 +280,7 @@ export function HowZedSounds() {
       <SettingGroup title="Things to avoid">
         <SettingRow
           label="Prohibited phrases"
-          description="Words or phrases Zed shouldn’t use when answering you — one per line."
+          description="Words or phrases ZAR shouldn’t use when answering you — one per line."
           stack
         >
           <PlainTextarea

@@ -262,7 +262,7 @@ function mergeEmail(raw: Partial<AdminSettings> | null | undefined) {
         id: "email-account-primary",
         label: raw?.integrations?.email?.fromAddress || "Primary sender",
         provider: raw?.integrations?.email?.provider || "smtp",
-        fromName: raw?.integrations?.email?.fromName || "ZED",
+        fromName: raw?.integrations?.email?.fromName || "ZAR",
         fromAddress: raw?.integrations?.email?.fromAddress || "",
         smtpHost: raw?.integrations?.email?.smtpHost || "smtp.mail.me.com",
         smtpPort: raw?.integrations?.email?.smtpPort || 587,

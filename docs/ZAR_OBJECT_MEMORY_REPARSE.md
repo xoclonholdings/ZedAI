@@ -1,10 +1,10 @@
-# ZED Object Memory Reparse
+# ZAR Object Memory Reparse
 
 ## What it does
 
-The object-memory reparse turns ZED's flat foundation memory (ChatGPT exports, conversation transcripts, markdown summaries) into structured objects that the Cognitive Core can retrieve and reason over.
+The object-memory reparse turns ZAR's flat foundation memory (ChatGPT exports, conversation transcripts, markdown summaries) into structured objects that the Cognitive Core can retrieve and reason over.
 
-Instead of stuffing raw text into every prompt, ZED extracts typed objects (projects, systems, features, decisions, preferences, rules, constraints, open questions, tasks, integrations, repositories, events) with provenance, confidence, and relationships. Retrieval is selective per query — only the top-K objects most relevant to what the user is asking about are pulled into the prompt.
+Instead of stuffing raw text into every prompt, ZAR extracts typed objects (projects, systems, features, decisions, preferences, rules, constraints, open questions, tasks, integrations, repositories, events) with provenance, confidence, and relationships. Retrieval is selective per query — only the top-K objects most relevant to what the user is asking about are pulled into the prompt.
 
 ## Input sources
 
@@ -107,7 +107,7 @@ Every object is classified into one of:
 
 The classifier is heuristic: `user_profile` / `rule` / `preference` → core; `project` / `system` / `feature` / `repository` → project; `task` / `open_question` / `event` → working; `memory_conflict` → requires_review.
 
-## How ZED uses object memory
+## How ZAR uses object memory
 
 At every chat request, `KnowledgeService.buildContext` calls `retrieveObjectMemoryForQuery(query, 5)`. That function reads the applied graph (if one exists), scores objects against the query by keyword overlap and confidence, and returns a formatted block containing at most K objects — never the whole graph.
 

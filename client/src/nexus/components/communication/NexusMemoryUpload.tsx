@@ -9,11 +9,11 @@ interface NexusMemoryUploadProps {
 }
 
 /**
- * The dock's "Upload" trigger - teaches Zed something, through the same
+ * The dock's "Upload" trigger - teaches ZAR something, through the same
  * /api/me/memory/upload pipeline the Memory page uses. Unlike Image/Doc,
  * this never needs a conversation: it's not a chat attachment, it's a
  * direct add to the object-memory graph, so zips, datasets, and other
- * "random things Zed should know" go straight into what every
+ * "random things ZAR should know" go straight into what every
  * conversation can already pull from.
  */
 export function NexusMemoryUpload({ onDone }: NexusMemoryUploadProps) {
@@ -40,8 +40,8 @@ export function NexusMemoryUpload({ onDone }: NexusMemoryUploadProps) {
         title: newObjects > 0 ? `Learned ${newObjects} thing${newObjects === 1 ? "" : "s"}` : "Nothing new to learn",
         description:
           newObjects > 0
-            ? "Zed can pull this into any conversation now."
-            : "Zed couldn't extract anything useful from that file.",
+            ? "ZAR can pull this into any conversation now."
+            : "ZAR couldn't extract anything useful from that file.",
       });
       setUploadingCount(0);
       onDone();
@@ -77,13 +77,13 @@ export function NexusMemoryUpload({ onDone }: NexusMemoryUploadProps) {
         <>
           <Loader2 size={18} className="animate-spin text-cyan-300" />
           <span className="text-[13px] text-white/70">
-            Teaching Zed from {uploadingCount} {uploadingCount === 1 ? "file" : "files"}...
+            Teaching ZAR from {uploadingCount} {uploadingCount === 1 ? "file" : "files"}...
           </span>
         </>
       ) : (
         <>
           <BrainCircuit size={18} className="text-white/45" />
-          <span className="text-[13px] font-medium text-white">Tap to teach Zed something</span>
+          <span className="text-[13px] font-medium text-white">Tap to teach ZAR something</span>
         </>
       )}
       <input
@@ -93,7 +93,7 @@ export function NexusMemoryUpload({ onDone }: NexusMemoryUploadProps) {
         onChange={handleFileInput}
         className="hidden"
         accept=".zip,.csv,.txt,.md,.docx,.json,.xlsx,.pdf"
-        aria-label="Choose files for Zed to learn from"
+        aria-label="Choose files for ZAR to learn from"
       />
     </button>
   );

@@ -1,14 +1,14 @@
 import { useState } from "react";
 
 import { ComingSoon } from "./settings/ComingSoon";
-import { HowZedSounds } from "./settings/HowZedSounds";
+import { HowZarSounds } from "./settings/HowZarSounds";
 import { WhatNeedsApproval } from "./settings/WhatNeedsApproval";
 import { SETTINGS_CATEGORIES, type SettingsCategoryId } from "./settings/categories";
 import { SettingsSidebar } from "./settings/SettingsSidebar";
 
 /**
  * Plain-language Settings surface — sidebar of 8 categories, one
- * content pane per category. Only "How Zed sounds" is fully built
+ * content pane per category. Only "How ZAR sounds" is fully built
  * in this first PR; the other 7 show a placeholder that's honest
  * about where the underlying behaviour currently lives (the Ruleset
  * tab). Each subsequent PR replaces one placeholder with a real
@@ -24,7 +24,7 @@ export default function SettingsSection() {
 
       <main className="w-full min-w-0 max-w-full overflow-x-hidden">
         {active === "voice" ? (
-          <HowZedSounds />
+          <HowZarSounds />
         ) : active === "approval" ? (
           <WhatNeedsApproval />
         ) : (

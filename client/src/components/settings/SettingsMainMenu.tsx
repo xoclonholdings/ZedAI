@@ -36,14 +36,14 @@ const menuItems: MenuItem[] = [
   {
     key: "preferences",
     label: "Preferences",
-    description: "Your name, how the app looks, and how Zed talks back.",
+    description: "Your name, how the app looks, and how ZAR talks back.",
     icon: User,
     color: "text-cyan-400",
   },
   {
     key: "workspace",
     label: "Projects & workspaces",
-    description: "Organize what Zed's working on. Set project scope and privacy.",
+    description: "Organize what ZAR's working on. Set project scope and privacy.",
     icon: SlidersHorizontal,
     color: "text-purple-400",
   },

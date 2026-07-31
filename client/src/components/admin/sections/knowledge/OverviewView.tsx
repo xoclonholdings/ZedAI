@@ -21,11 +21,11 @@ export function OverviewView({
   onSearch: () => void;
 }) {
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardHeader>
         <CardTitle className="text-base">Retrieval Inspector</CardTitle>
         <CardDescription>
-          Search live knowledge and inspect what ZED can actually retrieve from foundation, rules,
+          Search live knowledge and inspect what ZAR can actually retrieve from foundation, rules,
           project memory, scratchpad, and semantic recall.
         </CardDescription>
       </CardHeader>

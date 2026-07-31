@@ -139,7 +139,7 @@ async function askModelForJson(params: {
     return JSON.parse(extractJson(raw));
   } catch {
     throw new Error(
-      `${params.failureContext} failed because the AI host returned a response Zed could not parse.`,
+      `${params.failureContext} failed because the AI host returned a response ZAR could not parse.`,
     );
   }
 }
@@ -266,7 +266,7 @@ async function generateBlueprintFromModel(params: {
   const parsed = await askModelForJson({
     prompt,
     systemPrompt:
-      "You are Zed's Cognitive Core designing a course blueprint from real source material. Ground every unit and lesson in what was actually provided — never invent generic filler. Output only the JSON object requested, no commentary.",
+      "You are ZAR's Cognitive Core designing a course blueprint from real source material. Ground every unit and lesson in what was actually provided — never invent generic filler. Output only the JSON object requested, no commentary.",
     failureContext: "Blueprint generation",
   });
 
@@ -339,7 +339,7 @@ async function generateLesson(
   const parsed = await askModelForJson({
     prompt,
     systemPrompt:
-      "You are Zed's Cognitive Core writing one lesson of a course, grounded strictly in the retrieved material provided. Output only the JSON object requested.",
+      "You are ZAR's Cognitive Core writing one lesson of a course, grounded strictly in the retrieved material provided. Output only the JSON object requested.",
     failureContext: "Lesson generation",
   });
 
@@ -386,7 +386,7 @@ async function generateLesson(
     practicePrompt: String(parsed.practicePrompt || "").trim() || lessonBlueprint.practice,
     applyPrompt:
       String(parsed.applyPrompt || "").trim() ||
-      `Apply this lesson to one real Zed context: ${path.projectId ? "the selected project" : path.workspaceId ? `${WORKSPACE_LABEL[path.workspaceId] || path.workspaceId} workspace` : "an active project or decision"}.`,
+      `Apply this lesson to one real ZAR context: ${path.projectId ? "the selected project" : path.workspaceId ? `${WORKSPACE_LABEL[path.workspaceId] || path.workspaceId} workspace` : "an active project or decision"}.`,
     reviewSummary: String(parsed.reviewSummary || "").trim() || lessonBlueprint.verification,
     createdAt,
     updatedAt: createdAt,
@@ -526,7 +526,7 @@ export class LearningStudioService {
 
     const grounding = await retrieveGrounding(`${topic} ${notes}`.trim(), 10);
     const rawExcerpts = rawSourceExcerpts(sources, 1200, 6);
-    const assumedLevel = input.assumedLevel || "Beginner with some Zed context";
+    const assumedLevel = input.assumedLevel || "Beginner with some ZAR context";
 
     const generated = await generateBlueprintFromModel({
       topic,
@@ -640,7 +640,7 @@ export class LearningStudioService {
     const parsed = await askModelForJson({
       prompt,
       systemPrompt:
-        "You are Zed's Cognitive Core revising a course blueprint per a specific user request. Preserve unaffected content exactly. Output only the JSON object requested.",
+        "You are ZAR's Cognitive Core revising a course blueprint per a specific user request. Preserve unaffected content exactly. Output only the JSON object requested.",
       failureContext: "Blueprint revision",
     });
 

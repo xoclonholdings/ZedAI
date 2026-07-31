@@ -6,13 +6,13 @@ import {
 } from "./execution/DigitalExecutionService";
 
 /**
- * Zed's runtime-error self-repair loop.
+ * ZAR's runtime-error self-repair loop.
  *
  * When a runtime action fails, this layer inspects the failure,
  * chooses a bounded repair strategy, and retries — instead of just
  * writing the error to a log and moving on. Every strategy attempt
  * is recorded in a reasoning trail that gets returned alongside the
- * final result so operators can see what Zed tried before it
+ * final result so operators can see what ZAR tried before it
  * either recovered or gave up.
  *
  * Design principles:

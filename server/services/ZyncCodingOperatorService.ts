@@ -481,7 +481,7 @@ export class ZyncCodingOperatorService {
 
   static async githubBranches() {
     type GhRef = { ref: string; object?: { sha?: string; type?: string } };
-    const repo = process.env.GITHUB_REPOSITORY || "xoclonholdings/ZedAI";
+    const repo = process.env.GITHUB_REPOSITORY || "xoclonholdings/ZarAI";
     const refs = await parseGhJson<GhRef[]>(["api", `repos/${repo}/git/matching-refs/heads`]);
     if (!refs.ok || !refs.value) {
       return {
@@ -522,7 +522,7 @@ export class ZyncCodingOperatorService {
     }
 
     type GhRef = { object?: { sha?: string } };
-    const repo = process.env.GITHUB_REPOSITORY || "xoclonholdings/ZedAI";
+    const repo = process.env.GITHUB_REPOSITORY || "xoclonholdings/ZarAI";
     const main = await parseGhJson<GhRef>(["api", `repos/${repo}/git/ref/heads/main`]);
     if (!main.ok || !main.value?.object?.sha) {
       throw new Error(main.error?.stderr || "Unable to read main SHA");

@@ -104,7 +104,7 @@ export function RunDetailPage() {
           size="sm"
           onClick={fetchRun}
           disabled={loading}
-          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zar-button"
         >
           <RefreshCw size={14} className={loading ? "mr-1 animate-spin" : "mr-1"} />
           Refresh
@@ -148,7 +148,7 @@ export function RunDetailPage() {
                   </Button>
                 )}
                 {canCancel(run.status) && (
-                  <Button size="sm" variant="outline" onClick={cancel} disabled={actionPending !== null} className="rounded-xl border-red-500/40 text-red-200 zed-glass">
+                  <Button size="sm" variant="outline" onClick={cancel} disabled={actionPending !== null} className="rounded-xl border-red-500/40 text-red-200 zar-glass">
                     <XCircle size={14} className="mr-1" />
                     {actionPending === "cancel" ? "Cancelling..." : "Cancel"}
                   </Button>
@@ -165,7 +165,7 @@ export function RunDetailPage() {
                   <Button onClick={approve} disabled={actionPending !== null} className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700">
                     {actionPending === "approve" ? "Approving..." : "Approve & Continue"}
                   </Button>
-                  <Button onClick={reject} disabled={actionPending !== null} variant="outline" className="zed-glass border-red-500/40 text-red-200">
+                  <Button onClick={reject} disabled={actionPending !== null} variant="outline" className="zar-glass border-red-500/40 text-red-200">
                     {actionPending === "reject" ? "Rejecting..." : "Reject"}
                   </Button>
                 </div>
@@ -182,10 +182,10 @@ export function RunDetailPage() {
             </div>
 
             {run.report && (
-              <section className="zed-glass rounded-2xl p-4">
+              <section className="zar-glass rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Report</div>
                 <h2 className="mt-2 text-lg font-semibold">{run.report.title}</h2>
-                <div className="zed-markdown mt-3 text-sm leading-6 text-muted-foreground">
+                <div className="zar-markdown mt-3 text-sm leading-6 text-muted-foreground">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {normalizeMarkdown(run.report.executiveSummary)}
                   </ReactMarkdown>
@@ -241,7 +241,7 @@ function ReportList({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
       <div className="text-sm font-semibold">{title}</div>
-      <div className="zed-markdown mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
+      <div className="zar-markdown mt-2 space-y-1 text-xs leading-5 text-muted-foreground">
         {items.length ? (
           items.map((item, index) => (
             <ReactMarkdown key={`${title}-${index}`} remarkPlugins={[remarkGfm]}>

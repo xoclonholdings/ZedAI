@@ -42,9 +42,9 @@ import type {
 } from "@shared/object-memory-types";
 
 /**
- * Zed's operational home — the Knowledge Map.
+ * ZAR's operational home — the Knowledge Map.
  *
- * Home leads with what Zed knows (objects), what needs attention
+ * Home leads with what ZAR knows (objects), what needs attention
  * (discovery), and how to move (workspaces). Domain snapshots
  * (Trading progression, Budget) live below as "Current work" — they
  * remain but stop dominating. The full trading stage screen and
@@ -277,7 +277,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-20 border-b border-white/10 zed-glass px-4 pb-3 pt-safe-sm">
+      <header className="sticky top-0 z-20 border-b border-white/10 zar-glass px-4 pb-3 pt-safe-sm">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-[10px] uppercase tracking-[0.14em] text-white/40">Home</div>
@@ -318,7 +318,7 @@ export default function HomePage() {
                 {approvalsCount} approval{approvalsCount === 1 ? "" : "s"} waiting for you
               </div>
               <div className="text-[12px] text-amber-100/70 mt-0.5">
-                Zed's paused these actions until you approve or reject.
+                ZAR's paused these actions until you approve or reject.
               </div>
             </div>
             <button
@@ -354,7 +354,7 @@ export default function HomePage() {
 
         {/* Quick actions */}
         <section className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <QuickAction icon={MessageSquare} label="Ask Zed" onClick={() => navigate("/chat")} />
+          <QuickAction icon={MessageSquare} label="Ask ZAR" onClick={() => navigate("/chat")} />
           <QuickAction icon={Plus} label="Add to memory" onClick={() => navigate("/learning")} />
           {isAdmin ? (
             <QuickAction

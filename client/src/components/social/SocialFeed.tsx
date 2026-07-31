@@ -7,9 +7,9 @@ import { AlertCircle } from "lucide-react";
 
 export default function SocialFeed() {
   return (
-    <Card className="zed-message p-6">
+    <Card className="zar-message p-6">
       <div className="text-center space-y-3">
-        <div className="w-12 h-12 zed-avatar rounded-2xl flex items-center justify-center mx-auto">
+        <div className="w-12 h-12 zar-avatar rounded-2xl flex items-center justify-center mx-auto">
           <AlertCircle size={24} className="text-yellow-400" />
         </div>
         <div>

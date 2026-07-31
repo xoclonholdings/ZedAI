@@ -45,7 +45,7 @@ export async function runMigrations(): Promise<void> {
     // Seed the canonical Admin user so FK constraints are satisfied.
     await db.execute(sql`
       INSERT INTO users (id, email, first_name, last_name)
-      VALUES ('user_admin', 'admin@zed-ai.online', 'ZED', 'Admin')
+      VALUES ('user_admin', 'admin@zed-ai.online', 'ZAR', 'Admin')
       ON CONFLICT (id) DO NOTHING;
     `);
 

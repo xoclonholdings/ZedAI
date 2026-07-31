@@ -1,4 +1,4 @@
-export type ZedStrategicTrigger =
+export type ZarStrategicTrigger =
   | "strategy"
   | "architecture"
   | "product"
@@ -10,21 +10,21 @@ export type ZedStrategicTrigger =
   | "gap_analysis"
   | "next_move";
 
-export interface ZedStrategicReasoningInput {
+export interface ZarStrategicReasoningInput {
   userMessage: string;
   lane?: string;
   knowledgePresent?: boolean;
   currentContext?: Record<string, unknown>;
 }
 
-export interface ZedStrategicReasoningResult {
+export interface ZarStrategicReasoningResult {
   active: boolean;
-  triggers: ZedStrategicTrigger[];
+  triggers: ZarStrategicTrigger[];
   prompt: string;
   responseMode: "chat" | "strategy";
 }
 
-const TRIGGER_PATTERNS: Array<[ZedStrategicTrigger, RegExp]> = [
+const TRIGGER_PATTERNS: Array<[ZarStrategicTrigger, RegExp]> = [
   ["strategy", /\b(strategy|strategic|positioning|best option|best move|tradeoff|decision)\b/i],
   ["architecture", /\b(architecture|system design|technical design|stack|infrastructure|zcos|commander core|orchestration)\b/i],
   ["product", /\b(product|feature|roadmap|launch|user feedback|retention|activation|experience)\b/i],
@@ -37,11 +37,11 @@ const TRIGGER_PATTERNS: Array<[ZedStrategicTrigger, RegExp]> = [
   ["next_move", /\b(next move|what now|what should.*do next|fastest path|most important)\b/i],
 ];
 
-function detectTriggers(message: string): ZedStrategicTrigger[] {
+function detectTriggers(message: string): ZarStrategicTrigger[] {
   return TRIGGER_PATTERNS.filter(([, pattern]) => pattern.test(message)).map(([trigger]) => trigger);
 }
 
-function buildStrategicFrame(triggers: ZedStrategicTrigger[]): string[] {
+function buildStrategicFrame(triggers: ZarStrategicTrigger[]): string[] {
   const frame = [
     "Privately identify the user's real objective, current state, target state, constraints, and the highest-leverage next move.",
     "Compare options by impact, dependency, reversibility, risk, and speed to usable outcome.",
@@ -66,8 +66,8 @@ function buildStrategicFrame(triggers: ZedStrategicTrigger[]): string[] {
   return frame;
 }
 
-export class ZedStrategicReasoningEngine {
-  static prepare(input: ZedStrategicReasoningInput): ZedStrategicReasoningResult {
+export class ZarStrategicReasoningEngine {
+  static prepare(input: ZarStrategicReasoningInput): ZarStrategicReasoningResult {
     const triggers = detectTriggers(input.userMessage);
     const active = triggers.length > 0;
     const responseMode = active ? "strategy" : "chat";

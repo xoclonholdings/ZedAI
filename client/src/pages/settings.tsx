@@ -50,7 +50,7 @@ export default function SettingsPage() {
           variant="ghost"
           size="sm"
           onClick={() => setSection("main")}
-          className="mb-4 rounded-xl text-muted-foreground hover:text-foreground zed-button"
+          className="mb-4 rounded-xl text-muted-foreground hover:text-foreground zar-button"
         >
           <ChevronLeft size={16} className="mr-1" />
           Settings

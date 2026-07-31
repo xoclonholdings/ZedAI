@@ -29,7 +29,7 @@ function EntryCard({
 }) {
   const [open, setOpen] = useState(true);
   return (
-    <div className="zed-glass rounded-2xl p-4">
+    <div className="zar-glass rounded-2xl p-4">
       <div className="flex items-start justify-between gap-2">
         <button type="button" onClick={() => setOpen((v) => !v)} className="min-w-0 flex-1 text-left">
           <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
           variant="ghost"
           size="sm"
           onClick={() => void refresh()}
-          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zar-button"
         >
           <RefreshCw size={14} className={loading ? "mr-1 animate-spin" : "mr-1"} />
           Refresh
@@ -186,7 +186,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
               if (e.key === "Enter" && !e.shiftKey) void run();
             }}
             placeholder={spec?.placeholder || "What should ZAR work on?"}
-            className="zed-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30"
+            className="zar-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30"
           />
           {showSources ? (
             <textarea
@@ -194,7 +194,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
               onChange={(e) => setSources(e.target.value)}
               rows={4}
               placeholder="Optional: paste notes or a document for ZAR to ground this in."
-              className="zed-input w-full rounded-xl px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 resize-y"
+              className="zar-input w-full rounded-xl px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 resize-y"
             />
           ) : (
             <button
@@ -214,7 +214,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
               <MessageSquare size={13} />
               Ask ZAR directly
             </button>
-            <Button onClick={() => void run()} disabled={working} className="rounded-xl zed-gradient">
+            <Button onClick={() => void run()} disabled={working} className="rounded-xl zar-gradient">
               <Sparkles size={14} className="mr-1.5" />
               {working ? "Working…" : spec?.action || "Build"}
             </Button>
@@ -230,7 +230,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
         </div>
       )}
       {working && (
-        <div className="zed-glow rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-cyan-100">
+        <div className="zar-glow rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm text-cyan-100">
           ZAR is grounding in this workspace's memory and building your entry…
         </div>
       )}
@@ -242,7 +242,7 @@ export default function WorkspaceDesk({ workspace }: { workspace: string }) {
         {loading ? (
           <div className="py-10 text-center text-sm text-muted-foreground">Loading…</div>
         ) : entries.length === 0 ? (
-          <div className="zed-glass rounded-2xl p-5 text-sm text-muted-foreground">
+          <div className="zar-glass rounded-2xl p-5 text-sm text-muted-foreground">
             Nothing here yet. Give ZAR a subject above and your work will collect here.
           </div>
         ) : (

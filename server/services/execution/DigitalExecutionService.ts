@@ -1,7 +1,7 @@
 /**
  * DigitalExecutionService
  *
- * Phase 3 of Zed's Execution Layer.
+ * Phase 3 of ZAR's Execution Layer.
  *
  * Purpose:
  *   Carry out approved digital actions: send emails, submit basic forms,
@@ -364,7 +364,7 @@ export class DigitalExecutionService {
         id: "legacy-email-account",
         label: email.fromAddress,
         provider: email.provider || "smtp",
-        fromName: email.fromName || "ZED",
+        fromName: email.fromName || "ZAR",
         fromAddress: email.fromAddress,
         smtpHost: email.smtpHost,
         smtpPort: email.smtpPort,
@@ -387,7 +387,7 @@ export class DigitalExecutionService {
       id: "env-email-account",
       label: fromAddress,
       provider: "smtp",
-      fromName: process.env.EMAIL_FROM_NAME || "ZED",
+      fromName: process.env.EMAIL_FROM_NAME || "ZAR",
       fromAddress,
       smtpHost,
       smtpPort,

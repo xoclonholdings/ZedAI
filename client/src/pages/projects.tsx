@@ -82,7 +82,7 @@ export default function ProjectsPage() {
           <h1 className="mt-2 text-2xl font-semibold">Projects</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             File conversations, sources, and instructions per initiative. Every project keeps its own
-            memory so Zed answers in-context whenever you open it.
+            memory so ZAR answers in-context whenever you open it.
           </p>
         </section>
 
@@ -94,7 +94,7 @@ export default function ProjectsPage() {
 
         <Button
           onClick={() => setShowForm((v) => !v)}
-          className="w-full rounded-xl zed-gradient"
+          className="w-full rounded-xl zar-gradient"
         >
           <FolderPlus size={14} className="mr-2" />
           {showForm ? "Cancel" : "New project"}
@@ -118,7 +118,7 @@ export default function ProjectsPage() {
             <Button
               onClick={() => void create()}
               disabled={creating || !name.trim()}
-              className="w-full rounded-xl zed-gradient"
+              className="w-full rounded-xl zar-gradient"
             >
               {creating ? "Creating…" : "Create project"}
             </Button>
@@ -147,7 +147,7 @@ export default function ProjectsPage() {
                     {p.conversationIds && p.conversationIds.length > 0 && (
                       <Badge
                         variant="secondary"
-                        className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
+                        className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
                       >
                         {p.conversationIds.length} chat{p.conversationIds.length === 1 ? "" : "s"}
                       </Badge>
@@ -155,7 +155,7 @@ export default function ProjectsPage() {
                     {p.sourceIds && p.sourceIds.length > 0 && (
                       <Badge
                         variant="secondary"
-                        className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
+                        className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
                       >
                         {p.sourceIds.length} source{p.sourceIds.length === 1 ? "" : "s"}
                       </Badge>

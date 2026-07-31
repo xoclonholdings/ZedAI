@@ -288,8 +288,8 @@ export default function KnowledgeSection() {
   return (
     <div className="space-y-5">
       <SectionIntro
-        title="What Zed knows"
-        description="Everything Zed remembers about you and your work. Long-term facts, active projects, persistent working notes, and what you're teaching it right now."
+        title="What ZAR knows"
+        description="Everything ZAR remembers about you and your work. Long-term facts, active projects, persistent working notes, and what you're teaching it right now."
         action={
           <Button
             variant="outline"

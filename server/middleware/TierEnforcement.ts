@@ -18,7 +18,7 @@ const TIER_3_SYSTEM_PATTERNS = [
 export function tier0Block(message: string): string | null {
   for (const pattern of TIER_0_PATTERNS) {
     if (pattern.test(message)) {
-      return "This request is blocked. It falls into a category that ZED will not assist with under any circumstances.";
+      return "This request is blocked. It falls into a category that ZAR will not assist with under any circumstances.";
     }
   }
   return null;
@@ -27,7 +27,7 @@ export function tier0Block(message: string): string | null {
 export function tier3Block(message: string): string | null {
   for (const pattern of TIER_3_SYSTEM_PATTERNS) {
     if (pattern.test(message)) {
-      return "ZED will not expose system credentials or authentication details. This is a hardcoded security boundary.";
+      return "ZAR will not expose system credentials or authentication details. This is a hardcoded security boundary.";
     }
   }
   return null;

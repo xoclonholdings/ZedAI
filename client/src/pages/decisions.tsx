@@ -112,7 +112,7 @@ export function DecisionsListPage() {
             size="sm"
             onClick={() => void refresh()}
             disabled={loading}
-            className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+            className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
             aria-label="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -126,7 +126,7 @@ export function DecisionsListPage() {
           </div>
           <h1 className="mt-2 text-2xl font-semibold">What you've decided</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Every decision Zed has captured — what it was, when it happened, and what it
+            Every decision ZAR has captured — what it was, when it happened, and what it
             connects to. Tap one to see the full context.
           </p>
         </section>
@@ -141,7 +141,7 @@ export function DecisionsListPage() {
           <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
         ) : decisions.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-            No decisions yet. As you use Zed, decisions get extracted from your notes and
+            No decisions yet. As you use ZAR, decisions get extracted from your notes and
             chats and show up here.
           </div>
         ) : (
@@ -156,7 +156,7 @@ export function DecisionsListPage() {
                     key={d.id}
                     type="button"
                     onClick={() => navigate(`/decisions/${d.id}`)}
-                    className="zed-glass w-full rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
+                    className="zar-glass w-full rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -252,7 +252,7 @@ export function DecisionDetailPage() {
           variant="ghost"
           size="sm"
           onClick={() => navigate("/decisions")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
         >
           <ChevronLeft size={16} className="mr-1" />
           Decisions

@@ -110,7 +110,7 @@ export class BusinessManagerAgent {
     const matched = detected.filter((capability) => enabledCapabilities.includes(capability));
     const scope = matched.length > 0 ? matched : enabledCapabilities;
     const approval = needsApproval(request.task);
-    const systemPrompt = `You are ZED's Business Manager Agent.
+    const systemPrompt = `You are ZAR's Business Manager Agent.
 
 You help with:
 - e-commerce and dropshipping operations

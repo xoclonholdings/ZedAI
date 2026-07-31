@@ -73,7 +73,7 @@ export async function classifyWithLlm(message: string): Promise<AgentName | null
   if (!trimmed) return null;
 
   const systemPrompt = [
-    "You are a routing classifier for the ZED multi-agent system.",
+    "You are a routing classifier for the ZAR multi-agent system.",
     "Choose exactly one agent for the user's message based on the descriptions below.",
     "",
     "operations  — calendar, email drafting, scheduling, voicemail, posts, invoices, cancellations, bookings, generic personal assistant work.",

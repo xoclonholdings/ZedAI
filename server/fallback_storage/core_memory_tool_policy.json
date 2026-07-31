@@ -2,7 +2,7 @@
   "id": 12,
   "key": "tool_policy",
   "value": "{\"actions\":[\"read\",\"draft\",\"schedule\",\"research\",\"summarize\",\"log\",\"alert\"],\"enforcement_order\":[\"check_permissions\",\"check_security_tier\",\"check_approval_gate\",\"execute\",\"log\"],\"_notes\":\"All tool calls pass through security.yaml permission tiers\"}",
-  "description": "ZED tool and action policy from core.memory.json",
+  "description": "ZAR tool and action policy from core.memory.json",
   "adminOnly": true,
   "createdAt": "2026-04-09T02:08:22.703Z",
   "updatedAt": "2026-04-09T02:14:28.689Z"

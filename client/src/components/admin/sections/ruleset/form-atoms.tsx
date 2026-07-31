@@ -56,7 +56,7 @@ export function FormTextarea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="zed-glass border-white/10 text-sm"
+        className="zar-glass border-white/10 text-sm"
       />
       {hint ? <p className="text-xs leading-5 text-muted-foreground">{hint}</p> : null}
     </label>

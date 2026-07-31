@@ -93,7 +93,7 @@ export class EmailInboxWatchdog {
 
   /**
    * Fetch + inspect via a caller-supplied fetcher. This keeps live mail
-   * provider details outside this module so we don't lock Zed into one
+   * provider details outside this module so we don't lock ZAR into one
    * implementation.
    */
   static async sweep(fetcher: InboxFetcher): Promise<InboxFinding[]> {

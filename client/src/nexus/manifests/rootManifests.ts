@@ -39,7 +39,7 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
         actionRoute: null,
         terms: ["identity", "user", "principal", "owner"],
       }),
-      capability("identity", "constitution-review", "Personal Notes", "Review and write the personal notes Zed retrieves as context about you.", {
+      capability("identity", "constitution-review", "Personal Notes", "Review and write the personal notes ZAR retrieves as context about you.", {
         actionKind: "review",
         actionRoute: "/identity",
         dependencies: [dependency("identity.current-principal", "Personal understanding must be owned by the current user.")],

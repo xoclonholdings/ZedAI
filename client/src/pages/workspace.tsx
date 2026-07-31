@@ -166,7 +166,7 @@ function WorkspaceIndex() {
       <button
         type="button"
         onClick={() => navigate("/knowledge-map")}
-        className="zed-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.25)]"
+        className="zar-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.25)]"
       >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]">
           <LayoutDashboard size={18} />
@@ -186,7 +186,7 @@ function WorkspaceIndex() {
             key={slug}
             type="button"
             onClick={() => navigate(`/workspaces/${slug}`)}
-            className="zed-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(139,0,255,0.3)]"
+            className="zar-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(139,0,255,0.3)]"
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200 shadow-[0_0_12px_rgba(103,232,249,0.35)]">
               <Icon size={18} />
@@ -274,7 +274,7 @@ function WorkspaceDetail({
 
       <Button
         onClick={() => navigate(`/chat?ctx=${workspace}`)}
-        className="w-full rounded-xl zed-gradient"
+        className="w-full rounded-xl zar-gradient"
       >
         <MessageSquare size={14} className="mr-2" />
         Ask ZAR in {config.label}
@@ -303,7 +303,7 @@ function WorkspaceDetail({
                   key={sub.href}
                   type="button"
                   onClick={() => navigate(sub.href)}
-                  className="zed-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
+                  className="zar-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <SubIcon size={15} className={accentText} />
@@ -324,7 +324,7 @@ function WorkspaceDetail({
         {loading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
         ) : workspaceItems.length === 0 ? (
-          <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+          <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
             {config.empty}
           </div>
         ) : (
@@ -334,12 +334,12 @@ function WorkspaceDetail({
                 key={item.id}
                 type="button"
                 onClick={() => navigate(`/workspaces/${workspace}/tools/${item.id}`)}
-                className="zed-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
+                className="zar-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
               >
                 <div className="text-sm font-semibold text-foreground">{item.userFacingLabel}</div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.userFacingBlurb}</p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Badge variant="secondary" className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]">
+                  <Badge variant="secondary" className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.16em]">
                     {item.stageCount} step set{item.stageCount === 1 ? "" : "s"}
                   </Badge>
                 </div>

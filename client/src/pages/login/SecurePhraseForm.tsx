@@ -59,7 +59,7 @@ export function SecurePhraseForm({
             placeholder="Enter admin secure phrase"
             value={phrase}
             onChange={(e) => setPhrase(e.target.value)}
-            className="zed-input pr-10"
+            className="zar-input pr-10"
             disabled={isLoading}
             autoFocus
           />
@@ -82,7 +82,7 @@ export function SecurePhraseForm({
       <div className="flex items-center gap-2">
         <Button
           type="submit"
-          className="flex-1 zed-gradient text-white hover:zed-gradient-hover"
+          className="flex-1 zar-gradient text-white hover:zar-gradient-hover"
           disabled={isLoading}
         >
           {isLoading ? "Verifying…" : "Sign in with phrase"}

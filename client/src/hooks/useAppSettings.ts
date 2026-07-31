@@ -99,7 +99,7 @@ export function useAppSettings() {
 }
 
 export async function clearAppSettings() {
-  // Legacy compatibility hook. Settings are part of Zed's persistent
+  // Legacy compatibility hook. Settings are part of ZAR's persistent
   // operating memory, so this intentionally does not clear local or
   // server-side preferences.
 }

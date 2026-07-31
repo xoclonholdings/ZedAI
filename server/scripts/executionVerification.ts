@@ -11,7 +11,7 @@ import { executeAgentStage } from "../services/flow/FlowExecutor";
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { fetchWebTargetsFromText } from "../services/WebContentService";
 import { selectAgentWithTrace } from "../orchestrator/manager-agent/agent-selection";
-import { buildZedAdminContext } from "../services/ZedContextBuilder";
+import { buildZarAdminContext } from "../services/ZarContextBuilder";
 import {
   addProjectSource,
   assignConversationToProject,
@@ -58,7 +58,7 @@ async function withFixtureServer(): Promise<{ baseUrl: string; close: () => Prom
   const server = http.createServer((req, res) => {
     if (req.url === "/blog") {
       res.writeHead(200, { "content-type": "text/html" });
-      res.end("<html><head><title>Blog</title></head><body><article>Direct quote from the fixture blog page for ZED verification.</article></body></html>");
+      res.end("<html><head><title>Blog</title></head><body><article>Direct quote from the fixture blog page for ZAR verification.</article></body></html>");
       return;
     }
     res.writeHead(200, { "content-type": "text/html" });
@@ -167,7 +167,7 @@ async function testProjectContext() {
       text: "Project Orchid source material.",
     });
     await assignConversationToProject(userId, conversationId, project.id);
-    const context = await buildZedAdminContext({ userId, conversationId, projectId: project.id } as any);
+    const context = await buildZarAdminContext({ userId, conversationId, projectId: project.id } as any);
     assert(context.text.includes("Project Orchid"));
     assert.equal(context.meta.projectInstructions, true);
     assert.equal(context.meta.projectSourceCount, 1);
@@ -312,7 +312,7 @@ async function testApprovalDispatchPayload() {
       agent: "OperationsAgent",
       dispatch: {
         action_type: "email",
-        payload: { to: "test@example.com", subject: "Message from ZED", body: "hello" },
+        payload: { to: "test@example.com", subject: "Message from ZAR", body: "hello" },
       },
     });
     const task = await TaskLifecycleManager.get(result.task_id);

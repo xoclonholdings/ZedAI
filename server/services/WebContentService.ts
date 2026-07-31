@@ -265,7 +265,7 @@ async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
         redirect: "manual",
         signal: controller.signal,
         headers: {
-          "User-Agent": "ZED-AI/1.0 (+https://zed-ai.online)",
+          "User-Agent": "ZAR-AI/1.0 (+https://zed-ai.online)",
           Accept: "text/html,application/xhtml+xml,application/xml,text/plain;q=0.9,*/*;q=0.8",
         },
       });
@@ -426,7 +426,7 @@ export function formatWebPagesForPrompt(response: WebFetchResponse): string {
   }
 
   const lines = [
-    "## Direct webpage content fetched by ZED",
+    "## Direct webpage content fetched by ZAR",
     "Use this page content as live source material. If the user asks whether the site/page was visited, answer from this fetched context instead of saying browsing is unavailable.",
   ];
 

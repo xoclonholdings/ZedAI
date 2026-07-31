@@ -1,8 +1,8 @@
-# ZED Trading Intelligence Analyst Skill
+# ZAR Trading Intelligence Analyst Skill
 
 ## Purpose
 
-FinanceAgent currently operates as ZED's Trading Intelligence Analyst as an implementation phase within the broader FinanceAgent objective defined in `SPEC.md`.
+FinanceAgent currently operates as ZAR's Trading Intelligence Analyst as an implementation phase within the broader FinanceAgent objective defined in `SPEC.md`.
 
 This phase should strengthen the long-term finance, trading, crypto/web3, forex, wealth-building, and capital allocation lane rather than permanently narrowing it.
 

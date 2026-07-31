@@ -154,19 +154,19 @@ export default function KnowledgePage() {
             Everything you've taught ZAR, with sources and how it connects.
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-white/60">
-            <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
+            <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
               {objectCount} record{objectCount === 1 ? "" : "s"}
             </Badge>
-            <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
+            <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
               {relCount} relationship{relCount === 1 ? "" : "s"}
             </Badge>
-            <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
+            <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
               {sources.length} source{sources.length === 1 ? "" : "s"}
             </Badge>
           </div>
         </section>
 
-        <Button onClick={() => setShowForm((v) => !v)} className="w-full rounded-xl zed-gradient">
+        <Button onClick={() => setShowForm((v) => !v)} className="w-full rounded-xl zar-gradient">
           <Plus size={14} className="mr-2" />
           {showForm ? "Cancel" : "Teach ZAR something new"}
         </Button>
@@ -191,7 +191,7 @@ export default function KnowledgePage() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. About my company"
-                className="zed-input mt-1 w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
+                className="zar-input mt-1 w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
               />
             </div>
             <div>
@@ -201,7 +201,7 @@ export default function KnowledgePage() {
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 rows={7}
                 placeholder="Paste anything — a fact about you, your business, a decision, a preference, an event…"
-                className="zed-input mt-1 w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
+                className="zar-input mt-1 w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
               />
             </div>
             <div>
@@ -223,7 +223,7 @@ export default function KnowledgePage() {
                 )}
               </div>
             </div>
-            <Button onClick={() => void submit()} disabled={submitting} className="w-full rounded-xl zed-gradient">
+            <Button onClick={() => void submit()} disabled={submitting} className="w-full rounded-xl zar-gradient">
               {submitting ? "Learning…" : "Save to knowledge"}
             </Button>
           </section>
@@ -239,7 +239,7 @@ export default function KnowledgePage() {
           <button
             type="button"
             onClick={() => navigate("/discovery")}
-            className="zed-glass flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all hover:shadow-[0_0_18px_rgba(96,165,250,0.3)]"
+            className="zar-glass flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all hover:shadow-[0_0_18px_rgba(96,165,250,0.3)]"
           >
             <Compass size={16} className="text-blue-300" />
             <span className="text-[11.5px] font-medium text-white/80">Discovery</span>
@@ -247,7 +247,7 @@ export default function KnowledgePage() {
           <button
             type="button"
             onClick={() => navigate("/decisions")}
-            className="zed-glass flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all hover:shadow-[0_0_18px_rgba(96,165,250,0.3)]"
+            className="zar-glass flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all hover:shadow-[0_0_18px_rgba(96,165,250,0.3)]"
           >
             <Scale size={16} className="text-blue-300" />
             <span className="text-[11.5px] font-medium text-white/80">Decisions</span>
@@ -255,7 +255,7 @@ export default function KnowledgePage() {
           <button
             type="button"
             onClick={() => navigate("/timeline")}
-            className="zed-glass flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all hover:shadow-[0_0_18px_rgba(96,165,250,0.3)]"
+            className="zar-glass flex flex-col items-center gap-1.5 rounded-xl px-2 py-3 text-center transition-all hover:shadow-[0_0_18px_rgba(96,165,250,0.3)]"
           >
             <History size={16} className="text-blue-300" />
             <span className="text-[11.5px] font-medium text-white/80">Timeline</span>
@@ -269,7 +269,7 @@ export default function KnowledgePage() {
         )}
 
         {sources.length > 0 && (
-          <section className="zed-glass rounded-2xl p-4">
+          <section className="zar-glass rounded-2xl p-4">
             <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">Sources</div>
             <div className="flex flex-wrap gap-1.5">
               {sources.map((source) => (
@@ -297,17 +297,17 @@ export default function KnowledgePage() {
           {loading ? (
             <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
           ) : orderedTypes.length === 0 ? (
-            <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+            <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
               Nothing here yet. Use "Teach ZAR something new" above and it'll show up here, sourced.
             </div>
           ) : (
             orderedTypes.map((type) => (
-              <div key={type} className="zed-glass rounded-2xl p-4">
+              <div key={type} className="zar-glass rounded-2xl p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-[12.5px] font-semibold text-white/90">{friendlyType(type)}</span>
                   <Badge
                     variant="secondary"
-                    className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
+                    className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
                   >
                     {groups[type].length}
                   </Badge>

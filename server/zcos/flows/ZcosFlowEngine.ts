@@ -1,7 +1,7 @@
 /**
  * ZCOS-owned Flow Engine boundary.
  *
- * ZED routes import from this module. The implementation currently lives in
+ * ZAR routes import from this module. The implementation currently lives in
  * server/services/flow/FlowExecutor for compatibility with existing code, but
  * ownership is ZCOS: runs, approvals, reports, errors, and memory artifacts.
  */

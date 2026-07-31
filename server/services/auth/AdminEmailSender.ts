@@ -34,7 +34,7 @@ export class AdminEmailSender {
     const settings = await loadAdminSettings();
     const email = settings.integrations.email;
 
-    const subject = "Your ZED admin sign-in code";
+    const subject = "Your ZAR admin sign-in code";
     const body = this.renderBody(input.code, input.ttl_minutes);
 
     const smtpReady =
@@ -94,7 +94,7 @@ export class AdminEmailSender {
 
   private static renderBody(code: string, ttl_minutes: number): string {
     return [
-      `Your ZED admin sign-in code is:`,
+      `Your ZAR admin sign-in code is:`,
       ``,
       `    ${code}`,
       ``,
@@ -113,7 +113,7 @@ export class AdminEmailSender {
     const banner = [
       "",
       "================================================================",
-      "  ZED ADMIN SIGN-IN CODE (email delivery fell back to logging)",
+      "  ZAR ADMIN SIGN-IN CODE (email delivery fell back to logging)",
       "----------------------------------------------------------------",
       `  recipient : ${to}`,
       `  code      : ${code}`,

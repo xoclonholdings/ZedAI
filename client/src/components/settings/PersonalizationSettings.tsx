@@ -172,7 +172,7 @@ export default function PersonalizationSettings({
             Preferences
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Your name, the language Zed answers in, and how the app looks,
+            Your name, the language ZAR answers in, and how the app looks,
             sounds, and reads on your screen.
           </p>
         </div>
@@ -190,7 +190,7 @@ export default function PersonalizationSettings({
       {loadError && <LoadErrorBanner onRetry={() => void load()} />}
 
       <SettingGroup title="You">
-        <SettingRow label="Your name" description="How Zed addresses you.">
+        <SettingRow label="Your name" description="How ZAR addresses you.">
           <input
             type="text"
             value={data.displayName || ""}
@@ -199,7 +199,7 @@ export default function PersonalizationSettings({
             className="w-full max-w-[200px] text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 placeholder:text-white/30"
           />
         </SettingRow>
-        <SettingRow label="Language" description="What language Zed replies in.">
+        <SettingRow label="Language" description="What language ZAR replies in.">
           <LabeledSelect
             value={data.preferredLanguage}
             onChange={(v) => update("preferredLanguage", v)}
@@ -253,7 +253,7 @@ export default function PersonalizationSettings({
           <SettingGroup title="Voice">
             <SettingRow
               label="Voice type"
-              description="How Zed sounds when it speaks to you out loud."
+              description="How ZAR sounds when it speaks to you out loud."
             >
               <LabeledSelect
                 value={app.voiceType || "balanced"}
@@ -287,7 +287,7 @@ export default function PersonalizationSettings({
             </SettingRow>
             <SettingRow
               label="Chat messages"
-              description="Ping me when Zed replies while I'm not looking."
+              description="Ping me when ZAR replies while I'm not looking."
             >
               <Toggle
                 checked={app.messageNotifications}
@@ -297,7 +297,7 @@ export default function PersonalizationSettings({
             </SettingRow>
             <SettingRow
               label="System alerts"
-              description="Errors, warnings, and things Zed can't quietly fix."
+              description="Errors, warnings, and things ZAR can't quietly fix."
             >
               <Toggle
                 checked={app.systemAlerts}
@@ -307,7 +307,7 @@ export default function PersonalizationSettings({
             </SettingRow>
           </SettingGroup>
 
-          <SettingGroup title="How Zed behaves">
+          <SettingGroup title="How ZAR behaves">
             <SettingRow
               label="Haptic feedback"
               description="Small vibrations when you tap on iPhone."
@@ -340,7 +340,7 @@ export default function PersonalizationSettings({
             </SettingRow>
             <SettingRow
               label="Keep running in the background"
-              description="Let Zed keep agents working while the app isn't open."
+              description="Let ZAR keep agents working while the app isn't open."
             >
               <Toggle
                 checked={app.backgroundConversations}
@@ -353,7 +353,7 @@ export default function PersonalizationSettings({
           <SettingGroup title="Suggestions">
             <SettingRow
               label="Autocomplete"
-              description="Zed suggests how to finish your sentence as you type."
+              description="ZAR suggests how to finish your sentence as you type."
             >
               <Toggle
                 checked={app.autocomplete}
@@ -363,7 +363,7 @@ export default function PersonalizationSettings({
             </SettingRow>
             <SettingRow
               label="Trending prompts"
-              description="Show suggested things to ask Zed on the home screen."
+              description="Show suggested things to ask ZAR on the home screen."
             >
               <Toggle
                 checked={app.trendingSearches}
@@ -373,7 +373,7 @@ export default function PersonalizationSettings({
             </SettingRow>
             <SettingRow
               label="Follow-up suggestions"
-              description="After Zed replies, offer likely next questions."
+              description="After ZAR replies, offer likely next questions."
             >
               <Toggle
                 checked={app.followUpSuggestions}

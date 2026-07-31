@@ -2,9 +2,9 @@
 
 ## Objective
 
-The Knowledge Curation and Evolution Engine maintains the quality, accuracy, organization, and long-term evolution of ZED's knowledge.
+The Knowledge Curation and Evolution Engine maintains the quality, accuracy, organization, and long-term evolution of ZAR's knowledge.
 
-ZED should not simply accumulate information. It should continuously improve knowledge so the graph becomes cleaner, more connected, and more reliable with every interaction.
+ZAR should not simply accumulate information. It should continuously improve knowledge so the graph becomes cleaner, more connected, and more reliable with every interaction.
 
 ## Position In The Memory System
 
@@ -110,7 +110,7 @@ The engine should never create duplicate knowledge when refinement is possible.
 
 ## Canonical Knowledge
 
-Every concept should have one canonical object representing ZED's current understanding.
+Every concept should have one canonical object representing ZAR's current understanding.
 
 Non-canonical material should be attached to the canonical object as one of:
 
@@ -122,7 +122,7 @@ Non-canonical material should be attached to the canonical object as one of:
 - conflicting evidence
 - pending clarification
 
-The canonical object must show why it is canonical, where it came from, how confident ZED is, and what evidence or user confirmation supports it.
+The canonical object must show why it is canonical, where it came from, how confident ZAR is, and what evidence or user confirmation supports it.
 
 ## Version History
 
@@ -141,7 +141,7 @@ Each meaningful update must preserve:
 - affected relationships
 - actor that proposed or applied the change
 
-Version history should make it possible to answer how ZED's understanding changed over time.
+Version history should make it possible to answer how ZAR's understanding changed over time.
 
 ## Relationship Refinement
 
@@ -266,7 +266,7 @@ Reviews produce compact reports that show what changed, what needs confirmation,
 
 ## Success Criteria
 
-At any point, ZED should be able to answer:
+At any point, ZAR should be able to answer:
 
 - What do I know?
 - Why do I believe it?

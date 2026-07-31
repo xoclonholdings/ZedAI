@@ -127,7 +127,7 @@ The Lexicon Authority reuses existing infrastructure rather than duplicating it:
 
 ## Success Criteria
 
-ZED reasons over interpreted meaning rather than raw language — informed by domain, culture, community, context, user history, evidence, authority, and relationships. The lexicon grows through the discovery pipeline as an extensible, evidence-gated system rather than a fixed, bounded dictionary.
+ZAR reasons over interpreted meaning rather than raw language — informed by domain, culture, community, context, user history, evidence, authority, and relationships. The lexicon grows through the discovery pipeline as an extensible, evidence-gated system rather than a fixed, bounded dictionary.
 
 ## Implementation Notes
 

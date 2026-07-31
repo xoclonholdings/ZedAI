@@ -37,7 +37,7 @@ export function IdentityView({
         onChange={(event) =>
           setIdentityProfile((prev) => ({ ...prev, [key]: event.target.value }))
         }
-        className="zed-glass border-white/10 text-sm"
+        className="zar-glass border-white/10 text-sm"
         placeholder={placeholder}
       />
     </label>
@@ -45,33 +45,33 @@ export function IdentityView({
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Fingerprint size={16} className="text-cyan-300" />
             Identity Profile
           </CardTitle>
           <CardDescription>
-            Define the canonical person ZED is speaking with. This is the source ZED should use
+            Define the canonical person ZAR is speaking with. This is the source ZAR should use
             when asked identity questions.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            {field("preferredName", "Preferred Name", 3, "What ZED should call you.")}
+            {field("preferredName", "Preferred Name", 3, "What ZAR should call you.")}
             {field("formalName", "Formal Name", 3, "Legal, business, or public-facing name if relevant.")}
             {field("role", "Role", 4, "Founder, operator, owner, admin, creator, strategist...")}
-            {field("relationshipToZed", "Relationship To ZED", 4, "How ZED should understand your authority and relationship to the system.")}
+            {field("relationshipToZar", "Relationship To ZAR", 4, "How ZAR should understand your authority and relationship to the system.")}
           </div>
 
-          {field("whoAmIAnswer", "Direct 'Who Am I?' Answer", 5, "The exact identity framing ZED should use when you ask 'who am I?'")}
+          {field("whoAmIAnswer", "Direct 'Who Am I?' Answer", 5, "The exact identity framing ZAR should use when you ask 'who am I?'")}
 
           <div className="grid gap-4 md:grid-cols-2">
             {field("ventures", "Ventures & Responsibilities", 6, "Businesses, products, holdings, apps, or initiatives tied to you.")}
             {field("operatingStyle", "Operating Style", 6, "How you work, decide, communicate, and want support.")}
           </div>
 
-          {field("boundaries", "Boundaries", 4, "Identity facts ZED should not invent, expose, or confuse.")}
+          {field("boundaries", "Boundaries", 4, "Identity facts ZAR should not invent, expose, or confuse.")}
 
           <div className="flex items-center gap-3">
             <Button onClick={onSaveIdentity}>
@@ -88,12 +88,12 @@ export function IdentityView({
         </CardContent>
       </Card>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="text-base">Canonical Identity Preview</CardTitle>
           <CardDescription>
             Saved as core memory key <span className="font-mono">identity</span> and injected
-            into ZED's admin chat context.
+            into ZAR's admin chat context.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -125,7 +125,7 @@ export function AdminEmailForm({ onSuccess }: { onSuccess: () => Promise<void> }
               placeholder={emailHint || "admin@zed-ai.online"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="zed-input pl-10"
+              className="zar-input pl-10"
               disabled={isLoading}
               autoFocus
             />
@@ -148,7 +148,7 @@ export function AdminEmailForm({ onSuccess }: { onSuccess: () => Promise<void> }
               placeholder="6-digit code"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="zed-input pl-10 tracking-widest text-center text-lg"
+              className="zar-input pl-10 tracking-widest text-center text-lg"
               disabled={isLoading}
               autoFocus
             />
@@ -172,7 +172,7 @@ export function AdminEmailForm({ onSuccess }: { onSuccess: () => Promise<void> }
 
       <Button
         type="submit"
-        className="w-full zed-gradient text-white hover:zed-gradient-hover"
+        className="w-full zar-gradient text-white hover:zar-gradient-hover"
         disabled={isLoading}
       >
         {isLoading ? (

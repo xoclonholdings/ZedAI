@@ -23,7 +23,7 @@ interface NoteDetail {
  *
  * There's no backend concept literally called a "Personal Constitution" -
  * what's real is the per-user personalization notes corpus
- * (/api/me/personalization/notes), which Zed's core actually retrieves as
+ * (/api/me/personalization/notes), which ZAR's core actually retrieves as
  * context at query time. This page is that: notes you write about yourself,
  * not a fabricated constitution feature.
  */
@@ -147,8 +147,8 @@ export default function IdentityPage() {
           <div>
             <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">Personal notes</h2>
             <p className="mt-1 text-[13px] leading-snug text-white/50">
-              What you tell Zed about yourself - background, working style, ongoing context.
-              Zed retrieves these as context when they're relevant to what you're asking.
+              What you tell ZAR about yourself - background, working style, ongoing context.
+              ZAR retrieves these as context when they're relevant to what you're asking.
             </p>
           </div>
         </header>
@@ -176,7 +176,7 @@ export default function IdentityPage() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={6}
-              placeholder="What should Zed know?"
+              placeholder="What should ZAR know?"
               className={`${inputClass} resize-y leading-relaxed`}
             />
             {error && <p className="text-[12px] text-red-300">{error}</p>}
@@ -204,7 +204,7 @@ export default function IdentityPage() {
           <p className="text-[13px] text-white/40">Loading...</p>
         ) : notes.length === 0 ? (
           <p className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-center text-[13px] text-white/40">
-            No notes yet. Add one so Zed remembers it.
+            No notes yet. Add one so ZAR remembers it.
           </p>
         ) : (
           <div className="space-y-2">

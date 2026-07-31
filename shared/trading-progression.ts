@@ -2,7 +2,7 @@
  * Trading Intelligence progression model — ZAR's training pipeline.
  *
  * This is NOT a course the user climbs. It is the path along which
- * ZED becomes a capable trading intelligence. The user's job is to
+ * ZAR becomes a capable trading intelligence. The user's job is to
  * feed ZAR material and make decisions; ZAR learns, structures,
  * analyzes, and governs. Each stage describes what ZAR can do once
  * trained, and ZAR must PASS a stage assessment before the next
@@ -47,8 +47,8 @@ export interface TradingStageDefinition {
   purpose: string;
   /** What YOU do — always some flavor of "feed / decide", never "study". */
   yourMove: string;
-  /** What ZED does with it. */
-  whatZedDoes: string;
+  /** What ZAR does with it. */
+  whatZarDoes: string;
   /** Ready-when criteria, framed around ZAR's capability, not your competency. */
   readyWhen: string[];
   assessment: StageAssessment;
@@ -64,7 +64,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose: "Train ZAR's foundational market knowledge before it builds strategy.",
     yourMove:
       "Feed ZAR sources — strategy notes, rulebooks, market education, PDFs, videos, and your own examples. That's your whole job here.",
-    whatZedDoes:
+    whatZarDoes:
       "Ingests each source and structures it into concepts, rules, examples, mistakes, and a glossary it reuses in every later stage.",
     readyWhen: [
       "ZAR has structured knowledge across the required areas (market structure, liquidity, risk, and the rest).",
@@ -86,7 +86,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose: "ZAR turns what it learned into repeatable, versioned trading systems.",
     yourMove:
       "Tell ZAR which systems to build — the markets, entries, exits, sizing, and no-trade rules to encode.",
-    whatZedDoes:
+    whatZarDoes:
       "Stores each strategy as a versioned object with full history you can roll back to, and auto-runs a governance review so you see a verdict on every one.",
     readyWhen: [
       "At least one strategy has entry, exit, risk, and sizing defined.",
@@ -107,7 +107,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     shortLabel: "Validation",
     purpose: "ZAR objectively decides whether a strategy deserves testing.",
     yourMove: "Point ZAR at a strategy to review.",
-    whatZedDoes:
+    whatZarDoes:
       "Runs market context, binary triggers, statistical edge, risk math, systemic-weakness, optimization, and governance review — returning Approved / Conditionally Approved / Paper Trade Only / Requires Revision / Rejected.",
     readyWhen: [
       "A strategy carries an Approved or Paper Trade Only verdict.",
@@ -129,7 +129,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose: "ZAR proves the strategy in its own simulator before touching an external platform.",
     yourMove:
       "Hand ZAR setups to paper-trade — each with a thesis it authorizes, simulates, and journals.",
-    whatZedDoes:
+    whatZarDoes:
       "Authorizes each trade through the governance layer, simulates the outcome, compares expected vs actual, flags rule violations, and tracks performance against the exact strategy version used.",
     readyWhen: [
       "Enough closed internal paper trades to be meaningful (20+).",
@@ -152,7 +152,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
       "ZAR proves the same strategy on a real broker's paper/demo account — real platform mechanics and live data, no money — before any funded risk.",
     yourMove:
       "Connect Webull paper trading so ZAR can trade on real platform rails.",
-    whatZedDoes:
+    whatZarDoes:
       "Runs the governed strategy on the connected paper account against live data, tracks the external sample, and compares it to the internal results to confirm the edge holds off ZAR's own simulator.",
     readyWhen: [
       "A paper/demo provider is connected.",
@@ -174,7 +174,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose: "ZAR runs a funded-account evaluation — the challenge with real payout stakes.",
     yourMove:
       "Connect a funded-account provider when that bridge is available so ZAR can run the challenge under real evaluation rules.",
-    whatZedDoes:
+    whatZarDoes:
       "Tracks the funded objective (profit target, daily-loss and drawdown limits, minimum trading days), imports trades when a provider bridge is live or runs on its own engine when it isn't, and reports how far you are from passing.",
     readyWhen: [
       "A provider connection is healthy (or manual sync is current).",
@@ -196,7 +196,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose: "ZAR confirms it consistently satisfies professional evaluation requirements.",
     yourMove:
       "Let ZAR keep running and read the daily readiness scorecard it produces.",
-    whatZedDoes:
+    whatZarDoes:
       "Reports current strengths, weaknesses, required improvements, and readiness every day.",
     readyWhen: [
       "All discipline scores are at target.",
@@ -218,7 +218,7 @@ export const TRADING_STAGES: TradingStageDefinition[] = [
     purpose: "ZAR operates a professionally governed live trading environment.",
     yourMove:
       "Authorize ZAR to execute within the risk framework it proved out through the earlier stages.",
-    whatZedDoes:
+    whatZarDoes:
       "Runs broker connectivity, portfolio and execution engines, the risk engine, position/order monitoring, trade authorization, analytics, a kill switch, and drawdown controls — all inside the discipline built in the earlier stages.",
     readyWhen: [
       "Continuous readiness reviews keep the system qualified.",

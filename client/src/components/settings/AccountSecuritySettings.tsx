@@ -112,7 +112,7 @@ export default function AccountSecuritySettings() {
       </header>
 
       <SettingGroup title="Signed in as">
-        <SettingRow label="Name" description="Whoever you told Zed you are.">
+        <SettingRow label="Name" description="Whoever you told ZAR you are.">
           <span className="text-[13px] text-white/80 truncate max-w-[200px]">
             {user?.displayName || currentUsername || user?.username || "Current user"}
           </span>
@@ -134,8 +134,8 @@ export default function AccountSecuritySettings() {
           label="Access level"
           description={
             isAdmin
-              ? "You can change anything about Zed's setup."
-              : "You can chat and use Zed, but not change setup."
+              ? "You can change anything about ZAR's setup."
+              : "You can chat and use ZAR, but not change setup."
           }
         >
           <span

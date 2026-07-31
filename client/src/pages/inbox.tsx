@@ -74,7 +74,7 @@ export default function InboxPage() {
             size="sm"
             onClick={refresh}
             disabled={loading}
-            className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground zed-button"
+            className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground zar-button"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </Button>
@@ -86,7 +86,7 @@ export default function InboxPage() {
           </div>
           <h1 className="mt-2 text-2xl font-semibold">Email Inbox</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {inbox?.status.detail || "Checking the ZED mailbox connection."}
+            {inbox?.status.detail || "Checking the ZAR mailbox connection."}
           </p>
           {inbox?.status && (
             <div className="mt-4 flex flex-wrap gap-2">

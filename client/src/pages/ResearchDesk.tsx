@@ -176,10 +176,10 @@ export default function ResearchDesk() {
                 if (e.key === "Enter") void run();
               }}
               placeholder="Look something up…"
-              className="zed-input w-full rounded-xl pl-9 pr-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30"
+              className="zar-input w-full rounded-xl pl-9 pr-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30"
             />
           </div>
-          <Button onClick={() => void run()} disabled={searching} className="rounded-xl zed-gradient">
+          <Button onClick={() => void run()} disabled={searching} className="rounded-xl zar-gradient">
             {searching ? "Looking…" : "Search"}
           </Button>
         </div>
@@ -194,7 +194,7 @@ export default function ResearchDesk() {
 
       {/* ZAR's "want me to…" suggestions */}
       {suggestOpen && (
-        <div className="zed-glow rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-3">
+        <div className="zar-glow rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-3">
           <div className="text-[13px] text-white/80 mb-2">Want me to…</div>
           <div className="flex flex-wrap gap-2">
             <button className={chip} disabled={!!busy} onClick={() => void act("summarize")}>
@@ -230,7 +230,7 @@ export default function ResearchDesk() {
                   if (e.key === "Enter" && otherText.trim()) void act("other", otherText.trim());
                 }}
                 placeholder="Tell ZAR what to do with this…"
-                className="zed-input flex-1 rounded-lg px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30"
+                className="zar-input flex-1 rounded-lg px-2.5 py-1.5 text-[13px] text-white outline-none placeholder:text-white/30"
               />
               <button
                 className={chip}
@@ -287,7 +287,7 @@ export default function ResearchDesk() {
                 href={r.url}
                 target="_blank"
                 rel="noreferrer"
-                className="zed-glass block rounded-2xl p-3.5 transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)]"
+                className="zar-glass block rounded-2xl p-3.5 transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)]"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-[14px] font-semibold text-white leading-snug">{r.title}</div>
@@ -307,7 +307,7 @@ export default function ResearchDesk() {
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Saved for later</div>
           <div className="space-y-2">
             {saved.map((s) => (
-              <div key={s.id} className="zed-glass rounded-2xl p-3.5">
+              <div key={s.id} className="zar-glass rounded-2xl p-3.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-[13.5px] font-semibold text-white">

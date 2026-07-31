@@ -3,7 +3,7 @@
  *
  * Universal intake layer that normalizes external commands (app,
  * voice, SMS, WhatsApp, email, browser triggers, webhooks, future
- * channels) into Zed's unified task format and routes them through
+ * channels) into ZAR's unified task format and routes them through
  * the existing execution / approval / orchestration pipelines.
  *
  * It does NOT execute anything itself. It only:
@@ -54,7 +54,7 @@ export type {
 export class ExternalCommandGateway {
   /**
    * Receive a raw command from any external channel and route it
-   * through Zed's existing pipelines. No external action is taken.
+   * through ZAR's existing pipelines. No external action is taken.
    */
   static async receive(input: ExternalCommandInput): Promise<GatewayResult> {
     const channel = SUPPORTED_CHANNELS.includes(input.channel)

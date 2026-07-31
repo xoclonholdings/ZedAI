@@ -1,7 +1,7 @@
 /**
  * Capability 2 — Large Context Intelligence.
  *
- * ZED already retrieves from many sources (core memory, foundation,
+ * ZAR already retrieves from many sources (core memory, foundation,
  * personalization, object memory, project filing, uploaded files,
  * semantic/episodic vectors). Retrieval alone is not intelligence: dumped
  * side by side those sources repeat each other and bury the few lines

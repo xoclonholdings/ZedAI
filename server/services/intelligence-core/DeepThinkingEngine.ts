@@ -2,7 +2,7 @@
  * Capability 1 — Deep Thinking Mode.
  *
  * Claude's strength is that it does not immediately answer complex
- * requests; it reasons through them first. This engine gives ZED the
+ * requests; it reasons through them first. This engine gives ZAR the
  * same behavior as a real, staged reasoning pipeline:
  *
  *   decomposition → hypothesis generation → solution evaluation →
@@ -147,7 +147,7 @@ function bandForConfidence(confidence: number): ConfidenceBand {
 }
 
 /**
- * Confidence that ZED can answer this well right now, before generation.
+ * Confidence that ZAR can answer this well right now, before generation.
  * High when context is present and the ask is well-scoped; lower when
  * uncertainty was flagged, the ask sprawls, or the request is highly
  * analytical without supporting knowledge.

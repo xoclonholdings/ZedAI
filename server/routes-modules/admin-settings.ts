@@ -58,7 +58,7 @@ export function registerAdminSettingsRoutes(app: Express): void {
     }
   });
 
-  // ── Voice ("How Zed sounds") ───────────────────────────────────────
+  // ── Voice ("How ZAR sounds") ───────────────────────────────────────
   // Partial patches supported — the UI PUTs one field at a time on
   // change / blur, so the reducer accepts any subset of VoiceSettings
   // and mergeSettings clamps + normalizes on load.

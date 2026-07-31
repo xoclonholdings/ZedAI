@@ -225,12 +225,12 @@ export default function TradingPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zar-glass">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
         >
           <ChevronLeft size={16} className="mr-1" />
           Nexus
@@ -245,7 +245,7 @@ export default function TradingPage() {
           variant="ghost"
           size="sm"
           onClick={refresh}
-          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zar-button"
         >
           <RefreshCw size={14} className="mr-1" />
           Refresh
@@ -335,7 +335,7 @@ export default function TradingPage() {
                   <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
                     <Panel title="Decision History" icon={<ShieldCheck size={16} className="text-emerald-300" />}>
                       <div className="mb-3 flex justify-end">
-                        <Button size="sm" onClick={runGovernanceReview} className="rounded-xl zed-gradient">Run Governance Review</Button>
+                        <Button size="sm" onClick={runGovernanceReview} className="rounded-xl zar-gradient">Run Governance Review</Button>
                       </div>
                       <div className="space-y-3">
                         {governanceDecisions.map((decision) => (

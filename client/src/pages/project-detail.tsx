@@ -122,7 +122,7 @@ export default function ProjectDetailPage() {
                 onChange={(e) => setInstructions(e.target.value)}
                 placeholder="Per-project system prompt. Anything you type here will be injected into the agent context for every conversation filed under this project. E.g. brand voice, target customer, terminology, things to avoid."
                 rows={6}
-                className="zed-glass border-white/10 text-sm leading-6"
+                className="zar-glass border-white/10 text-sm leading-6"
               />
               <p className="text-[11px] text-muted-foreground">
                 {instructions.length} / 8000 characters
@@ -179,7 +179,7 @@ export default function ProjectDetailPage() {
             <section className="pt-2">
               <Badge
                 variant="secondary"
-                className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"
+                className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.16em]"
               >
                 {project.conversationIds.length} conversation
                 {project.conversationIds.length === 1 ? "" : "s"} filed here

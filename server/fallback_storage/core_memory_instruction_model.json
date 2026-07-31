@@ -2,7 +2,7 @@
   "id": 11,
   "key": "instruction_model",
   "value": "{\"required_fields\":[\"action\",\"target\",\"scope\"],\"confirmation_required_for\":[\"high\",\"critical\"],\"ambiguity_handling\":\"Ask one clarifying question, do not guess. Flag to OperationsAgent for resolution.\",\"_notes\":\"Ambiguity in research tasks: default to broader scope, flag uncertainty in output\"}",
-  "description": "ZED instruction parsing and confirmation policy from core.memory.json",
+  "description": "ZAR instruction parsing and confirmation policy from core.memory.json",
   "adminOnly": true,
   "createdAt": "2026-04-09T02:08:22.698Z",
   "updatedAt": "2026-04-09T02:14:28.683Z"

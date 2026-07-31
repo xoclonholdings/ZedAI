@@ -1,6 +1,6 @@
 import { MemoryService } from "./memoryService";
 
-export interface ZedReflectionInput {
+export interface ZarReflectionInput {
   userId: string;
   conversationId?: string;
   userMessage: string;
@@ -12,7 +12,7 @@ export interface ZedReflectionInput {
   tags?: string[];
 }
 
-export interface ZedReflectionResult {
+export interface ZarReflectionResult {
   stored: boolean;
   reason: string;
   summary?: string;
@@ -29,33 +29,33 @@ function excerpt(value: string, max = 420): string {
   return cleaned.length > max ? `${cleaned.slice(0, max - 1).trim()}...` : cleaned;
 }
 
-function shouldStoreReflection(input: ZedReflectionInput): { store: boolean; reason: string } {
+function shouldStoreReflection(input: ZarReflectionInput): { store: boolean; reason: string } {
   const text = `${input.userMessage}\n${input.assistantReply}`;
   if (input.contextInquiry) return { store: false, reason: "context inquiry question only" };
   if (input.requiresApproval) return { store: true, reason: "approval-relevant reply" };
   if (input.strategic) return { store: true, reason: "strategic reasoning reply" };
-  if (/\b(decision|decided|remember|correction|stop saying|do not say|next step|blocker|risk|approval|plan|roadmap|architecture|strategy|launch|trade|finance|zwap|zcos|zed)\b/i.test(text)) {
+  if (/\b(decision|decided|remember|correction|stop saying|do not say|next step|blocker|risk|approval|plan|roadmap|architecture|strategy|launch|trade|finance|zwap|zcos|zar)\b/i.test(text)) {
     return { store: true, reason: "operationally relevant reply" };
   }
   if (input.assistantReply.length > 1200) return { store: true, reason: "substantial reply" };
   return { store: false, reason: "low-value transient exchange" };
 }
 
-function buildSummary(input: ZedReflectionInput, reason: string): string {
+function buildSummary(input: ZarReflectionInput, reason: string): string {
   const lines = [
     `Route: ${input.route}`,
     `Reason: ${reason}`,
     input.strategic ? "Strategic: yes" : "Strategic: no",
     input.requiresApproval ? "Approval relevant: yes" : "Approval relevant: no",
     `User asked: ${excerpt(input.userMessage, 360)}`,
-    `ZED answered: ${excerpt(input.assistantReply, 520)}`,
+    `ZAR answered: ${excerpt(input.assistantReply, 520)}`,
   ];
 
   return lines.join("\n");
 }
 
-export class ZedReflectionEngine {
-  static async reflectAfterReply(input: ZedReflectionInput): Promise<ZedReflectionResult> {
+export class ZarReflectionEngine {
+  static async reflectAfterReply(input: ZarReflectionInput): Promise<ZarReflectionResult> {
     const decision = shouldStoreReflection(input);
     if (!decision.store) {
       return { stored: false, reason: decision.reason };
@@ -64,7 +64,7 @@ export class ZedReflectionEngine {
     const summary = buildSummary(input, decision.reason);
     await MemoryService.createProjectMemory({
       userId: input.userId,
-      name: `ZED reflection - ${new Date().toISOString()}`,
+      name: `ZAR reflection - ${new Date().toISOString()}`,
       description: "Safe post-response reflection summary. No raw chain-of-thought or hidden prompt content.",
       content: summary,
       type: "reflection",

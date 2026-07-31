@@ -60,7 +60,7 @@ export function registerTradingMarketDataRoutes(app: Express): void {
     res.json({ keys });
   });
 
-  /** Backtest Zed's signal strategy over a symbol's price history. */
+  /** Backtest ZAR's signal strategy over a symbol's price history. */
   app.post("/api/trading/backtest", isAuthenticated, async (req: any, res) => {
     const symbol = String((req.body || {}).symbol || "").trim();
     if (!symbol) return res.status(400).json({ error: "symbol is required" });
@@ -100,7 +100,7 @@ export function registerTradingMarketDataRoutes(app: Express): void {
     });
   });
 
-  /** Live quote lookup Zed and the UI use to show real prices. */
+  /** Live quote lookup ZAR and the UI use to show real prices. */
   app.get("/api/trading/market-data/quote", isAuthenticated, async (req: any, res) => {
     const symbol = String(req.query.symbol || "").trim();
     if (!symbol) return res.status(400).json({ error: "symbol is required" });
@@ -110,7 +110,7 @@ export function registerTradingMarketDataRoutes(app: Express): void {
       return res.json({
         live: false,
         quote: null,
-        note: "No live market-data source is reachable from the server right now. Zed will use a paper reference until a data feed or API key is available.",
+        note: "No live market-data source is reachable from the server right now. ZAR will use a paper reference until a data feed or API key is available.",
       });
     }
     res.json({ live: true, quote });

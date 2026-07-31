@@ -1,5 +1,5 @@
 /**
- * Pure validation of process.env against ZED's deploy requirements.
+ * Pure validation of process.env against ZAR's deploy requirements.
  *
  * Single-objective: produce the list of EnvCheck entries the admin
  * UI renders. No HTTP, no side effects — call this from a route, a
@@ -164,7 +164,7 @@ function pushLightningChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     checks.push({
       name: "AI_MODEL",
       severity: "ok",
-      message: "No model selector sent. Zed will let the Lightning deployment choose.",
+      message: "No model selector sent. ZAR will let the Lightning deployment choose.",
       hint: "No action needed for a compiled Lightning deployment.",
     });
   }
@@ -316,7 +316,7 @@ export function validateEnv(
     checks.push({
       name: "MODEL_<lane> overrides",
       severity: "warn",
-      message: `${overrideCount} legacy lane model override(s) are set but ignored. Zed uses one Lightning deployment.`,
+      message: `${overrideCount} legacy lane model override(s) are set but ignored. ZAR uses one Lightning deployment.`,
       hint: "Remove MODEL_<LANE> values such as MODEL_FINANCE to avoid confusion.",
     });
   }

@@ -12,13 +12,13 @@ import { loadProgression } from "../../services/TradingProgressionStore";
 /**
  * Stage 7 — Live trading (governed).
  *
- * Wires the full control framework Zed operates a live account inside:
+ * Wires the full control framework ZAR operates a live account inside:
  * per-trade and account risk limits, a kill switch, and the hard gates
  * that must all be satisfied before anything could execute — qualification
  * passed, a broker connected, and the kill switch armed.
  *
  * It deliberately does NOT place orders. Real execution requires a broker
- * order bridge (Tradovate is the intended one); until that exists Zed
+ * order bridge (Tradovate is the intended one); until that exists ZAR
  * reports "ready, pending broker" instead of pretending it can trade live.
  * This keeps the promotion path honest end-to-end.
  */
@@ -92,7 +92,7 @@ export async function getLiveState(userId: string): Promise<LiveTradingState> {
   const summary = canExecute
     ? "All gates satisfied and the kill switch is armed. Live execution runs through the broker bridge once it is enabled."
     : status === "ready_pending_broker"
-      ? "Zed is qualified and governed — connect Webull to enable live order routing."
+      ? "ZAR is qualified and governed — connect Webull to enable live order routing."
       : `Live is blocked: ${blockers.join(" ")}`;
 
   return {

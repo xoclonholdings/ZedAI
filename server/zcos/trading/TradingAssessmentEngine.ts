@@ -18,18 +18,18 @@ import type {
   StageAssessmentResult,
 } from "../../../shared/trading-training-types";
 
-/** Zed must score this to pass a single knowledge section. */
+/** ZAR must score this to pass a single knowledge section. */
 const AREA_PASS_THRESHOLD = 70;
 
 /**
- * Tests ZED before it may advance a stage.
+ * Tests ZAR before it may advance a stage.
  *
- * Learn stage: scores how much of the required curriculum Zed has
- * ingested (deterministic) AND quizzes Zed on that material, grading
+ * Learn stage: scores how much of the required curriculum ZAR has
+ * ingested (deterministic) AND quizzes ZAR on that material, grading
  * its answers (LLM). The two combine into one score.
  *
  * Strategy / Validation / Sandbox: deterministic gates on the real
- * artifacts Zed produced (governance verdicts, paper-trade sample).
+ * artifacts ZAR produced (governance verdicts, paper-trade sample).
  *
  * Locked stages: honestly report that they can't be assessed until
  * their provider integrations are connected — no fabricated pass.
@@ -102,8 +102,8 @@ async function assessLearn(userId: string): Promise<StageAssessmentResult> {
       label: "Curriculum coverage",
       detail:
         entries.length === 0
-          ? "Zed has no trading knowledge yet — feed it sources first."
-          : `Zed has structured knowledge across ${coveredAreas.length} of ${TRADING_KNOWLEDGE_AREAS.length} required areas.`,
+          ? "ZAR has no trading knowledge yet — feed it sources first."
+          : `ZAR has structured knowledge across ${coveredAreas.length} of ${TRADING_KNOWLEDGE_AREAS.length} required areas.`,
       points: coverageScore,
       max: 100,
     },
@@ -123,7 +123,7 @@ async function assessLearn(userId: string): Promise<StageAssessmentResult> {
         focusAreas.map((a) => a.title).join(", "),
       ).catch(() => "");
 
-      const answerPrompt = `You are ZED being tested on the trading knowledge you have ingested. Answer each question ONLY from what you actually learned below. If you don't know, say "I have not learned this yet." Keep each answer to 2-3 sentences.\n\n## Your ingested knowledge\n${context}\n\nReturn a JSON array of strings, one answer per question, in order. Questions:\n${questions
+      const answerPrompt = `You are ZAR being tested on the trading knowledge you have ingested. Answer each question ONLY from what you actually learned below. If you don't know, say "I have not learned this yet." Keep each answer to 2-3 sentences.\n\n## Your ingested knowledge\n${context}\n\nReturn a JSON array of strings, one answer per question, in order. Questions:\n${questions
         .map((q, i) => `${i + 1}. ${q}`)
         .join("\n")}`;
       const answersRaw = await generateChatFromProvider(
@@ -133,7 +133,7 @@ async function assessLearn(userId: string): Promise<StageAssessmentResult> {
       );
       const answers = safeJsonArray(answersRaw, questions.length);
 
-      const gradePrompt = `Grade ZED's answers about trading concepts. For each, decide "correct", "partial", or "incorrect" and give a one-line note. Base it on trading accuracy, not verbosity. An answer of "I have not learned this yet" is "incorrect".\n\n${questions
+      const gradePrompt = `Grade ZAR's answers about trading concepts. For each, decide "correct", "partial", or "incorrect" and give a one-line note. Base it on trading accuracy, not verbosity. An answer of "I have not learned this yet" is "incorrect".\n\n${questions
         .map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${answers[i] || "(no answer)"}`)
         .join("\n\n")}\n\nReturn ONLY a JSON array of objects: [{"verdict":"correct|partial|incorrect","note":"..."}] in order.`;
       const gradesRaw = await generateChatFromProvider(
@@ -159,7 +159,7 @@ async function assessLearn(userId: string): Promise<StageAssessmentResult> {
       comprehensionRan = true;
       breakdown.push({
         label: "Comprehension test",
-        detail: `Zed answered ${questions.length} questions on the material it ingested and scored ${comprehensionScore}.`,
+        detail: `ZAR answered ${questions.length} questions on the material it ingested and scored ${comprehensionScore}.`,
         points: comprehensionScore,
         max: 100,
       });
@@ -180,10 +180,10 @@ async function assessLearn(userId: string): Promise<StageAssessmentResult> {
   const passed = score >= def.assessment.passThreshold;
 
   const summary = passed
-    ? `Zed is ready — it covers ${coveredAreas.length}/${TRADING_KNOWLEDGE_AREAS.length} areas${comprehensionRan ? ` and scored ${comprehensionScore} on the quiz` : ""}. Advance to Build the strategy.`
+    ? `ZAR is ready — it covers ${coveredAreas.length}/${TRADING_KNOWLEDGE_AREAS.length} areas${comprehensionRan ? ` and scored ${comprehensionScore} on the quiz` : ""}. Advance to Build the strategy.`
     : entries.length === 0
-      ? "Zed hasn't learned anything yet. Feed it sources, then test again."
-      : `Zed isn't ready. It covers ${coveredAreas.length}/${TRADING_KNOWLEDGE_AREAS.length} areas${comprehensionRan ? ` and scored ${comprehensionScore} on the quiz` : ""}. Feed more material on the gaps and re-test.`;
+      ? "ZAR hasn't learned anything yet. Feed it sources, then test again."
+      : `ZAR isn't ready. It covers ${coveredAreas.length}/${TRADING_KNOWLEDGE_AREAS.length} areas${comprehensionRan ? ` and scored ${comprehensionScore} on the quiz` : ""}. Feed more material on the gaps and re-test.`;
 
   return {
     stageId: "learn",
@@ -212,8 +212,8 @@ async function assessStrategy(userId: string): Promise<StageAssessmentResult> {
     threshold: def.assessment.passThreshold,
     passed,
     summary: passed
-      ? `Zed holds ${cleared.length} strategy(ies) its governance review cleared. Advance to Validate.`
-      : "No strategy has cleared governance yet. Build one with full rules and let Zed review it.",
+      ? `ZAR holds ${cleared.length} strategy(ies) its governance review cleared. Advance to Validate.`
+      : "No strategy has cleared governance yet. Build one with full rules and let ZAR review it.",
     breakdown: [
       {
         label: "Cleared strategies",
@@ -241,8 +241,8 @@ async function assessValidation(userId: string): Promise<StageAssessmentResult> 
     threshold: def.assessment.passThreshold,
     passed,
     summary: passed
-      ? "Zed has produced a passing governance verdict. Advance to Sandbox."
-      : "Zed hasn't produced a passing verdict yet. Submit a strategy for review.",
+      ? "ZAR has produced a passing governance verdict. Advance to Sandbox."
+      : "ZAR hasn't produced a passing verdict yet. Submit a strategy for review.",
     breakdown: [
       {
         label: "Governance verdicts",
@@ -269,8 +269,8 @@ async function assessSandbox(userId: string): Promise<StageAssessmentResult> {
     threshold: def.assessment.passThreshold,
     passed,
     summary: passed
-      ? `Zed has ${closed} closed sandbox trades with positive expectancy. External evaluation is next.`
-      : `Zed has ${closed}/20 closed sandbox trades (expectancy ${expectancy}). Keep logging paper trades.`,
+      ? `ZAR has ${closed} closed sandbox trades with positive expectancy. External evaluation is next.`
+      : `ZAR has ${closed}/20 closed sandbox trades (expectancy ${expectancy}). Keep logging paper trades.`,
     breakdown: [
       {
         label: "Sample size",
@@ -346,8 +346,8 @@ export async function listKnowledgeAreas(): Promise<KnowledgeAreaInfo[]> {
 }
 
 /**
- * Test Zed on ONE knowledge section. Scores how much of that section's
- * required topics Zed has ingested (deterministic) and quizzes Zed on
+ * Test ZAR on ONE knowledge section. Scores how much of that section's
+ * required topics ZAR has ingested (deterministic) and quizzes ZAR on
  * that section specifically, grading the answers (LLM). The two combine
  * into a single section score. Honest when nothing has been fed yet —
  * no fabricated pass.
@@ -372,8 +372,8 @@ export async function assessKnowledgeArea(areaId: string): Promise<KnowledgeArea
       label: "Section coverage",
       detail:
         areaEntries.length === 0
-          ? `Zed has no material on ${area.title} yet — feed this section first.`
-          : `Zed has structured knowledge on ${coveredTopics.length} of ${topics.length} required topics for ${area.title}.`,
+          ? `ZAR has no material on ${area.title} yet — feed this section first.`
+          : `ZAR has structured knowledge on ${coveredTopics.length} of ${topics.length} required topics for ${area.title}.`,
       points: coverageScore,
       max: 100,
     },
@@ -392,7 +392,7 @@ export async function assessKnowledgeArea(areaId: string): Promise<KnowledgeArea
         `${area.title} ${topics.join(" ")}`,
       ).catch(() => "");
 
-      const answerPrompt = `You are ZED being tested on the "${area.title}" section of your trading knowledge. Answer each question ONLY from what you actually learned below. If you don't know, say "I have not learned this yet." Keep each answer to 2-3 sentences.\n\n## Your ingested knowledge\n${context}\n\nReturn a JSON array of strings, one answer per question, in order. Questions:\n${questions
+      const answerPrompt = `You are ZAR being tested on the "${area.title}" section of your trading knowledge. Answer each question ONLY from what you actually learned below. If you don't know, say "I have not learned this yet." Keep each answer to 2-3 sentences.\n\n## Your ingested knowledge\n${context}\n\nReturn a JSON array of strings, one answer per question, in order. Questions:\n${questions
         .map((q, i) => `${i + 1}. ${q}`)
         .join("\n")}`;
       const answersRaw = await generateChatFromProvider(
@@ -402,7 +402,7 @@ export async function assessKnowledgeArea(areaId: string): Promise<KnowledgeArea
       );
       const answers = safeJsonArray(answersRaw, questions.length);
 
-      const gradePrompt = `Grade ZED's answers about ${area.title}. For each, decide "correct", "partial", or "incorrect" and give a one-line note. Base it on trading accuracy, not verbosity. An answer of "I have not learned this yet" is "incorrect".\n\n${questions
+      const gradePrompt = `Grade ZAR's answers about ${area.title}. For each, decide "correct", "partial", or "incorrect" and give a one-line note. Base it on trading accuracy, not verbosity. An answer of "I have not learned this yet" is "incorrect".\n\n${questions
         .map((q, i) => `Q${i + 1}: ${q}\nA${i + 1}: ${answers[i] || "(no answer)"}`)
         .join("\n\n")}\n\nReturn ONLY a JSON array of objects: [{"verdict":"correct|partial|incorrect","note":"..."}] in order.`;
       const gradesRaw = await generateChatFromProvider(
@@ -427,7 +427,7 @@ export async function assessKnowledgeArea(areaId: string): Promise<KnowledgeArea
       comprehensionRan = true;
       breakdown.push({
         label: "Comprehension test",
-        detail: `Zed answered ${questions.length} question(s) on ${area.title} and scored ${comprehensionScore}.`,
+        detail: `ZAR answered ${questions.length} question(s) on ${area.title} and scored ${comprehensionScore}.`,
         points: comprehensionScore,
         max: 100,
       });
@@ -448,10 +448,10 @@ export async function assessKnowledgeArea(areaId: string): Promise<KnowledgeArea
   const passed = score >= AREA_PASS_THRESHOLD;
 
   const summary = areaEntries.length === 0
-    ? `Zed hasn't learned ${area.title} yet. Feed this section, then test again.`
+    ? `ZAR hasn't learned ${area.title} yet. Feed this section, then test again.`
     : passed
-      ? `Zed passed ${area.title} — ${coveredTopics.length}/${topics.length} topics covered${comprehensionRan ? `, quiz ${comprehensionScore}` : ""}.`
-      : `Zed isn't ready on ${area.title}. ${coveredTopics.length}/${topics.length} topics covered${comprehensionRan ? `, quiz ${comprehensionScore}` : ""}. Feed more material on the gaps and re-test.`;
+      ? `ZAR passed ${area.title} — ${coveredTopics.length}/${topics.length} topics covered${comprehensionRan ? `, quiz ${comprehensionScore}` : ""}.`
+      : `ZAR isn't ready on ${area.title}. ${coveredTopics.length}/${topics.length} topics covered${comprehensionRan ? `, quiz ${comprehensionScore}` : ""}. Feed more material on the gaps and re-test.`;
 
   return {
     areaId: area.id,

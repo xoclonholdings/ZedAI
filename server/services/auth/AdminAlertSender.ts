@@ -54,7 +54,7 @@ export interface LogAlertInput {
 
 export class AdminAlertSender {
   static async sendApprovalNeeded(input: ApprovalAlertInput): Promise<SendResult> {
-    const subject = `[ZED] Approval needed — ${input.role} — ${truncate(input.task.plan?.summary || input.task.id, 80)}`;
+    const subject = `[ZAR] Approval needed — ${input.role} — ${truncate(input.task.plan?.summary || input.task.id, 80)}`;
     const body = [
       `A task is waiting for ${input.role} approval.`,
       ``,
@@ -73,7 +73,7 @@ export class AdminAlertSender {
   }
 
   static async sendTaskCompleted(input: CompletionAlertInput): Promise<SendResult> {
-    const subject = `[ZED] Task complete — ${truncate(input.task.plan?.summary || input.task.id, 80)}`;
+    const subject = `[ZAR] Task complete — ${truncate(input.task.plan?.summary || input.task.id, 80)}`;
     const body = [
       `A task finished successfully.`,
       ``,
@@ -88,7 +88,7 @@ export class AdminAlertSender {
   }
 
   static async sendTaskBlocked(input: BlockedAlertInput): Promise<SendResult> {
-    const subject = `[ZED] Task blocked — ${truncate(input.task.plan?.summary || input.task.id, 80)}`;
+    const subject = `[ZAR] Task blocked — ${truncate(input.task.plan?.summary || input.task.id, 80)}`;
     const body = [
       `A task is blocked and won't progress without action.`,
       ``,
@@ -118,7 +118,7 @@ export class AdminAlertSender {
     }
     lastLogAlertAt.set(key, now);
 
-    const subject = `[ZED] Error event — ${input.event}`;
+    const subject = `[ZAR] Error event — ${input.event}`;
     const body = [
       `Runtime error event captured.`,
       ``,
@@ -207,7 +207,7 @@ export class AdminAlertSender {
     const banner = [
       "",
       "================================================================",
-      `  ZED ADMIN ALERT (email fell back to logging)`,
+      `  ZAR ADMIN ALERT (email fell back to logging)`,
       "----------------------------------------------------------------",
       `  to       : ${ADMIN_EMAIL}`,
       `  kind     : ${payload.kind}`,

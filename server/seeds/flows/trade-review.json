@@ -4,7 +4,7 @@
   "name": "Trade Review",
   "category": "finance",
   "description": "Review a closed paper trade against the original thesis, rules, outcome, mistakes, and lessons learned.",
-  "purpose": "Turn every simulated trade into usable feedback for ZED's trading memory.",
+  "purpose": "Turn every simulated trade into usable feedback for ZAR's trading memory.",
   "status": "published",
   "version": 1,
   "agents": ["finance"],

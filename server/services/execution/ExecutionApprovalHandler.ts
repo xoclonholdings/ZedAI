@@ -1,7 +1,7 @@
 /**
  * ExecutionApprovalHandler
  *
- * Phase 2 of Zed's Execution Layer.
+ * Phase 2 of ZAR's Execution Layer.
  *
  * Purpose:
  *   Take a TaskExecutionPlan from TaskExecutionEngine, present

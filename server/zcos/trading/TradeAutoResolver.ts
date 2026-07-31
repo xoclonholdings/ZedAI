@@ -4,7 +4,7 @@ import { TradingStore } from "./TradingStore";
 /**
  * Resolve open paper trades against the live market price.
  *
- * This closes the validation loop objectively: for each open trade Zed
+ * This closes the validation loop objectively: for each open trade ZAR
  * proposed, we fetch the live price and check it against the plan. If the
  * price has reached the target the trade is a win (closed at target); if
  * it has hit the stop it is a loss (closed at stop). Nothing in between is

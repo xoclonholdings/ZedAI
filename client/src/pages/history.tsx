@@ -64,7 +64,7 @@ export default function HistoryPage() {
             size="sm"
             onClick={refresh}
             disabled={loading}
-            className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
+            className="rounded-xl text-xs text-muted-foreground hover:text-foreground zar-button"
           >
             <RefreshCw size={14} className={loading ? "mr-1 animate-spin" : "mr-1"} />
             Refresh
@@ -88,7 +88,7 @@ export default function HistoryPage() {
         {loading && isEmpty ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
         ) : isEmpty ? (
-          <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+          <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
             No history yet. Chat conversations and flow runs will appear here.
           </div>
         ) : (
@@ -102,7 +102,7 @@ export default function HistoryPage() {
               </div>
 
               {conversations.length === 0 ? (
-                <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+                <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
                   No chat conversations yet.
                 </div>
               ) : (
@@ -112,7 +112,7 @@ export default function HistoryPage() {
                       key={conversation.id}
                       type="button"
                       onClick={() => navigate(`/chat/${conversation.id}`)}
-                      className="zed-glass w-full rounded-xl px-3 py-3 text-left transition-all hover:shadow-[0_0_18px_rgba(103,232,249,0.25)]"
+                      className="zar-glass w-full rounded-xl px-3 py-3 text-left transition-all hover:shadow-[0_0_18px_rgba(103,232,249,0.25)]"
                     >
                       <div className="truncate text-sm font-medium">
                         {conversation.title || "New Conversation"}
@@ -138,7 +138,7 @@ export default function HistoryPage() {
               </div>
 
               {flowRuns.length === 0 ? (
-                <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+                <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
                   No flow runs yet.
                 </div>
               ) : (
@@ -148,7 +148,7 @@ export default function HistoryPage() {
                       key={item.id}
                       type="button"
                       onClick={() => navigate(`/history/${item.id}`)}
-                      className="zed-glass w-full rounded-xl px-3 py-3 text-left transition-all hover:shadow-[0_0_18px_rgba(168,85,247,0.25)]"
+                      className="zar-glass w-full rounded-xl px-3 py-3 text-left transition-all hover:shadow-[0_0_18px_rgba(168,85,247,0.25)]"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-medium">{item.flowName}</span>

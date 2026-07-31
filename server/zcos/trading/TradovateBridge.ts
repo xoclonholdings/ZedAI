@@ -62,7 +62,7 @@ export async function saveTradovateCredentials(
   }
   if (patch.environment === "demo" || patch.environment === "live") next.environment = patch.environment;
   if (!next.appVersion) next.appVersion = "1.0";
-  if (!next.deviceId) next.deviceId = `zed-${userId}`.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64);
+  if (!next.deviceId) next.deviceId = `zar-${userId}`.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64);
   await writeTradingState(CRED_SCOPE, userId, next);
 }
 
@@ -99,7 +99,7 @@ async function getAccessToken(
         appVersion: creds.appVersion || "1.0",
         cid: creds.cid,
         sec: creds.sec,
-        deviceId: creds.deviceId || `zed-${userId}`,
+        deviceId: creds.deviceId || `zar-${userId}`,
       }),
     });
     const body: any = await res.json().catch(() => ({}));

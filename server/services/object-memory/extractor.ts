@@ -69,15 +69,15 @@ function ref(input: ExtractInput, evidence: string): ObjectSourceRef {
 
 /**
  * Pattern set. Each pattern is anchored on a distinctive phrase or
- * marker likely to appear in real ZED foundation text.
+ * marker likely to appear in real ZAR foundation text.
  */
-const PROJECT_PATTERN = /\b(ZED|ZedAI|ZebCom|xoclon(?:holdings)?|Fantasma)\b/gi;
+const PROJECT_PATTERN = /\b(ZAR|ZarAI|ZebCom|xoclon(?:holdings)?|Fantasma)\b/gi;
 const REPO_PATTERN = /\b(xoclonholdings\/[A-Za-z0-9_-]+|github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+)\b/gi;
-const SYSTEM_PATTERN = /\b(ManagerAgent|OperationsAgent|IntelligenceAgent|BusinessManagerAgent|FinanceAgent|KnowledgeService|MemoryService|ChatExecutionService|ContextInquiryEngine|ZedReflectionEngine|ZedPrincipleEngine|ZedStrategicReasoningEngine|ZedVoiceFormationEngine|ZedResponseGovernance|AccessPolicyService|TraceValidator|SelfRepairService)\b/g;
+const SYSTEM_PATTERN = /\b(ManagerAgent|OperationsAgent|IntelligenceAgent|BusinessManagerAgent|FinanceAgent|KnowledgeService|MemoryService|ChatExecutionService|ContextInquiryEngine|ZarReflectionEngine|ZarPrincipleEngine|ZarStrategicReasoningEngine|ZarVoiceFormationEngine|ZarResponseGovernance|AccessPolicyService|TraceValidator|SelfRepairService)\b/g;
 const INTEGRATION_PATTERN = /\b(Lightning ?AI|Gmail|Google (?:Calendar|Drive)|GitHub|Neon|ChromaDB|Brave|Serper|SMTP|Stripe|PayPal|Kalshi|TradingView)\b/g;
 const DECISION_MARKERS = /\b(I decided|We decided|The decision is|We're going with|Going with|Chose to|Ruled out|Moving to|Switched to)\b/gi;
 const PREFERENCE_MARKERS = /\b(I prefer|I want|I like|I do not want|I don't want|I hate|Avoid|Never|Always)\b/gi;
-const RULE_MARKERS = /\b(Rule:|Zed must|Zed should never|Do not|Must not|Should not|Always must)\b/gi;
+const RULE_MARKERS = /\b(Rule:|ZAR must|ZAR should never|Do not|Must not|Should not|Always must)\b/gi;
 const CONSTRAINT_MARKERS = /\b(I can only|The constraint is|Limited to|Cannot|Blocked by|Only has|Budget of)\b/gi;
 const OPEN_QUESTION_MARKERS = /\b(TBD|Not sure|Undecided|Open question|Still deciding|What should)\b/gi;
 const TASK_MARKERS = /\b(TODO|To do:|Task:|Need to|Have to|Should\b)\b/gi;
@@ -282,12 +282,12 @@ export function extractObjectsFromSource(input: ExtractInput): ExtractOutput {
     EVENT_MARKERS.lastIndex = 0;
   }
 
-  // Relationships: agents belong to ZED
-  const zedId = Array.from(nameToId.entries()).find(([k]) => k === "project:zed")?.[1];
-  if (zedId) {
+  // Relationships: agents belong to ZAR
+  const zarId = Array.from(nameToId.entries()).find(([k]) => k === "project:zar")?.[1];
+  if (zarId) {
     for (const [key, id] of nameToId) {
       if (key.startsWith("system:") && key.includes("agent")) {
-        addRel(zedId, "USES", id, "System is a component of ZED.");
+        addRel(zarId, "USES", id, "System is a component of ZAR.");
       }
     }
   }

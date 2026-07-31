@@ -16,7 +16,7 @@ import { users } from "../../shared/schema";
  *   - /api/knowledge/context  + /search          (read-only retrieval)
  *   - /api/knowledge/curation/*                  (active knowledge health)
  *   - /api/knowledge/core-memory                 (admin-only KV store)
- *   - /api/knowledge/voice-memory                (ZED voice formation)
+ *   - /api/knowledge/voice-memory                (ZAR voice formation)
  *   - /api/knowledge/project-memory              (per-user long-term)
  *   - /api/knowledge/personal-base               (the "profile" entry)
  *   - /api/knowledge/scratchpad                  (persistent working notes)
@@ -205,8 +205,8 @@ export function registerKnowledgeRoutes(app: Express): void {
 
   app.get("/api/knowledge/voice-memory", isAdmin, async (_req: any, res) => {
     try {
-      const { getZedVoiceMemory } = await import("../services/ZedVoiceFormationEngine");
-      res.json({ item: await getZedVoiceMemory() });
+      const { getZarVoiceMemory } = await import("../services/ZarVoiceFormationEngine");
+      res.json({ item: await getZarVoiceMemory() });
     } catch (error: any) {
       res.status(500).json({ error: error.message || "Failed to fetch voice memory" });
     }
@@ -214,10 +214,10 @@ export function registerKnowledgeRoutes(app: Express): void {
 
   app.put("/api/knowledge/voice-memory", isAdmin, async (req: any, res) => {
     try {
-      const { saveZedVoiceMemory } = await import("../services/ZedVoiceFormationEngine");
-      const item = await saveZedVoiceMemory(
+      const { saveZarVoiceMemory } = await import("../services/ZarVoiceFormationEngine");
+      const item = await saveZarVoiceMemory(
         req.body || {},
-        "Admin-updated ZED canonical voice memory",
+        "Admin-updated ZAR canonical voice memory",
       );
       res.json({ item });
     } catch (error: any) {
@@ -227,8 +227,8 @@ export function registerKnowledgeRoutes(app: Express): void {
 
   app.post("/api/knowledge/voice-memory/correction", isAuthenticated, async (req: any, res) => {
     try {
-      const { ingestZedVoiceCorrection } = await import("../services/ZedVoiceFormationEngine");
-      const item = await ingestZedVoiceCorrection({
+      const { ingestZarVoiceCorrection } = await import("../services/ZarVoiceFormationEngine");
+      const item = await ingestZarVoiceCorrection({
         userId: requireRequestUserId(req),
         conversationId: typeof req.body?.conversationId === "string" ? req.body.conversationId : undefined,
         userMessage: String(req.body?.correction || req.body?.content || ""),

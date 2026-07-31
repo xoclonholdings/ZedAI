@@ -67,7 +67,7 @@ export default function EnvValidatorCard() {
   }
 
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -85,7 +85,7 @@ export default function EnvValidatorCard() {
             variant="outline"
             onClick={run}
             disabled={loading}
-            className="zed-glass border-white/10"
+            className="zar-glass border-white/10"
           >
             {loading ? "Checking…" : data ? "Re-run" : "Validate Environment"}
           </Button>

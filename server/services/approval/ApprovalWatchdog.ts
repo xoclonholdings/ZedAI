@@ -214,7 +214,7 @@ export class ApprovalWatchdog {
         approval_status: "manual_handling_required",
         approval_role: role,
         approval_reason:
-          "This task requires judgment outside of Zed's allowed automated tools and must be handled manually.",
+          "This task requires judgment outside of ZAR's allowed automated tools and must be handled manually.",
       };
     }
 

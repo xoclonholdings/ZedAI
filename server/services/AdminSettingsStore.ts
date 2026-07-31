@@ -69,7 +69,7 @@ export async function updatePersonalizationSettings(
 }
 
 /**
- * Voice settings ("How Zed sounds"). Partial patches are shallow-
+ * Voice settings ("How ZAR sounds"). Partial patches are shallow-
  * merged into current; missing fields keep their previous value.
  * mergeSettings clamps + normalizes on the way back out so the
  * runtime prompt builder never sees invalid data.

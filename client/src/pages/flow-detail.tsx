@@ -88,10 +88,10 @@ export default function FlowDetailPage() {
               <h1 className="mt-2 text-2xl font-semibold">{flow.userFacingLabel}</h1>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{flow.userFacingBlurb}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.16em]">
+                <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.16em]">
                   {flow.stages.length} step set{flow.stages.length === 1 ? "" : "s"}
                 </Badge>
-                <Badge variant="secondary" className="zed-glass border-cyan-500/30 text-cyan-200 text-[10px] uppercase tracking-[0.16em]">
+                <Badge variant="secondary" className="zar-glass border-cyan-500/30 text-cyan-200 text-[10px] uppercase tracking-[0.16em]">
                   {flow.category}
                 </Badge>
               </div>
@@ -101,7 +101,7 @@ export default function FlowDetailPage() {
               <div className="flex items-start gap-2">
                 <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-300" />
                 <span>
-                  Starting this creates a tracked History item. ZED executes each step, pauses for approval when needed, stores outputs, and saves the final report.
+                  Starting this creates a tracked History item. ZAR executes each step, pauses for approval when needed, stores outputs, and saves the final report.
                 </span>
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function FlowDetailPage() {
                 id="flow-brief"
                 value={brief}
                 onChange={(event) => setBrief(event.target.value)}
-                placeholder="Tell ZED what this run should work on. Include the goal, known facts, constraints, links or notes, and what a useful result should look like."
+                placeholder="Tell ZAR what this run should work on. Include the goal, known facts, constraints, links or notes, and what a useful result should look like."
                 className="mt-3 min-h-28 w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-3 text-sm leading-6 text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50"
               />
               <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
@@ -161,13 +161,13 @@ export default function FlowDetailPage() {
 
 function StageCard({ stage, idx }: { stage: FlowStage; idx: number }) {
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardContent className="space-y-2 p-3">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[10px] text-muted-foreground">{String(idx + 1).padStart(2, "0")}</span>
           <span className="flex-1 truncate text-sm font-medium">{stage.name}</span>
           {stage.requiresApproval && (
-            <Badge variant="secondary" className="zed-glass border-yellow-500/30 text-yellow-200 text-[9px] uppercase tracking-[0.16em]">
+            <Badge variant="secondary" className="zar-glass border-yellow-500/30 text-yellow-200 text-[9px] uppercase tracking-[0.16em]">
               approval
             </Badge>
           )}

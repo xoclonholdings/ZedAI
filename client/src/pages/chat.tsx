@@ -50,7 +50,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[100dvh] w-full flex-col bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
+      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zar-glass">
         <button
           type="button"
           onClick={() => navigate("/nexus")}

@@ -31,7 +31,7 @@ export function registerTradingTradovateRoutes(app: Express): void {
   /**
    * Place an order through Tradovate. Demo (paper) orders are allowed once
    * connected; LIVE orders additionally require the governance gates —
-   * qualification passed and the kill switch armed — so Zed can't route a
+   * qualification passed and the kill switch armed — so ZAR can't route a
    * real order until it earned the right to.
    */
   app.post("/api/trading/tradovate/order", isAuthenticated, async (req: any, res) => {

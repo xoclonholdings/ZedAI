@@ -9,10 +9,10 @@ import { getEvaluationReport } from "./EvaluationEngine";
 /**
  * Stage 6 — Qualification.
  *
- * Turns Zed's real performance (sandbox + evaluation) into a daily
+ * Turns ZAR's real performance (sandbox + evaluation) into a daily
  * readiness scorecard across the disciplines a professional evaluation
  * cares about: rule compliance, edge (expectancy), drawdown control,
- * consistency, and a sufficient sample. Zed is qualified when every score
+ * consistency, and a sufficient sample. ZAR is qualified when every score
  * is at target. Everything is computed from stored results — no guesswork.
  */
 
@@ -67,7 +67,7 @@ export async function getQualificationReport(userId: string): Promise<Qualificat
     .map((s) => `${s.label}: ${s.detail}`);
 
   const summary = ready
-    ? `Zed is qualified — every discipline is at target (overall ${overallScore}). Live is unlocked once a broker is connected.`
+    ? `ZAR is qualified — every discipline is at target (overall ${overallScore}). Live is unlocked once a broker is connected.`
     : `Not qualified yet (overall ${overallScore}). Improve: ${weaknesses.join(", ")}.`;
 
   return {

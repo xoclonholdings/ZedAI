@@ -28,7 +28,7 @@ const STOPWORDS = new Set([
   "the", "a", "an", "to", "of", "for", "and", "or", "in", "on", "at", "is", "are", "was",
   "were", "be", "been", "i", "you", "your", "my", "me", "it", "its", "this", "that", "with",
   "please", "can", "could", "would", "should", "do", "does", "did", "just", "need", "want",
-  "help", "zed", "zar", "me", "us", "we", "about", "into", "up", "out", "so", "how", "what",
+  "help", "zar", "zar", "me", "us", "we", "about", "into", "up", "out", "so", "how", "what",
   "when", "if", "then", "than", "as", "by", "from", "some", "any", "all",
 ]);
 

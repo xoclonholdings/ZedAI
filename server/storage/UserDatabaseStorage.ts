@@ -4,7 +4,7 @@ const ADMIN_USER: User = {
   id: "user_001",
   username: "Admin",
   email: "admin@zed-ai.online",
-  firstName: "ZED",
+  firstName: "ZAR",
   lastName: "Admin",
   profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
   createdAt: new Date("2025-01-01"),

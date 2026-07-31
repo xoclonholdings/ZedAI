@@ -6,16 +6,16 @@ import { getWebullStatus } from "./WebullBridge";
 /**
  * Stage 5 — External paper trading.
  *
- * After Zed proves the strategy in its own simulator (sandbox), it repeats
+ * After ZAR proves the strategy in its own simulator (sandbox), it repeats
  * the proof on a real broker's paper/demo account — real platform
  * mechanics and live data, no money — before any funded risk. This stage
  * therefore requires a paper/demo provider to be connected, plus a solid
  * external sample with positive expectancy and clean rule compliance.
  *
- * Until a live provider fill bridge exists, the trade proof mirrors Zed's
+ * Until a live provider fill bridge exists, the trade proof mirrors ZAR's
  * governed engine (the same auto-resolving paper trades) and is honestly
  * labelled as such — the new, real requirement here is the external
- * account connection, so the progression can't skip straight from Zed's
+ * account connection, so the progression can't skip straight from ZAR's
  * own simulator to a funded challenge.
  */
 
@@ -37,11 +37,11 @@ export async function getExternalPaperReport(userId: string): Promise<ExternalPa
     providerConnected && closedTrades >= REQUIRED_TRADES && expectancy > 0 && ruleViolations === 0;
 
   const summary = !providerConnected
-    ? "Connect Webull paper trading so Zed can prove the strategy on real platform rails."
+    ? "Connect Webull paper trading so ZAR can prove the strategy on real platform rails."
     : passed
       ? `External paper proven: ${closedTrades} Webull paper trades with positive expectancy. Funded account is next.`
       : closedTrades < REQUIRED_TRADES
-        ? `On ${providerLabel}: ${closedTrades}/${REQUIRED_TRADES} Webull external paper trades. Keep Zed trading.`
+        ? `On ${providerLabel}: ${closedTrades}/${REQUIRED_TRADES} Webull external paper trades. Keep ZAR trading.`
         : ruleViolations > 0
           ? `On ${providerLabel}: sample size met, but ${ruleViolations} rule-violation type(s) must clear first.`
           : `On ${providerLabel}: expectancy is ${expectancy} — it needs to be positive.`;

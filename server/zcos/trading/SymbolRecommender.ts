@@ -3,7 +3,7 @@ import type { TradingAssetClass, TradeDirection } from "../../../shared/trading-
 import { getMarketQuote, type MarketBar } from "./MarketDataService";
 
 /**
- * Zed picks a symbol to trade when the user doesn't know which to try.
+ * ZAR picks a symbol to trade when the user doesn't know which to try.
  *
  * It scans a small universe of liquid instruments for the asset class,
  * pulls real quotes + recent daily bars, and scores each on momentum and
@@ -132,8 +132,8 @@ export async function recommendSymbol(
   const top = candidates[index] || scored[0];
   const bias = top.direction === "long" ? "bullish" : "bearish";
   const reason = top.signal && top.signal !== "neutral"
-    ? `Zed scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${top.signal.toUpperCase()} signal (${top.signalStrength}% indicator conviction, ${top.momentumPct}% momentum).`
-    : `Zed scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${bias} momentum (${top.momentumPct}% over ~10 sessions).`;
+    ? `ZAR scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${top.signal.toUpperCase()} signal (${top.signalStrength}% indicator conviction, ${top.momentumPct}% momentum).`
+    : `ZAR scanned ${scored.length} ${asset} symbol(s) on live ${top.source} data and picked ${top.symbol}: strongest ${bias} momentum (${top.momentumPct}% over ~10 sessions).`;
 
   return {
     symbol: top.symbol,

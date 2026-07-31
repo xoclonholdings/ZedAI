@@ -3,10 +3,10 @@ import type { AgentTarget } from "@shared/schema";
 /**
  * Persistent workspace context.
  *
- * A workspace is "entered" when the user clicks Ask Zed in <Workspace>
+ * A workspace is "entered" when the user clicks Ask ZAR in <Workspace>
  * on a workspace page, or when they hit a URL with ?ctx=<slug>. Once
  * entered, the workspace sticks until the user exits it — chat requests
- * carry the workspace's AgentTarget so ZED routes into the right lane,
+ * carry the workspace's AgentTarget so ZAR routes into the right lane,
  * and the chat header shows what workspace they're in.
  *
  * Precedence for reading the active context:
@@ -19,7 +19,7 @@ import type { AgentTarget } from "@shared/schema";
  *     next full reload picks it up
  */
 
-const STORAGE_KEY = "zed.workspaceContext";
+const STORAGE_KEY = "zar.workspaceContext";
 
 export const WORKSPACE_SLUGS = [
   "research",

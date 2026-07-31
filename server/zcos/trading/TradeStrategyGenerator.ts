@@ -11,14 +11,14 @@ import { TradingStore } from "./TradingStore";
 /**
  * Autonomous "Propose Trade" engine.
  *
- * Produces a *complete* paper-trade plan Zed can hand to the governance
+ * Produces a *complete* paper-trade plan ZAR can hand to the governance
  * layer using its learned trading framework — the "Trades By Sci" style
  * captured in the curriculum and any imported knowledge (market
  * structure, liquidity sweeps / draw on liquidity, entry confirmation,
  * stop invalidation, target / liquidity objective, and risk/reward
  * discipline).
  *
- * Zed fills in everything: direction, thesis, market structure, liquidity
+ * ZAR fills in everything: direction, thesis, market structure, liquidity
  * read, and the concrete entry / stop / target / size / risk numbers —
  * sized so the plan always clears the governance rules (risk/reward >= 2,
  * risk within the paper cap). The user does not have to invent or type
@@ -69,7 +69,7 @@ export interface GeneratedStrategy {
   stopPlan: string;
   targetPlan: string;
   invalidation: string;
-  /** Concrete, governance-ready paper levels Zed proposes. */
+  /** Concrete, governance-ready paper levels ZAR proposes. */
   entry: number;
   stop: number;
   target: number;
@@ -77,7 +77,7 @@ export interface GeneratedStrategy {
   riskAmount: number;
   /** Higher-timeframe alignment map (feeds the trend-alignment check). */
   timeframeAlignment: Record<string, string>;
-  /** Market session Zed is framing the setup in. */
+  /** Market session ZAR is framing the setup in. */
   session: string;
   /** True when built from stored rules against a reference (no live feed). */
   draft: boolean;
@@ -548,7 +548,7 @@ async function generateModelTradeStrategy(
       {
         role: "system",
         content: [
-          "You are Zed's Trading Intelligence proposal engine.",
+          "You are ZAR's Trading Intelligence proposal engine.",
           "Return one complete paper-trade proposal as strict JSON only.",
           "Do not return markdown, code fences, tables, templates, placeholders, or commentary.",
           "Use the provided symbol, market, knowledge, and risk rules.",
@@ -641,8 +641,8 @@ async function generateRuleBasedTradeStrategy(
     ? `Levels are anchored to the $${levels.entry} reference you provided, spaced for a ${riskReward}:1 reward/risk.`
     : `No live feed is connected, so levels use a $${levels.entry} paper reference spaced for a ${riskReward}:1 reward/risk — adjust the reference to match a real quote.`;
   const basis = knowledgeEntries.length
-    ? `Zed built this proposal from ${knowledgeEntries.length} stored knowledge match(es) and its learned Trades By Sci framework. ${priceNote}`
-    : `Zed built this proposal from its learned Trades By Sci framework (no stored knowledge matched yet). ${priceNote}`;
+    ? `ZAR built this proposal from ${knowledgeEntries.length} stored knowledge match(es) and its learned Trades By Sci framework. ${priceNote}`
+    : `ZAR built this proposal from its learned Trades By Sci framework (no stored knowledge matched yet). ${priceNote}`;
 
   const strategy: GeneratedStrategy = {
     market: input.market,

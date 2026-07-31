@@ -286,7 +286,7 @@ export async function buildTradingKnowledgeContext(query: string): Promise<strin
       curriculumContext,
       "",
       "Stored Knowledge Matches:",
-      "No stored trading knowledge matched this request yet. Use Phase 1 knowledge import to teach ZED structured concepts before relying on setup evaluation.",
+      "No stored trading knowledge matched this request yet. Use Phase 1 knowledge import to teach ZAR structured concepts before relying on setup evaluation.",
     ].join("\n");
   }
 

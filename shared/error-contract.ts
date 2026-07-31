@@ -1,4 +1,4 @@
-export interface ZedErrorDetail {
+export interface ZarErrorDetail {
   code: string;
   userMessage: string;
   exactReason: string;
@@ -6,7 +6,7 @@ export interface ZedErrorDetail {
   technicalDetails?: Record<string, unknown>;
 }
 
-export function zedErrorMessage(error: ZedErrorDetail | undefined, fallback: string): string {
+export function zarErrorMessage(error: ZarErrorDetail | undefined, fallback: string): string {
   if (!error) return fallback;
   const parts = [error.userMessage, `Exact error: ${error.exactReason}`];
   if (error.action) parts.push(`Action: ${error.action}`);

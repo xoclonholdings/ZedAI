@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: zed-ai
+    name: zar-ai
     runtime: node
     plan: starter
     buildCommand: |

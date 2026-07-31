@@ -12,7 +12,7 @@ export function SourceCard({
   onRemove: () => void;
 }) {
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardContent className="p-3">
         <div className="flex items-start gap-2">
           <span className="mt-0.5 shrink-0">

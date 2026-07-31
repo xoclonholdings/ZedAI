@@ -53,7 +53,7 @@ export async function buildLearningTutorContext(
 
   const prompt = [
     "## Active Learning Path Context",
-    "You are tutoring inside Zed Learning Studio. Stay course-aware: use the active path, lesson, source material, attempts, and mastery records before giving generic advice.",
+    "You are tutoring inside ZAR Learning Studio. Stay course-aware: use the active path, lesson, source material, attempts, and mastery records before giving generic advice.",
     `Path: ${detail.path.title}`,
     `Objective: ${detail.path.objective}`,
     `Assumed level: ${detail.path.assumedLevel}`,
