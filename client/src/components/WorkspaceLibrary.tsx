@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, ChevronDown, ChevronUp, Plus, Upload, X } from "lucide-react";
 
+import { cleanSummary, cleanTitle } from "@/lib/text";
 import type { BaseObject, ObjectGraph } from "@shared/object-memory-types";
 
 /**
@@ -212,15 +213,14 @@ export default function WorkspaceLibrary({
                   className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-medium text-white">{o.canonicalName}</span>
+                    <span className="text-[13px] font-medium text-white">{cleanTitle(o.canonicalName)}</span>
                     <span className="text-[9.5px] uppercase tracking-[0.06em] rounded-full px-1.5 py-0.5 bg-white/[0.06] text-white/50">
                       {friendlyType(o.type)}
                     </span>
                   </div>
                   {o.summary && (
                     <div className="mt-0.5 text-[12px] text-white/55 leading-snug">
-                      {o.summary.slice(0, 200)}
-                      {o.summary.length > 200 ? "…" : ""}
+                      {cleanSummary(o.summary, 200)}
                     </div>
                   )}
                 </div>

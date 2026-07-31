@@ -4,6 +4,7 @@ import { Compass, History, Link as LinkIcon, Network, Plus, Scale, Upload, X } f
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cleanSummary, cleanTitle, friendlySource } from "@/lib/text";
 import type { AnyMemoryObject, BaseObject, ObjectGraph } from "@shared/object-memory-types";
 
 interface UploadResponse {
@@ -280,7 +281,7 @@ export default function KnowledgePage() {
                   className="max-w-[220px] truncate rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/70"
                   title={source}
                 >
-                  {source}
+                  {friendlySource(source)}
                 </span>
               ))}
             </div>
@@ -320,11 +321,10 @@ export default function KnowledgePage() {
                           onClick={() => setExpandedId(expanded ? null : object.id)}
                           className="block w-full px-2 py-1.5 text-left"
                         >
-                          <div className="text-[12.5px] text-white/90">{object.canonicalName}</div>
+                          <div className="text-[12.5px] text-white/90">{cleanTitle(object.canonicalName)}</div>
                           {object.summary && (
                             <div className="max-w-[80ch] text-[11.5px] text-white/55">
-                              {object.summary.slice(0, 180)}
-                              {object.summary.length > 180 ? "…" : ""}
+                              {cleanSummary(object.summary, 180)}
                             </div>
                           )}
                         </button>
@@ -338,13 +338,11 @@ export default function KnowledgePage() {
                                 <ul className="space-y-1">
                                   {object.sourceRefs.map((ref, index) => (
                                     <li key={index} className="text-[11.5px] text-white/60">
-                                      <span className="text-white/75">{ref.sourceFile}</span>
+                                      <span className="text-white/75" title={ref.sourceFile}>
+                                        {friendlySource(ref.sourceFile)}
+                                      </span>
                                       {ref.evidenceQuote && (
-                                        <span className="text-white/45">
-                                          {" "}
-                                          — "{ref.evidenceQuote.slice(0, 140)}
-                                          {ref.evidenceQuote.length > 140 ? "…" : ""}"
-                                        </span>
+                                        <span className="text-white/45"> — "{cleanSummary(ref.evidenceQuote, 140)}"</span>
                                       )}
                                     </li>
                                   ))}
@@ -368,7 +366,7 @@ export default function KnowledgePage() {
                                         title={rel.evidence || undefined}
                                       >
                                         <LinkIcon size={10} className="text-blue-300/70" />
-                                        <span className="max-w-[16ch] truncate">{other.canonicalName}</span>
+                                        <span className="max-w-[16ch] truncate">{cleanTitle(other.canonicalName, 40)}</span>
                                         <span className="text-white/40">· {friendlyRel(rel.relationshipType)}</span>
                                       </span>
                                     );

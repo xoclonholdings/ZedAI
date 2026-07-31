@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RelatedObjects } from "@/components/knowledge/RelatedObjects";
+import { cleanSummary, cleanTitle, unescapeText } from "@/lib/text";
 import type {
   AnyMemoryObject,
   DecisionObject,
@@ -155,18 +156,15 @@ export function DecisionsListPage() {
                     key={d.id}
                     type="button"
                     onClick={() => navigate(`/decisions/${d.id}`)}
-                    className="w-full rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+                    className="zed-glass w-full rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="text-[13.5px] font-semibold text-white">
-                          {d.canonicalName}
+                          {cleanTitle(d.canonicalName, 70)}
                         </div>
                         <p className="mt-1.5 text-[12.5px] leading-snug text-white/60">
-                          {(d.properties?.decision || d.summary || "")
-                            .toString()
-                            .slice(0, 220)}
-                          {(d.properties?.decision || d.summary || "").length > 220 ? "…" : ""}
+                          {cleanSummary((d.properties?.decision || d.summary || "").toString(), 220)}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10.5px] text-white/40">
                           <span>{friendlyTime(d.updatedAt)}</span>
@@ -286,9 +284,9 @@ export function DecisionDetailPage() {
                   </Badge>
                 )}
               </div>
-              <h1 className="mt-2 text-2xl font-semibold">{decision.canonicalName}</h1>
-              <p className="mt-2 text-sm leading-6 text-white/80">
-                {decision.properties?.decision || decision.summary}
+              <h1 className="mt-2 text-2xl font-semibold">{cleanTitle(decision.canonicalName, 120)}</h1>
+              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-white/80">
+                {unescapeText(decision.properties?.decision || decision.summary || "")}
               </p>
               <div className="mt-3 text-[11px] text-white/50">
                 {decision.properties?.date
@@ -309,7 +307,9 @@ export function DecisionDetailPage() {
 
             {decision.properties?.rationale && (
               <DetailBlock label="Why">
-                <p className="text-sm leading-6 text-white/80">{decision.properties.rationale}</p>
+                <p className="whitespace-pre-line text-sm leading-6 text-white/80">
+                  {unescapeText(decision.properties.rationale)}
+                </p>
               </DetailBlock>
             )}
 
@@ -435,10 +435,10 @@ function RelationRow({ label, hint }: { label: string; hint?: string }) {
     <div className="flex items-start gap-2 py-1">
       <LinkIcon size={12} className="text-cyan-300/70 shrink-0 mt-1" />
       <div className="min-w-0 flex-1">
-        <div className="text-[13px] text-white/90 truncate">{label}</div>
+        <div className="text-[13px] text-white/90 truncate">{cleanTitle(label, 60)}</div>
         {hint && (
           <div className="text-[11px] text-white/50 truncate">
-            {hint}
+            {cleanSummary(hint, 60)}
             <ArrowUpRight size={9} className="inline ml-1" />
           </div>
         )}

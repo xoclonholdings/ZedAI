@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocationSearch } from "@/lib/useLocationSearch";
+import { cleanSummary, cleanTitle } from "@/lib/text";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -286,7 +287,7 @@ export default function DiscoveryPage() {
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
                       <div className="text-[13.5px] font-semibold text-white truncate">
-                        {g.canonicalName}
+                        {cleanTitle(g.canonicalName, 60)}
                       </div>
                       <div className="text-[11px] text-white/45">
                         {g.type.replace(/_/g, " ")} · {g.members.length} copies
@@ -320,8 +321,7 @@ export default function DiscoveryPage() {
                         </div>
                         {m.summary && (
                           <div className="mt-1 text-[12px] leading-snug text-white/70">
-                            {m.summary.slice(0, 220)}
-                            {m.summary.length > 220 ? "…" : ""}
+                            {cleanSummary(m.summary, 220)}
                           </div>
                         )}
                       </div>
@@ -345,7 +345,7 @@ export default function DiscoveryPage() {
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="min-w-0 flex-1">
                     <div className="text-[13.5px] font-semibold text-white truncate">
-                      {o.canonicalName}
+                      {cleanTitle(o.canonicalName, 60)}
                     </div>
                     <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40">
                       {o.type.replace(/_/g, " ")}
@@ -356,8 +356,7 @@ export default function DiscoveryPage() {
                 </div>
                 {o.summary && (
                   <p className="mt-2 text-[12.5px] leading-snug text-white/70">
-                    {o.summary.slice(0, 320)}
-                    {o.summary.length > 320 ? "…" : ""}
+                    {cleanSummary(o.summary, 320)}
                   </p>
                 )}
               </div>
