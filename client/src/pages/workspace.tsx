@@ -282,12 +282,15 @@ function WorkspaceDetail({
     return items.filter((item) => config.categories.includes(item.category));
   }, [config.categories, items]);
 
-  // Workspaces are real working surfaces (a desk you do the work in), not
-  // menus of cards. Placed after all hooks so hook order stays stable.
+  // Each workspace's real subspaces (Projects/Flows/Runs for Operations,
+  // Budget/Trading for Finance, etc.) are domain-specific working surfaces —
+  // they take priority over the generic subject-in/entry-out desk below.
+  // The desk is only a fallback for a workspace with no subspaces of its own.
+  // Placed after all hooks so hook order stays stable.
   if (workspace === "research") {
     return <ResearchDesk />;
   }
-  if (WORKSPACE_DESK_SPECS[workspace]) {
+  if (!config.subspaces?.length && WORKSPACE_DESK_SPECS[workspace]) {
     return <WorkspaceDesk workspace={workspace} />;
   }
 
