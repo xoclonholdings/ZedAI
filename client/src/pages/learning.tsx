@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { BookOpen, GraduationCap, Plus, Upload, X } from "lucide-react";
+import { BookOpen, Brain, Plus, Upload, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -92,7 +92,7 @@ export default function LearningPage() {
       const body: UploadResponse & { error?: string } = await res.json().catch(() => ({}) as any);
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       setNotice(
-        `Learned ${body.totals?.newObjects ?? 0} object${body.totals?.newObjects === 1 ? "" : "s"} — Zed can pull them into any conversation.`,
+        `Learned ${body.totals?.newObjects ?? 0} object${body.totals?.newObjects === 1 ? "" : "s"} — ZAR can pull them into any conversation.`,
       );
       setForm(EMPTY_FORM);
       setFile(null);
@@ -121,15 +121,15 @@ export default function LearningPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
-            <GraduationCap size={14} />
-            Learning
+            <Brain size={14} />
+            Memory
           </div>
-          <h1 className="mt-2 text-2xl font-semibold">Your knowledge library</h1>
+          <h1 className="mt-2 text-2xl font-semibold">What ZAR remembers</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Whatever you upload here gets structured into objects Zed can reference in any conversation.
-            Paste notes, or attach PDFs, transcripts, or documents.
+            The governed, evidence-backed context ZAR retains across every conversation and workspace —
+            not tied to any one domain. Paste notes, or attach PDFs, transcripts, or documents.
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-white/60">
             <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
@@ -172,9 +172,9 @@ export default function LearningPage() {
         </Button>
 
         {showForm && (
-          <section className="rounded-2xl border border-cyan-400/25 bg-cyan-400/[0.03] p-4 space-y-3">
+          <section className="rounded-2xl border border-cyan-400/25 bg-cyan-400/[0.03] p-4 space-y-3 backdrop-blur-sm">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold">Teach Zed something new</div>
+              <div className="text-sm font-semibold">Teach ZAR something new</div>
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
@@ -191,7 +191,7 @@ export default function LearningPage() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="e.g. About my company"
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-cyan-400/50 focus:outline-none"
+                className="zed-input mt-1 w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
               />
             </div>
             <div>
@@ -201,7 +201,7 @@ export default function LearningPage() {
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 rows={7}
                 placeholder="Paste anything — a fact about you, your business, a decision, a preference, an event…"
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-cyan-400/50 focus:outline-none"
+                className="zed-input mt-1 w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
               />
             </div>
             <div>
@@ -239,17 +239,17 @@ export default function LearningPage() {
 
         <section className="space-y-3">
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            What Zed knows about you
+            What ZAR knows about you
           </div>
           {loading ? (
             <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
           ) : orderedTypes.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-              Nothing here yet. Add notes above and Zed will start remembering.
+            <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+              Nothing here yet. Add notes above and ZAR will start remembering.
             </div>
           ) : (
             orderedTypes.map((type) => (
-              <div key={type} className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <div key={type} className="zed-glass rounded-2xl p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-[12.5px] font-semibold text-white/90">{friendlyType(type)}</span>
                   <Badge

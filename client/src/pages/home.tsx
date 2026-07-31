@@ -16,7 +16,6 @@ import {
   HelpCircle,
   LineChart,
   MessageSquare,
-  PenTool,
   Plus,
   RefreshCw,
   ScrollText,
@@ -78,9 +77,8 @@ const WORKSPACE_LAUNCHERS: Array<{
   hint: string;
 }> = [
   { label: "Research", href: "/workspaces/research", icon: Search, hint: "Dig in" },
-  { label: "Operations", href: "/workspaces/operations", icon: Briefcase, hint: "Run it" },
+  { label: "Operations", href: "/workspaces/operations", icon: Briefcase, hint: "Run it & reach out" },
   { label: "Finance", href: "/workspaces/finance", icon: Wallet, hint: "Money & trades" },
-  { label: "Marketing", href: "/workspaces/marketing", icon: PenTool, hint: "Reach out" },
   { label: "Education", href: "/workspaces/education", icon: GraduationCap, hint: "Learn" },
 ];
 

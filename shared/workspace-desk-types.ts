@@ -75,20 +75,8 @@ export const WORKSPACE_DESK_SPECS: Record<string, WorkspaceDeskSpec> = {
       { key: "milestones", label: "Milestones" },
     ],
   },
-  marketing: {
-    workspace: "marketing",
-    title: "Marketing desk",
-    blurb: "Say what you're promoting and to whom. ZAR drafts a working brief — grounded in this workspace's knowledge.",
-    placeholder: "e.g. Promote the AI trading tool to retail traders",
-    action: "Build brief",
-    systemRole:
-      "You are ZAR's marketing strategist. You produce practical briefs — angles, audiences, channels, and content ideas. You never promise results or invent metrics.",
-    fields: [
-      { key: "audiences", label: "Audiences" },
-      { key: "angles", label: "Angles / messaging" },
-      { key: "channels", label: "Channels" },
-      { key: "contentIdeas", label: "Content ideas" },
-      { key: "callToAction", label: "Calls to action" },
-    ],
-  },
+  // No "marketing" entry: marketing folded into Operations (see workspace.tsx)
+  // rather than staying a peer desk — a duplicate desk here under the old
+  // "marketing" slug would silently ignore the Operations merge and keep
+  // writing to a separate memory scope.
 };

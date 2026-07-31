@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import {
-  BookOpen,
   Briefcase,
-  FolderKanban,
   GraduationCap,
-  History,
-  Inbox,
-  Layers,
   LayoutDashboard,
   LineChart,
   MessageSquare,
-  PenTool,
   Search,
   Wallet,
-  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +39,10 @@ interface Subspace {
 }
 
 interface WorkspaceConfig {
+  /** The real slug this config lives under — memory tagging and desk
+   * lookups always use this, never the URL param, so an alias (e.g.
+   * "marketing" -> OPERATIONS) can't fragment memory into a second scope. */
+  canonicalSlug: string;
   label: string;
   purpose: string;
   icon: LucideIcon;
@@ -55,6 +52,7 @@ interface WorkspaceConfig {
 }
 
 const FINANCE: WorkspaceConfig = {
+  canonicalSlug: "finance",
   label: "Finance",
   purpose:
     "Budget, banking, credit, trading, and investments in one place. Budget Management organizes every deposit; Trading stays separate.",
@@ -81,10 +79,46 @@ const FINANCE: WorkspaceConfig = {
   ],
 };
 
+/**
+ * Operations absorbs Marketing's flows (content, social, PR) rather than
+ * keeping Marketing as a peer workspace — Marketing had no domain memory
+ * of its own, just flows that run inside the business. `marketing` stays
+ * as a routing alias below so old links keep working.
+ *
+ * No subspaces here on purpose: Projects (/projects), Flow Library and
+ * Run History (/flows, /runs) are already owned by the Projects and Tools
+ * hubs — listing them again here was duplicate parentage, the exact thing
+ * this pass removes. What's actually unique to Operations is the desk
+ * (see WORKSPACE_DESK_SPECS.operations) — with no subspaces defined, the
+ * routing below falls through to it.
+ */
+const OPERATIONS: WorkspaceConfig = {
+  canonicalSlug: "operations",
+  label: "Operations",
+  purpose:
+    "Plan and run the business — objectives, campaigns, and the tools that keep day-to-day work moving.",
+  icon: Briefcase,
+  categories: [
+    "business",
+    "operations",
+    "strategy",
+    "planning",
+    "project",
+    "revenue",
+    "sales",
+    "marketing",
+    "content",
+    "social",
+    "pr",
+  ],
+  empty: "No operations or marketing tools are published yet.",
+};
+
 const WORKSPACES: Record<string, WorkspaceConfig> = {
   research: {
     // Research renders the ResearchDesk working surface (see WorkspacePage);
     // this config stays only as a fallback.
+    canonicalSlug: "research",
     label: "Research",
     purpose:
       "Research people, companies, markets, competitors, technologies, products, trends, papers, and documents.",
@@ -92,98 +126,29 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
     categories: ["research"],
     empty: "No research tools are published yet.",
   },
-  operations: {
-    label: "Operations",
-    purpose:
-      "Plan and run the business — projects, flows, run history, and the tools that keep day-to-day work moving.",
-    icon: Briefcase,
-    categories: ["business", "operations", "strategy", "planning", "project", "revenue", "sales"],
-    empty: "No operations tools are published yet.",
-    subspaces: [
-      {
-        label: "Projects",
-        description:
-          "File conversations, sources, and instructions per initiative. Each project keeps its own memory so ZAR answers in-context.",
-        href: "/projects",
-        icon: FolderKanban,
-        accent: "cyan",
-      },
-      {
-        label: "Flow Library",
-        description:
-          "Published tools and multi-step flows — the reusable playbooks ZAR can run on demand.",
-        href: "/flows",
-        icon: Wrench,
-        accent: "fuchsia",
-      },
-      {
-        label: "Run History",
-        description:
-          "Every flow ZAR has executed, with inputs, outputs, and traces. Audit what happened and rerun what worked.",
-        href: "/runs",
-        icon: History,
-        accent: "emerald",
-      },
-    ],
-  },
+  operations: OPERATIONS,
+  // `marketing` stays as an alias so old links keep working — see note above.
+  marketing: OPERATIONS,
   finance: FINANCE,
   // `trading` stays as an alias so old links keep working.
   trading: FINANCE,
-  marketing: {
-    label: "Marketing",
-    purpose:
-      "Grow your audience — inbox triage, campaigns, and content flows. ZAR pulls emails and messages into one place so you decide, not sort.",
-    icon: PenTool,
-    categories: ["marketing", "content", "social", "pr"],
-    empty: "No marketing flows are published yet.",
-    subspaces: [
-      {
-        label: "Inbox",
-        description:
-          "ZAR reads incoming email, classifies urgency, and surfaces what actually needs your reply.",
-        href: "/inbox",
-        icon: Inbox,
-        accent: "cyan",
-      },
-      {
-        label: "Content Flows",
-        description:
-          "Published content playbooks — briefs, drafts, SEO passes, distribution. Runs live in Run History.",
-        href: "/flows",
-        icon: Layers,
-        accent: "fuchsia",
-      },
-    ],
-  },
   education: {
+    canonicalSlug: "education",
     label: "Education",
     purpose:
       "Learn new skills. ZAR builds paths, practices, assessments, and remembers what you've taught it.",
     icon: GraduationCap,
     categories: ["learning", "personal_development"],
     empty: "No learning flows are published yet.",
-    subspaces: [
-      {
-        label: "Create Learning Path",
-        description:
-          "Turn a topic, file, project, or workspace into an approved blueprint, starter lesson, quiz, and course-aware ZAR chat.",
-        href: "/learning/studio",
-        icon: GraduationCap,
-        accent: "fuchsia",
-      },
-      {
-        label: "Knowledge Library",
-        description:
-          "Everything ZAR remembers about you and your work. Add notes or upload files; ZAR structures it into objects it can recall.",
-        href: "/learning",
-        icon: BookOpen,
-        accent: "cyan",
-      },
-    ],
+    // No subspaces on purpose: the knowledge library (/learning) and
+    // Learning Studio (/learning/studio) are already owned by the Memory
+    // hub, not this workspace — duplicate parentage, removed here. What's
+    // unique to Education is the study desk (WORKSPACE_DESK_SPECS.education);
+    // with no subspaces defined, the routing below falls through to it.
   },
 };
 
-const WORKSPACE_INDEX_ORDER = ["research", "operations", "finance", "marketing", "education"] as const;
+const WORKSPACE_INDEX_ORDER = ["research", "operations", "finance", "education"] as const;
 
 /**
  * The bare /workspace route (no :workspace param) - lists every real
@@ -287,11 +252,11 @@ function WorkspaceDetail({
   // they take priority over the generic subject-in/entry-out desk below.
   // The desk is only a fallback for a workspace with no subspaces of its own.
   // Placed after all hooks so hook order stays stable.
-  if (workspace === "research") {
+  if (config.canonicalSlug === "research") {
     return <ResearchDesk />;
   }
-  if (!config.subspaces?.length && WORKSPACE_DESK_SPECS[workspace]) {
-    return <WorkspaceDesk workspace={workspace} />;
+  if (!config.subspaces?.length && WORKSPACE_DESK_SPECS[config.canonicalSlug]) {
+    return <WorkspaceDesk workspace={config.canonicalSlug} />;
   }
 
   return (
@@ -315,7 +280,7 @@ function WorkspaceDetail({
         Ask ZAR in {config.label}
       </Button>
 
-      <WorkspaceLibrary workspace={workspace} label={`${config.label} library`} />
+      <WorkspaceLibrary workspace={config.canonicalSlug} label={`${config.label} library`} />
 
       {config.subspaces && config.subspaces.length > 0 && (
         <section className="space-y-2">
