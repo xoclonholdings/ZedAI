@@ -145,7 +145,7 @@ export async function setCurrentStage(
   return next;
 }
 
-/** Persist the latest "Test Zed" result for a stage (the advance gate). */
+/** Persist the latest "Test ZAR" result for a stage (the advance gate). */
 export async function recordAssessment(
   userId: string,
   stageId: TradingStageId,
@@ -162,7 +162,7 @@ export async function recordAssessment(
 }
 
 /**
- * Advance out of a stage — only allowed once Zed has PASSED that
+ * Advance out of a stage — only allowed once ZAR has PASSED that
  * stage's assessment. Unlocks and focuses the next stage.
  */
 export async function advanceStage(
@@ -172,7 +172,7 @@ export async function advanceStage(
   const current = await loadProgression(userId);
   const record = current.assessments?.[stageId];
   if (!record?.passed) {
-    throw new Error("Zed has not passed this stage's test yet. Run the test first.");
+    throw new Error("ZAR has not passed this stage's test yet. Run the test first.");
   }
   const next = nextStageOf(stageId);
   if (!next) {

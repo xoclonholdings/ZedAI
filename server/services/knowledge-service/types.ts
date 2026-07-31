@@ -100,7 +100,7 @@ export const PERSONAL_MEMORY_TYPES = new Set([
  */
 export const LANE_DIRECTIVES: Record<KnowledgeLane, string> = {
   chat:
-    "Answer as ZED using the supplied knowledge context first. Prefer specific, decisive answers over generic filler. Do not ask the user to repeat information already present in memory unless it is conflicting or missing a critical detail.",
+    "Answer as ZAR using the supplied knowledge context first. Prefer specific, decisive answers over generic filler. Do not ask the user to repeat information already present in memory unless it is conflicting or missing a critical detail.",
   manager:
     "Use the shared knowledge stack to route intelligently. Favor the lane that best matches the goal and the known business context. Do not over-route into generic research if the knowledge context already provides the answer.",
   operations:

@@ -65,7 +65,7 @@ export interface LearningBlueprint {
   units: LearningBlueprintUnit[];
   practiceActivities: string[];
   completionCriteria: string[];
-  /** Gaps or missing information Zed found in the source material while designing the course. */
+  /** Gaps or missing information ZAR found in the source material while designing the course. */
   gaps: string[];
   revisions: BlueprintRevision[];
   approved: boolean;

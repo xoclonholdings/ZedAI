@@ -2,7 +2,7 @@
   "id": 7,
   "key": "modes",
   "value": "{\"available\":[\"operations\",\"intelligence\",\"ide-operator\",\"audio-engineer\"],\"behavior\":\"ManagerAgent selects mode based on request keywords and context from parameters.yaml\",\"_notes\":\"ide-operator and audio-engineer require explicit activation\"}",
-  "description": "ZED mode configuration from core.memory.json",
+  "description": "ZAR mode configuration from core.memory.json",
   "adminOnly": true,
   "createdAt": "2026-04-09T02:08:22.680Z",
   "updatedAt": "2026-04-09T02:14:28.657Z"

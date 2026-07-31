@@ -3,29 +3,29 @@ import { randomUUID } from "crypto";
 import { storage } from "../storage/databaseStorage";
 import { insertMessageSchema } from "../../shared/schema";
 import type { ImageBlock, ReasoningEffort } from "../core/providers/provider-interface";
-import { ZedAutonomousOrchestrator } from "../zcos/orchestration/ZedAutonomousOrchestrator";
+import { ZarAutonomousOrchestrator } from "../zcos/orchestration/ZarAutonomousOrchestrator";
 import { KnowledgeService } from "./KnowledgeService";
 import { IntelligenceCore } from "./intelligence-core";
 import { ContextIntelligenceEngine } from "./intelligence-core/ContextIntelligenceEngine";
 import { DocumentIntelligenceService } from "./intelligence-core/DocumentIntelligenceService";
 import { ContextInquiryEngine } from "./knowledge-ingestion/ContextInquiryEngine";
 import { LexiconAuthorityService } from "./lexicon-authority/LexiconAuthorityService";
-import { ZedPrincipleEngine } from "./ZedPrincipleEngine";
-import { ZedStrategicReasoningEngine } from "./ZedStrategicReasoningEngine";
-import { ZedReflectionEngine } from "./ZedReflectionEngine";
+import { ZarPrincipleEngine } from "./ZarPrincipleEngine";
+import { ZarStrategicReasoningEngine } from "./ZarStrategicReasoningEngine";
+import { ZarReflectionEngine } from "./ZarReflectionEngine";
 import { injectMemory } from "./MemoryInjector";
 import { buildWorkspaceMemoryContext } from "./WorkspaceMemoryService";
-import { buildZedAdminContext } from "./ZedContextBuilder";
+import { buildZarAdminContext } from "./ZarContextBuilder";
 import { buildLearningTutorContext } from "./learning/LearningContextBuilder";
-import { getZedResponsePolicy } from "./ZedResponsePolicy";
+import { getZarResponsePolicy } from "./ZarResponsePolicy";
 import {
-  buildZedGovernancePrompt,
+  buildZarGovernancePrompt,
   userRequestedSourceLinks,
-} from "./ZedResponseGovernance";
+} from "./ZarResponseGovernance";
 import {
-  buildZedVoicePrompt,
-  presentZedResponseWithChecks,
-} from "./ZedVoiceFormationEngine";
+  buildZarVoicePrompt,
+  presentZarResponseWithChecks,
+} from "./ZarVoiceFormationEngine";
 import {
   extractWebTargets,
   hasWebsiteReferenceWithoutTarget,
@@ -35,7 +35,7 @@ import { getActiveProviderName, getResolvedTargetName } from "../core/providers/
 import { logRuntimeEvent } from "./RuntimeLogger";
 import { auditTrace } from "./TraceValidator";
 import { classifyChatError } from "./ErrorContract";
-import { zedErrorMessage } from "../../shared/error-contract";
+import { zarErrorMessage } from "../../shared/error-contract";
 
 type ExecutionStatus = "success" | "partial" | "failed";
 
@@ -357,7 +357,7 @@ export class ChatExecutionService {
       // If Context Inquiry finds a genuinely high-priority missing fact
       // AND the previous assistant turn wasn't itself a clarifying
       // question, we short-circuit the whole cognitive core and return
-      // the question as ZED's reply. That's what makes Zed feel like
+      // the question as ZAR's reply. That's what makes ZAR feel like
       // it's actually reasoning: on a clear "I need to know X before I
       // can answer well" it pauses instead of blindly answering.
       let pauseAndAsk: {
@@ -489,7 +489,7 @@ export class ChatExecutionService {
       if (injectedMemory.formatted) trace.memorySources.push("MemoryInjector");
 
       // Workspace memory FIRST: whenever a request comes from a workspace,
-      // Zed grounds in that workspace's own knowledge before any other work.
+      // ZAR grounds in that workspace's own knowledge before any other work.
       const workspaceSlug = String(
         input.workspaceId || input.context?.workspaceId || "",
       ).trim();
@@ -515,10 +515,10 @@ export class ChatExecutionService {
       trace.retrievalMode = (knowledge as any).retrievalMode || "knowledge_context";
       if (knowledge.prompt) trace.memorySources.push("KnowledgeService");
 
-      trace.servicesInvoked.push("buildZedAdminContext");
+      trace.servicesInvoked.push("buildZarAdminContext");
       const adminContext = hooks.adminContext
         ? await hooks.adminContext()
-        : await buildZedAdminContext({
+        : await buildZarAdminContext({
             userId: input.userId,
             conversationId: input.conversationId,
             projectId: input.projectId || input.context?.projectId,
@@ -562,7 +562,7 @@ export class ChatExecutionService {
         if (learningContext.prompt) trace.memorySources.push("learning_studio");
       }
 
-      const strategicReasoning = ZedStrategicReasoningEngine.prepare({
+      const strategicReasoning = ZarStrategicReasoningEngine.prepare({
         userMessage: effectiveMessage,
         lane: "manager",
         knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
@@ -570,12 +570,12 @@ export class ChatExecutionService {
       });
       const cognitiveLane = strategicReasoning.active ? "strategy" : "manager";
       const voiceMode = strategicReasoning.active ? "strategy" : "chat";
-      const governancePrompt = buildZedGovernancePrompt({
+      const governancePrompt = buildZarGovernancePrompt({
         userMessage: effectiveMessage,
         lane: cognitiveLane,
         knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
       });
-      const principlePrompt = ZedPrincipleEngine.buildPrompt({
+      const principlePrompt = ZarPrincipleEngine.buildPrompt({
         userMessage: effectiveMessage,
         lane: cognitiveLane,
         isAdmin: Boolean(input.isAdmin),
@@ -583,7 +583,7 @@ export class ChatExecutionService {
       });
       const voicePrompt = hooks.voicePrompt
         ? await hooks.voicePrompt()
-        : await buildZedVoicePrompt({ mode: voiceMode });
+        : await buildZarVoicePrompt({ mode: voiceMode });
 
       // Document Intelligence — surface knowledge extracted from uploaded
       // and previously-ingested documents (connected in the knowledge
@@ -651,7 +651,7 @@ export class ChatExecutionService {
         governancePrompt,
         lexiconResolution.prompt,
         contextInquiryPrompt,
-        // Workspace memory sits ahead of general knowledge so Zed always
+        // Workspace memory sits ahead of general knowledge so ZAR always
         // works from the workspace's own library first.
         workspaceMemory.prompt,
         principlePrompt,
@@ -660,12 +660,12 @@ export class ChatExecutionService {
         knowledgeBlock,
         intelligence.responsePrompt,
         voicePrompt,
-        getZedResponsePolicy(voiceMode),
+        getZarResponsePolicy(voiceMode),
       ]
         .filter(Boolean)
         .join("\n\n");
 
-      trace.servicesInvoked.push("ZedAutonomousOrchestrator.route", "ManagerAgent.route");
+      trace.servicesInvoked.push("ZarAutonomousOrchestrator.route", "ManagerAgent.route");
       const routeRequest = {
         userId: input.userId,
         message: effectiveMessage,
@@ -685,7 +685,7 @@ export class ChatExecutionService {
       };
       const response = hooks.route
         ? await hooks.route(routeRequest)
-        : await ZedAutonomousOrchestrator.route(routeRequest);
+        : await ZarAutonomousOrchestrator.route(routeRequest);
 
       const upstreamEmpty = emptyOutput(response.reply);
       const upstreamTemplate = !upstreamEmpty && hasTemplateLeakage(response.reply);
@@ -694,7 +694,7 @@ export class ChatExecutionService {
         trace.failureReason = upstreamEmpty ? "upstream_empty_output" : "upstream_template_output";
       }
 
-      const presented = await (hooks.present || presentZedResponseWithChecks)(
+      const presented = await (hooks.present || presentZarResponseWithChecks)(
         trace.executionStatus === "failed"
           ? `Execution failed: ${trace.failureReason}.`
           : response.reply,
@@ -754,7 +754,7 @@ export class ChatExecutionService {
         ...metadata,
       });
 
-      await (hooks.reflect || ZedReflectionEngine.reflectAfterReply)({
+      await (hooks.reflect || ZarReflectionEngine.reflectAfterReply)({
         userId: input.userId,
         conversationId: input.conversationId,
         userMessage: input.message,
@@ -802,7 +802,7 @@ export class ChatExecutionService {
         detail: trace.failureReason,
         context: { traceId: trace.traceId, conversationId: input.conversationId, errorDetail },
       });
-      const failureReply = zedErrorMessage(errorDetail, `Execution failed: ${trace.failureReason}.`);
+      const failureReply = zarErrorMessage(errorDetail, `Execution failed: ${trace.failureReason}.`);
       await saveAssistantMessage(input.conversationId, failureReply, {
         agent: "ManagerAgent",
         executionStatus: trace.executionStatus,

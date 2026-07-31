@@ -1,10 +1,10 @@
 /**
  * Capability 5 — Self-Orchestrating Intelligence.
  *
- * The operational brain. Before ZED answers, this engine decides what
+ * The operational brain. Before ZAR answers, this engine decides what
  * actually needs to happen: which internal capabilities to engage rather
  * than making the user invoke agents by hand. It maps the message onto
- * ZED's real subsystems — memory, knowledge graph, uploaded documents,
+ * ZAR's real subsystems — memory, knowledge graph, uploaded documents,
  * research, specialist agents, scheduling, approvals, reports,
  * calculation, workflows, project-state updates, notifications — and
  * emits a capability activation plan.

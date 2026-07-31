@@ -34,7 +34,7 @@ interface PaperTradeAuthorizationInput {
   size: number;
   riskAmount: number;
   entryReason: string;
-  /** Optional context Zed supplies so these checks resolve instead of UNKNOWN. */
+  /** Optional context ZAR supplies so these checks resolve instead of UNKNOWN. */
   session?: string;
   newsContext?: string;
   correlationNotes?: string;

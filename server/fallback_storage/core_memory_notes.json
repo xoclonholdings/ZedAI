@@ -1,8 +1,8 @@
 {
   "id": 3,
   "key": "notes",
-  "value": "ZED AI multi-agent hub core memory. Loaded at startup to configure identity, tone, and behavioral rules.",
-  "description": "ZED core memory notes",
+  "value": "ZAR AI multi-agent hub core memory. Loaded at startup to configure identity, tone, and behavioral rules.",
+  "description": "ZAR core memory notes",
   "adminOnly": true,
   "createdAt": "2026-04-09T02:08:22.659Z",
   "updatedAt": "2026-04-09T02:14:28.636Z"

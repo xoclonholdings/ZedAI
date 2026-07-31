@@ -14,7 +14,7 @@ import ApprovalsSection from "@/components/admin/sections/ApprovalsSection";
 import LogsSection from "@/components/admin/sections/LogsSection";
 import SecuritySection from "@/components/admin/sections/SecuritySection";
 import type { AdminSection } from "@/components/admin/types";
-import zedLogo from "@assets/Zed_logo.png";
+import zarLogo from "@assets/Zar_logo.png";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -74,48 +74,55 @@ export default function Admin() {
   const pendingCount = approvals.filter((e) => e.status === "pending").length;
 
   return (
-    <div className="min-h-screen w-screen max-w-[100vw] overflow-x-hidden bg-black text-white">
-      <div className="sticky top-0 z-20 flex w-full max-w-[100vw] items-center justify-between gap-3 overflow-hidden border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
+    <div className="relative min-h-screen w-screen max-w-[100vw] overflow-x-hidden bg-black text-white">
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -left-16 -top-8 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl zar-float" />
+        <div className="absolute -right-12 top-1/3 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl zar-float" />
+      </div>
+
+      <div className="sticky top-0 z-20 flex w-full max-w-[100vw] items-center justify-between gap-3 overflow-hidden border-b border-white/10 px-4 pb-3 pt-safe-sm zar-glass">
         <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate("/nexus")}
-            className="shrink-0 text-muted-foreground hover:text-foreground zed-button rounded-xl"
+            className="shrink-0 text-muted-foreground hover:text-foreground zar-button rounded-xl"
           >
             <ChevronLeft size={16} className="mr-1" />
             Back
           </Button>
           <div className="flex min-w-0 items-center gap-2">
-            <img src={zedLogo} alt="ZED" className="h-6 w-6 shrink-0 object-contain" />
-            <span className="truncate text-sm font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent sm:text-base">
-              ZED Admin
+            <img src={zarLogo} alt="ZAR" className="h-6 w-6 shrink-0 object-contain" />
+            <span className="truncate text-sm font-bold bg-gradient-to-r from-purple-400 via-cyan-300 to-pink-400 bg-clip-text text-transparent sm:text-base">
+              ZAR Admin
             </span>
           </div>
         </div>
-        <Badge className="zed-glass max-w-[36vw] shrink-0 overflow-hidden border-purple-500/30 text-purple-300 text-xs">
+        <Badge className="zar-glass max-w-[36vw] shrink-0 overflow-hidden border-purple-500/30 text-purple-300 text-xs">
           <Shield size={10} className="mr-1 shrink-0" />
           <span className="truncate">{user?.username || "Admin"}</span>
         </Badge>
       </div>
 
-      <AdminNav active={section} onSelect={setSection} pendingApprovals={pendingCount} />
+      <div className="relative z-10">
+        <AdminNav active={section} onSelect={setSection} pendingApprovals={pendingCount} />
 
-      <div className="mx-auto w-full max-w-[100vw] space-y-6 overflow-x-hidden p-4 md:max-w-5xl md:p-6">
-        {section === "settings" && <SettingsSection />}
-        {section === "advanced" && <AdvancedSection />}
-        {section === "knowledge" && <KnowledgeSection />}
-        {section === "integrations" && <IntegrationsSection />}
-        {section === "approvals" && (
-          <ApprovalsSection
-            approvals={approvals}
-            loading={approvalsLoading}
-            onRefresh={fetchApprovals}
-            onResolve={resolveApproval}
-          />
-        )}
-        {section === "logs" && <LogsSection />}
-        {section === "security" && <SecuritySection />}
+        <div className="mx-auto w-full max-w-[100vw] space-y-6 overflow-x-hidden p-4 md:max-w-5xl md:p-6">
+          {section === "settings" && <SettingsSection />}
+          {section === "advanced" && <AdvancedSection />}
+          {section === "knowledge" && <KnowledgeSection />}
+          {section === "integrations" && <IntegrationsSection />}
+          {section === "approvals" && (
+            <ApprovalsSection
+              approvals={approvals}
+              loading={approvalsLoading}
+              onRefresh={fetchApprovals}
+              onResolve={resolveApproval}
+            />
+          )}
+          {section === "logs" && <LogsSection />}
+          {section === "security" && <SecuritySection />}
+        </div>
       </div>
     </div>
   );

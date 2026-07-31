@@ -13,7 +13,7 @@ import {
 /**
  * Registers all /api/admin/flows* and /api/flows* endpoints.
  *
- * ZED owns the HTTP surface. ZCOS owns flow execution state and lifecycle.
+ * ZAR owns the HTTP surface. ZCOS owns flow execution state and lifecycle.
  * Route order matters: /api/flows/runs before /api/flows/:id.
  */
 export function registerFlowRoutes(app: Express): void {

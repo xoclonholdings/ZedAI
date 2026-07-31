@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { Inbox as InboxIcon, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,31 +74,34 @@ export default function InboxPage() {
             size="sm"
             onClick={refresh}
             disabled={loading}
-            className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground zed-button"
+            className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground zar-button"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </Button>
         </div>
 
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
-          <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">
-            {inbox?.status.address || "zed@zed-ai.online"}
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold">Email Inbox</h1>
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
+            <InboxIcon size={18} className="text-cyan-300" />
+            Email Inbox
+          </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {inbox?.status.detail || "Checking the ZED mailbox connection."}
+            {inbox?.status.detail || "Checking the ZAR mailbox connection."}
           </p>
           {inbox?.status && (
             <div className="mt-4 flex flex-wrap gap-2">
-              <Badge variant="secondary" className="border border-white/10 bg-black/30 text-cyan-100">
+              <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em] text-cyan-100">
+                {inbox.status.address}
+              </Badge>
+              <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em] text-cyan-100">
                 {inbox.status.provider}
               </Badge>
               <Badge
                 variant="secondary"
-                className={`border ${
+                className={`zar-glass text-[10px] uppercase tracking-[0.12em] ${
                   inbox.status.connected
-                    ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-                    : "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                    ? "border-emerald-400/30 text-emerald-200"
+                    : "border-amber-400/30 text-amber-200"
                 }`}
               >
                 {inbox.status.connected ? "connected" : "needs connection"}
@@ -113,54 +116,59 @@ export default function InboxPage() {
           </div>
         )}
 
-        {loading && !inbox ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Loading inbox...</div>
-        ) : !inbox || inbox.messages.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-            No email messages are available yet.
+        <section className="space-y-3">
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Messages{loading ? " (loading)" : ""}
           </div>
-        ) : (
-          <div className="space-y-3">
-            {inbox.messages.map((message) => {
-              const finding = inbox.findings.find((item) => item.message.id === message.id);
-              return (
-                <article
-                  key={message.id}
-                  className="rounded-xl border border-white/10 bg-black/30 px-3 py-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium">{message.subject}</div>
-                      <div className="mt-1 truncate text-[11px] text-muted-foreground">
-                        {message.sender}
+          {loading && !inbox ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">Loading inbox…</div>
+          ) : !inbox || inbox.messages.length === 0 ? (
+            <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
+              No email messages are available yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {inbox.messages.map((message) => {
+                const finding = inbox.findings.find((item) => item.message.id === message.id);
+                return (
+                  <article
+                    key={message.id}
+                    className="zar-glass rounded-2xl px-4 py-3.5 transition-all hover:shadow-[0_0_18px_rgba(103,232,249,0.15)]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-medium">{message.subject}</div>
+                        <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                          {message.sender}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        {attentionIds.has(message.id) && (
+                          <Badge variant="secondary" className="border border-amber-400/30 bg-amber-500/10 text-[9px] uppercase tracking-[0.16em] text-amber-200">
+                            Attention
+                          </Badge>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(message.received_at).toLocaleString()}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1">
-                      {attentionIds.has(message.id) && (
-                        <Badge variant="secondary" className="border border-amber-400/30 bg-amber-500/10 text-[9px] uppercase tracking-[0.16em] text-amber-200">
-                          Attention
-                        </Badge>
-                      )}
-                      <span className="text-[10px] text-muted-foreground">
-                        {new Date(message.received_at).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                    {message.body || "No message body."}
-                  </p>
-                  {finding && (
-                    <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-muted-foreground">
-                      <span className="text-cyan-200">{finding.classification.category}</span>
-                      {" - "}
-                      {finding.follow_up_hint}
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted-foreground">
+                      {message.body || "No message body."}
+                    </p>
+                    {finding && (
+                      <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-muted-foreground">
+                        <span className="text-cyan-200">{finding.classification.category}</span>
+                        {" - "}
+                        {finding.follow_up_hint}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
     </main>
   );
 }

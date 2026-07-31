@@ -16,7 +16,7 @@ export function StageRow({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -30,7 +30,7 @@ export function StageRow({
           {stage.requiresApproval && (
             <Badge
               variant="secondary"
-              className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
+              className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
             >
               approval
             </Badge>
@@ -38,7 +38,7 @@ export function StageRow({
           {stage.assignedAgent && (
             <Badge
               variant="secondary"
-              className="zed-glass border-purple-500/30 text-purple-200 text-[9px] uppercase tracking-[0.16em]"
+              className="zar-glass border-purple-500/30 text-purple-200 text-[9px] uppercase tracking-[0.16em]"
             >
               {stage.assignedAgent}
             </Badge>
@@ -54,14 +54,14 @@ export function StageRow({
             <Input
               value={stage.name}
               onChange={(e) => onChange({ name: e.target.value })}
-              className="zed-glass border-white/10"
+              className="zar-glass border-white/10"
             />
           </Field>
           <Field label="Assigned agent">
             <Input
               value={stage.assignedAgent || ""}
               onChange={(e) => onChange({ assignedAgent: (e.target.value || undefined) as any })}
-              className="zed-glass border-white/10 font-mono"
+              className="zar-glass border-white/10 font-mono"
               placeholder="operations / research / business / finance / security / content"
             />
           </Field>

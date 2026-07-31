@@ -70,7 +70,7 @@ export function PersonalityForm({
         label="Prefer Action"
         checked={!!file.decision_rules.prefer_action}
         onCheckedChange={(c) => update((d) => { d.decision_rules.prefer_action = c; })}
-        description="Bias ZED toward taking the next useful step instead of over-explaining."
+        description="Bias ZAR toward taking the next useful step instead of over-explaining."
       />
       <div className="grid gap-4 md:grid-cols-2">
         <FormTextarea label="Ask Clarification" value={file.decision_rules.ask_clarification || ""} onChange={(v) => update((d) => { d.decision_rules.ask_clarification = v; })} rows={4} />

@@ -1,8 +1,8 @@
-# ZED UI Evolution — Knowledge-Centered Experience
+# ZAR UI Evolution — Knowledge-Centered Experience
 
 ## Purpose
 
-Evolve ZED away from a chatbot-first interface toward an operational intelligence workspace where **knowledge is the primary interface** and conversation is one tool inside it. This document is the audit + plan; implementation lands as follow-up PRs one stage at a time so no existing functionality regresses.
+Evolve ZAR away from a chatbot-first interface toward an operational intelligence workspace where **knowledge is the primary interface** and conversation is one tool inside it. This document is the audit + plan; implementation lands as follow-up PRs one stage at a time so no existing functionality regresses.
 
 ## Non-goals
 
@@ -91,7 +91,7 @@ Every route above reads from a store that already exists. Nothing is fabricated.
 
 1. Land on `/` (Knowledge Map).
 2. See a canvas of the user's active work: 3 active projects, 5 recent decisions, 2 tasks waiting for approval, 1 unresolved question flagged by curation.
-3. Tap any object → object detail. Object detail always offers "Talk to Zed about this" as one action that opens a chat scoped to that object.
+3. Tap any object → object detail. Object detail always offers "Talk to ZAR about this" as one action that opens a chat scoped to that object.
 
 ### Contextual intelligence flow (was: user picks agent)
 

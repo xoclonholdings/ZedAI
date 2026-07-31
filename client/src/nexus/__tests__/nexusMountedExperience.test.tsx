@@ -49,7 +49,7 @@ test("mounted Nexus communication surface is NEXUS-facing, defaults to the mic s
   assert.doesNotMatch(html, /Ask ZAR/, "no composer/empty-state text shows in the dock");
   assert.match(html, /History/);
   assert.doesNotMatch(html, /Memory Context/, "Memory Context was removed - Memory is its own Nexus planet");
-  assert.doesNotMatch(html, /Message Zed/);
+  assert.doesNotMatch(html, /Message ZAR/);
   assert.doesNotMatch(html, /What are we doing/);
   assert.doesNotMatch(html, /Enhanced AI Assistant/);
   assert.doesNotMatch(html, /New Conversation/);

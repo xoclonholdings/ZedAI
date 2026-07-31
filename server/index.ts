@@ -35,7 +35,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ ok: true, service: "zed-server" });
+  res.status(200).json({ ok: true, service: "zar-server" });
 });
 
 app.get("/", (req, res, next) => {
@@ -43,7 +43,7 @@ app.get("/", (req, res, next) => {
   if (accepts.includes("text/html")) {
     return next();
   }
-  res.status(200).json({ ok: true, service: "zed-server" });
+  res.status(200).json({ ok: true, service: "zar-server" });
 });
 
 app.head("/", (_req, res) => {
@@ -169,7 +169,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
-      log("ZED AI accepting requests; warming up database + memory in the background");
+      log("ZAR AI accepting requests; warming up database + memory in the background");
     },
   );
 

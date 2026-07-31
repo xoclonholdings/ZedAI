@@ -1,5 +1,5 @@
 import { Component, type ReactNode, useEffect } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation, useParams } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { queryClient } from "./lib/queryClient";
@@ -18,7 +18,7 @@ import { NexusProvider } from "@/nexus";
 import { ConsoleWorkspaceFrame } from "@/console/ConsoleWorkspaceFrame";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
-import { RunsListPage, RunDetailPage } from "@/pages/runs";
+import { RunDetailPage } from "@/pages/runs";
 import ProjectDetailPage from "@/pages/project-detail";
 import ProjectsPage from "@/pages/projects";
 import { DecisionsListPage, DecisionDetailPage } from "@/pages/decisions";
@@ -29,7 +29,6 @@ import BudgetPage from "@/pages/budget";
 import WorkspacePage from "@/pages/workspace";
 import HistoryPage from "@/pages/history";
 import InboxPage from "@/pages/inbox";
-import LearningPage from "@/pages/learning";
 import LearningStudioPage from "@/pages/learning-studio";
 import SettingsPage from "@/pages/settings";
 import ConnectPage from "@/pages/connect";
@@ -76,6 +75,20 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
 
     return this.props.children;
   }
+}
+
+/** Client-side redirect for a route that merged into another (e.g. /runs -> /history). */
+function RedirectTo({ to }: { readonly to: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    navigate(to, { replace: true });
+  }, [to, navigate]);
+  return null;
+}
+
+function RedirectRunToHistory() {
+  const { runId } = useParams<{ runId?: string }>();
+  return <RedirectTo to={`/history/${runId ?? ""}`} />;
 }
 
 function Router() {
@@ -178,12 +191,13 @@ function Router() {
         {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><FlowDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
+      {/* /runs merged into /history — same flow-run data, one real page instead of two. */}
       <Route path="/runs">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><RunsListPage /></ConsoleWorkspaceFrame> : <Login />}
+        <RedirectTo to="/history" />
       </Route>
 
       <Route path="/runs/:runId">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><RunDetailPage /></ConsoleWorkspaceFrame> : <Login />}
+        <RedirectRunToHistory />
       </Route>
 
       <Route path="/projects">
@@ -218,8 +232,9 @@ function Router() {
         {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><LearningStudioPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
+      {/* Legacy route: the old Memory "Learning" page merged into Knowledge (see knowledge.tsx). */}
       <Route path="/learning">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><LearningPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><KnowledgePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/decisions">

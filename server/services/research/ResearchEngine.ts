@@ -7,13 +7,13 @@ import { readAppState, writeAppState } from "../appState";
 /**
  * The Research workspace engine.
  *
- * Search is the front door. After Zed looks something up, you can ask him
+ * Search is the front door. After ZAR looks something up, you can ask him
  * to do one of a few plain things with it: give the short version,
  * check if it's legit / worth it, or save it for later. "Other" lets you
  * say what you want in your own words.
  *
  * Every action grounds in the Research workspace's own memory first, and
- * in the actual search results — Zed never invents sources or facts.
+ * in the actual search results — ZAR never invents sources or facts.
  */
 
 const SAVED_SCOPE = "research:saved";
@@ -66,7 +66,7 @@ export interface ActionResult {
 }
 
 /**
- * Turn any brain/model failure into something Zed would actually say to a
+ * Turn any brain/model failure into something ZAR would actually say to a
  * person — plain, warm, no error codes — and tell them whether to retry.
  */
 function friendlyBrainFailure(error: unknown): string {
@@ -127,7 +127,7 @@ export async function runResearchAction(input: RunActionInput): Promise<ActionRe
   try {
     const text = await generateChatFromProvider(
       [{ role: "user", content: prompt }],
-      "You are Zed, a warm, plain-spoken personal assistant. You never use jargon or corporate filler. You are honest, and you never invent facts or sources.",
+      "You are ZAR, a warm, plain-spoken personal assistant. You never use jargon or corporate filler. You are honest, and you never invent facts or sources.",
       { lane: "research" },
     );
     if (!text || !text.trim()) {
@@ -196,7 +196,7 @@ export async function createResearchDocument(input: {
   try {
     const raw = await generateChatFromProvider(
       [{ role: "user", content: prompt }],
-      "You are Zed, writing a clear, honest document for a real person. Plain language, no filler, no invented facts or sources.",
+      "You are ZAR, writing a clear, honest document for a real person. Plain language, no filler, no invented facts or sources.",
       { lane: "research" },
     );
     const text = (raw || "").trim();

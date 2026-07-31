@@ -8,7 +8,7 @@ import { listProjects } from "./ProjectFilingStore";
 import { voiceSettingsToPrompt } from "./voiceSettings";
 
 /**
- * Builds the "live admin context" that gets injected into ZED's system
+ * Builds the "live admin context" that gets injected into ZAR's system
  * prompt on every chat / agent call. This is the bridge that makes the
  * admin panel actually flow into the AI — without it, settings are
  * stored but never read.
@@ -74,7 +74,7 @@ function summarizeRecord(value: any, depth = 0): string {
   return "";
 }
 
-export async function buildZedAdminContext(
+export async function buildZarAdminContext(
   opts: AdminContextOptions = {},
 ): Promise<BuiltContext> {
   const meta: BuiltContext["meta"] = {
@@ -86,7 +86,7 @@ export async function buildZedAdminContext(
   };
   const sections: string[] = [];
 
-  // ── 0. "How Zed sounds" — the plain-English voice surface ─────────
+  // ── 0. "How ZAR sounds" — the plain-English voice surface ─────────
   // Placed first so it anchors the model's voice before any of the
   // older YAML dumps below. Falls through silently if the settings
   // aren't loadable (fresh install with no settings file).

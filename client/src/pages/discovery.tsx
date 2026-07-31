@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocationSearch } from "@/lib/useLocationSearch";
+import { cleanSummary, cleanTitle } from "@/lib/text";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -43,14 +44,14 @@ const MODES: Array<{
   {
     id: "conflicts",
     label: "Conflicts",
-    hint: "Two facts Zed can't reconcile.",
+    hint: "Two facts ZAR can't reconcile.",
     icon: AlertTriangle,
     accent: "amber",
   },
   {
     id: "open-questions",
     label: "Open questions",
-    hint: "Things Zed noticed but hasn't answered.",
+    hint: "Things ZAR noticed but hasn't answered.",
     icon: HelpCircle,
     accent: "cyan",
   },
@@ -201,7 +202,7 @@ export default function DiscoveryPage() {
             size="sm"
             onClick={() => void refresh()}
             disabled={loading}
-            className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+            className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
             aria-label="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -274,7 +275,7 @@ export default function DiscoveryPage() {
         ) : mode === "duplicates" ? (
           duplicateGroups.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-              No duplicates. Everything Zed knows is unique.
+              No duplicates. Everything ZAR knows is unique.
             </div>
           ) : (
             <div className="space-y-3">
@@ -286,7 +287,7 @@ export default function DiscoveryPage() {
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="min-w-0 flex-1">
                       <div className="text-[13.5px] font-semibold text-white truncate">
-                        {g.canonicalName}
+                        {cleanTitle(g.canonicalName, 60)}
                       </div>
                       <div className="text-[11px] text-white/45">
                         {g.type.replace(/_/g, " ")} · {g.members.length} copies
@@ -320,8 +321,7 @@ export default function DiscoveryPage() {
                         </div>
                         {m.summary && (
                           <div className="mt-1 text-[12px] leading-snug text-white/70">
-                            {m.summary.slice(0, 220)}
-                            {m.summary.length > 220 ? "…" : ""}
+                            {cleanSummary(m.summary, 220)}
                           </div>
                         )}
                       </div>
@@ -345,7 +345,7 @@ export default function DiscoveryPage() {
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <div className="min-w-0 flex-1">
                     <div className="text-[13.5px] font-semibold text-white truncate">
-                      {o.canonicalName}
+                      {cleanTitle(o.canonicalName, 60)}
                     </div>
                     <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40">
                       {o.type.replace(/_/g, " ")}
@@ -356,8 +356,7 @@ export default function DiscoveryPage() {
                 </div>
                 {o.summary && (
                   <p className="mt-2 text-[12.5px] leading-snug text-white/70">
-                    {o.summary.slice(0, 320)}
-                    {o.summary.length > 320 ? "…" : ""}
+                    {cleanSummary(o.summary, 320)}
                   </p>
                 )}
               </div>

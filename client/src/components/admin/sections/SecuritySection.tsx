@@ -188,7 +188,7 @@ export default function SecuritySection() {
             Security
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Who can sign in, how long a session lasts, and what tripped Zed's
+            Who can sign in, how long a session lasts, and what tripped ZAR's
             safety checks. If you're the only user right now, most of this is
             just here for later.
           </p>
@@ -207,7 +207,7 @@ export default function SecuritySection() {
       <SettingGroup title="Sign-in safety">
         <SettingRow
           label="Session times out after"
-          description="How long Zed keeps you signed in without activity."
+          description="How long ZAR keeps you signed in without activity."
         >
           <select
             value={String(settings.sessionTimeoutMinutes)}
@@ -227,7 +227,7 @@ export default function SecuritySection() {
 
         <SettingRow
           label="Lock after failed sign-ins"
-          description="Zed locks the account for a while after this many wrong tries."
+          description="ZAR locks the account for a while after this many wrong tries."
         >
           <select
             value={String(settings.maxFailedAttempts)}

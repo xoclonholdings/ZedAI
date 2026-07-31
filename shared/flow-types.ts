@@ -1,7 +1,7 @@
 /**
  * ZCOS Flow type system.
  *
- * ZED renders and launches flows. ZCOS owns execution state, run lifecycle,
+ * ZAR renders and launches flows. ZCOS owns execution state, run lifecycle,
  * approvals, outputs, errors, memory artifacts, and reports.
  *
  * Hierarchy:

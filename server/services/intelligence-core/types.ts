@@ -3,14 +3,14 @@
  *
  * The Intelligence Core is the layer that brings Claude-class reasoning,
  * context management, document understanding, adaptive responses, and
- * autonomous orchestration into ZED. It does not replace the existing
+ * autonomous orchestration into ZAR. It does not replace the existing
  * Cognitive Core (Context Inquiry → Principle → Strategic → Knowledge →
  * Voice → Reflection); it sits inside it, adding five deterministic
  * engines whose outputs slot into the existing prompt-assembly order in
  * `ChatExecutionService` and `ManagerAgent`.
  *
  * Every engine here is deterministic and service-owned so it can migrate
- * into ZCOS later without changing the ZED interface, exactly like the
+ * into ZCOS later without changing the ZAR interface, exactly like the
  * Strategic Reasoning and Context Inquiry engines already do.
  */
 

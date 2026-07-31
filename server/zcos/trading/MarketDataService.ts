@@ -4,7 +4,7 @@ import { resolveMarketDataKey, marketDataKeyStatus } from "./MarketDataKeysStore
 import { computeSignal } from "./TechnicalIndicators";
 
 /**
- * Real market-data access for Zed.
+ * Real market-data access for ZAR.
  *
  * Fetches a live quote (last price + recent daily bars for volatility) so
  * the trade proposer prices setups off real levels instead of a paper
@@ -54,7 +54,7 @@ async function fetchJson(url: string, headers?: Record<string, string>): Promise
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (ZedAI market-data)", ...(headers || {}) },
+      headers: { "User-Agent": "Mozilla/5.0 (ZarAI market-data)", ...(headers || {}) },
     });
     if (!res.ok) return null;
     return await res.json();
@@ -71,7 +71,7 @@ async function fetchText(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (ZedAI market-data)" },
+      headers: { "User-Agent": "Mozilla/5.0 (ZarAI market-data)" },
     });
     if (!res.ok) return null;
     return await res.text();
@@ -341,7 +341,7 @@ export interface MarketDataStatus {
 /**
  * Probe whether the server can actually reach a live feed right now, using
  * a liquid reference symbol. Lets the app self-report — from the deployed
- * environment — whether Zed has real data or is falling back to a paper
+ * environment — whether ZAR has real data or is falling back to a paper
  * reference (usually an outbound-network policy question, not code).
  */
 export async function getMarketDataStatus(probeSymbol = "SPY"): Promise<MarketDataStatus> {

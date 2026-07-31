@@ -34,7 +34,7 @@ type Mode = "learn" | "recall" | "check" | "practice" | "apply" | "review";
 
 const EMPTY_FORM = {
   topic: "",
-  assumedLevel: "Beginner with some Zed context",
+  assumedLevel: "Beginner with some ZAR context",
   workspaceId: "education",
   projectId: "",
   notes: "",
@@ -326,7 +326,7 @@ export default function LearningStudioPage() {
         <aside className="space-y-3">
           <Button
             onClick={() => setShowCreate((value) => !value)}
-            className="w-full rounded-xl zed-gradient"
+            className="w-full rounded-xl zar-gradient"
           >
             <Plus size={14} className="mr-2" />
             {showCreate ? "Close" : "Create Learning Path"}
@@ -350,7 +350,7 @@ export default function LearningStudioPage() {
                   onChange={(e) => setForm({ ...form, assumedLevel: e.target.value })}
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white focus:border-cyan-400/50 focus:outline-none"
                 >
-                  <option className="bg-neutral-900">Beginner with some Zed context</option>
+                  <option className="bg-neutral-900">Beginner with some ZAR context</option>
                   <option className="bg-neutral-900">Intermediate</option>
                   <option className="bg-neutral-900">Advanced</option>
                 </select>
@@ -429,7 +429,7 @@ export default function LearningStudioPage() {
               <Button
                 onClick={() => void createBlueprint()}
                 disabled={creating}
-                className="w-full rounded-xl zed-gradient"
+                className="w-full rounded-xl zar-gradient"
               >
                 {creating ? "Generating..." : "Generate Blueprint"}
               </Button>
@@ -455,7 +455,7 @@ export default function LearningStudioPage() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-sm font-semibold">{path.title}</span>
-                      <Badge variant="secondary" className={`zed-glass text-[9px] uppercase tracking-[0.14em] ${statusTone(path.status)}`}>
+                      <Badge variant="secondary" className={`zar-glass text-[9px] uppercase tracking-[0.14em] ${statusTone(path.status)}`}>
                         {path.status}
                       </Badge>
                     </div>
@@ -499,19 +499,19 @@ export default function LearningStudioPage() {
                       {detail.path.objective}
                     </p>
                   </div>
-                  <Badge variant="secondary" className={`zed-glass text-[10px] uppercase tracking-[0.14em] ${statusTone(detail.path.status)}`}>
+                  <Badge variant="secondary" className={`zar-glass text-[10px] uppercase tracking-[0.14em] ${statusTone(detail.path.status)}`}>
                     {detail.path.status}
                   </Badge>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
+                  <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
                     {detail.sources.length} source{detail.sources.length === 1 ? "" : "s"}
                   </Badge>
-                  <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
+                  <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
                     {detail.mastery.length} mastery record{detail.mastery.length === 1 ? "" : "s"}
                   </Badge>
                   {lastAttempt && (
-                    <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
+                    <Badge variant="secondary" className="zar-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
                       last quiz {lastAttempt.score}%
                     </Badge>
                   )}
@@ -596,7 +596,7 @@ function BlueprintEditor({
           </div>
           <h2 className="mt-1 text-lg font-semibold">Approve the structure first</h2>
         </div>
-        <Button onClick={onApprove} disabled={approving} className="rounded-xl zed-gradient">
+        <Button onClick={onApprove} disabled={approving} className="rounded-xl zar-gradient">
           <CheckCircle2 size={14} className="mr-2" />
           {approving ? "Approving..." : "Approve Blueprint"}
         </Button>
@@ -604,7 +604,7 @@ function BlueprintEditor({
 
       <div className="rounded-xl border border-white/10 bg-black/30 p-3">
         <label className="text-[11px] uppercase tracking-[0.16em] text-white/60">
-          Ask Zed to change the blueprint
+          Ask ZAR to change the blueprint
         </label>
         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
           <input
@@ -620,7 +620,7 @@ function BlueprintEditor({
             onClick={onRevise}
             disabled={revising || !revisionInstruction.trim()}
             variant="secondary"
-            className="rounded-xl zed-glass shrink-0"
+            className="rounded-xl zar-glass shrink-0"
           >
             {revising ? "Revising..." : "Revise"}
           </Button>
@@ -639,7 +639,7 @@ function BlueprintEditor({
       {blueprint.gaps.length > 0 && (
         <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.04] p-3">
           <div className="text-[11px] uppercase tracking-[0.16em] text-amber-200/70">
-            Gaps Zed found in the source material
+            Gaps ZAR found in the source material
           </div>
           <ul className="mt-2 space-y-1 text-[12.5px] leading-5 text-white/65">
             {blueprint.gaps.map((gap, index) => (
@@ -759,7 +759,7 @@ function LessonExperience({
             {lesson.summary}
           </p>
         </div>
-        <Button onClick={onOpenTutor} className="rounded-xl zed-gradient">
+        <Button onClick={onOpenTutor} className="rounded-xl zar-gradient">
           <MessageSquare size={14} className="mr-2" />
           Discuss
         </Button>
@@ -849,11 +849,11 @@ function LessonExperience({
               </div>
             ))}
             <div className="flex flex-wrap gap-2">
-              <Button onClick={onSubmitQuiz} disabled={submittingQuiz} className="rounded-xl zed-gradient">
+              <Button onClick={onSubmitQuiz} disabled={submittingQuiz} className="rounded-xl zar-gradient">
                 {submittingQuiz ? "Submitting..." : "Submit Quiz"}
               </Button>
               {canAdvance && (
-                <Button onClick={onAdvance} disabled={advancing} variant="secondary" className="rounded-xl zed-glass">
+                <Button onClick={onAdvance} disabled={advancing} variant="secondary" className="rounded-xl zar-glass">
                   {advancing ? "Loading..." : "Continue to Next Lesson"}
                 </Button>
               )}

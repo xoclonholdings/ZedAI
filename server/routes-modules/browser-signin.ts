@@ -14,7 +14,7 @@ import { mintHandoffTicket } from "../services/browserAuth/liveHandoffSocket";
 
 /**
  * Credential-based sign-in: for providers with no paste-a-token path,
- * Zed drives a real browser to log in with a username/password
+ * ZAR drives a real browser to log in with a username/password
  * (autofill-style) and keeps the resulting session.
  *
  * start   → submits credentials; comes back success, needing a

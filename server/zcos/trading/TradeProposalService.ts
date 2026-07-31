@@ -24,7 +24,7 @@ export interface RecommendationResult {
 }
 
 export interface TradeDataAdapter {
-  /** Human label surfaced in error messages ("Zed's live feed", "Webull"). */
+  /** Human label surfaced in error messages ("ZAR's live feed", "Webull"). */
   label: string;
   recommendSymbol: (
     asset: TradingAssetClass,
@@ -35,10 +35,10 @@ export interface TradeDataAdapter {
   getQuote: (symbol: string, asset: TradingAssetClass) => Promise<MarketQuote | null>;
 }
 
-/** Zed's own live feed (Yahoo/Stooq/keyed vendors) — never throws, falls back to a paper reference. */
+/** ZAR's own live feed (Yahoo/Stooq/keyed vendors) — never throws, falls back to a paper reference. */
 export function internalTradeDataAdapter(): TradeDataAdapter {
   return {
-    label: "Zed's live feed",
+    label: "ZAR's live feed",
     recommendSymbol: (asset, market, opts) => recommendSymbol(asset, market, opts),
     getQuote: (symbol, asset) => getMarketQuote(symbol, asset),
   };
@@ -136,7 +136,7 @@ export async function proposeTrade(input: ProposeTradeInput): Promise<ProposeTra
     }
   }
 
-  // A neutral read means the indicators don't agree on a direction — Zed
+  // A neutral read means the indicators don't agree on a direction — ZAR
   // doesn't force a trade just to have one, on any execution target.
   if (quote?.signal?.signal === "neutral") {
     return {

@@ -1,20 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import {
-  BookOpen,
   Briefcase,
-  FolderKanban,
   GraduationCap,
-  History,
-  Inbox,
-  Layers,
   LayoutDashboard,
   LineChart,
   MessageSquare,
-  PenTool,
   Search,
   Wallet,
-  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +39,10 @@ interface Subspace {
 }
 
 interface WorkspaceConfig {
+  /** The real slug this config lives under — memory tagging and desk
+   * lookups always use this, never the URL param, so an alias (e.g.
+   * "marketing" -> OPERATIONS) can't fragment memory into a second scope. */
+  canonicalSlug: string;
   label: string;
   purpose: string;
   icon: LucideIcon;
@@ -55,6 +52,7 @@ interface WorkspaceConfig {
 }
 
 const FINANCE: WorkspaceConfig = {
+  canonicalSlug: "finance",
   label: "Finance",
   purpose:
     "Budget, banking, credit, trading, and investments in one place. Budget Management organizes every deposit; Trading stays separate.",
@@ -81,10 +79,46 @@ const FINANCE: WorkspaceConfig = {
   ],
 };
 
+/**
+ * Operations absorbs Marketing's flows (content, social, PR) rather than
+ * keeping Marketing as a peer workspace — Marketing had no domain memory
+ * of its own, just flows that run inside the business. `marketing` stays
+ * as a routing alias below so old links keep working.
+ *
+ * No subspaces here on purpose: Projects (/projects), Flow Library and
+ * Run History (/flows, /runs) are already owned by the Projects and Tools
+ * hubs — listing them again here was duplicate parentage, the exact thing
+ * this pass removes. What's actually unique to Operations is the desk
+ * (see WORKSPACE_DESK_SPECS.operations) — with no subspaces defined, the
+ * routing below falls through to it.
+ */
+const OPERATIONS: WorkspaceConfig = {
+  canonicalSlug: "operations",
+  label: "Operations",
+  purpose:
+    "Plan and run the business — objectives, campaigns, and the tools that keep day-to-day work moving.",
+  icon: Briefcase,
+  categories: [
+    "business",
+    "operations",
+    "strategy",
+    "planning",
+    "project",
+    "revenue",
+    "sales",
+    "marketing",
+    "content",
+    "social",
+    "pr",
+  ],
+  empty: "No operations or marketing tools are published yet.",
+};
+
 const WORKSPACES: Record<string, WorkspaceConfig> = {
   research: {
     // Research renders the ResearchDesk working surface (see WorkspacePage);
     // this config stays only as a fallback.
+    canonicalSlug: "research",
     label: "Research",
     purpose:
       "Research people, companies, markets, competitors, technologies, products, trends, papers, and documents.",
@@ -92,98 +126,29 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
     categories: ["research"],
     empty: "No research tools are published yet.",
   },
-  operations: {
-    label: "Operations",
-    purpose:
-      "Plan and run the business — projects, flows, run history, and the tools that keep day-to-day work moving.",
-    icon: Briefcase,
-    categories: ["business", "operations", "strategy", "planning", "project", "revenue", "sales"],
-    empty: "No operations tools are published yet.",
-    subspaces: [
-      {
-        label: "Projects",
-        description:
-          "File conversations, sources, and instructions per initiative. Each project keeps its own memory so Zed answers in-context.",
-        href: "/projects",
-        icon: FolderKanban,
-        accent: "cyan",
-      },
-      {
-        label: "Flow Library",
-        description:
-          "Published tools and multi-step flows — the reusable playbooks Zed can run on demand.",
-        href: "/flows",
-        icon: Wrench,
-        accent: "fuchsia",
-      },
-      {
-        label: "Run History",
-        description:
-          "Every flow Zed has executed, with inputs, outputs, and traces. Audit what happened and rerun what worked.",
-        href: "/runs",
-        icon: History,
-        accent: "emerald",
-      },
-    ],
-  },
+  operations: OPERATIONS,
+  // `marketing` stays as an alias so old links keep working — see note above.
+  marketing: OPERATIONS,
   finance: FINANCE,
   // `trading` stays as an alias so old links keep working.
   trading: FINANCE,
-  marketing: {
-    label: "Marketing",
-    purpose:
-      "Grow your audience — inbox triage, campaigns, and content flows. Zed pulls emails and messages into one place so you decide, not sort.",
-    icon: PenTool,
-    categories: ["marketing", "content", "social", "pr"],
-    empty: "No marketing flows are published yet.",
-    subspaces: [
-      {
-        label: "Inbox",
-        description:
-          "Zed reads incoming email, classifies urgency, and surfaces what actually needs your reply.",
-        href: "/inbox",
-        icon: Inbox,
-        accent: "cyan",
-      },
-      {
-        label: "Content Flows",
-        description:
-          "Published content playbooks — briefs, drafts, SEO passes, distribution. Runs live in Run History.",
-        href: "/flows",
-        icon: Layers,
-        accent: "fuchsia",
-      },
-    ],
-  },
   education: {
+    canonicalSlug: "education",
     label: "Education",
     purpose:
-      "Learn new skills. Zed builds paths, practices, assessments, and remembers what you've taught it.",
+      "Learn new skills. ZAR builds paths, practices, assessments, and remembers what you've taught it.",
     icon: GraduationCap,
     categories: ["learning", "personal_development"],
     empty: "No learning flows are published yet.",
-    subspaces: [
-      {
-        label: "Create Learning Path",
-        description:
-          "Turn a topic, file, project, or workspace into an approved blueprint, starter lesson, quiz, and course-aware Zed chat.",
-        href: "/learning/studio",
-        icon: GraduationCap,
-        accent: "fuchsia",
-      },
-      {
-        label: "Knowledge Library",
-        description:
-          "Everything Zed remembers about you and your work. Add notes or upload files; Zed structures it into objects it can recall.",
-        href: "/learning",
-        icon: BookOpen,
-        accent: "cyan",
-      },
-    ],
+    // No subspaces on purpose: the knowledge library (/learning) and
+    // Learning Studio (/learning/studio) are already owned by the Memory
+    // hub, not this workspace — duplicate parentage, removed here. What's
+    // unique to Education is the study desk (WORKSPACE_DESK_SPECS.education);
+    // with no subspaces defined, the routing below falls through to it.
   },
 };
 
-const WORKSPACE_INDEX_ORDER = ["research", "operations", "finance", "marketing", "education"] as const;
+const WORKSPACE_INDEX_ORDER = ["research", "operations", "finance", "education"] as const;
 
 /**
  * The bare /workspace route (no :workspace param) - lists every real
@@ -196,14 +161,14 @@ function WorkspaceIndex() {
   return (
     <main className="mx-auto max-w-2xl space-y-3">
       <p className="px-1 text-sm leading-6 text-muted-foreground">
-        Domain operating spaces Zed works within. Pick one to open its desk.
+        Domain operating spaces ZAR works within. Pick one to open its desk.
       </p>
       <button
         type="button"
         onClick={() => navigate("/knowledge-map")}
-        className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+        className="zar-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(16,185,129,0.25)]"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-emerald-200">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]">
           <LayoutDashboard size={18} />
         </div>
         <div className="min-w-0 flex-1">
@@ -221,9 +186,9 @@ function WorkspaceIndex() {
             key={slug}
             type="button"
             onClick={() => navigate(`/workspaces/${slug}`)}
-            className="flex w-full items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+            className="zar-glass flex w-full items-start gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_24px_rgba(139,0,255,0.3)]"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-200 shadow-[0_0_12px_rgba(103,232,249,0.35)]">
               <Icon size={18} />
             </div>
             <div className="min-w-0 flex-1">
@@ -282,18 +247,21 @@ function WorkspaceDetail({
     return items.filter((item) => config.categories.includes(item.category));
   }, [config.categories, items]);
 
-  // Workspaces are real working surfaces (a desk you do the work in), not
-  // menus of cards. Placed after all hooks so hook order stays stable.
-  if (workspace === "research") {
+  // Each workspace's real subspaces (Projects/Flows/Runs for Operations,
+  // Budget/Trading for Finance, etc.) are domain-specific working surfaces —
+  // they take priority over the generic subject-in/entry-out desk below.
+  // The desk is only a fallback for a workspace with no subspaces of its own.
+  // Placed after all hooks so hook order stays stable.
+  if (config.canonicalSlug === "research") {
     return <ResearchDesk />;
   }
-  if (WORKSPACE_DESK_SPECS[workspace]) {
-    return <WorkspaceDesk workspace={workspace} />;
+  if (!config.subspaces?.length && WORKSPACE_DESK_SPECS[config.canonicalSlug]) {
+    return <WorkspaceDesk workspace={config.canonicalSlug} />;
   }
 
   return (
     <main className="mx-auto max-w-3xl space-y-4">
-      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
           <Icon size={14} />
           Workspace
@@ -306,13 +274,13 @@ function WorkspaceDetail({
 
       <Button
         onClick={() => navigate(`/chat?ctx=${workspace}`)}
-        className="w-full rounded-xl zed-gradient"
+        className="w-full rounded-xl zar-gradient"
       >
         <MessageSquare size={14} className="mr-2" />
-        Ask Zed in {config.label}
+        Ask ZAR in {config.label}
       </Button>
 
-      <WorkspaceLibrary workspace={workspace} label={`${config.label} library`} />
+      <WorkspaceLibrary workspace={config.canonicalSlug} label={`${config.label} library`} />
 
       {config.subspaces && config.subspaces.length > 0 && (
         <section className="space-y-2">
@@ -335,7 +303,7 @@ function WorkspaceDetail({
                   key={sub.href}
                   type="button"
                   onClick={() => navigate(sub.href)}
-                  className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+                  className="zar-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <SubIcon size={15} className={accentText} />
@@ -356,7 +324,7 @@ function WorkspaceDetail({
         {loading ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
         ) : workspaceItems.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
+          <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
             {config.empty}
           </div>
         ) : (
@@ -366,12 +334,12 @@ function WorkspaceDetail({
                 key={item.id}
                 type="button"
                 onClick={() => navigate(`/workspaces/${workspace}/tools/${item.id}`)}
-                className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+                className="zar-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
               >
                 <div className="text-sm font-semibold text-foreground">{item.userFacingLabel}</div>
                 <p className="mt-2 text-xs leading-5 text-muted-foreground">{item.userFacingBlurb}</p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  <Badge variant="secondary" className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]">
+                  <Badge variant="secondary" className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.16em]">
                     {item.stageCount} step set{item.stageCount === 1 ? "" : "s"}
                   </Badge>
                 </div>

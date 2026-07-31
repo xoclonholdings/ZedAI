@@ -87,7 +87,7 @@ function formatDate(value?: string): string {
 
 function StatCard({ label, value, note }: { label: string; value: string | number; note?: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="zar-glass rounded-2xl p-4">
       <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
       <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
       {note && <div className="mt-1 text-xs text-muted-foreground">{note}</div>}
@@ -97,7 +97,7 @@ function StatCard({ label, value, note }: { label: string; value: string | numbe
 
 function Panel({ title, children, icon }: { title: string; children: React.ReactNode; icon?: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-black/30 p-4 shadow-[0_0_24px_rgba(147,51,234,0.12)]">
+    <section className="zar-glass rounded-2xl p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
         {icon}
         {title}
@@ -111,7 +111,7 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground focus:border-cyan-400/50 ${props.className || ""}`}
+      className={`zar-input w-full rounded-xl px-3 py-2 text-sm text-white outline-none placeholder:text-muted-foreground ${props.className || ""}`}
     />
   );
 }
@@ -296,7 +296,7 @@ export default function BudgetPage() {
           variant="ghost"
           size="sm"
           onClick={() => navigate("/workspaces/finance")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
         >
           <ChevronLeft size={16} className="mr-1" />
           Finance workspace
@@ -305,7 +305,7 @@ export default function BudgetPage() {
           variant="ghost"
           size="sm"
           onClick={refresh}
-          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zar-button"
         >
           <RefreshCw size={14} className="mr-1" />
           Refresh
@@ -417,7 +417,7 @@ export default function BudgetPage() {
                       </div>
                     ))}
                   </div>
-                  <Button onClick={() => setTab("deposit")} className="mt-4 rounded-xl zed-gradient">
+                  <Button onClick={() => setTab("deposit")} className="mt-4 rounded-xl zar-gradient">
                     Allocate a deposit
                     <ArrowRight size={14} className="ml-1" />
                   </Button>
@@ -444,7 +444,7 @@ export default function BudgetPage() {
                       <select
                         value={depositForm.source}
                         onChange={(e) => setDepositForm({ ...depositForm, source: e.target.value as IncomeSource })}
-                        className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                        className="zar-input w-full rounded-xl px-3 py-2 text-sm text-white"
                       >
                         {INCOME_SOURCE_OPTIONS.map((source) => (
                           <option key={source} value={source}>{INCOME_SOURCE_LABELS[source]}</option>
@@ -456,7 +456,7 @@ export default function BudgetPage() {
                       value={depositForm.note}
                       onChange={(e) => setDepositForm({ ...depositForm, note: e.target.value })}
                     />
-                    <Button onClick={recordDeposit} className="w-full rounded-xl zed-gradient">Record deposit</Button>
+                    <Button onClick={recordDeposit} className="w-full rounded-xl zar-gradient">Record deposit</Button>
                     <p className="text-[11px] leading-5 text-muted-foreground">
                       Recording applies the savings and {treasuryLabel.toLowerCase()} shares to your tracked balances. Taxes
                       and {payrollLabel.toLowerCase()} are logged as obligations, not reserves.
@@ -503,7 +503,11 @@ export default function BudgetPage() {
                           {deposit.note && <div className="mt-2 text-xs text-white/60">{deposit.note}</div>}
                         </div>
                       ))}
-                      {deposits.length === 0 && <p className="text-sm text-muted-foreground">No deposits recorded yet.</p>}
+                      {deposits.length === 0 && (
+                        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center text-sm text-muted-foreground">
+                          No deposits recorded yet.
+                        </div>
+                      )}
                     </div>
                   </Panel>
                 </div>
@@ -516,7 +520,7 @@ export default function BudgetPage() {
                   <div className="space-y-3">
                     <LabeledInput label="Savings target" value={targetForm.savingsTarget} onChange={(v) => setTargetForm({ ...targetForm, savingsTarget: v })} />
                     <LabeledInput label="Emergency fund target" value={targetForm.emergencyFundTarget} onChange={(v) => setTargetForm({ ...targetForm, emergencyFundTarget: v })} />
-                    <Button onClick={saveTargets} className="rounded-xl zed-gradient">Save targets</Button>
+                    <Button onClick={saveTargets} className="rounded-xl zar-gradient">Save targets</Button>
                   </div>
                 </Panel>
 
@@ -524,7 +528,7 @@ export default function BudgetPage() {
                   <div className="space-y-3">
                     <LabeledInput label="Current savings" value={balanceForm.savingsBalance} onChange={(v) => setBalanceForm({ ...balanceForm, savingsBalance: v })} />
                     <LabeledInput label="Emergency fund" value={balanceForm.emergencyFundBalance} onChange={(v) => setBalanceForm({ ...balanceForm, emergencyFundBalance: v })} />
-                    <Button onClick={saveBalances} className="rounded-xl zed-gradient">Save balances</Button>
+                    <Button onClick={saveBalances} className="rounded-xl zar-gradient">Save balances</Button>
                     <p className="text-[11px] leading-5 text-muted-foreground">
                       Recording deposits updates savings automatically. Adjust here to reconcile with your real accounts.
                     </p>
@@ -557,7 +561,7 @@ export default function BudgetPage() {
                     <LabeledInput label="Operating reserve target" value={targetForm.operatingReserveTarget} onChange={(v) => setTargetForm({ ...targetForm, operatingReserveTarget: v })} />
                   </div>
                   <div className="mt-3 flex gap-2">
-                    <Button onClick={saveBalances} className="rounded-xl zed-gradient">Save balance</Button>
+                    <Button onClick={saveBalances} className="rounded-xl zar-gradient">Save balance</Button>
                     <Button onClick={saveTargets} variant="secondary" className="rounded-xl">Save reserve target</Button>
                   </div>
                 </Panel>
@@ -619,7 +623,11 @@ export default function BudgetPage() {
                           <span className="text-muted-foreground">{row.count} · {formatCurrency(row.income, currency)}</span>
                         </div>
                       ))}
-                      {(report?.bySource || []).length === 0 && <p className="text-sm text-muted-foreground">No income logged yet.</p>}
+                      {(report?.bySource || []).length === 0 && (
+                        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center text-sm text-muted-foreground">
+                          No income logged yet.
+                        </div>
+                      )}
                     </div>
                   </Panel>
                 </div>
@@ -637,7 +645,7 @@ export default function BudgetPage() {
                     <div className={`text-xs ${ruleValid ? "text-emerald-300" : "text-red-300"}`}>
                       Total: {ruleTotal}% {ruleValid ? "✓" : "(must equal 100)"}
                     </div>
-                    <Button onClick={saveRule} disabled={!ruleValid} className="rounded-xl zed-gradient disabled:opacity-40">Save rule</Button>
+                    <Button onClick={saveRule} disabled={!ruleValid} className="rounded-xl zar-gradient disabled:opacity-40">Save rule</Button>
                   </div>
                 </Panel>
 
@@ -655,7 +663,7 @@ export default function BudgetPage() {
                         onChange={(e) => setSettingsForm({ ...settingsForm, payrollPath: e.target.value })}
                       />
                     </div>
-                    <Button onClick={saveSettings} className="rounded-xl zed-gradient">Save settings</Button>
+                    <Button onClick={saveSettings} className="rounded-xl zar-gradient">Save settings</Button>
                     <p className="text-[11px] leading-5 text-muted-foreground">
                       Labels are yours to name. Rename the treasury to anything that fits your structure.
                     </p>

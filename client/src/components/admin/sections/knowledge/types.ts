@@ -49,7 +49,7 @@ export type IdentityProfile = {
   preferredName: string;
   formalName: string;
   role: string;
-  relationshipToZed: string;
+  relationshipToZar: string;
   ventures: string;
   operatingStyle: string;
   whoAmIAnswer: string;
@@ -90,7 +90,7 @@ export const EMPTY_IDENTITY_PROFILE: IdentityProfile = {
   preferredName: "",
   formalName: "",
   role: "",
-  relationshipToZed: "",
+  relationshipToZar: "",
   ventures: "",
   operatingStyle: "",
   whoAmIAnswer: "",
@@ -103,32 +103,32 @@ export const VIEW_META: Record<
 > = {
   overview: {
     label: "Overview",
-    description: "A quick check of what Zed remembers and how well it can find things.",
+    description: "A quick check of what ZAR remembers and how well it can find things.",
     icon: BrainCircuit,
   },
   identity: {
     label: "About you",
-    description: "Who Zed is talking to, and how it should answer if someone asks who you are.",
+    description: "Who ZAR is talking to, and how it should answer if someone asks who you are.",
     icon: Fingerprint,
   },
   project: {
     label: "Long-term notes",
-    description: "Business, product, and project facts Zed should always keep in mind.",
+    description: "Business, product, and project facts ZAR should always keep in mind.",
     icon: Database,
   },
   scratchpad: {
     label: "Working notes",
-    description: "Persistent operating context Zed should keep using.",
+    description: "Persistent operating context ZAR should keep using.",
     icon: FileStack,
   },
   core: {
-    label: "Zed's foundation",
-    description: "The core facts about how Zed behaves. Only touch if you know what you're changing.",
+    label: "ZAR's foundation",
+    description: "The core facts about how ZAR behaves. Only touch if you know what you're changing.",
     icon: Layers,
   },
   lexicon: {
     label: "Lexicon",
-    description: "How Zed understands words, slang, acronyms, and community language before it reasons.",
+    description: "How ZAR understands words, slang, acronyms, and community language before it reasons.",
     icon: Languages,
   },
 };
@@ -172,7 +172,7 @@ export function serializeIdentityProfile(profile: IdentityProfile) {
     `## Preferred Name\n${profile.preferredName.trim() || "Not provided yet."}`,
     `## Formal Name\n${profile.formalName.trim() || "Not provided yet."}`,
     `## Role\n${profile.role.trim() || "Not provided yet."}`,
-    `## Relationship To ZED\n${profile.relationshipToZed.trim() || "Not provided yet."}`,
+    `## Relationship To ZAR\n${profile.relationshipToZar.trim() || "Not provided yet."}`,
     `## Ventures & Responsibilities\n${profile.ventures.trim() || "Not provided yet."}`,
     `## Operating Style\n${profile.operatingStyle.trim() || "Not provided yet."}`,
     `## Who Am I Answer\n${profile.whoAmIAnswer.trim() || "Not provided yet."}`,
@@ -188,7 +188,7 @@ export function parseIdentityProfile(content: string): IdentityProfile {
     preferredName: extractSection(content, "Preferred Name"),
     formalName: extractSection(content, "Formal Name"),
     role: extractSection(content, "Role"),
-    relationshipToZed: extractSection(content, "Relationship To ZED"),
+    relationshipToZar: extractSection(content, "Relationship To ZAR"),
     ventures: extractSection(content, "Ventures & Responsibilities"),
     operatingStyle: extractSection(content, "Operating Style"),
     whoAmIAnswer: extractSection(content, "Who Am I Answer"),

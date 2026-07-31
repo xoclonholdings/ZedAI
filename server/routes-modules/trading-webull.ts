@@ -17,7 +17,7 @@ import {
   testWebullConnection,
 } from "../zcos/trading/WebullBridge";
 import { classifyGovernanceError } from "../services/ErrorContract";
-import { zedErrorMessage } from "../../shared/error-contract";
+import { zarErrorMessage } from "../../shared/error-contract";
 import {
   userIdFrom,
   toNumber,
@@ -189,7 +189,7 @@ export function registerTradingWebullRoutes(app: Express): void {
     if (!authorization.authorized) {
       const errorDetail = classifyGovernanceError(authorization.decision.checklist);
       return res.status(409).json({
-        error: zedErrorMessage(errorDetail, "Webull paper order not authorized by governance layer"),
+        error: zarErrorMessage(errorDetail, "Webull paper order not authorized by governance layer"),
         errorDetail,
         authorization: authorization.decision,
       });

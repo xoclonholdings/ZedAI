@@ -6,7 +6,7 @@ import { getLoginProfile, type LoginProfile } from "./loginProfiles";
 
 /**
  * Signs into a service the way a password manager's autofill does —
- * Zed drives a real (headless) browser, types the username and
+ * ZAR drives a real (headless) browser, types the username and
  * password into the service's own login form, and submits it. The
  * resulting session (cookies + local storage) is handed back so the
  * caller can store it and reuse it later without logging in again.
@@ -20,11 +20,11 @@ import { getLoginProfile, type LoginProfile } from "./loginProfiles";
  * hands back a screenshot + a pendingId so the human can supply that
  * one-time code.
  *
- * If Zed hits something it doesn't recognize at all — a CAPTCHA, a
+ * If ZAR hits something it doesn't recognize at all — a CAPTCHA, a
  * redesigned login page, anything the selectors above weren't built
  * for — it doesn't just fail. It hands the exact same live browser
  * over to the human (see LiveHandoffService) so they can finish
- * whatever's on screen themselves, then Zed picks the session back up
+ * whatever's on screen themselves, then ZAR picks the session back up
  * from wherever they left it.
  */
 
@@ -182,7 +182,7 @@ export async function startSignIn(
         status: "verification_required",
         pendingId,
         screenshotBase64: await screenshotBase64(page),
-        prompt: `${profile.label} wants a verification code — check your phone or email, then send it back to Zed.`,
+        prompt: `${profile.label} wants a verification code — check your phone or email, then send it back to ZAR.`,
       };
     }
 
@@ -192,7 +192,7 @@ export async function startSignIn(
     }
 
     // Not a recognized success, verification prompt, or rejection —
-    // most likely a CAPTCHA or a page Zed's selectors don't cover.
+    // most likely a CAPTCHA or a page ZAR's selectors don't cover.
     // Hand the live browser to the human instead of just giving up.
     const pendingId = `${provider}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     pendingSignIns.set(pendingId, {
@@ -209,7 +209,7 @@ export async function startSignIn(
       status: "human_required",
       pendingId,
       screenshotBase64: await screenshotBase64(page),
-      prompt: `Zed got stuck signing in to ${profile.label} — this usually means there's a CAPTCHA or a page it doesn't recognize. Take over the browser to finish it yourself.`,
+      prompt: `ZAR got stuck signing in to ${profile.label} — this usually means there's a CAPTCHA or a page it doesn't recognize. Take over the browser to finish it yourself.`,
     };
   } catch (err: any) {
     if (browser) await browser.close().catch(() => {});
@@ -301,7 +301,7 @@ export function getPendingScreenSize(pendingId: string): { width: number; height
 /**
  * Starts a live CDP screencast of the stuck page and streams frames
  * to `onFrame` as they arrive. This — plus dispatchLiveInput below —
- * is what lets a human see and then drive the exact browser Zed got
+ * is what lets a human see and then drive the exact browser ZAR got
  * stuck in (a CAPTCHA, an unrecognized page), instead of the sign-in
  * just failing outright. Works against a headless page with no real
  * display, the same way Chrome DevTools' remote inspector does.

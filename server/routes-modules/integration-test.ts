@@ -20,7 +20,7 @@ export function registerIntegrationTestRoutes(app: Express): void {
   // POST /api/admin/integrations/email/test
   // Body: { to?: string, accountId?: string }
   //
-  // Sends a small "Zed test message" to the address in `to`, or —
+  // Sends a small "ZAR test message" to the address in `to`, or —
   // if none is provided — to the currently signed-in admin's
   // account fromAddress. Returns the raw result so the UI can
   // surface exactly what went right or wrong.
@@ -57,9 +57,9 @@ export function registerIntegrationTestRoutes(app: Express): void {
         action_type: "email",
         payload: {
           to,
-          subject: "Test from Zed",
+          subject: "Test from ZAR",
           body:
-            `This is a test message from Zed. If you're reading it, your ${account.provider} account is set up correctly.\n\n` +
+            `This is a test message from ZAR. If you're reading it, your ${account.provider} account is set up correctly.\n\n` +
             `Sent from ${account.fromAddress || account.username}.`,
           from: account.fromAddress,
         },

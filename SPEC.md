@@ -1,8 +1,8 @@
-# ZED AI Specification
+# ZAR AI Specification
 
 ## Purpose
 
-ZED AI is a multi-agent AI application built around an Express backend and a React/Vite frontend. The system supports chat, conversation history, file upload, admin controls, and orchestrated agent workflows backed by Lightning AI as the sole model provider (accessed directly) and optional external services.
+ZAR AI is a multi-agent AI application built around an Express backend and a React/Vite frontend. The system supports chat, conversation history, file upload, admin controls, and orchestrated agent workflows backed by Lightning AI as the sole model provider (accessed directly) and optional external services.
 
 This file is the canonical project spec for the repository. If the project changes, update this document instead of spreading source-of-truth details across multiple Markdown files.
 
@@ -19,7 +19,7 @@ This file is the canonical project spec for the repository. If the project chang
 ## Repository Layout
 
 ```text
-ZedAI/
+ZarAI/
   attached_assets/  Static attached image assets
   client/           React + Vite frontend
   docs/             Canonical policies
@@ -97,18 +97,18 @@ ZedAI/
 
 ### Hidden Reasoning and Response Governance
 
-- Response governance is implemented in `server/services/ZedResponseGovernance.ts`
+- Response governance is implemented in `server/services/ZarResponseGovernance.ts`
 - The governance prompt is injected before chat, agent, orchestrator, and legacy one-shot chat replies
-- ZED must privately classify intent, choose task type, retrieve and check knowledge authority, detect missing context, reason through risks and next action, choose response form, and apply the ZED voice layer before answering
+- ZAR must privately classify intent, choose task type, retrieve and check knowledge authority, detect missing context, reason through risks and next action, choose response form, and apply the ZAR voice layer before answering
 - User-facing replies should show the result, recommendation, risk, question, source links when requested, or a clean decision summary
 - User-facing replies must not expose raw reasoning, tool calls, agent routing, workflow names, source-provider labels, search expansion, retrieval chunks, embedding matches, model synthesis, confidence math, hidden prompts, or backend logs by default
-- If the user explicitly asks for process, sources, or workflow detail, ZED should provide a clean summary only, not raw internal logs or chain-of-thought
-- Streaming chat buffers generated model text until the Voice + Presentation layer can apply `presentZedResponse` / `presentZedResponseWithChecks` before the response is sent to the client
+- If the user explicitly asks for process, sources, or workflow detail, ZAR should provide a clean summary only, not raw internal logs or chain-of-thought
+- Streaming chat buffers generated model text until the Voice + Presentation layer can apply `presentZarResponse` / `presentZarResponseWithChecks` before the response is sent to the client
 - Research formatting includes sources only when the user asks for them and stores useful URLs without exposing provider names or expanded query trails
 
 ### Cognitive Core
 
-The Cognitive Core is the active hidden reasoning chain used by normal chat and orchestrated agent replies. It is lightweight, service-owned, and intended to migrate into ZCOS later without changing the ZED interface.
+The Cognitive Core is the active hidden reasoning chain used by normal chat and orchestrated agent replies. It is lightweight, service-owned, and intended to migrate into ZCOS later without changing the ZAR interface.
 
 Required runtime order:
 
@@ -124,22 +124,22 @@ Runtime implementation:
 
 - Lexicon Authority: `server/services/lexicon-authority/LexiconAuthorityService.ts`
 - Context Inquiry: `server/services/knowledge-ingestion/ContextInquiryEngine.ts`
-- Principle Engine: `server/services/ZedPrincipleEngine.ts`
-- Strategic Reasoning Engine: `server/services/ZedStrategicReasoningEngine.ts`
-- Voice + Presentation Engine: `server/services/ZedVoiceFormationEngine.ts`
-- Response Governance: `server/services/ZedResponseGovernance.ts`
-- Reflection Engine: `server/services/ZedReflectionEngine.ts`
+- Principle Engine: `server/services/ZarPrincipleEngine.ts`
+- Strategic Reasoning Engine: `server/services/ZarStrategicReasoningEngine.ts`
+- Voice + Presentation Engine: `server/services/ZarVoiceFormationEngine.ts`
+- Response Governance: `server/services/ZarResponseGovernance.ts`
+- Reflection Engine: `server/services/ZarReflectionEngine.ts`
 - Chat execution wiring: `server/services/ChatExecutionService.ts`
 - Orchestrator entry point: `server/routes-modules/orchestrate-and-misc.ts`
 - Agent prompt integration: `server/orchestrator/ManagerAgent.ts`
 
 The prompt fragments reach the model in the SPEC order above: governance is pinned first as a hard control frame, then Lexicon Authority's interpreted-meaning block, then context inquiry, then principle, then strategic reasoning, then the knowledge sources (foundation -> personalization -> project -> scratchpad -> retrieved), then voice, then response policy last so style guardrails win any ties. Both `ChatExecutionService` and `ManagerAgent` assemble their fragment lists in this order.
 
-The Principle, Strategic Reasoning, and Reflection services must not expose raw chain-of-thought, hidden prompts, source trails, provider names, workflow names, internal scoring, route names, graph IDs, or retrieval internals to the user. If the user asks how an answer was produced, ZED should provide a clean implementation summary only.
+The Principle, Strategic Reasoning, and Reflection services must not expose raw chain-of-thought, hidden prompts, source trails, provider names, workflow names, internal scoring, route names, graph IDs, or retrieval internals to the user. If the user asks how an answer was produced, ZAR should provide a clean implementation summary only.
 
 ### Intelligence Core
 
-The Intelligence Core is a deterministic, service-owned layer inside the Cognitive Core that raises ZED's reasoning, context handling, document understanding, response shaping, and autonomy without changing the ZED interface. It adds five engines under `server/services/intelligence-core/`; all run synchronously with no extra model call, and all outputs are internal by default (revealed only when the user explicitly asks for reasoning).
+The Intelligence Core is a deterministic, service-owned layer inside the Cognitive Core that raises ZAR's reasoning, context handling, document understanding, response shaping, and autonomy without changing the ZAR interface. It adds five engines under `server/services/intelligence-core/`; all run synchronously with no extra model call, and all outputs are internal by default (revealed only when the user explicitly asks for reasoning).
 
 - Deep Thinking Mode (`DeepThinkingEngine.ts`) - scores request complexity and, on genuinely complex work, runs a staged internal pipeline (decomposition -> hypothesis generation -> solution evaluation -> refinement -> confidence estimation) injected as a hidden reasoning scaffold. Available to every lane/workspace.
 - Large Context Intelligence (`ContextIntelligenceEngine.ts`) - treats all retrieved knowledge blocks as one pool, ranks each by relevance to the live query, de-duplicates overlapping lines across sources, compresses low-signal blocks, and enforces a character budget. Project instructions and uploaded files are pinned so they always survive.
@@ -160,11 +160,11 @@ Reflection stores concise summaries of important exchanges under project memory 
 
 ### Plain-Language Settings Surface
 
-The admin Settings tab is the primary control surface for how ZED behaves at runtime. It is plain-language on purpose - no YAML editors, no raw parameter fields - and each category maps to a concrete runtime effect.
+The admin Settings tab is the primary control surface for how ZAR behaves at runtime. It is plain-language on purpose - no YAML editors, no raw parameter fields - and each category maps to a concrete runtime effect.
 
 Categories with fully-built runtime wiring:
 
-- `How Zed sounds` - tone, formality, perspective, response length, plain-language toggle, prohibited phrases. Persists at `hub/config/admin-settings.json` under `voice`. `server/services/voiceSettings.ts` renders the prompt fragment; `server/services/voiceSettingsToGeneration.ts` derives generation params (temperature, max tokens, top_p) per lane and forwards them through the provider layer.
+- `How ZAR sounds` - tone, formality, perspective, response length, plain-language toggle, prohibited phrases. Persists at `hub/config/admin-settings.json` under `voice`. `server/services/voiceSettings.ts` renders the prompt fragment; `server/services/voiceSettingsToGeneration.ts` derives generation params (temperature, max tokens, top_p) per lane and forwards them through the provider layer.
 - `What needs your approval` - per-action three-way policy (Auto / Ask me / Never) covering send email, calendar, cancel appointment, send message, reach out to contacts, post to social, publish content, make payment, send invoice, delete data, update credentials, deploy code, create task. `server/services/approvalPolicy.ts` matches each user message to a category and consults the stored policy before the agent runs. `Never` short-circuits with a refusal reply logged as `policy_refused`; `Ask` queues for admin approval; `Auto` dispatches directly.
 
 Categories placeheld pending build: Tools, Response length/style, Sensitive topics, Session/safety, Personal memory. Their underlying behavior is still shaped by the raw ruleset until each ships.
@@ -181,7 +181,7 @@ Each user can save markdown notes about themselves at `hub/user-personalization/
 
 ### Runtime Error Self-Repair
 
-When a runtime action fails, Zed inspects the failure, chooses a bounded repair strategy, and retries instead of writing the error to a log and moving on. `server/services/SelfRepairService.ts` wraps `DigitalExecutionService.execute` and consults a deterministic strategy map keyed off the typed `failureReason` (e.g. `smtpDispatchFailed` -> retry with exponential backoff; `providerDisabled` / `providerNotConfigured` -> escalate to user, no retry). Bounded at 3 attempts per call; a reasoning trail (attempt, strategy, reason, waited, outcome) is returned alongside the final result and logged to `runtime.log` as `self_repair.outcome`. `POST /api/admin/subsystems/self-repair/execute` runs a DigitalExecutionRequest through this loop and returns the trail.
+When a runtime action fails, ZAR inspects the failure, chooses a bounded repair strategy, and retries instead of writing the error to a log and moving on. `server/services/SelfRepairService.ts` wraps `DigitalExecutionService.execute` and consults a deterministic strategy map keyed off the typed `failureReason` (e.g. `smtpDispatchFailed` -> retry with exponential backoff; `providerDisabled` / `providerNotConfigured` -> escalate to user, no retry). Bounded at 3 attempts per call; a reasoning trail (attempt, strategy, reason, waited, outcome) is returned alongside the final result and logged to `runtime.log` as `self_repair.outcome`. `POST /api/admin/subsystems/self-repair/execute` runs a DigitalExecutionRequest through this loop and returns the trail.
 
 Non-goals for this pass: LLM-driven reasoning over arbitrary failure modes. That layers on later; the deterministic map handles today's known failure types cleanly and doesn't invent retries against providers that are truly down.
 
@@ -308,12 +308,12 @@ API surface (typed service methods, mirrored 1:1 as `/api/lexicon/*` routes): `r
 
 ## Memory Model
 
-ZED has four separate memory classes. These classes must not be collapsed into one shared folder or treated as interchangeable runtime truth.
+ZAR has four separate memory classes. These classes must not be collapsed into one shared folder or treated as interchangeable runtime truth.
 
-1. ZED Core
+1. ZAR Core
 
-- Shared operating intelligence required by every ZED user.
-- Includes ZED identity, reasoning governance, operating principles, orchestration rules, tool definitions, approval policy, retrieval policy, memory-handling policy, verification policy, response formation rules, and shared object/workspace contracts.
+- Shared operating intelligence required by every ZAR user.
+- Includes ZAR identity, reasoning governance, operating principles, orchestration rules, tool definitions, approval policy, retrieval policy, memory-handling policy, verification policy, response formation rules, and shared object/workspace contracts.
 - Must not include personal conversations, uploaded user documents, user preferences, user projects, private business records, personal relationships, or historical ChatGPT exports.
 
 2. Shared system knowledge
@@ -338,7 +338,7 @@ Ownership requirements:
 - Missing ownership must fail clearly; memory code must not fall back to `user`, `user_001`, `default-user`, `anonymous`, `admin-user`, or any invented owner.
 - User A must not retrieve User B's user-owned memory.
 - Shared system knowledge must be distinguishable from user memory and must not be reassigned to a user by retrieval.
-- ZED Core must be distinguishable from shared system knowledge and from user memory.
+- ZAR Core must be distinguishable from shared system knowledge and from user memory.
 - Production user memory must be stored through the repository's durable database architecture when the relevant schema exists. Filesystem storage may remain only as an existing local fallback, read-only legacy source, export, or temporary processing location.
 
 Legacy archive classification:
@@ -347,7 +347,7 @@ Legacy archive classification:
 - Canonical owner: `user_admin`.
 - Authority: historical evidence, not automatic current truth.
 - Shared across users: never.
-- Part of ZED Core: no.
+- Part of ZAR Core: no.
 - Part of shared system knowledge: no.
 - Writable by runtime: no.
 - Active runtime source: no.
@@ -405,7 +405,7 @@ Every knowledge object receives a dynamic health score based on completeness, co
 
 When new information arrives, the engine can compare it against existing objects and classify the effect as confirmation, expansion, contradiction, supersession, merge, replacement, creation, or clarification need. It should not create duplicate knowledge when an existing canonical object can be refined.
 
-Every concept should have one canonical object. Non-canonical material should be represented as an alias, historical version, rejected proposal, archived draft, or supporting evidence. The canonical object represents ZED's current understanding.
+Every concept should have one canonical object. Non-canonical material should be represented as an alias, historical version, rejected proposal, archived draft, or supporting evidence. The canonical object represents ZAR's current understanding.
 
 Knowledge should evolve rather than disappear. Version history must preserve original state, updated state, reason for change, user clarification, supporting evidence, timestamp, confidence before, and confidence after.
 
@@ -610,8 +610,8 @@ Canonical config is in `netlify.toml`:
 - `server/services/knowledge-ingestion/`
 - `server/services/lexicon-authority/`
 - `hub/config/lexicon-domains.yaml`
-- `server/services/ZedResponseGovernance.ts`
-- `server/services/ZedResponsePolicy.ts`
+- `server/services/ZarResponseGovernance.ts`
+- `server/services/ZarResponsePolicy.ts`
 - `server/vite.ts`
 - `server/db.ts`
 - `server/migrations.ts`
@@ -636,7 +636,7 @@ and expects:
 - local port `5000`
 - all hub/config/log/session paths to resolve against the repo-root `hub/` directory
 
-At server boot, ZED initializes runtime directories, fallback storage, core memory, and the Knowledge Curation scheduler. The scheduler writes curation reports under `hub/shared-memory/curation/` and logs review status to the runtime log. This does not make `hub/shared-memory/` the destination for personal history or the owner of the admin legacy archive.
+At server boot, ZAR initializes runtime directories, fallback storage, core memory, and the Knowledge Curation scheduler. The scheduler writes curation reports under `hub/shared-memory/curation/` and logs review status to the runtime log. This does not make `hub/shared-memory/` the destination for personal history or the owner of the admin legacy archive.
 
 The backend is deployed to Render. Canonical deploy configuration is checked in at
 `render.yaml` so runtime dependencies do not drift from code. The Webull OpenAPI

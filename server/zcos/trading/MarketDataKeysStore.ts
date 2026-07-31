@@ -2,7 +2,7 @@ import { readTradingState, writeTradingState } from "./tradingPersistence";
 
 /**
  * Durable storage for market-data vendor API keys the user enters in the
- * app, so Zed's live feed gets more reliable without touching Render env
+ * app, so ZAR's live feed gets more reliable without touching Render env
  * vars. Keys are stored server-side and NEVER returned to the client —
  * the API only exposes whether each key is present.
  *

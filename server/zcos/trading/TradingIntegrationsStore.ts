@@ -24,7 +24,7 @@ import {
  *
  * Storage: durable `trading_state` table (scope "integrations", key
  * per user) so a login survives restarts/redeploys and the user
- * staying signed out of the app never wipes what Zed can sign into.
+ * staying signed out of the app never wipes what ZAR can sign into.
  * On hosts with no database configured we fall back to the legacy
  * JSON file at hub/trading/integrations/<userId>.json.
  */
@@ -218,7 +218,7 @@ export const TradingIntegrationsStore = {
         result = `Missing: ${missing.map((f) => f.label).join(", ")}.`;
       } else {
         status = "configured";
-        result = "Saved securely. Zed will use this login to sign in and work in the account for you.";
+        result = "Saved securely. ZAR will use this login to sign in and work in the account for you.";
       }
     }
 

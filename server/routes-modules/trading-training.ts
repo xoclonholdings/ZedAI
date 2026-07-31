@@ -22,8 +22,8 @@ import {
 } from "../../shared/trading-training-types";
 
 /**
- * Training routes: feed Zed material, test Zed (stage assessment),
- * advance a stage once Zed passes, and manage provider integrations.
+ * Training routes: feed ZAR material, test ZAR (stage assessment),
+ * advance a stage once ZAR passes, and manage provider integrations.
  */
 
 function userIdFrom(req: any): string {
@@ -46,10 +46,10 @@ const PROVIDER_IDS = new Set(INTEGRATION_PROVIDERS.map((p) => p.provider));
 
 export function registerTradingTrainingRoutes(app: Express): void {
   /**
-   * Feed Zed material for the Learn stage. Accepts either uploaded
+   * Feed ZAR material for the Learn stage. Accepts either uploaded
    * files (PDF / CSV / DOCX / txt via the shared processor) or a
    * pasted { source, title, text } JSON body. Everything is ingested
-   * into Zed's trading knowledge base.
+   * into ZAR's trading knowledge base.
    */
   app.post(
     "/api/trading/knowledge/upload",
@@ -130,7 +130,7 @@ export function registerTradingTrainingRoutes(app: Express): void {
 
   /**
    * The Learn-stage sections (one per required knowledge area) with
-   * per-section coverage and how much material Zed has for each.
+   * per-section coverage and how much material ZAR has for each.
    */
   app.get("/api/trading/knowledge/areas", isAuthenticated, async (_req: any, res) => {
     try {
@@ -141,7 +141,7 @@ export function registerTradingTrainingRoutes(app: Express): void {
     }
   });
 
-  /** Test Zed on ONE knowledge section (upload → test that section). */
+  /** Test ZAR on ONE knowledge section (upload → test that section). */
   app.post("/api/trading/knowledge/areas/:areaId/assess", isAuthenticated, async (req: any, res) => {
     try {
       const assessment = await assessKnowledgeArea(String(req.params.areaId));
@@ -152,7 +152,7 @@ export function registerTradingTrainingRoutes(app: Express): void {
     }
   });
 
-  /** Test Zed on a stage. Records the result as the advance gate. */
+  /** Test ZAR on a stage. Records the result as the advance gate. */
   app.post("/api/trading/progression/assess/:stageId", isAuthenticated, async (req: any, res) => {
     try {
       const stageId = req.params.stageId;
@@ -169,7 +169,7 @@ export function registerTradingTrainingRoutes(app: Express): void {
     }
   });
 
-  /** Advance out of a stage — blocked until Zed has passed its test. */
+  /** Advance out of a stage — blocked until ZAR has passed its test. */
   app.post("/api/trading/progression/advance/:stageId", isAuthenticated, async (req: any, res) => {
     try {
       const stageId = req.params.stageId;

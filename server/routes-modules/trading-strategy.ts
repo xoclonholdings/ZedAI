@@ -36,7 +36,7 @@ export function registerTradingStrategyRoutes(app: Express): void {
   });
 
   /**
-   * Zed proposes a COMPLETE paper trade the user can approve in one tap.
+   * ZAR proposes a COMPLETE paper trade the user can approve in one tap.
    * It generates the strategy (direction, thesis, structure, liquidity,
    * concrete entry/stop/target/size/risk sized to clear governance), then
    * persists a linked thesis so the market-structure and liquidity checks
@@ -85,7 +85,7 @@ export function registerTradingStrategyRoutes(app: Express): void {
     }
   });
 
-  /** Zed recommends a symbol to trade from live data (no symbol needed). */
+  /** ZAR recommends a symbol to trade from live data (no symbol needed). */
   app.post("/api/trading/strategies/recommend-symbol", isAuthenticated, async (req: any, res) => {
     const asset = req.body.asset || "stock";
     const market = req.body.market ? String(req.body.market) : "US";

@@ -211,7 +211,7 @@ export class FinanceAgent {
       this.skill = await fs.readFile(SKILL_PATH, "utf-8");
     } catch {
       this.skill =
-        "ZED Finance Agent, current Trading Intelligence phase: Help with trading, crypto/web3, forex, equities, ETFs, futures, capital allocation, wealth-building analysis, paper-trading validation, risk controls, and performance review. Be evidence-driven, risk-aware, and clear that no live trades are executed.";
+        "ZAR Finance Agent, current Trading Intelligence phase: Help with trading, crypto/web3, forex, equities, ETFs, futures, capital allocation, wealth-building analysis, paper-trading validation, risk controls, and performance review. Be evidence-driven, risk-aware, and clear that no live trades are executed.";
     }
     return this.skill;
   }
@@ -312,7 +312,7 @@ export class FinanceAgent {
 
     const systemPrompt = `${skill}
 
-You are ZED's Finance Agent operating in the current Trading Intelligence Analyst phase.
+You are ZAR's Finance Agent operating in the current Trading Intelligence Analyst phase.
 
 Preserve the broader FinanceAgent end-state from SPEC.md: trading, crypto/web3, forex, market opportunity, accumulation strategy, wealth-building, and capital allocation analysis. In this phase, express those objectives through disciplined research, paper trading, strategy validation, risk controls, and performance analytics.
 

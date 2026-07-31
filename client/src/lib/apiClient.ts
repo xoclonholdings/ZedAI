@@ -57,7 +57,7 @@ export async function apiFetch(path: string, init: RequestInit = {}, timeoutMs =
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("ZED backend did not respond. Check the API deploy and API base URL.");
+      throw new Error("ZAR backend did not respond. Check the API deploy and API base URL.");
     }
     throw error;
   } finally {
@@ -69,7 +69,7 @@ export async function readJsonResponse<T = any>(response: Response): Promise<T> 
   const contentType = response.headers.get("content-type") || "";
 
   if (!contentType.includes("application/json")) {
-    throw new Error("ZED backend returned a non-JSON response. Check the API route or deploy configuration.");
+    throw new Error("ZAR backend returned a non-JSON response. Check the API route or deploy configuration.");
   }
 
   return response.json() as Promise<T>;

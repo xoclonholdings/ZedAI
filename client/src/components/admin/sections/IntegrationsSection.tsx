@@ -39,7 +39,7 @@ interface Provider {
   patch: (primary: string, secondary?: string) => any;
   /**
    * Set for providers with no paste-a-token path (Instagram, Facebook,
-   * LinkedIn, TikTok): Zed signs in itself with a username/password,
+   * LinkedIn, TikTok): ZAR signs in itself with a username/password,
    * autofill-style, via /api/admin/integrations/:credentialProvider/signin/*.
    * Value must match a key in the server's login-profile registry.
    */
@@ -63,7 +63,7 @@ interface ProviderGroup {
 const GROUPS: ProviderGroup[] = [
   {
     title: "Email",
-    description: "Where Zed sends outbound mail from.",
+    description: "Where ZAR sends outbound mail from.",
     supportsCustom: true,
     providers: [
       {
@@ -77,7 +77,7 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link below to open Google's App passwords page.",
           "If you're asked to turn on 2-Step Verification first, do that.",
-          "Type “Zed” as the app name and tap Create.",
+          "Type “ZAR” as the app name and tap Create.",
           "Google shows a 16-character password. Copy it.",
           "Paste your Gmail address AND the app password below, then Save.",
         ],
@@ -92,7 +92,7 @@ const GROUPS: ProviderGroup[] = [
                 id: "email-gmail",
                 label: `Gmail (${email || "no address"})`,
                 provider: "gmail",
-                fromName: "ZED",
+                fromName: "ZAR",
                 fromAddress: email,
                 smtpHost: "smtp.gmail.com",
                 smtpPort: 587,
@@ -114,7 +114,7 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link to open Microsoft account security.",
           "Under Advanced security options, find App passwords.",
-          "Create a new app password and name it “Zed”.",
+          "Create a new app password and name it “ZAR”.",
           "Copy the generated password.",
           "Paste your email address AND the app password below, then Save.",
         ],
@@ -129,7 +129,7 @@ const GROUPS: ProviderGroup[] = [
                 id: "email-outlook",
                 label: `Outlook (${email || "no address"})`,
                 provider: "outlook",
-                fromName: "ZED",
+                fromName: "ZAR",
                 fromAddress: email,
                 smtpHost: "smtp.office365.com",
                 smtpPort: 587,
@@ -151,7 +151,7 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link to open your Apple ID account page and sign in.",
           "Under Sign-In and Security, tap App-Specific Passwords.",
-          "Tap the + to generate a new one and name it “Zed”.",
+          "Tap the + to generate a new one and name it “ZAR”.",
           "Apple shows the password. Copy it.",
           "Paste your iCloud address AND the password below, then Save.",
         ],
@@ -166,7 +166,7 @@ const GROUPS: ProviderGroup[] = [
                 id: "email-icloud",
                 label: `iCloud (${email || "no address"})`,
                 provider: "icloud",
-                fromName: "ZED",
+                fromName: "ZAR",
                 fromAddress: email,
                 smtpHost: "smtp.mail.me.com",
                 smtpPort: 587,
@@ -181,7 +181,7 @@ const GROUPS: ProviderGroup[] = [
   },
   {
     title: "GitHub",
-    description: "So Zed can read repos and post pull requests when you approve.",
+    description: "So ZAR can read repos and post pull requests when you approve.",
     supportsCustom: false,
     providers: [
       {
@@ -192,8 +192,8 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link to open GitHub's fine-grained tokens page.",
           "Tap Generate new token.",
-          "Name it “Zed”. Set expiration to whatever you're comfortable with.",
-          "Pick the repositories Zed should reach.",
+          "Name it “ZAR”. Set expiration to whatever you're comfortable with.",
+          "Pick the repositories ZAR should reach.",
           "Under Repository permissions, give Contents: Read + Pull requests: Read/Write + Issues: Read/Write.",
           "Tap Generate token and copy it.",
           "Paste it below and tap Save.",
@@ -224,7 +224,7 @@ const GROUPS: ProviderGroup[] = [
   },
   {
     title: "Deployment",
-    description: "So Zed can trigger deploys when you approve.",
+    description: "So ZAR can trigger deploys when you approve.",
     supportsCustom: true,
     providers: [
       {
@@ -235,7 +235,7 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link to open your Render account settings.",
           "Scroll to API Keys and tap Create API Key.",
-          "Name it “Zed” and copy the key.",
+          "Name it “ZAR” and copy the key.",
           "Paste it below and tap Save.",
         ],
         connectedFn: (i) => {
@@ -256,7 +256,7 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link to open Netlify's Applications page.",
           "Under Personal access tokens, tap New access token.",
-          "Name it “Zed” and copy the token.",
+          "Name it “ZAR” and copy the token.",
           "Paste it below and tap Save.",
         ],
         connectedFn: (i) => {
@@ -276,7 +276,7 @@ const GROUPS: ProviderGroup[] = [
         helpUrl: "https://vercel.com/account/tokens",
         steps: [
           "Tap the link to open Vercel Account → Tokens.",
-          "Tap Create Token, name it “Zed”.",
+          "Tap Create Token, name it “ZAR”.",
           "Copy the token before you close the page — Vercel only shows it once.",
           "Paste it below and tap Save.",
         ],
@@ -297,7 +297,7 @@ const GROUPS: ProviderGroup[] = [
         helpUrl: "https://railway.app/account/tokens",
         steps: [
           "Tap the link to open Railway's Account Tokens page.",
-          "Tap Create Token and name it “Zed”.",
+          "Tap Create Token and name it “ZAR”.",
           "Copy the token.",
           "Paste it below and tap Save.",
         ],
@@ -315,7 +315,7 @@ const GROUPS: ProviderGroup[] = [
   },
   {
     title: "Cloud files",
-    description: "Where Zed reads and writes documents.",
+    description: "Where ZAR reads and writes documents.",
     supportsCustom: true,
     providers: [
       {
@@ -326,7 +326,7 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link to open Dropbox's App Console.",
           "Tap Create app. Pick Scoped access and Full Dropbox.",
-          "Name it “Zed” and create the app.",
+          "Name it “ZAR” and create the app.",
           "On the app page, scroll to Generated access token and tap Generate.",
           "Copy the token that appears.",
           "Paste it below and tap Save.",
@@ -346,7 +346,7 @@ const GROUPS: ProviderGroup[] = [
         label: "Google Drive (info only)",
         fieldLabel: "",
         steps: [
-          "Google Drive doesn't offer a paste-a-key path for the kind of access Zed needs.",
+          "Google Drive doesn't offer a paste-a-key path for the kind of access ZAR needs.",
           "This one needs a real Google sign-in flow, which isn't set up.",
           "Until that lands, use Dropbox or a custom entry for Drive-like access.",
         ],
@@ -358,7 +358,7 @@ const GROUPS: ProviderGroup[] = [
         label: "OneDrive (info only)",
         fieldLabel: "",
         steps: [
-          "OneDrive doesn't offer a paste-a-key path for the access Zed needs.",
+          "OneDrive doesn't offer a paste-a-key path for the access ZAR needs.",
           "This one needs a real Microsoft sign-in flow, which isn't set up.",
           "Until that lands, use Dropbox or a custom entry.",
         ],
@@ -380,7 +380,7 @@ const GROUPS: ProviderGroup[] = [
         steps: [
           "Tap the link to open Stripe → Developers → API keys.",
           "Under Standard keys, reveal the Secret key.",
-          "For safety, consider creating a Restricted key instead so Zed only has the permissions it needs.",
+          "For safety, consider creating a Restricted key instead so ZAR only has the permissions it needs.",
           "Copy the key.",
           "Paste it below and tap Save.",
         ],
@@ -401,7 +401,7 @@ const GROUPS: ProviderGroup[] = [
         helpUrl: "https://developer.squareup.com/apps",
         steps: [
           "Tap the link to open the Square Developer Dashboard.",
-          "Create an application named “Zed” (or reuse one you have).",
+          "Create an application named “ZAR” (or reuse one you have).",
           "Under Credentials, copy your Access token. Use Sandbox for testing.",
           "Paste it below and tap Save.",
         ],
@@ -490,7 +490,7 @@ const GROUPS: ProviderGroup[] = [
         helpUrl: "https://developer.twitter.com/en/portal/dashboard",
         steps: [
           "Tap the link to open Twitter's developer portal (sign in with your @ account).",
-          "Create a project + app (call it “Zed”) if you don't have one.",
+          "Create a project + app (call it “ZAR”) if you don't have one.",
           "Open the app → Keys and tokens.",
           "Under Authentication Tokens, generate a Bearer Token.",
           "Copy the bearer token.",
@@ -602,7 +602,7 @@ const GROUPS: ProviderGroup[] = [
         helpUrl: "https://app.hubspot.com/private-apps/",
         steps: [
           "Tap the link to open HubSpot's private apps page.",
-          "Create a private app named “Zed”.",
+          "Create a private app named “ZAR”.",
           "Under Scopes, tick the CRM scopes for contacts, companies, and deals.",
           "Under Auth, tap Generate token.",
           "Copy the token.",
@@ -649,7 +649,7 @@ const GROUPS: ProviderGroup[] = [
   },
   {
     title: "Phone & voicemail",
-    description: "So Zed can handle calls, texts, and voicemail.",
+    description: "So ZAR can handle calls, texts, and voicemail.",
     supportsCustom: false,
     providers: [
       {
@@ -720,7 +720,7 @@ const GROUPS: ProviderGroup[] = [
   },
   {
     title: "TradingView",
-    description: "Send TradingView chart snapshots and alerts to Zed's trading journal.",
+    description: "Send TradingView chart snapshots and alerts to ZAR's trading journal.",
     supportsCustom: false,
     providers: [
       {
@@ -728,7 +728,7 @@ const GROUPS: ProviderGroup[] = [
         label: "TradingView webhook secret",
         fieldLabel: "Webhook secret (any string you make up)",
         steps: [
-          "Pick any random string you'd like — Zed will use it to verify alerts.",
+          "Pick any random string you'd like — ZAR will use it to verify alerts.",
           "In TradingView, when you set up an alert with a webhook URL, append ?secret=THAT_STRING to your webhook URL.",
           "Paste the string below and tap Save.",
         ],
@@ -818,7 +818,7 @@ export default function IntegrationsSection() {
 
   const disconnect = useCallback(
     async (row: Provider) => {
-      if (!window.confirm(`Disconnect ${row.label}? Zed will stop using this account.`)) return;
+      if (!window.confirm(`Disconnect ${row.label}? ZAR will stop using this account.`)) return;
       const clear = row.patch("");
       await submit(clear);
     },
@@ -870,7 +870,7 @@ export default function IntegrationsSection() {
             Connections
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Sign in to the services you want Zed to reach. Tap Connect on any provider and Zed walks you through the exact steps to grab the one thing it needs.
+            Sign in to the services you want ZAR to reach. Tap Connect on any provider and ZAR walks you through the exact steps to grab the one thing it needs.
           </p>
         </div>
         <SaveIndicator status={status} errorMessage={errorMessage} />
@@ -970,7 +970,7 @@ export default function IntegrationsSection() {
                     type="button"
                     onClick={() => openDialog(provider, group)}
                     className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.02] px-3 py-1.5 text-[12.5px] text-white/50 hover:text-white/70 transition-colors"
-                    title="This one can't be signed in from Zed today. Tap for the why."
+                    title="This one can't be signed in from ZAR today. Tap for the why."
                   >
                     Why not?
                   </button>
@@ -1230,7 +1230,7 @@ function CustomDialog({
           Add a custom {groupTitle.toLowerCase()} entry
         </h3>
         <p className="mt-1 text-[12.5px] text-white/50 leading-snug mb-4">
-          Give it a name and paste the credential from the provider. Zed will store it and use it for {groupTitle.toLowerCase()}.
+          Give it a name and paste the credential from the provider. ZAR will store it and use it for {groupTitle.toLowerCase()}.
         </p>
 
         <div className="mb-3">

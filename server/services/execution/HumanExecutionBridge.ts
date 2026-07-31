@@ -1,7 +1,7 @@
 /**
  * HumanExecutionBridge
  *
- * Phase 5 of Zed's Execution Layer.
+ * Phase 5 of ZAR's Execution Layer.
  *
  * Catches tasks where execution_mode === "future_human" so they are
  * not silently dropped. Stores them in a queue file and exposes

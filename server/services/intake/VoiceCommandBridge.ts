@@ -3,7 +3,7 @@
  *
  * Functional voice command intake. Accepts a transcript (captured by
  * the browser's Web Speech API or any future ASR provider) and routes
- * it through ExternalCommandGateway, which produces a real Zed task
+ * it through ExternalCommandGateway, which produces a real ZAR task
  * with execution plan + approval gating.
  *
  * Audio capture is intentionally out of scope here — it lives in the
@@ -21,7 +21,7 @@ export interface VoiceCommandEvent {
   confidence: number; // 0..1
   detected_intent?: string;
   timestamp?: string;
-  /** Optional Zed user_id resolved by the upstream voice provider. */
+  /** Optional ZAR user_id resolved by the upstream voice provider. */
   user_id?: string;
   /** Optional locale / device / room info from the capture device. */
   metadata?: Record<string, unknown>;

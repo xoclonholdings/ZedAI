@@ -4,7 +4,7 @@
   "name": "Competitor Analysis",
   "category": "research",
   "description": "Research competitors, identify positioning gaps, and produce an action-ready opportunity report.",
-  "purpose": "Give ZED a repeatable research flow for market, audience, content, and competitor intelligence.",
+  "purpose": "Give ZAR a repeatable research flow for market, audience, content, and competitor intelligence.",
   "status": "published",
   "version": 1,
   "agents": ["research", "business", "manager"],

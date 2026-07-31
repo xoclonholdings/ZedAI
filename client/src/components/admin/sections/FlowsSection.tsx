@@ -15,7 +15,7 @@ import {
 /**
  * Plain-language Tools tab.
  *
- * "Tool" here means: a reusable action Zed knows how to run — send
+ * "Tool" here means: a reusable action ZAR knows how to run — send
  * a specific weekly report, log a paper trade with a preset thesis,
  * draft a follow-up email in your voice, etc. Each tool has a
  * name, a plain description of what it does, a status (draft /
@@ -182,12 +182,12 @@ export default function ToolsSection() {
       <header className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
           <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
-            Tools Zed can run
+            Tools ZAR can run
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            A tool is a reusable action Zed knows how to run — send a specific
+            A tool is a reusable action ZAR knows how to run — send a specific
             report, log a paper trade with a preset thesis, draft a follow-up
-            in your voice. Create one once, then Zed can use it across chats.
+            in your voice. Create one once, then ZAR can use it across chats.
             Tap any tool to open it. Tap New tool to create one.
           </p>
         </div>

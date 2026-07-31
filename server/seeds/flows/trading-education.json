@@ -4,7 +4,7 @@
   "name": "Trading Education",
   "category": "finance",
   "description": "Build structured trading knowledge from trusted sources and convert it into concepts, rules, mistakes, and setup criteria.",
-  "purpose": "Teach ZED trading discipline before any advanced automation is considered.",
+  "purpose": "Teach ZAR trading discipline before any advanced automation is considered.",
   "status": "published",
   "version": 1,
   "agents": ["finance", "research"],
@@ -38,7 +38,7 @@
     }
   ],
   "userFacingLabel": "Trading Education",
-  "userFacingBlurb": "Turn trading lessons into structured ZED knowledge.",
+  "userFacingBlurb": "Turn trading lessons into structured ZAR knowledge.",
   "icon": "BookOpen",
   "createdAt": "2026-06-24T00:00:00.000Z",
   "updatedAt": "2026-06-24T00:00:00.000Z",

@@ -20,7 +20,7 @@ import { ChatExecutionService } from "../services/ChatExecutionService";
  * AdminSettingsStore).
  *
  * Endpoints:
- *   POST /api/orchestrate           Autonomous ZED dispatch through ZCOS
+ *   POST /api/orchestrate           Autonomous ZAR dispatch through ZCOS
  *   GET  /api/orchestrate/status    Active vs planned agents + integrations
  *   POST /api/voice/transcribe      Stub for future Whisper integration
  *   GET  /api/admin/knowledge/overview  Counts + curation health for the admin Knowledge tab
@@ -116,7 +116,7 @@ export function registerOrchestrateAndMiscRoutes(
   app.get("/api/admin/system-test", isAdmin, async (_req, res) => {
     const aiHealth = await checkModelProviderHealth();
     res.json({
-      system: "ZED",
+      system: "ZAR",
       ai: getActiveProviderName({ lane: "chat" }),
       target: getResolvedTargetName({ lane: "chat" }),
       aiProvider: aiHealth.status,

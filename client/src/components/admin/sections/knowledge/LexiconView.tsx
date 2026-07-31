@@ -181,15 +181,15 @@ export function LexiconView() {
         <MetricCard label="Relationships" value={overview?.relationshipCount ?? "—"} />
       </div>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Languages size={16} className="text-cyan-300" />
             Search the Lexicon
           </CardTitle>
           <CardDescription>
-            Look up how Zed interprets a word or phrase — its meanings, which community or domain
-            each meaning comes from, and how confident Zed is in it.
+            Look up how ZAR interprets a word or phrase — its meanings, which community or domain
+            each meaning comes from, and how confident ZAR is in it.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -254,14 +254,14 @@ export function LexiconView() {
         </CardContent>
       </Card>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Sparkles size={16} className="text-purple-300" />
             Discovered Terms Awaiting Review
           </CardTitle>
           <CardDescription>
-            Zed noticed these terms in conversation and doesn't have a confirmed meaning yet.
+            ZAR noticed these terms in conversation and doesn't have a confirmed meaning yet.
             Confirm to add them to the lexicon, or reject if they're not worth tracking.
           </CardDescription>
         </CardHeader>

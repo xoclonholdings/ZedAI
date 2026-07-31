@@ -4,9 +4,9 @@ import { ChevronDown, ChevronUp, FileText, FolderKanban, GraduationCap, HardDriv
 /**
  * Create / Document, then File it.
  *
- * Zed writes the research up as a plain document you can read later, then
+ * ZAR writes the research up as a plain document you can read later, then
  * you file it where it belongs: into Education, into a Project as a source,
- * or kept in Zed's Files. Cloud drives (iCloud / Google Drive) show up as
+ * or kept in ZAR's Files. Cloud drives (iCloud / Google Drive) show up as
  * options once you connect one.
  */
 
@@ -92,7 +92,7 @@ export default function ResearchDocuments({
     setError(null);
     setDraftFailed(null);
     if (!instruction.trim() && !sources.trim()) {
-      setError("Tell Zed what to write up (or paste something to base it on).");
+      setError("Tell ZAR what to write up (or paste something to base it on).");
       return;
     }
     setDrafting(true);
@@ -134,8 +134,8 @@ export default function ResearchDocuments({
       if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       setNotice(
         body.documents?.length === 1
-          ? `Filed "${body.documents[0].title}" to Zed's Files.`
-          : `Filed ${body.documents?.length ?? 0} documents to Zed's Files.`,
+          ? `Filed "${body.documents[0].title}" to ZAR's Files.`
+          : `Filed ${body.documents?.length ?? 0} documents to ZAR's Files.`,
       );
       await loadDocs();
     } catch (err: any) {
@@ -181,7 +181,7 @@ export default function ResearchDocuments({
           ? "Education"
           : dest.startsWith("project:")
             ? projects.find((p) => `project:${p.id}` === dest)?.name || "the project"
-            : "Zed's Files";
+            : "ZAR's Files";
       setNotice(`Filed to ${where}.`);
       setDraft(null);
       setOpen(false);
@@ -281,7 +281,7 @@ export default function ResearchDocuments({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Title (optional — Zed will pick one)"
+                placeholder="Title (optional — ZAR will pick one)"
                 className={input}
               />
               <textarea
@@ -339,7 +339,7 @@ export default function ResearchDocuments({
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="text-[11.5px] text-white/40">File it to:</span>
                 <select value={dest} onChange={(e) => setDest(e.target.value)} className={`${input} w-auto`}>
-                  <option value="files" className="bg-neutral-900">Zed's Files</option>
+                  <option value="files" className="bg-neutral-900">ZAR's Files</option>
                   <option value="education" className="bg-neutral-900">Education</option>
                   {projects.map((p) => (
                     <option key={p.id} value={`project:${p.id}`} className="bg-neutral-900">
@@ -379,10 +379,10 @@ export default function ResearchDocuments({
         </div>
       )}
 
-      {/* Zed's Files */}
+      {/* ZAR's Files */}
       {docs.length > 0 && (
         <div className="mt-3 space-y-1.5 border-t border-white/[0.06] pt-3">
-          <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40">Zed's Files</div>
+          <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/40">ZAR's Files</div>
           {docs.map((d) => {
             const isOpen = expanded === d.id;
             return (

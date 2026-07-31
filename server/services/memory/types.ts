@@ -1,5 +1,5 @@
 /**
- * Shape of ZED's core behavior config — both the live document
+ * Shape of ZAR's core behavior config — both the live document
  * loaded from core.memory.json and the in-memory fallback used
  * when that file is missing or invalid.
  */

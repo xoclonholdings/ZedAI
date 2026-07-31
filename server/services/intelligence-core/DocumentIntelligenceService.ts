@@ -1,7 +1,7 @@
 /**
  * Capability 3 — Document Intelligence.
  *
- * ZED already has a powerful Knowledge Ingestion Engine (parsing,
+ * ZAR already has a powerful Knowledge Ingestion Engine (parsing,
  * semantic decomposition, object/entity extraction, relationship &
  * timeline mapping, decision & conflict detection, graph integration).
  * What was missing was the *connection*: files uploaded into a
@@ -200,7 +200,7 @@ export class DocumentIntelligenceService {
 
     const block = [
       "## Document Knowledge (from uploaded & ingested documents)",
-      "Structured knowledge extracted from documents, connected in ZED's knowledge graph. Prefer this over general knowledge for document-specific questions, and cite the source when you use it.",
+      "Structured knowledge extracted from documents, connected in ZAR's knowledge graph. Prefer this over general knowledge for document-specific questions, and cite the source when you use it.",
       ...lines,
       conflictNote,
     ]

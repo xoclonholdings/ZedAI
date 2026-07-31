@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { Link as LinkIcon } from "lucide-react";
 
+import { cleanTitle } from "@/lib/text";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -126,13 +127,13 @@ export function RelatedObjects({
             type="button"
             onClick={() => {
               if (other.type === "decision") navigate(`/decisions/${other.id}`);
-              else navigate("/learning");
+              else navigate("/knowledge");
             }}
             className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/85 hover:border-cyan-400/40 hover:bg-cyan-400/[0.08] transition-colors"
             title={rel.evidence || undefined}
           >
             <LinkIcon size={10} className="text-cyan-300/70" />
-            <span className="truncate max-w-[18ch]">{other.canonicalName}</span>
+            <span className="truncate max-w-[18ch]">{cleanTitle(other.canonicalName, 40)}</span>
             <span className="text-white/40 text-[10px]">
               · {friendlyRel(rel.relationshipType)}
             </span>

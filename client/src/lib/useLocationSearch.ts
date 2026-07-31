@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const LOCATION_SEARCH_CHANGE = "zed-location-search-change";
+const LOCATION_SEARCH_CHANGE = "zar-location-search-change";
 
 let activeSubscribers = 0;
 let originalPushState: History["pushState"] | null = null;

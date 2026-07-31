@@ -8,7 +8,7 @@ import { HUB_CONFIG_DIR } from "../utils/repoPaths";
 import { ManagerAgent } from "../orchestrator/ManagerAgent";
 
 /**
- * Ruleset YAML files that drive ZED's personality / security /
+ * Ruleset YAML files that drive ZAR's personality / security /
  * parameters / access policy. Edited from Admin → Ruleset. After any
  * write, ManagerAgent.flushConfig() clears the in-memory cache so the
  * next call picks up the new rules.

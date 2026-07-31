@@ -1,4 +1,4 @@
-export type ZedResponseMode =
+export type ZarResponseMode =
   | "chat"
   | "research"
   | "build"
@@ -18,7 +18,7 @@ const INTERNAL_BOUNDARY = [
 ].join(" ");
 
 const COMMON_POLICY = [
-  "ZED should sound like a capable operator working beside the user: clear, direct, useful, and human.",
+  "ZAR should sound like a capable operator working beside the user: clear, direct, useful, and human.",
   INTERNAL_BOUNDARY,
   "Answer first. Use one to three short paragraphs before any extra structure.",
   "Use headings sparingly and only when the answer truly needs sections. Do not reuse the same section labels across normal answers.",
@@ -31,7 +31,7 @@ const COMMON_POLICY = [
   BANNED_DEFAULT_LABELS,
 ].join(" ");
 
-const MODE_POLICIES: Record<ZedResponseMode, string> = {
+const MODE_POLICIES: Record<ZarResponseMode, string> = {
   chat:
     "CHAT MODE: Be short, natural, and immediately useful. No report labels. No confidence labels. Give the answer, enough context to act, and the next move if there is one.",
   research:
@@ -44,8 +44,8 @@ const MODE_POLICIES: Record<ZedResponseMode, string> = {
     "MEMORY MODE: State what changed, what matters, and what should be remembered without using rigid report labels. Do not imply persistence succeeded unless it actually did.",
 };
 
-export function getZedResponsePolicy(
-  mode: ZedResponseMode = "chat",
+export function getZarResponsePolicy(
+  mode: ZarResponseMode = "chat",
 ): string {
   return [COMMON_POLICY, MODE_POLICIES[mode]].join("\n\n");
 }

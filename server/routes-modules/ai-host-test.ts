@@ -86,16 +86,16 @@ function errorMessageFor(error: any): { error: string; errorKind: string } {
 function publicHostErrorMessage(message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes("lightning_api_key not set") || lower.includes("no api key")) {
-    return "LIGHTNING_API_KEY is not set. Add a Lightning Model API key and restart Zed.";
+    return "LIGHTNING_API_KEY is not set. Add a Lightning Model API key and restart ZAR.";
   }
   if (lower.includes("401") || lower.includes("unauthorized")) {
-    return "Lightning rejected the configured API key. Create or copy a valid Lightning Model API key, confirm it has access to the selected model, update LIGHTNING_API_KEY, and restart Zed.";
+    return "Lightning rejected the configured API key. Create or copy a valid Lightning Model API key, confirm it has access to the selected model, update LIGHTNING_API_KEY, and restart ZAR.";
   }
   if (lower.includes("404") || lower.includes("not found")) {
     return "Lightning Model APIs endpoint or model slug was not found. Confirm the base URL and selected model in Lightning.";
   }
   if (lower.includes("timeout")) {
-    return "Lightning did not respond before Zed timed out. Retry after confirming the Lightning service is available.";
+    return "Lightning did not respond before ZAR timed out. Retry after confirming the Lightning service is available.";
   }
   return message || "Lightning host check failed. Review the server logs for the upstream response.";
 }

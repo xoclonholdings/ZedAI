@@ -81,7 +81,7 @@ export function AddSourceCard({
   }
 
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardContent className="p-3 space-y-2.5">
         <div className="flex gap-1.5">
           {(["file", "url", "text"] as const).map((m) => (
@@ -102,17 +102,17 @@ export function AddSourceCard({
         <Input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="zed-glass border-white/10 h-9 text-sm"
+          className="zar-glass border-white/10 h-9 text-sm"
           placeholder="Label (e.g. Brand voice doc)"
         />
         {mode === "file" && (
-          <Input ref={fileInputRef} type="file" className="zed-glass border-white/10 text-xs" />
+          <Input ref={fileInputRef} type="file" className="zar-glass border-white/10 text-xs" />
         )}
         {mode === "url" && (
           <Input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="zed-glass border-white/10 h-9 text-sm font-mono"
+            className="zar-glass border-white/10 h-9 text-sm font-mono"
             placeholder="https://…"
           />
         )}
@@ -121,14 +121,14 @@ export function AddSourceCard({
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={5}
-            className="zed-glass border-white/10 text-sm"
+            className="zar-glass border-white/10 text-sm"
             placeholder="Paste a snippet the agents should know about…"
           />
         )}
         <Input
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="zed-glass border-white/10 h-9 text-sm"
+          className="zar-glass border-white/10 h-9 text-sm"
           placeholder="Notes (optional)"
         />
         <Button

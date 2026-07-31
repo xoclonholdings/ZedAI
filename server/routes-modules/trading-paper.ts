@@ -11,7 +11,7 @@ import { TradingStore } from "../zcos/trading/TradingStore";
 import { resolveOpenPaperTrades } from "../zcos/trading/TradeAutoResolver";
 import { placeWebullOrder } from "../zcos/trading/WebullBridge";
 import { classifyGovernanceError } from "../services/ErrorContract";
-import { zedErrorMessage } from "../../shared/error-contract";
+import { zarErrorMessage } from "../../shared/error-contract";
 import {
   userIdFrom,
   toNumber,
@@ -108,7 +108,7 @@ export function registerTradingPaperRoutes(app: Express): void {
     if (!authorization.authorized) {
       const errorDetail = classifyGovernanceError(authorization.decision.checklist);
       return res.status(409).json({
-        error: zedErrorMessage(errorDetail, "Paper trade not authorized by governance layer"),
+        error: zarErrorMessage(errorDetail, "Paper trade not authorized by governance layer"),
         errorDetail,
         authorization: authorization.decision,
       });
@@ -141,7 +141,7 @@ export function registerTradingPaperRoutes(app: Express): void {
 
   /**
    * Check open paper trades against live prices and auto-close any that
-   * have hit their target (win) or stop (loss). This is how Zed's proposals
+   * have hit their target (win) or stop (loss). This is how ZAR's proposals
    * are proven objectively over the validation sample.
    */
   app.post("/api/trading/paper-trades/resolve", isAuthenticated, async (req: any, res) => {

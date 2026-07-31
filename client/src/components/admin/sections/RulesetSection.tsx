@@ -47,16 +47,16 @@ interface RuleGroup {
 const RULE_GROUPS: RuleGroup[] = [
   {
     key: "personality.yaml",
-    label: "Zed's personality",
+    label: "ZAR's personality",
     purpose:
       "Identity, tone, formality, when to ask clarifying questions, response style.",
-    friendlyLocation: "Settings → How Zed sounds (Admin panel)",
+    friendlyLocation: "Settings → How ZAR sounds (Admin panel)",
   },
   {
     key: "security.yaml",
     label: "Approval rules & sensitive topics",
     purpose:
-      "What actions need your OK, how long approvals stay pending, topics Zed handles carefully.",
+      "What actions need your OK, how long approvals stay pending, topics ZAR handles carefully.",
     friendlyLocation: "Settings → What needs your approval (Admin panel)",
   },
   {
@@ -64,13 +64,13 @@ const RULE_GROUPS: RuleGroup[] = [
     label: "Model tuning",
     purpose:
       "Temperature, token budgets, model choice, per-agent overrides. Most of this is auto-derived from your Voice settings.",
-    friendlyLocation: "Settings → How Zed sounds — the sliders derive these",
+    friendlyLocation: "Settings → How ZAR sounds — the sliders derive these",
   },
   {
     key: "access.yaml",
     label: "External services & paths",
     purpose:
-      "Which outside services Zed is allowed to reach, filesystem layout, single-user vs multi-user mode.",
+      "Which outside services ZAR is allowed to reach, filesystem layout, single-user vs multi-user mode.",
     friendlyLocation: "Connections tab (Admin panel)",
   },
 ];
@@ -175,7 +175,7 @@ export default function RulesetSection() {
             Rules (engineer view)
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            The lower-level rules that shape Zed's behavior. Most people never
+            The lower-level rules that shape ZAR's behavior. Most people never
             need to open this — the friendly version of each rule lives in
             Settings or Connections. Only touch these if you know exactly
             what you're changing.

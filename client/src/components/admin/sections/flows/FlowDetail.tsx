@@ -63,7 +63,7 @@ export function FlowDetail({
           variant="ghost"
           size="sm"
           onClick={onBack}
-          className="zed-button text-muted-foreground hover:text-foreground"
+          className="zar-button text-muted-foreground hover:text-foreground"
         >
           <ChevronLeft size={14} className="mr-1" />
           Flows
@@ -74,7 +74,7 @@ export function FlowDetail({
               size="sm"
               variant="outline"
               onClick={() => onAction("publish")}
-              className="zed-glass border-emerald-500/30 text-emerald-200 h-8"
+              className="zar-glass border-emerald-500/30 text-emerald-200 h-8"
             >
               <Send size={13} className="mr-1" />
               Publish
@@ -84,7 +84,7 @@ export function FlowDetail({
             size="sm"
             variant="outline"
             onClick={() => onAction("duplicate")}
-            className="zed-glass border-white/10 h-8"
+            className="zar-glass border-white/10 h-8"
           >
             <Copy size={13} className="mr-1" />
             Duplicate
@@ -94,7 +94,7 @@ export function FlowDetail({
               size="sm"
               variant="outline"
               onClick={() => onAction("archive")}
-              className="zed-glass border-white/10 h-8 text-muted-foreground"
+              className="zar-glass border-white/10 h-8 text-muted-foreground"
             >
               <Archive size={13} className="mr-1" />
               Archive
@@ -118,7 +118,7 @@ export function FlowDetail({
         </div>
       </div>
 
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm">
             <CircleDot size={14} className="text-cyan-300" />
@@ -136,14 +136,14 @@ export function FlowDetail({
             <Input
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              className="zed-glass border-white/10"
+              className="zar-glass border-white/10"
             />
           </Field>
           <Field label="User-facing label">
             <Input
               value={draft.userFacingLabel}
               onChange={(e) => setDraft({ ...draft, userFacingLabel: e.target.value })}
-              className="zed-glass border-white/10"
+              className="zar-glass border-white/10"
               placeholder="e.g. Build Revenue"
             />
           </Field>
@@ -151,7 +151,7 @@ export function FlowDetail({
             <Input
               value={draft.userFacingBlurb}
               onChange={(e) => setDraft({ ...draft, userFacingBlurb: e.target.value })}
-              className="zed-glass border-white/10"
+              className="zar-glass border-white/10"
               placeholder="One sentence the user sees on the picker"
             />
           </Field>
@@ -160,7 +160,7 @@ export function FlowDetail({
               rows={2}
               value={draft.purpose}
               onChange={(e) => setDraft({ ...draft, purpose: e.target.value })}
-              className="zed-glass border-white/10 text-sm"
+              className="zar-glass border-white/10 text-sm"
             />
           </Field>
           <Field label="Description">
@@ -168,7 +168,7 @@ export function FlowDetail({
               rows={2}
               value={draft.description}
               onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-              className="zed-glass border-white/10 text-sm"
+              className="zar-glass border-white/10 text-sm"
             />
           </Field>
           <div className="grid grid-cols-2 gap-2">
@@ -176,14 +176,14 @@ export function FlowDetail({
               <Input
                 value={draft.category}
                 onChange={(e) => setDraft({ ...draft, category: e.target.value as any })}
-                className="zed-glass border-white/10"
+                className="zar-glass border-white/10"
               />
             </Field>
             <Field label="Icon (lucide)">
               <Input
                 value={draft.icon || ""}
                 onChange={(e) => setDraft({ ...draft, icon: e.target.value })}
-                className="zed-glass border-white/10"
+                className="zar-glass border-white/10"
                 placeholder="TrendingUp"
               />
             </Field>
@@ -200,7 +200,7 @@ export function FlowDetail({
                     .filter(Boolean) as any,
                 })
               }
-              className="zed-glass border-white/10 font-mono"
+              className="zar-glass border-white/10 font-mono"
             />
           </Field>
         </CardContent>
@@ -213,7 +213,7 @@ export function FlowDetail({
         </div>
 
         {draft.stages.length === 0 ? (
-          <Card className="zed-glass border-white/10">
+          <Card className="zar-glass border-white/10">
             <CardContent className="py-6 text-center text-xs text-muted-foreground">
               No stages yet. Stages are best edited as JSON for now — paste from a seed template,
               then publish.

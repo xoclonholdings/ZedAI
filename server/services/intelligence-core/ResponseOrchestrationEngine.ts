@@ -1,7 +1,7 @@
 /**
  * Capability 4 — Adaptive Response Intelligence.
  *
- * The existing ZedResponsePolicy / Voice layer sets a good *default*
+ * The existing ZarResponsePolicy / Voice layer sets a good *default*
  * house style, but it is static: the same guidance regardless of what the
  * user actually asked for. Claude instead reshapes each response to the
  * situation — a checklist here, a tight table there, prose when prose is
@@ -110,7 +110,7 @@ export class ResponseOrchestrationEngine {
       `Verbosity: ${verbosity}. ${VERBOSITY_DIRECTIVES[verbosity]}`,
       `Required precision: ${requiredPrecision}.`,
       urgencyLine,
-      "The response must still read naturally and in ZED's voice — structure serves clarity, it is not decoration.",
+      "The response must still read naturally and in ZAR's voice — structure serves clarity, it is not decoration.",
     ]
       .filter(Boolean)
       .join("\n");

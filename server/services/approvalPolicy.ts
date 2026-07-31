@@ -124,7 +124,7 @@ interface PolicyDecision {
 }
 
 /**
- * Look up what the admin wants Zed to do for this message. Returns:
+ * Look up what the admin wants ZAR to do for this message. Returns:
  *   - mode "auto":  no approval gate, dispatch immediately
  *   - mode "ask":   queue for admin approval before dispatch
  *   - mode "never": refuse with a message that points at settings
@@ -150,7 +150,7 @@ export async function decideApprovalPolicy(message: string): Promise<PolicyDecis
     return {
       mode,
       category,
-      refusalReply: `Zed isn't allowed to do that — “${approvalCategoryLabel(category)}” is set to Never in your Settings. Change it to Ask or Auto if you want Zed to handle this.`,
+      refusalReply: `ZAR isn't allowed to do that — “${approvalCategoryLabel(category)}” is set to Never in your Settings. Change it to Ask or Auto if you want ZAR to handle this.`,
     };
   }
 

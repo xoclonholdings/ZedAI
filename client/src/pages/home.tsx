@@ -16,7 +16,6 @@ import {
   HelpCircle,
   LineChart,
   MessageSquare,
-  PenTool,
   Plus,
   RefreshCw,
   ScrollText,
@@ -43,9 +42,9 @@ import type {
 } from "@shared/object-memory-types";
 
 /**
- * Zed's operational home — the Knowledge Map.
+ * ZAR's operational home — the Knowledge Map.
  *
- * Home leads with what Zed knows (objects), what needs attention
+ * Home leads with what ZAR knows (objects), what needs attention
  * (discovery), and how to move (workspaces). Domain snapshots
  * (Trading progression, Budget) live below as "Current work" — they
  * remain but stop dominating. The full trading stage screen and
@@ -78,9 +77,8 @@ const WORKSPACE_LAUNCHERS: Array<{
   hint: string;
 }> = [
   { label: "Research", href: "/workspaces/research", icon: Search, hint: "Dig in" },
-  { label: "Operations", href: "/workspaces/operations", icon: Briefcase, hint: "Run it" },
+  { label: "Operations", href: "/workspaces/operations", icon: Briefcase, hint: "Run it & reach out" },
   { label: "Finance", href: "/workspaces/finance", icon: Wallet, hint: "Money & trades" },
-  { label: "Marketing", href: "/workspaces/marketing", icon: PenTool, hint: "Reach out" },
   { label: "Education", href: "/workspaces/education", icon: GraduationCap, hint: "Learn" },
 ];
 
@@ -289,7 +287,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => navigate("/chat")}
-            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white transition-colors"
+            className="zar-button inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-[12.5px] text-white/80"
           >
             <MessageSquare size={12} />
             Chat
@@ -298,7 +296,7 @@ export default function HomePage() {
             type="button"
             onClick={() => void refresh()}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-colors"
+            className="zar-button inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] text-white/70"
             aria-label="Refresh"
           >
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -310,14 +308,14 @@ export default function HomePage() {
       <main className="max-w-3xl mx-auto space-y-4">
         {/* Approvals banner */}
         {isAdmin && approvalsCount > 0 && (
-          <section className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-4 flex items-start gap-3">
+          <section className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-4 flex items-start gap-3 backdrop-blur-sm">
             <Bell size={16} className="text-amber-300 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <div className="text-[13.5px] font-medium text-amber-100">
                 {approvalsCount} approval{approvalsCount === 1 ? "" : "s"} waiting for you
               </div>
               <div className="text-[12px] text-amber-100/70 mt-0.5">
-                Zed's paused these actions until you approve or reject.
+                ZAR's paused these actions until you approve or reject.
               </div>
             </div>
             <button
@@ -332,7 +330,7 @@ export default function HomePage() {
 
         {/* Active workspace banner */}
         {activeWorkspace && (
-          <section className="rounded-2xl border border-cyan-400/30 bg-cyan-400/[0.05] px-4 py-3 flex items-center justify-between gap-3">
+          <section className="rounded-2xl border border-cyan-400/30 bg-cyan-400/[0.05] px-4 py-3 flex items-center justify-between gap-3 backdrop-blur-sm">
             <div className="min-w-0 flex-1">
               <div className="text-[10.5px] uppercase tracking-[0.14em] text-cyan-200/80">
                 In workspace
@@ -344,7 +342,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigate(`/chat?ctx=${activeWorkspace}`)}
-              className="shrink-0 rounded-lg border border-cyan-400/40 bg-cyan-400/[0.1] text-cyan-100 hover:bg-cyan-400/[0.18] px-3 py-1.5 text-[12px]"
+              className="shrink-0 rounded-lg border border-cyan-400/40 bg-cyan-400/[0.1] text-cyan-100 hover:bg-cyan-400/[0.18] hover:shadow-[0_0_14px_rgba(34,211,238,0.3)] px-3 py-1.5 text-[12px] transition-all"
             >
               Continue
             </button>
@@ -353,7 +351,7 @@ export default function HomePage() {
 
         {/* Quick actions */}
         <section className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <QuickAction icon={MessageSquare} label="Ask Zed" onClick={() => navigate("/chat")} />
+          <QuickAction icon={MessageSquare} label="Ask ZAR" onClick={() => navigate("/chat")} />
           <QuickAction icon={Plus} label="Add to memory" onClick={() => navigate("/learning")} />
           {isAdmin ? (
             <QuickAction
@@ -369,7 +367,7 @@ export default function HomePage() {
 
         {/* Discovery Feed */}
         {discoveryItems.length > 0 && (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <section className="zar-glass rounded-2xl p-4 md:p-5">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
                 Discovery feed
@@ -392,7 +390,7 @@ export default function HomePage() {
         )}
 
         {/* Knowledge Map */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+        <section className="zar-glass rounded-2xl p-4 md:p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
               Knowledge map
@@ -422,7 +420,7 @@ export default function HomePage() {
                   key={tile.label}
                   type="button"
                   onClick={() => navigate(tile.href)}
-                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                  className="zar-glass rounded-xl p-3 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
                 >
                   <TIcon size={15} className="text-cyan-300/80 mb-1.5" />
                   <div className="flex items-baseline gap-2">
@@ -438,7 +436,7 @@ export default function HomePage() {
         </section>
 
         {/* Workspaces launcher */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+        <section className="zar-glass rounded-2xl p-4 md:p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
               Workspaces
@@ -453,7 +451,7 @@ export default function HomePage() {
                   key={w.href}
                   type="button"
                   onClick={() => navigate(w.href)}
-                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                  className="zar-glass rounded-xl p-3 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
                 >
                   <WIcon size={15} className="text-cyan-300/80 mb-1.5" />
                   <div className="text-[13px] font-medium text-white truncate">{w.label}</div>
@@ -466,7 +464,7 @@ export default function HomePage() {
 
         {/* Recent projects */}
         {projects.length > 0 && (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <section className="zar-glass rounded-2xl p-4 md:p-5">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
                 Recent projects
@@ -485,7 +483,7 @@ export default function HomePage() {
                   key={p.id}
                   type="button"
                   onClick={() => navigate(`/projects/${p.id}`)}
-                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                  className="zar-glass rounded-xl p-3 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
                 >
                   <div className="flex items-center gap-2">
                     <FolderKanban size={13} className="text-cyan-300/80 shrink-0" />
@@ -507,7 +505,7 @@ export default function HomePage() {
 
         {/* Current work — compact domain signals; details live on their pages */}
         {(currentStageDef || budget) && (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <section className="zar-glass rounded-2xl p-4 md:p-5">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50 mb-3">
               Current work
             </div>
@@ -562,10 +560,10 @@ function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-2xl border p-3 text-left transition-colors active:opacity-80 ${
+      className={`rounded-2xl p-3 text-left transition-all active:opacity-80 ${
         emphasis
-          ? "border-amber-400/40 bg-amber-400/[0.08] hover:bg-amber-400/[0.12]"
-          : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+          ? "border border-amber-400/40 bg-amber-400/[0.08] hover:bg-amber-400/[0.12] hover:shadow-[0_0_18px_rgba(251,191,36,0.25)]"
+          : "zar-glass hover:shadow-[0_0_18px_rgba(139,0,255,0.25)]"
       }`}
     >
       <Icon
@@ -591,16 +589,16 @@ function DiscoveryCard({
   onClick: () => void;
 }) {
   const map = {
-    amber: "border-amber-400/25 bg-amber-400/[0.05] text-amber-200",
-    cyan: "border-cyan-400/25 bg-cyan-400/[0.05] text-cyan-200",
-    fuchsia: "border-fuchsia-400/25 bg-fuchsia-400/[0.05] text-fuchsia-200",
-    emerald: "border-emerald-400/25 bg-emerald-400/[0.05] text-emerald-200",
+    amber: "border-amber-400/25 bg-amber-400/[0.05] text-amber-200 hover:shadow-[0_0_16px_rgba(251,191,36,0.25)]",
+    cyan: "border-cyan-400/25 bg-cyan-400/[0.05] text-cyan-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]",
+    fuchsia: "border-fuchsia-400/25 bg-fuchsia-400/[0.05] text-fuchsia-200 hover:shadow-[0_0_16px_rgba(232,121,249,0.25)]",
+    emerald: "border-emerald-400/25 bg-emerald-400/[0.05] text-emerald-200 hover:shadow-[0_0_16px_rgba(52,211,153,0.25)]",
   } as const;
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border p-3 text-left transition-colors active:opacity-80 hover:bg-white/[0.05] ${map[accent]}`}
+      className={`rounded-xl border p-3 text-left backdrop-blur-sm transition-all active:opacity-80 hover:bg-white/[0.05] ${map[accent]}`}
     >
       <Icon size={14} className="mb-1.5" />
       <div className="text-[16.5px] font-semibold tabular-nums text-white">{count}</div>
@@ -627,7 +625,7 @@ function CurrentWorkRow({
     <button
       type="button"
       onClick={() => navigate(href)}
-      className="w-full flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+      className="w-full flex items-center gap-3 zar-glass rounded-xl px-3 py-2.5 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
     >
       <div className="shrink-0 w-8 h-8 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-300 flex items-center justify-center">
         <Icon size={14} />

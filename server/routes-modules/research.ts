@@ -20,7 +20,7 @@ import { getWebSearchStatus, webSearch } from "../services/WebSearchService";
 /**
  * Research workspace routes.
  *
- * Search is the front door. After a search, Zed can summarize, verify, or
+ * Search is the front door. After a search, ZAR can summarize, verify, or
  * save the result — or do whatever the user types under "other".
  */
 
@@ -71,7 +71,7 @@ export function registerResearchRoutes(app: Express): void {
         results: toResults(req.body?.results),
         instruction: req.body?.instruction ? String(req.body.instruction) : undefined,
       });
-      // Always 200 — Zed explains any hiccup in plain language via the
+      // Always 200 — ZAR explains any hiccup in plain language via the
       // payload, so the UI can show it in his voice with a retry.
       res.json(result);
     } catch (err: any) {
@@ -83,7 +83,7 @@ export function registerResearchRoutes(app: Express): void {
     }
   });
 
-  // Create/Document — Zed writes the research up as a document.
+  // Create/Document — ZAR writes the research up as a document.
   app.post("/api/research/document", isAuthenticated, async (req: any, res) => {
     try {
       const draft = await createResearchDocument({
@@ -104,7 +104,7 @@ export function registerResearchRoutes(app: Express): void {
     }
   });
 
-  // Zed's Files — keep a filed document in the workspace (a home for
+  // ZAR's Files — keep a filed document in the workspace (a home for
   // documents until the user connects iCloud / Google Drive).
   app.get("/api/research/documents", isAuthenticated, async (req: any, res) => {
     try {
@@ -129,9 +129,9 @@ export function registerResearchRoutes(app: Express): void {
     }
   });
 
-  // File an existing document as-is, instead of having Zed draft one - the
+  // File an existing document as-is, instead of having ZAR draft one - the
   // same text-extraction pipeline chat/memory uploads use, filed straight
-  // into Zed's Files so it shows up next to drafted documents.
+  // into ZAR's Files so it shows up next to drafted documents.
   app.post(
     "/api/research/documents/upload",
     isAuthenticated,

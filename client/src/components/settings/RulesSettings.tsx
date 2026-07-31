@@ -21,7 +21,7 @@ export default function RulesSettings() {
           Projects & workspaces
         </h2>
         <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-          How Zed groups your work. Projects hold a set of related files, notes,
+          How ZAR groups your work. Projects hold a set of related files, notes,
           and rules. Workspaces are the top-level areas — Research, Operations,
           Finance, Marketing, Education.
         </p>
@@ -30,7 +30,7 @@ export default function RulesSettings() {
       <SettingGroup title="Where things live">
         <SettingRow
           label="Manage projects"
-          description="Create, rename, and organize the projects Zed groups your work under."
+          description="Create, rename, and organize the projects ZAR groups your work under."
         >
           <button
             type="button"
@@ -42,7 +42,7 @@ export default function RulesSettings() {
         </SettingRow>
 
         <SettingRow
-          label="Rules that shape Zed's behavior"
+          label="Rules that shape ZAR's behavior"
           description="The friendly version is in Admin → Settings. The engineer view is in Admin → Advanced."
         >
           <button

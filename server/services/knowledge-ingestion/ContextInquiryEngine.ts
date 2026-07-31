@@ -116,7 +116,7 @@ function hasExplicitProjectReference(userInput: string, objects: KnowledgeObject
     if (!["project", "product", "company"].includes(object.type)) return false;
     const names = [object.name, ...object.aliases]
       .map(normalizeKey)
-      .filter((name) => /\b(zwap|zed|zcos|zebcom|zebulon|stepwise)\b/.test(name));
+      .filter((name) => /\b(zwap|zar|zcos|zebcom|zebulon|stepwise)\b/.test(name));
     return names.some((name) => normalizedInput.includes(name));
   });
 }
@@ -124,7 +124,7 @@ function hasExplicitProjectReference(userInput: string, objects: KnowledgeObject
 function projectFamilyKey(name: string): string {
   const normalized = normalizeKey(name);
   if (/\bzwap\b/i.test(name) || /\bzwap\b/.test(normalized)) return "ZWAP";
-  if (/\bzed\b/i.test(name) || /\bzed\b/.test(normalized)) return "ZED";
+  if (/\bzed\b/i.test(name) || /\bzed\b/.test(normalized)) return "ZAR";
   if (/\bzcos\b/i.test(name) || /\bzcos\b/.test(normalized)) return "ZCOS";
   return name
     .replace(/\b(the|app|project|platform|system|promo|strategy|design|redesign|implementation|flow|plan)\b/gi, " ")
@@ -147,7 +147,7 @@ function inferProjectContext(userInput: string, objects: KnowledgeObject[]): Con
     if (!["project", "product", "company", "concept", "feature", "goal"].includes(object.type)) return false;
     if (["rejected", "superseded"].includes(object.temporalStatus)) return false;
     if (/\bstepwise\b/i.test(object.name) && object.status !== "confirmed") return false;
-    return /\b(zwap|zed|zcos|zebcom|zebulon)\b/i.test([object.name, ...object.aliases, object.description].join(" "));
+    return /\b(zwap|zar|zcos|zebcom|zebulon)\b/i.test([object.name, ...object.aliases, object.description].join(" "));
   });
 
   const grouped = new Map<string, { label: string; objects: KnowledgeObject[]; score: number }>();
@@ -158,7 +158,7 @@ function inferProjectContext(userInput: string, objects: KnowledgeObject[]): Con
     const evidenceScore = Math.min(2, object.evidence.length * 0.2);
     const relationshipScore = Math.min(1, object.relatedObjectIds.length * 0.15);
     const statusScore = object.status === "confirmed" ? 1.2 : object.status === "candidate" ? 0.55 : object.status === "conflicting" ? 0.25 : 0;
-    const nameScore = label === "ZWAP" ? 1.2 : label === "ZED" ? 0.4 : 0.2;
+    const nameScore = label === "ZWAP" ? 1.2 : label === "ZAR" ? 0.4 : 0.2;
     current.objects.push(object);
     current.score += object.confidence + evidenceScore + relationshipScore + statusScore + temporalWeight(object) + nameScore;
     grouped.set(label, current);
@@ -203,7 +203,7 @@ function questionForField(object: KnowledgeObject, field: string): ContextQuesti
     return {
       id: stableId("ctxq", `${object.id}:relationships`),
       category: "relationship",
-      question: `What does ${object.name} belong to or directly affect in ZED?`,
+      question: `What does ${object.name} belong to or directly affect in ZAR?`,
       targetObjectId: object.id,
       priority: 0.82,
       wouldChange: ["storage", "reasoning", "retrieval"],
@@ -223,7 +223,7 @@ function questionForField(object: KnowledgeObject, field: string): ContextQuesti
     return {
       id: stableId("ctxq", `${object.id}:truthState`),
       category: "purpose",
-      question: `What is the current truth ZED should remember about ${object.name}?`,
+      question: `What is the current truth ZAR should remember about ${object.name}?`,
       targetObjectId: object.id,
       priority: 0.76,
       wouldChange: ["storage", "reasoning", "retrieval"],
@@ -254,7 +254,7 @@ function generateQuestions(objects: KnowledgeObject[], conflicts: KnowledgeConfl
       questions.push({
         id: stableId("ctxq", `${object.id}:confidence`),
         category: "confidence",
-        question: `How certain should ZED be about ${object.name}?`,
+        question: `How certain should ZAR be about ${object.name}?`,
         targetObjectId: object.id,
         priority: 0.68,
         wouldChange: ["storage", "reasoning"],

@@ -26,7 +26,7 @@ export function SectionIntro({
 
 export function MetricCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm text-foreground/85">{label}</CardTitle>
       </CardHeader>

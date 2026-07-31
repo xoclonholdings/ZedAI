@@ -26,7 +26,7 @@ export const FILE_META: Record<
 > = {
   "personality.yaml": {
     label: "Personality",
-    description: "Identity, tone, persona, and response behavior for ZED.",
+    description: "Identity, tone, persona, and response behavior for ZAR.",
     icon: Sparkles,
     sections: [
       { key: "identity", label: "Identity", description: "Name, title, version, and role." },

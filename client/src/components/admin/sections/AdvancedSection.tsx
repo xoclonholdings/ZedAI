@@ -10,7 +10,7 @@ import ProviderDiagnosticsCard from "../ProviderDiagnosticsCard";
 /**
  * Consolidated "Advanced" tab.
  *
- * Tools (the flow engine — reusable actions Zed knows how to run)
+ * Tools (the flow engine — reusable actions ZAR knows how to run)
  * and Rules (the raw YAML ruleset the Settings tab is the friendly
  * front for) both used to be their own tabs. Neither is something a
  * normal user needs to open — Tools is for authoring executable
@@ -39,7 +39,7 @@ export default function AdvancedSection() {
 
       <Section
         title="AI host diagnostics"
-        subtitle="Provider routing, environment validation, and live host probes for the models Zed is about to call."
+        subtitle="Provider routing, environment validation, and live host probes for the models ZAR is about to call."
         open={openDiagnostics}
         onToggle={() => setOpenDiagnostics((v) => !v)}
       >
@@ -51,7 +51,7 @@ export default function AdvancedSection() {
 
       <Section
         title="Zync coding operator"
-        subtitle="Repo-aware coding functions Zed can run now, stored in a Zync-branded core-memory module for later extraction into the Zync app."
+        subtitle="Repo-aware coding functions ZAR can run now, stored in a Zync-branded core-memory module for later extraction into the Zync app."
         open={openZync}
         onToggle={() => setOpenZync((v) => !v)}
       >
@@ -59,8 +59,8 @@ export default function AdvancedSection() {
       </Section>
 
       <Section
-        title="Tools Zed can run"
-        subtitle="Reusable actions Zed can execute when you approve — send email, generate a report, run a workflow. Managed through the flow engine."
+        title="Tools ZAR can run"
+        subtitle="Reusable actions ZAR can execute when you approve — send email, generate a report, run a workflow. Managed through the flow engine."
         open={openTools}
         onToggle={() => setOpenTools((v) => !v)}
       >

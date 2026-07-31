@@ -5,7 +5,7 @@ import type { VoiceSettings } from "../../shared/adminSettings";
  * prompt fragment. The mapping favours short, imperative sentences
  * that steer the model without adding noise.
  *
- * Called by ZedContextBuilder on every chat / agent send, so the
+ * Called by ZarContextBuilder on every chat / agent send, so the
  * cost of this string is paid on every message — keep it tight.
  */
 export function voiceSettingsToPrompt(v: VoiceSettings): string {
@@ -63,7 +63,7 @@ export function voiceSettingsToPrompt(v: VoiceSettings): string {
     parts.push(`Never use these phrases or patterns: ${list}.`);
   }
 
-  return `## HOW ZED SOUNDS\nFollow these voice rules on every response:\n${parts
+  return `## HOW ZAR SOUNDS\nFollow these voice rules on every response:\n${parts
     .map((p) => `  • ${p}`)
     .join("\n")}`;
 }

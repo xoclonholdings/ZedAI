@@ -268,7 +268,7 @@ export interface SocialPublishingAccount {
   label: string;
   platform: string;
   dashboardUrl?: string;
-  /** "token" = pasted API token (Twitter). "credentials" = Zed signed
+  /** "token" = pasted API token (Twitter). "credentials" = ZAR signed
    *  in with a username/password via a real browser, autofill-style,
    *  and is holding the resulting session. */
   authMethod?: "token" | "credentials";
@@ -278,7 +278,7 @@ export interface SocialPublishingAccount {
   username?: string;
   password?: string;
   /** Serialized Playwright storageState (cookies + local storage) so
-   *  Zed can act as this account without signing in again each time. */
+   *  ZAR can act as this account without signing in again each time. */
   sessionState?: string;
 }
 
@@ -425,8 +425,8 @@ export interface IntegrationsSettings {
   };
   /** Admin-defined integrations. Each entry is an arbitrary
    *  integration with named fields the user gives it. They surface
-   *  in the ZED context (so the model knows the tool exists) but
-   *  ZED can only ACT through them once a flow / agent is wired
+   *  in the ZAR context (so the model knows the tool exists) but
+   *  ZAR can only ACT through them once a flow / agent is wired
    *  to consume the fields. */
   custom: CustomIntegration[];
 }
@@ -453,7 +453,7 @@ export interface CustomIntegration {
 // ─── Composite ────────────────────────────────────────────────────────
 
 /**
- * User-facing "how Zed sounds" settings, exposed through the admin
+ * User-facing "how ZAR sounds" settings, exposed through the admin
  * Settings UI in plain English. Runtime translates these values into
  * a compact prompt fragment (see server/services/voiceSettings.ts)
  * that shapes tone, formality, length, reasoning visibility, plain-
@@ -485,7 +485,7 @@ export interface VoiceSettings {
   plainLanguage: boolean;
   /** Wrap code in syntax-highlighted blocks. */
   codeBlocks: boolean;
-  /** Phrases Zed shouldn't use, one per entry. */
+  /** Phrases ZAR shouldn't use, one per entry. */
   prohibitedPhrases: string[];
 }
 
@@ -493,9 +493,9 @@ export interface VoiceSettings {
  * Per-action approval policy for the "What needs your approval"
  * settings surface. Consumed by OperationsAgent (and future agents)
  * before they dispatch an action:
- *   - "auto"  ZED performs the action without asking
- *   - "ask"   ZED drafts, then queues for admin approval before doing it
- *   - "never" ZED refuses the action with a message pointing at settings
+ *   - "auto"  ZAR performs the action without asking
+ *   - "ask"   ZAR drafts, then queues for admin approval before doing it
+ *   - "never" ZAR refuses the action with a message pointing at settings
  *
  * Runtime enforcement lives in server/services/approvalPolicy.ts,
  * which OperationsAgent consults inside checkApprovalRequired.

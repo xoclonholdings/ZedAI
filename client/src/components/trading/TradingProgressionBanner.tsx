@@ -338,7 +338,7 @@ function StageDetail({
       {detailsOpen && (
         <>
       <Block title="Your move">{stage.yourMove}</Block>
-      <Block title="What ZAR does">{stage.whatZedDoes}</Block>
+      <Block title="What ZAR does">{stage.whatZarDoes}</Block>
       <div className="mt-3">
         <div className="text-[10.5px] uppercase tracking-[0.08em] text-white/50 mb-1.5">Ready when</div>
         <ul className="space-y-1">

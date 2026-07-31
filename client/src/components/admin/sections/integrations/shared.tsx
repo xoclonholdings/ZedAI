@@ -37,7 +37,7 @@ export const ACCOUNT_TEMPLATES = {
   email: {
     label: "New sender",
     provider: "smtp",
-    fromName: "ZED",
+    fromName: "ZAR",
     fromAddress: "",
     smtpHost: "smtp.gmail.com",
     smtpPort: 587,

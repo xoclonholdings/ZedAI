@@ -83,7 +83,7 @@ export async function retrieveObjectMemoryForQuery(
 
   const block = [
     "## Object memory retrieved for this query",
-    "The following are structured objects that ZED has extracted from prior conversations and knowledge. Use them as ground truth for stable facts about projects, systems, decisions, and user preferences.",
+    "The following are structured objects that ZAR has extracted from prior conversations and knowledge. Use them as ground truth for stable facts about projects, systems, decisions, and user preferences.",
     ...scored.map(({ obj }) => {
       const parts = [
         `### ${obj.canonicalName} (${obj.type})`,

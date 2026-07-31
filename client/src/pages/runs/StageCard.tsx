@@ -19,7 +19,7 @@ export function StageCard({ stageRun, index }: { stageRun: FlowStageRun; index: 
         : null;
 
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardContent className="p-3 space-y-1.5">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[10px] text-muted-foreground">
@@ -32,7 +32,7 @@ export function StageCard({ stageRun, index }: { stageRun: FlowStageRun; index: 
           <span className={`text-sm font-medium flex-1 truncate ${tone}`}>{stageName}</span>
           <Badge
             variant="secondary"
-            className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
+            className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
           >
             {stageRun.status.replace("_", " ")}
           </Badge>
@@ -48,7 +48,7 @@ export function StageCard({ stageRun, index }: { stageRun: FlowStageRun; index: 
             <summary className="cursor-pointer text-[10px] uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground">
               View output
             </summary>
-            <div className="mt-2 rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-6 zed-markdown">
+            <div className="mt-2 rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-6 zar-markdown">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{output}</ReactMarkdown>
             </div>
           </details>

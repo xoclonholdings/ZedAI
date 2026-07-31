@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cleanSummary, cleanTitle } from "@/lib/text";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -161,7 +162,7 @@ export default function TimelinePage() {
             size="sm"
             onClick={() => void refresh()}
             disabled={loading}
-            className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
+            className="rounded-xl text-muted-foreground hover:text-foreground zar-button"
             aria-label="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -175,7 +176,7 @@ export default function TimelinePage() {
           </div>
           <h1 className="mt-2 text-2xl font-semibold">How things have progressed</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Everything Zed has learned or updated, most recent first. Focus on progress rather
+            Everything ZAR has learned or updated, most recent first. Focus on progress rather
             than chat logs.
           </p>
         </section>
@@ -215,7 +216,7 @@ export default function TimelinePage() {
           <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-            Nothing to show yet. As Zed learns, updates land here in order.
+            Nothing to show yet. As ZAR learns, updates land here in order.
           </div>
         ) : (
           <div className="relative">
@@ -248,7 +249,7 @@ export default function TimelinePage() {
                           <div className="min-w-0 flex-1 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2 group-hover:border-white/20 group-hover:bg-white/[0.05] transition-colors">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[13px] font-medium text-white truncate">
-                                {o.canonicalName}
+                                {cleanTitle(o.canonicalName, 60)}
                               </span>
                               <span className="text-[10px] uppercase tracking-[0.08em] text-white/40">
                                 {TYPE_LABEL[o.type]}
@@ -259,7 +260,7 @@ export default function TimelinePage() {
                             </div>
                             {o.summary && (
                               <div className="mt-1 text-[11.5px] leading-snug text-white/55 line-clamp-2">
-                                {o.summary}
+                                {cleanSummary(o.summary, 240)}
                               </div>
                             )}
                           </div>

@@ -3,17 +3,17 @@ import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
 import { FinanceAgent } from "../agents/finance/FinanceAgent";
 import { KnowledgeService } from "../services/KnowledgeService";
-import { ZedPrincipleEngine } from "../services/ZedPrincipleEngine";
-import { ZedStrategicReasoningEngine } from "../services/ZedStrategicReasoningEngine";
-import { getZedResponsePolicy, type ZedResponseMode } from "../services/ZedResponsePolicy";
+import { ZarPrincipleEngine } from "../services/ZarPrincipleEngine";
+import { ZarStrategicReasoningEngine } from "../services/ZarStrategicReasoningEngine";
+import { getZarResponsePolicy, type ZarResponseMode } from "../services/ZarResponsePolicy";
 import {
-  buildZedGovernancePrompt,
+  buildZarGovernancePrompt,
   userRequestedSourceLinks,
-} from "../services/ZedResponseGovernance";
+} from "../services/ZarResponseGovernance";
 import {
-  buildZedVoicePrompt,
-  presentZedResponse,
-} from "../services/ZedVoiceFormationEngine";
+  buildZarVoicePrompt,
+  presentZarResponse,
+} from "../services/ZarVoiceFormationEngine";
 import { checkTiers, filterOutputForTier3 } from "../middleware/TierEnforcement";
 import type { ReasoningEffort } from "../core/providers/provider-interface";
 
@@ -27,7 +27,7 @@ import type {
   OrchestratorResponse,
 } from "./manager-agent/types";
 
-function responseModeForAgent(agent: string): ZedResponseMode {
+function responseModeForAgent(agent: string): ZarResponseMode {
   if (agent === "IntelligenceAgent") return "research";
   if (agent === "BusinessManagerAgent" || agent === "FinanceAgent") return "strategy";
   return "chat";
@@ -60,7 +60,7 @@ export class ManagerAgent {
     );
     if (tierCheck.blocked) {
       return {
-        reply: await presentZedResponse(tierCheck.reply, {
+        reply: await presentZarResponse(tierCheck.reply, {
           userMessage: request.message,
           includeSources,
           mode: "chat",
@@ -102,25 +102,25 @@ export class ManagerAgent {
     const routeDecision = await selectAgentWithTrace(request.message, config, request.targetAgent);
     const agent = routeDecision.selectedAgent;
     const responseMode = responseModeForAgent(agent);
-    const strategicReasoning = ZedStrategicReasoningEngine.prepare({
+    const strategicReasoning = ZarStrategicReasoningEngine.prepare({
       userMessage: request.message,
       lane: responseMode,
       knowledgePresent: Boolean(knowledgePrompt),
       currentContext: request.context,
     });
-    const voiceMode: ZedResponseMode = strategicReasoning.active ? "strategy" : responseMode;
-    const governancePrompt = buildZedGovernancePrompt({
+    const voiceMode: ZarResponseMode = strategicReasoning.active ? "strategy" : responseMode;
+    const governancePrompt = buildZarGovernancePrompt({
       userMessage: request.message,
       lane: voiceMode,
       knowledgePresent: Boolean(knowledgePrompt),
     });
-    const principlePrompt = ZedPrincipleEngine.buildPrompt({
+    const principlePrompt = ZarPrincipleEngine.buildPrompt({
       userMessage: request.message,
       lane: voiceMode,
       knowledgePresent: Boolean(knowledgePrompt),
       isAdmin: Boolean(request.context?.isAdmin),
     });
-    const voicePrompt = await buildZedVoicePrompt({ mode: voiceMode });
+    const voicePrompt = await buildZarVoicePrompt({ mode: voiceMode });
     // Cognitive Core order per SPEC.md § Cognitive Core:
     //   1. Context Inquiry (upstream in ChatExecutionService)
     //   2. Principle   3. Strategic   4. Knowledge
@@ -138,7 +138,7 @@ export class ManagerAgent {
       strategicReasoning.prompt,
       knowledgePrompt,
       voicePrompt,
-      getZedResponsePolicy(voiceMode),
+      getZarResponsePolicy(voiceMode),
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -201,7 +201,7 @@ export class ManagerAgent {
           reasoningEffort,
         });
         return {
-          reply: await presentZedResponse(filterOutputForTier3(resp.message), {
+          reply: await presentZarResponse(filterOutputForTier3(resp.message), {
             userMessage: request.message,
             includeSources,
             mode: voiceMode,
@@ -231,7 +231,7 @@ export class ManagerAgent {
           reasoningEffort,
         });
         return {
-          reply: await presentZedResponse(filterOutputForTier3(resp.message), {
+          reply: await presentZarResponse(filterOutputForTier3(resp.message), {
             userMessage: request.message,
             includeSources,
             mode: voiceMode,
@@ -285,7 +285,7 @@ export class ManagerAgent {
       }
     }
 
-    reply = await presentZedResponse(filterOutputForTier3(reply), {
+    reply = await presentZarResponse(filterOutputForTier3(reply), {
       userMessage: request.message,
       includeSources,
       mode: voiceMode,

@@ -16,13 +16,13 @@ import { logRuntimeEvent } from "../services/RuntimeLogger";
 
 /**
  * User-facing memory upload - a single endpoint that takes what a
- * user wants Zed to remember (a pasted note OR an uploaded file),
+ * user wants ZAR to remember (a pasted note OR an uploaded file),
  * runs it through the same object-memory extractor the CLI uses,
  * and merges the result into the applied graph.
  *
  * That graph is already consulted by KnowledgeService on every chat
  * request via retrieveObjectMemoryForQuery, so anything the user
- * uploads here becomes something Zed can pull into any conversation
+ * uploads here becomes something ZAR can pull into any conversation
  * within seconds - no restart, no promotion step.
  *
  * Two shapes accepted on POST /api/me/memory/upload:
@@ -37,7 +37,7 @@ import { logRuntimeEvent } from "../services/RuntimeLogger";
  *       chat uploads use, so the same file types are supported)
  *
  * Response returns the extracted objects and updated graph stats
- * so the caller can show the user exactly what Zed learned.
+ * so the caller can show the user exactly what ZAR learned.
  */
 
 interface UploadResult {

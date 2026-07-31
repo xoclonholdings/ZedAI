@@ -60,7 +60,7 @@ export async function loadCoreMemoryFromFile(onFallback: () => Promise<void>): P
 
     if (!validateCoreMemoryConfig(parsed)) {
       throw new Error(
-        "core.memory.json is valid JSON but does not match the expected Zed behavior schema.",
+        "core.memory.json is valid JSON but does not match the expected ZAR behavior schema.",
       );
     }
 
@@ -70,80 +70,80 @@ export async function loadCoreMemoryFromFile(onFallback: () => Promise<void>): P
     await upsertCoreSection(
       "core_config",
       config,
-      "Full ZED core behavior configuration from core.memory.json",
+      "Full ZAR core behavior configuration from core.memory.json",
     );
 
     // Top-level metadata
     await upsertCoreSection(
       "version",
       config.version,
-      "ZED core memory schema version",
+      "ZAR core memory schema version",
     );
 
     if (config._notes) {
-      await upsertCoreSection("notes", config._notes, "ZED core memory notes");
+      await upsertCoreSection("notes", config._notes, "ZAR core memory notes");
     }
 
     // Structured sections
     await upsertCoreSection(
       "identity",
       config.identity,
-      "ZED identity configuration from core.memory.json",
+      "ZAR identity configuration from core.memory.json",
     );
     await upsertCoreSection(
       "tone",
       config.tone,
-      "ZED tone configuration from core.memory.json",
+      "ZAR tone configuration from core.memory.json",
     );
     await upsertCoreSection(
       "operation",
       config.operation,
-      "ZED operation policy from core.memory.json",
+      "ZAR operation policy from core.memory.json",
     );
     await upsertCoreSection(
       "modes",
       config.modes,
-      "ZED mode configuration from core.memory.json",
+      "ZAR mode configuration from core.memory.json",
     );
     await upsertCoreSection(
       "memory_policy",
       config.memory_policy,
-      "ZED memory usage policy from core.memory.json",
+      "ZAR memory usage policy from core.memory.json",
     );
     await upsertCoreSection(
       "access_control",
       config.access_control,
-      "ZED access control policy from core.memory.json",
+      "ZAR access control policy from core.memory.json",
     );
     await upsertCoreSection(
       "risk_model",
       config.risk_model,
-      "ZED risk model from core.memory.json",
+      "ZAR risk model from core.memory.json",
     );
     await upsertCoreSection(
       "instruction_model",
       config.instruction_model,
-      "ZED instruction parsing and confirmation policy from core.memory.json",
+      "ZAR instruction parsing and confirmation policy from core.memory.json",
     );
     await upsertCoreSection(
       "tool_policy",
       config.tool_policy,
-      "ZED tool and action policy from core.memory.json",
+      "ZAR tool and action policy from core.memory.json",
     );
     await upsertCoreSection(
       "secrets_policy",
       config.secrets_policy,
-      "ZED secrets handling policy from core.memory.json",
+      "ZAR secrets handling policy from core.memory.json",
     );
     await upsertCoreSection(
       "session_awareness",
       config.session_awareness,
-      "ZED adaptive session awareness policy from core.memory.json",
+      "ZAR adaptive session awareness policy from core.memory.json",
     );
     await upsertCoreSection(
       "non_admin_behavior",
       config.non_admin_behavior,
-      "ZED guest and non-admin behavior policy from core.memory.json",
+      "ZAR guest and non-admin behavior policy from core.memory.json",
     );
 
     // Convenience aliases for older callers or prompt assembly
@@ -155,7 +155,7 @@ export async function loadCoreMemoryFromFile(onFallback: () => Promise<void>): P
         mission: config.identity.mission,
         operation: config.operation,
       },
-      "Backward-compatible ZED personality composite",
+      "Backward-compatible ZAR personality composite",
     );
     await upsertCoreSection(
       "rules",
@@ -166,7 +166,7 @@ export async function loadCoreMemoryFromFile(onFallback: () => Promise<void>): P
         instruction_model: config.instruction_model,
         secrets_policy: config.secrets_policy,
       },
-      "Backward-compatible ZED rules composite",
+      "Backward-compatible ZAR rules composite",
     );
     await upsertCoreSection(
       "default_context",
@@ -175,7 +175,7 @@ export async function loadCoreMemoryFromFile(onFallback: () => Promise<void>): P
         supported_modes: config.modes.available,
         session_mode: config.session_awareness.mode,
       },
-      "Backward-compatible ZED default context composite",
+      "Backward-compatible ZAR default context composite",
     );
     await upsertCoreSection(
       "access",
@@ -184,7 +184,7 @@ export async function loadCoreMemoryFromFile(onFallback: () => Promise<void>): P
         tool_policy: config.tool_policy,
         non_admin_behavior: config.non_admin_behavior,
       },
-      "Backward-compatible ZED access composite",
+      "Backward-compatible ZAR access composite",
     );
     await upsertCoreSection(
       "admin_verification",

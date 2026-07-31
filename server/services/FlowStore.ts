@@ -13,7 +13,7 @@ import type {
 /**
  * ZCOS-owned file-backed flow store.
  *
- * ZED calls routes. Routes call ZCOS flow services. ZCOS owns definitions,
+ * ZAR calls routes. Routes call ZCOS flow services. ZCOS owns definitions,
  * run state, approvals, outputs, errors, and reports under hub/flows/.
  */
 

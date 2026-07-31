@@ -4,7 +4,7 @@
   "name": "Strategy Validation",
   "category": "finance",
   "description": "Validate a trading strategy through knowledge rules, backtesting notes, paper-trade evidence, and risk controls.",
-  "purpose": "Prevent ZED from treating untested ideas as tradeable systems.",
+  "purpose": "Prevent ZAR from treating untested ideas as tradeable systems.",
   "status": "published",
   "version": 1,
   "agents": ["finance", "research"],

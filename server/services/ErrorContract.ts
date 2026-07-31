@@ -1,4 +1,4 @@
-import type { ZedErrorDetail } from "../../shared/error-contract";
+import type { ZarErrorDetail } from "../../shared/error-contract";
 import type { TradingGovernanceChecklistItem } from "../../shared/trading-types";
 
 function clean(value: unknown): string {
@@ -33,7 +33,7 @@ function parseLightningJson(message: string): Record<string, unknown> | null {
 export function classifyChatError(error: unknown, context: {
   provider?: string;
   target?: string;
-} = {}): ZedErrorDetail {
+} = {}): ZarErrorDetail {
   const raw = clean((error as any)?.message || error);
   const safeRaw = maskSecrets(raw || "Unknown chat execution error.");
   const lightningStatus = parseLightningStatus(safeRaw);
@@ -71,7 +71,7 @@ export function classifyChatError(error: unknown, context: {
       code: "AI_HOST_MODEL_REJECTED",
       userMessage: "Lightning rejected the model selection.",
       exactReason: safeRaw,
-      action: "Use only the approved Lightning model IDs configured for Zed.",
+      action: "Use only the approved Lightning model IDs configured for ZAR.",
       technicalDetails: { provider: context.provider || "lightning", target: context.target, status: lightningStatus },
     };
   }
@@ -79,7 +79,7 @@ export function classifyChatError(error: unknown, context: {
   if (/fetch failed|ECONNREFUSED|ECONNRESET|timeout|timed out/i.test(safeRaw)) {
     return {
       code: "AI_HOST_NETWORK_ERROR",
-      userMessage: "Zed could not reach the AI host.",
+      userMessage: "ZAR could not reach the AI host.",
       exactReason: safeRaw,
       action: "Check the backend network path and Lightning base URL, then retry after the service is reachable.",
       technicalDetails: { provider: context.provider || "lightning", target: context.target },
@@ -88,14 +88,14 @@ export function classifyChatError(error: unknown, context: {
 
   return {
     code: "CHAT_EXECUTION_FAILED",
-    userMessage: "Zed could not complete the request.",
+    userMessage: "ZAR could not complete the request.",
     exactReason: safeRaw,
     action: "Review the exact error and retry after correcting the failing dependency.",
     technicalDetails: { provider: context.provider, target: context.target },
   };
 }
 
-export function classifyGovernanceError(checklist: TradingGovernanceChecklistItem[] | undefined): ZedErrorDetail {
+export function classifyGovernanceError(checklist: TradingGovernanceChecklistItem[] | undefined): ZarErrorDetail {
   const failures = (checklist || []).filter(
     (item) => item.critical && (item.result === "FAIL" || item.result === "UNKNOWN"),
   );
@@ -107,7 +107,7 @@ export function classifyGovernanceError(checklist: TradingGovernanceChecklistIte
   const missing = failures.flatMap((item) => item.missingInformation || []);
   return {
     code: "TRADE_GOVERNANCE_DENIED",
-    userMessage: "Zed could not approve this paper trade because governance checks failed.",
+    userMessage: "ZAR could not approve this paper trade because governance checks failed.",
     exactReason: exact,
     action: missing.length
       ? `Provide or correct: ${Array.from(new Set(missing)).join(", ")}.`

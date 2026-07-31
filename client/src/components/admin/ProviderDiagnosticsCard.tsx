@@ -103,7 +103,7 @@ export default function ProviderDiagnosticsCard() {
   }
 
   return (
-    <Card className="zed-glass border-white/10">
+    <Card className="zar-glass border-white/10">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
@@ -116,7 +116,7 @@ export default function ProviderDiagnosticsCard() {
               size="sm"
               onClick={() => void testHost()}
               disabled={testingHost}
-              className="zed-glass h-7 border-white/10 px-2 text-xs"
+              className="zar-glass h-7 border-white/10 px-2 text-xs"
             >
               {testingHost ? "Testing..." : "Test AI Host"}
             </Button>
@@ -125,7 +125,7 @@ export default function ProviderDiagnosticsCard() {
               size="sm"
               onClick={fetchRuntime}
               disabled={loading}
-              className="zed-button text-muted-foreground hover:text-foreground h-7 px-2"
+              className="zar-button text-muted-foreground hover:text-foreground h-7 px-2"
             >
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
             </Button>
@@ -280,7 +280,7 @@ function DiagItem({
         {badge ? (
           <Badge
             variant="secondary"
-            className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
+            className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.16em]"
           >
             {badge}
           </Badge>

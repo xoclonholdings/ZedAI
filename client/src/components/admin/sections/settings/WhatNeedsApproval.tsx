@@ -203,7 +203,7 @@ export function WhatNeedsApproval() {
             What needs your approval
           </h2>
           <p className="mt-1.5 max-w-full break-words text-[13.5px] leading-snug text-white/50 [overflow-wrap:anywhere] sm:max-w-[62ch]">
-            For each thing Zed might do on your behalf, choose whether Zed goes
+            For each thing ZAR might do on your behalf, choose whether ZAR goes
             ahead automatically, drafts and asks you first, or never does it at
             all.{" "}
             <span className="text-white/35">

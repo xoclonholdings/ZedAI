@@ -42,15 +42,15 @@ function fire(title: string, body: string, icon = "/favicon.ico") {
 export function notifyMessage(agentName: string, preview: string) {
   if (isPageVisible()) return;
   if (!canNotify("messageNotifications")) return;
-  fire(`ZED — ${agentName}`, preview.slice(0, 100));
+  fire(`ZAR — ${agentName}`, preview.slice(0, 100));
 }
 
 export function notifyAgentTask(agentName: string, detail: string) {
   if (!canNotify("agentAlerts")) return;
-  fire(`ZED Agent — ${agentName}`, detail.slice(0, 100));
+  fire(`ZAR Agent — ${agentName}`, detail.slice(0, 100));
 }
 
 export function notifySystem(title: string, detail: string) {
   if (!canNotify("systemAlerts")) return;
-  fire(`ZED System — ${title}`, detail.slice(0, 100));
+  fire(`ZAR System — ${title}`, detail.slice(0, 100));
 }

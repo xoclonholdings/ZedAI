@@ -78,7 +78,7 @@ async function getGitHubConfig() {
   const headers = {
     Accept: "application/vnd.github+json",
     Authorization: `Bearer ${token}`,
-    "User-Agent": "ZED-AI-GitHub-Integration",
+    "User-Agent": "ZAR-AI-GitHub-Integration",
   };
 
   return { github, account, baseUrl, headers };

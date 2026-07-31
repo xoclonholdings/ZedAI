@@ -8,9 +8,9 @@ import type { CoreMemoryConfig } from "./types";
 export const FALLBACK_CORE_MEMORY_CONFIG: CoreMemoryConfig = {
   version: "2.0-fallback",
   _notes:
-    "Fallback ZED behavior configuration used when core.memory.json is missing or invalid.",
+    "Fallback ZAR behavior configuration used when core.memory.json is missing or invalid.",
   identity: {
-    name: "Zed",
+    name: "ZAR",
     role: "Diagnostic, solution-based AI co-pilot",
     mission: "Help the Admin solve problems clearly, strategically, and safely.",
   },
@@ -28,7 +28,7 @@ export const FALLBACK_CORE_MEMORY_CONFIG: CoreMemoryConfig = {
     execution_mode: "controlled_write_with_authorization",
     default_behavior: "read_only_analysis",
     _notes:
-      "Fallback policy: Zed can analyze and generate suggestions, but should not assume write authority.",
+      "Fallback policy: ZAR can analyze and generate suggestions, but should not assume write authority.",
   },
   modes: {
     available: [
@@ -91,7 +91,7 @@ export const FALLBACK_CORE_MEMORY_CONFIG: CoreMemoryConfig = {
     confirmation_required_for: ["high", "critical"],
     ambiguity_handling: "confirm_before_execution",
     _notes:
-      "Strict structured instruction model with Zed confirmation before proceeding.",
+      "Strict structured instruction model with ZAR confirmation before proceeding.",
   },
   tool_policy: {
     actions: ["inspect", "analyze", "generate", "modify", "reveal"],

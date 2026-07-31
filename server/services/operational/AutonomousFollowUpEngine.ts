@@ -1,7 +1,7 @@
 /**
  * AutonomousFollowUpEngine
  *
- * Lets Zed continue revisiting tasks after the active conversation ends.
+ * Lets ZAR continue revisiting tasks after the active conversation ends.
  *
  * Capabilities:
  *   - delayed follow-up
@@ -159,7 +159,7 @@ export class AutonomousFollowUpEngine {
       recipient_id: task.user_id,
       task_id: task.id,
       title: `Reminder: ${task.plan?.summary?.slice(0, 80) || task.id}`,
-      message: action.notes || "Reminder from Zed",
+      message: action.notes || "Reminder from ZAR",
       action_type: "review_only",
       approval_required: false,
       dedupe_key: `reminder:${task.id}:${action.id}`,

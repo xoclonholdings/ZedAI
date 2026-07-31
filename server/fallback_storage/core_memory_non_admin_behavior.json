@@ -2,7 +2,7 @@
   "id": 15,
   "key": "non_admin_behavior",
   "value": "{\"mode\":\"restricted\",\"capabilities\":[\"chat\",\"research_queries\",\"task_creation\",\"content_drafting\"],\"restrictions\":[\"Cannot approve pending actions\",\"Cannot modify hub config files\",\"Cannot activate stubbed agents\",\"Cannot access tier-3 tools\"]}",
-  "description": "ZED guest and non-admin behavior policy from core.memory.json",
+  "description": "ZAR guest and non-admin behavior policy from core.memory.json",
   "adminOnly": true,
   "createdAt": "2026-04-09T02:08:22.718Z",
   "updatedAt": "2026-04-09T02:14:28.705Z"

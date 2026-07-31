@@ -321,7 +321,7 @@ export class KnowledgeCurationEngine {
         bestMatches: [],
         needsUserConfirmation: false,
         recommendation: "Incoming knowledge has no content. Ask for the missing detail before curation.",
-        recommendedQuestions: ["What information should ZED evaluate and preserve?"],
+        recommendedQuestions: ["What information should ZAR evaluate and preserve?"],
       };
     }
 
@@ -377,7 +377,7 @@ export class KnowledgeCurationEngine {
       needsUserConfirmation,
       recommendation: recommendationForEffect(effect, needsUserConfirmation),
       recommendedQuestions: needsUserConfirmation
-        ? ["Should ZED update the canonical record based on this new information?"]
+        ? ["Should ZAR update the canonical record based on this new information?"]
         : [],
     };
   }
@@ -464,7 +464,7 @@ export class KnowledgeCurationEngine {
         type: "incomplete_object",
         severity: "medium",
         message: "Knowledge object has very little content.",
-        recommendation: "Add enough detail for ZED to understand and reuse this knowledge.",
+        recommendation: "Add enough detail for ZAR to understand and reuse this knowledge.",
       });
     }
     if (!hasDescription && input.kind === "project") {
@@ -699,7 +699,7 @@ export class KnowledgeCurationEngine {
 
     for (const object of objects) {
       if (object.issues.some((issue) => issue.type === "missing_context")) {
-        questions.add(`What context should ZED attach to "${object.title}"?`);
+        questions.add(`What context should ZAR attach to "${object.title}"?`);
       }
       if (object.issues.some((issue) => issue.type === "missing_evidence")) {
         questions.add(`What evidence or source supports "${object.title}"?`);
@@ -714,7 +714,7 @@ export class KnowledgeCurationEngine {
           message: "Decision-like knowledge has no rationale marker.",
           recommendation: "Record why this decision was made.",
         });
-        questions.add(`What rationale should ZED record for the decision in "${object.title}"?`);
+        questions.add(`What rationale should ZAR record for the decision in "${object.title}"?`);
       }
     }
 

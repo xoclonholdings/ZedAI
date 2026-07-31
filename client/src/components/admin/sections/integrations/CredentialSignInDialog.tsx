@@ -2,12 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Sign-in dialog for providers with no paste-a-token path (Instagram,
- * Facebook, LinkedIn, TikTok). Zed drives a real browser and fills in
+ * Facebook, LinkedIn, TikTok). ZAR drives a real browser and fills in
  * the username/password itself — autofill, not a password-grant API
  * call — then keeps the resulting session. If the provider throws up
- * something Zed doesn't recognize (a CAPTCHA, a redesigned page), the
+ * something ZAR doesn't recognize (a CAPTCHA, a redesigned page), the
  * dialog switches to a live view of that exact browser so the human
- * can finish it themselves; Zed picks the session back up from there.
+ * can finish it themselves; ZAR picks the session back up from there.
  */
 
 type Step =
@@ -145,7 +145,7 @@ export function CredentialSignInDialog({
       >
         <h3 className="text-[16.5px] font-semibold text-white mb-1">Sign in to {label}</h3>
         <p className="mt-1 text-[12.5px] text-white/50 leading-snug mb-4">
-          Zed signs in the same way you would — it fills in your username and password on{" "}
+          ZAR signs in the same way you would — it fills in your username and password on{" "}
           {label}'s own login page. Your password is stored the same way as any other saved
           credential and never leaves this account.
         </p>
@@ -252,7 +252,7 @@ export function CredentialSignInDialog({
             {step.screenshotBase64 && (
               <img
                 src={`data:image/png;base64,${step.screenshotBase64}`}
-                alt="Where Zed got stuck"
+                alt="Where ZAR got stuck"
                 className="w-full rounded-lg border border-white/10 mb-3"
               />
             )}
@@ -317,7 +317,7 @@ export function CredentialSignInDialog({
 /**
  * The live take-over view: streams the exact stuck browser page over
  * a WebSocket (as JPEG frames via CDP screencast) and relays the
- * human's clicks and typing back into it. Once they're done, Zed
+ * human's clicks and typing back into it. Once they're done, ZAR
  * re-checks the page — if it now shows signed in, the session is
  * captured; if not, they can keep going.
  */
@@ -425,7 +425,7 @@ function LiveHandoffView({
   return (
     <div>
       <p className="text-[12.5px] text-white/50 mb-2">
-        This is the exact browser Zed was using — click and type in it directly, same as any other
+        This is the exact browser ZAR was using — click and type in it directly, same as any other
         page. When you're done, tap "I'm done."
       </p>
       <div className="relative rounded-lg border border-white/10 overflow-hidden mb-3 bg-black">

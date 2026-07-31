@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Fingerprint, Plus, Trash2 } from "lucide-react";
 
 import { useAuth } from "@/components/auth/UseAuth";
 import MyMemorySettings from "@/components/settings/MyMemorySettings";
@@ -23,7 +23,7 @@ interface NoteDetail {
  *
  * There's no backend concept literally called a "Personal Constitution" -
  * what's real is the per-user personalization notes corpus
- * (/api/me/personalization/notes), which Zed's core actually retrieves as
+ * (/api/me/personalization/notes), which ZAR's core actually retrieves as
  * context at query time. This page is that: notes you write about yourself,
  * not a fabricated constitution feature.
  */
@@ -127,138 +127,146 @@ export default function IdentityPage() {
   }
 
   const inputClass =
-    "w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-[13.5px] text-white placeholder:text-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40";
+    "zar-input w-full rounded-lg px-3 py-2 text-[13.5px] text-white placeholder:text-white/30 focus:outline-none";
 
   return (
-    <div className="mx-auto max-w-2xl">
-        <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40">Signed in as</div>
-          <div className="mt-2 text-[15px] font-medium text-white">
-            {user?.displayName || user?.username || "Current user"}
+    <div className="mx-auto max-w-2xl space-y-4 pb-10">
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-purple-500/10 via-cyan-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
+          <Fingerprint size={18} className="text-cyan-300" />
+          Identity
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          What ZAR knows about you — your account, memory settings, and the notes you've written about yourself.
+        </p>
+      </section>
+
+      <section className="zar-glass rounded-2xl p-4">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40">Signed in as</div>
+        <div className="mt-2 text-[15px] font-medium text-white">
+          {user?.displayName || user?.username || "Current user"}
+        </div>
+        {user?.email && <div className="text-[13px] text-white/50">{user.email}</div>}
+      </section>
+
+      <section className="zar-glass rounded-2xl p-4">
+        <MyMemorySettings />
+      </section>
+
+      <div>
+        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Personal notes</div>
+        <p className="mt-1 text-[13px] leading-relaxed text-white/50">
+          What you tell ZAR about yourself — background, working style, ongoing context. ZAR retrieves these as
+          context when they're relevant to what you're asking.
+        </p>
+      </div>
+
+      {!showForm && (
+        <button
+          type="button"
+          onClick={openNewNote}
+          className="zar-button flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] text-white/80"
+        >
+          <Plus size={15} /> New note
+        </button>
+      )}
+
+      {showForm && (
+        <div className="zar-glass space-y-2 rounded-2xl p-4">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Title"
+            className={inputClass}
+          />
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={6}
+            placeholder="What should ZAR know?"
+            className={`${inputClass} resize-y leading-relaxed`}
+          />
+          {error && <p className="text-[12px] text-red-300">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="zar-button rounded-lg px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void saveNote()}
+              disabled={saving}
+              className="zar-gradient rounded-lg px-3.5 py-1.5 text-[12.5px] font-medium text-white disabled:opacity-40"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
           </div>
-          {user?.email && <div className="text-[13px] text-white/50">{user.email}</div>}
-        </section>
+        </div>
+      )}
 
-        <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <MyMemorySettings />
-        </section>
-
-        <header className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">Personal notes</h2>
-            <p className="mt-1 text-[13px] leading-snug text-white/50">
-              What you tell Zed about yourself - background, working style, ongoing context.
-              Zed retrieves these as context when they're relevant to what you're asking.
-            </p>
-          </div>
-        </header>
-
-        {!showForm && (
-          <button
-            type="button"
-            onClick={openNewNote}
-            className="mb-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-[13px] text-white/80 transition-colors hover:bg-white/[0.06]"
-          >
-            <Plus size={15} /> New note
-          </button>
-        )}
-
-        {showForm && (
-          <div className="mb-4 space-y-2 rounded-xl border border-white/10 bg-white/[0.02] p-3">
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Title"
-              className={inputClass}
-            />
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={6}
-              placeholder="What should Zed know?"
-              className={`${inputClass} resize-y leading-relaxed`}
-            />
-            {error && <p className="text-[12px] text-red-300">{error}</p>}
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveNote()}
-                disabled={saving}
-                className="rounded-lg bg-cyan-400 px-3.5 py-1.5 text-[12.5px] font-medium text-black transition-colors hover:bg-cyan-300 disabled:opacity-40"
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {loading ? (
-          <p className="text-[13px] text-white/40">Loading...</p>
-        ) : notes.length === 0 ? (
-          <p className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-center text-[13px] text-white/40">
-            No notes yet. Add one so Zed remembers it.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {notes.map((note) => {
-              const isOpen = expandedSlug === note.slug;
-              return (
-                <div key={note.slug} className="rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-3">
-                  <div className="flex items-center justify-between gap-2">
+      {loading ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
+      ) : notes.length === 0 ? (
+        <div className="zar-glass rounded-2xl p-4 text-center text-sm text-muted-foreground">
+          No notes yet. Add one so ZAR remembers it.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {notes.map((note) => {
+            const isOpen = expandedSlug === note.slug;
+            return (
+              <div key={note.slug} className="zar-glass rounded-2xl px-3.5 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void toggleExpand(note.slug)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <div className="truncate text-[14px] font-medium text-white">{note.title}</div>
+                    {!isOpen && (
+                      <div className="truncate text-[12px] text-white/45">{note.preview}</div>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void toggleExpand(note.slug)}
+                    className="text-white/40 hover:text-white/70"
+                    aria-label={isOpen ? "Collapse" : "Expand"}
+                  >
+                    {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteNote(note.slug)}
+                    className="text-white/40 hover:text-red-300"
+                    aria-label="Delete note"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                {isOpen && (
+                  <div className="mt-2 space-y-2 border-t border-white/[0.06] pt-2">
+                    <p className="whitespace-pre-line text-[13px] leading-relaxed text-white/70">
+                      {expandedContent[note.slug] ?? "Loading..."}
+                    </p>
                     <button
                       type="button"
-                      onClick={() => void toggleExpand(note.slug)}
-                      className="min-w-0 flex-1 text-left"
+                      onClick={() => openEditNote(note, expandedContent[note.slug] ?? "")}
+                      className="text-[12px] font-medium text-cyan-300 hover:text-cyan-200"
                     >
-                      <div className="truncate text-[14px] font-medium text-white">{note.title}</div>
-                      {!isOpen && (
-                        <div className="truncate text-[12px] text-white/45">{note.preview}</div>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void toggleExpand(note.slug)}
-                      className="text-white/40 hover:text-white/70"
-                      aria-label={isOpen ? "Collapse" : "Expand"}
-                    >
-                      {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void deleteNote(note.slug)}
-                      className="text-white/40 hover:text-red-300"
-                      aria-label="Delete note"
-                    >
-                      <Trash2 size={14} />
+                      Edit
                     </button>
                   </div>
-                  {isOpen && (
-                    <div className="mt-2 space-y-2 border-t border-white/[0.06] pt-2">
-                      <p className="whitespace-pre-line text-[13px] leading-relaxed text-white/70">
-                        {expandedContent[note.slug] ?? "Loading..."}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => openEditNote(note, expandedContent[note.slug] ?? "")}
-                        className="text-[12px] font-medium text-cyan-300 hover:text-cyan-200"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

@@ -74,7 +74,7 @@ export default function ProjectsPage() {
 
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-cyan-200/80">
             <Briefcase size={14} />
             Operations
@@ -82,7 +82,7 @@ export default function ProjectsPage() {
           <h1 className="mt-2 text-2xl font-semibold">Projects</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
             File conversations, sources, and instructions per initiative. Every project keeps its own
-            memory so Zed answers in-context whenever you open it.
+            memory so ZAR answers in-context whenever you open it.
           </p>
         </section>
 
@@ -94,14 +94,14 @@ export default function ProjectsPage() {
 
         <Button
           onClick={() => setShowForm((v) => !v)}
-          className="w-full rounded-xl zed-gradient"
+          className="w-full rounded-xl zar-gradient"
         >
           <FolderPlus size={14} className="mr-2" />
           {showForm ? "Cancel" : "New project"}
         </Button>
 
         {showForm && (
-          <section className="rounded-2xl border border-cyan-400/25 bg-cyan-400/[0.03] p-4 space-y-3">
+          <section className="rounded-2xl border border-cyan-400/25 bg-cyan-400/[0.03] p-4 space-y-3 backdrop-blur-sm">
             <div>
               <label className="text-[11px] uppercase tracking-[0.16em] text-white/60">Project name</label>
               <input
@@ -112,13 +112,13 @@ export default function ProjectsPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void create();
                 }}
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-cyan-400/50 focus:outline-none"
+                className="zar-input mt-1 w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none"
               />
             </div>
             <Button
               onClick={() => void create()}
               disabled={creating || !name.trim()}
-              className="w-full rounded-xl zed-gradient"
+              className="w-full rounded-xl zar-gradient"
             >
               {creating ? "Creating…" : "Create project"}
             </Button>
@@ -130,7 +130,7 @@ export default function ProjectsPage() {
           {loading ? (
             <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
           ) : projects.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
+            <div className="zar-glass rounded-2xl p-4 text-sm text-muted-foreground">
               No projects yet. Use "New project" above to file your first initiative.
             </div>
           ) : (
@@ -140,14 +140,14 @@ export default function ProjectsPage() {
                   key={p.id}
                   type="button"
                   onClick={() => navigate(`/projects/${p.id}`)}
-                  className="rounded-2xl border border-white/10 bg-black/30 p-4 text-left transition-all hover:border-cyan-400/40 hover:bg-white/5 active:scale-[0.99]"
+                  className="zar-glass rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
                 >
                   <div className="text-sm font-semibold text-foreground">{p.name || "Untitled"}</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {p.conversationIds && p.conversationIds.length > 0 && (
                       <Badge
                         variant="secondary"
-                        className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
+                        className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
                       >
                         {p.conversationIds.length} chat{p.conversationIds.length === 1 ? "" : "s"}
                       </Badge>
@@ -155,7 +155,7 @@ export default function ProjectsPage() {
                     {p.sourceIds && p.sourceIds.length > 0 && (
                       <Badge
                         variant="secondary"
-                        className="zed-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
+                        className="zar-glass border-white/10 text-[9px] uppercase tracking-[0.14em]"
                       >
                         {p.sourceIds.length} source{p.sourceIds.length === 1 ? "" : "s"}
                       </Badge>

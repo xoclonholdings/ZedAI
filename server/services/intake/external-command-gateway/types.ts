@@ -20,7 +20,7 @@ export interface ExternalCommandInput {
   message: string;
   metadata?: Record<string, unknown>;
   timestamp?: string;
-  /** Optional Zed user_id resolved by the upstream caller. */
+  /** Optional ZAR user_id resolved by the upstream caller. */
   user_id?: string;
   /** Optional related conversation in app_chat. */
   conversation_id?: string | null;

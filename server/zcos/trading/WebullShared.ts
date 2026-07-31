@@ -46,7 +46,7 @@ export function explainWebullAuthFailure(message: string, endpoint: string): str
   return [
     `Webull rejected the signed ${environment} request: ${message}`,
     "Most likely cause: the App Key and App Secret do not belong to the same Webull OpenAPI app, or the key pair is for the other environment.",
-    "Zed tests each credential pair against sandbox and production before giving up.",
+    "ZAR tests each credential pair against sandbox and production before giving up.",
   ].join(" ");
 }
 

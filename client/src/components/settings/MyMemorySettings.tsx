@@ -9,7 +9,7 @@ import {
 } from "@/components/admin/sections/settings/atoms";
 
 /**
- * Plain-language "About you" — the personal memory Zed carries
+ * Plain-language "About you" — the personal memory ZAR carries
  * across every chat.
  *
  * Six free-text sections. Autosaves debounced. No manual Save
@@ -47,24 +47,24 @@ const PROFILE_FIELDS: Array<{
   {
     key: "identity",
     label: "Who you are",
-    description: "How Zed should think about you. Name, role, framing you care about.",
+    description: "How ZAR should think about you. Name, role, framing you care about.",
     placeholder: "I'm Sam. I run ZebCom. Call me Sam.",
   },
   {
     key: "ventures",
     label: "What you're building",
-    description: "Businesses, brands, products, or side projects Zed should remember.",
-    placeholder: "ZebCom (parent). ZED AI (product). Zwap (side project).",
+    description: "Businesses, brands, products, or side projects ZAR should remember.",
+    placeholder: "ZebCom (parent). ZAR AI (product). Zwap (side project).",
   },
   {
     key: "goals",
     label: "What you're focused on right now",
     description: "The outcomes you're actively chasing this week or month.",
-    placeholder: "Ship ZED plain-language surface. Get 10 paper trades logged.",
+    placeholder: "Ship ZAR plain-language surface. Get 10 paper trades logged.",
   },
   {
     key: "responseStyle",
-    label: "How you like Zed to help",
+    label: "How you like ZAR to help",
     description: "Preferred tone, depth, pace, and style.",
     placeholder: "Direct, plain-language, no jargon. Decision-oriented.",
   },
@@ -77,7 +77,7 @@ const PROFILE_FIELDS: Array<{
   {
     key: "constraints",
     label: "Limits and boundaries",
-    description: "Budget, sensitivities, or things Zed should avoid.",
+    description: "Budget, sensitivities, or things ZAR should avoid.",
     placeholder: "Solo founder budget. Never post to social without approval.",
   },
 ];
@@ -157,7 +157,7 @@ export default function MyMemorySettings() {
           body: JSON.stringify({
             id: memoryId,
             name: "Personal base memory",
-            description: "Facts Zed should remember about you across chats.",
+            description: "Facts ZAR should remember about you across chats.",
             content: serializeProfile(next),
             isActive: true,
           }),
@@ -199,8 +199,8 @@ export default function MyMemorySettings() {
             About you
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Tell Zed who you are and what you're working on. This is private
-            to you and shows up in every chat so Zed doesn't ask again.
+            Tell ZAR who you are and what you're working on. This is private
+            to you and shows up in every chat so ZAR doesn't ask again.
             Changes save automatically.
           </p>
         </div>
@@ -215,7 +215,7 @@ export default function MyMemorySettings() {
       {header}
       {loadError && <LoadErrorBanner onRetry={() => void load()} />}
 
-      <SettingGroup title="Your notes to Zed">
+      <SettingGroup title="Your notes to ZAR">
         {PROFILE_FIELDS.map((field) => (
           <SettingRow
             key={field.key}

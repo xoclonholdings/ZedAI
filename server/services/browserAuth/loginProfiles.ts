@@ -1,7 +1,7 @@
 /**
  * Per-provider config for credential-based sign-in via a real browser
  * (Playwright), for services that don't offer a paste-a-token path.
- * Zed fills the login form itself — the same action a password
+ * ZAR fills the login form itself — the same action a password
  * manager's autofill performs — using a headless Chromium instance,
  * then keeps the resulting session (cookies/local storage) so it
  * doesn't have to log in again on every request.

@@ -71,8 +71,8 @@ export async function streamChatFromProvider(
 /**
  * SPEC.md § Hidden Reasoning and Response Governance (line 111):
  *   "Streaming chat buffers generated model text until the Voice +
- *   Presentation layer can apply presentZedResponse /
- *   presentZedResponseWithChecks before the response is sent to the
+ *   Presentation layer can apply presentZarResponse /
+ *   presentZarResponseWithChecks before the response is sent to the
  *   client."
  *
  * So even when we stream, we must buffer server-side and let Voice +
@@ -80,7 +80,7 @@ export async function streamChatFromProvider(
  * user. This helper does that: it streams from the provider (which
  * gives us provider-timeout resilience and lets a slow generation
  * keep the connection alive) and returns the buffered complete text
- * to the caller, who then hands it to presentZedResponse as usual.
+ * to the caller, who then hands it to presentZarResponse as usual.
  *
  * Callers that used generateChatFromProvider can swap to this without
  * changing anything else in their agent flow — output shape is

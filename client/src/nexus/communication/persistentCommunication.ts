@@ -82,7 +82,7 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       aliases: ["create.doc"],
       replacesCapabilityIds: ["create.draft-work"],
     }),
-    communicationCapability("upload", "create.upload", "Upload Communication", "Teach Zed from files - zips, datasets, documents - through the existing memory upload surface, independent of any conversation.", {
+    communicationCapability("upload", "create.upload", "Upload Communication", "Teach ZAR from files - zips, datasets, documents - through the existing memory upload surface, independent of any conversation.", {
       actionKind: "upload",
       actionRoute: "/chat",
       dependencies: [

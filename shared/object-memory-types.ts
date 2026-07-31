@@ -3,7 +3,7 @@
  *
  * The reparse system turns flat foundation memory (ChatGPT exports,
  * conversation transcripts, markdown summaries) into structured
- * objects that ZED can reason over — instead of stuffing raw text
+ * objects that ZAR can reason over — instead of stuffing raw text
  * into every prompt.
  *
  * Every object type extends BaseObject so retrieval, storage, and

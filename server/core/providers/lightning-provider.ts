@@ -16,7 +16,7 @@ import type {
 } from "./provider-interface";
 
 /**
- * Lightning AI is the only provider ZED talks to.
+ * Lightning AI is the only provider ZAR talks to.
  *
  * Calls Lightning Model APIs with an OpenAI-compatible chat-completions
  * body. Custom runner compatibility fields can be enabled explicitly

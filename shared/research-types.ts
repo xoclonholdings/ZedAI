@@ -1,6 +1,6 @@
 /**
  * Shared types for the Research workspace — a working surface where you
- * give Zed a subject and it produces a structured, editable brief you can
+ * give ZAR a subject and it produces a structured, editable brief you can
  * act on, saved durably so the desk fills up over time.
  */
 
@@ -10,7 +10,7 @@ export interface ResearchBrief {
   topic: string;
   /** A few-sentence orientation on the subject. */
   summary: string;
-  /** The core things Zed found worth knowing. */
+  /** The core things ZAR found worth knowing. */
   keyFindings: string[];
   /** Risks, unknowns, or things to be careful about. */
   risks: string[];
@@ -20,7 +20,7 @@ export interface ResearchBrief {
   nextSteps: string[];
   /** Any sources the user pasted in for this brief. */
   sources: string[];
-  /** True when built from Zed's own knowledge (no live web source). */
+  /** True when built from ZAR's own knowledge (no live web source). */
   draft: boolean;
   /** Plain note on what the brief is grounded in. */
   basis: string;

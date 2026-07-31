@@ -7,17 +7,17 @@ import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
 /**
  * Stage 5 — External evaluation.
  *
- * Runs Zed's proven strategy through a funded-account-style objective:
+ * Runs ZAR's proven strategy through a funded-account-style objective:
  * reach a profit target without breaching the max daily loss or the max
  * total drawdown, over a minimum number of trading days. Progress is
- * measured from the paper trades Zed closes after the evaluation starts —
+ * measured from the paper trades ZAR closes after the evaluation starts —
  * the same auto-resolving engine that proved the sandbox — so the run is
  * real, not fabricated.
  *
  * When a real evaluation provider is connected it is reported as the
  * source; until a live
  * provider bridge exists, the run is transparently labelled as running on
- * Zed's own engine. It never invents a provider result.
+ * ZAR's own engine. It never invents a provider result.
  */
 
 const CONFIG_SCOPE = "evaluation-config";
@@ -77,7 +77,7 @@ async function evaluationProvider(
       (i.status === "connected" || i.status === "configured"),
   );
   if (connected) return { connected: true, label: connected.label };
-  return { connected: false, label: "Zed sandbox engine (no provider bridge yet)" };
+  return { connected: false, label: "ZAR sandbox engine (no provider bridge yet)" };
 }
 
 export async function getEvaluationReport(userIdArg: string): Promise<EvaluationReport> {
@@ -135,11 +135,11 @@ export async function getEvaluationReport(userIdArg: string): Promise<Evaluation
 
   const summary =
     status === "not_started"
-      ? "Start the evaluation, then let Zed trade toward the objective."
+      ? "Start the evaluation, then let ZAR trade toward the objective."
       : status === "passed"
         ? `Objective met: +$${netProfit} over ${tradingDays} day(s), no rule breaches. Qualification is next.`
         : status === "failed"
-          ? `Evaluation failed: ${breaches.join(" ")} Reset and let Zed run a clean attempt.`
+          ? `Evaluation failed: ${breaches.join(" ")} Reset and let ZAR run a clean attempt.`
           : `In progress: +$${netProfit} of $${config.profitTarget} (${progress}%), ${tradingDays}/${config.minTradingDays} day(s).`;
 
   return {

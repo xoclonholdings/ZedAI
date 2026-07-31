@@ -7,10 +7,10 @@ import { computeSignal } from "./TechnicalIndicators";
 import { resolveAgainstRange } from "./TradeAutoResolver";
 
 /**
- * Backtests Zed's signal-driven strategy over historical daily bars.
+ * Backtests ZAR's signal-driven strategy over historical daily bars.
  *
  * Walks the price history bar by bar. At each bar (when flat) it computes
- * the exact same technical signal Zed trades live from the data available
+ * the exact same technical signal ZAR trades live from the data available
  * up to that bar — no look-ahead. On a strong enough signal it enters at
  * the close, sets an ATR stop and an R-multiple target, then resolves the
  * trade against the following bars' intraday high/low (the same rule the

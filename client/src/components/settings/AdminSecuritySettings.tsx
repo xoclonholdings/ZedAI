@@ -99,7 +99,7 @@ export default function AdminSecuritySettings() {
 
   return (
     <div className="space-y-6">
-      <Card className="zed-glass border-white/10">
+      <Card className="zar-glass border-white/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
@@ -116,7 +116,7 @@ export default function AdminSecuritySettings() {
             <Input
               value={draft.adminUsername}
               onChange={(e) => setDraft((prev) => ({ ...prev, adminUsername: e.target.value }))}
-              className="zed-glass border-white/10"
+              className="zar-glass border-white/10"
             />
           </div>
 
@@ -136,7 +136,7 @@ export default function AdminSecuritySettings() {
             <Input
               value={securitySettings.securePhraseConfigured ? "Configured" : "Not configured"}
               readOnly
-              className="zed-glass border-white/10 bg-black/20"
+              className="zar-glass border-white/10 bg-black/20"
             />
           </div>
 
@@ -151,7 +151,7 @@ export default function AdminSecuritySettings() {
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, sessionTimeoutMinutes: Number(e.target.value) || 45 }))
                 }
-                className="zed-glass border-white/10"
+                className="zar-glass border-white/10"
               />
             </div>
 
@@ -165,7 +165,7 @@ export default function AdminSecuritySettings() {
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, maxFailedAttempts: Number(e.target.value) || 10 }))
                 }
-                className="zed-glass border-white/10"
+                className="zar-glass border-white/10"
               />
             </div>
 
@@ -179,7 +179,7 @@ export default function AdminSecuritySettings() {
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, lockoutDurationMinutes: Number(e.target.value) || 1 }))
                 }
-                className="zed-glass border-white/10"
+                className="zar-glass border-white/10"
               />
             </div>
 
@@ -190,7 +190,7 @@ export default function AdminSecuritySettings() {
                 onClick={() =>
                   setDraft((prev) => ({ ...prev, requireSecureCookies: !prev.requireSecureCookies }))
                 }
-                className="w-full zed-glass border-white/10 justify-start"
+                className="w-full zar-glass border-white/10 justify-start"
               >
                 {draft.requireSecureCookies ? "Enabled" : "Disabled"}
               </Button>
@@ -204,14 +204,14 @@ export default function AdminSecuritySettings() {
               placeholder="Enter new secure phrase (min 8 characters)"
               value={draft.newSecurePhrase}
               onChange={(e) => setDraft((prev) => ({ ...prev, newSecurePhrase: e.target.value }))}
-              className="zed-glass border-white/10"
+              className="zar-glass border-white/10"
             />
           </div>
 
           <Button
             onClick={updateSecuritySettings}
             disabled={isLoading}
-            className="w-full zed-glass bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            className="w-full zar-glass bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
             <Save className="mr-2 h-4 w-4" />
             {isLoading ? "Updating..." : "Save Security Settings"}

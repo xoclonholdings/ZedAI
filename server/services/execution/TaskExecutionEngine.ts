@@ -1,7 +1,7 @@
 /**
  * TaskExecutionEngine
  *
- * Phase 1 of Zed's Execution Layer.
+ * Phase 1 of ZAR's Execution Layer.
  *
  * Purpose:
  *   Convert a user intent into a structured execution plan.

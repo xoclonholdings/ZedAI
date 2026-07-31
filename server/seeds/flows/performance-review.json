@@ -4,7 +4,7 @@
   "name": "Performance Review",
   "category": "finance",
   "description": "Analyze paper-trading results, pattern performance, rule violations, and improvement priorities.",
-  "purpose": "Help ZED identify what is working, what is failing, and what must improve before any future trading expansion.",
+  "purpose": "Help ZAR identify what is working, what is failing, and what must improve before any future trading expansion.",
   "status": "published",
   "version": 1,
   "agents": ["finance"],

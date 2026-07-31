@@ -183,7 +183,7 @@ export default function ZyncCodingOperatorSection() {
             Zync coding operator
           </h2>
           <p className="mt-1.5 text-[13.5px] text-white/50 max-w-full sm:max-w-[62ch] leading-snug">
-            Repo-aware coding operations that Zed can actually run today, kept in a Zync-branded core-memory module for later extraction.
+            Repo-aware coding operations that ZAR can actually run today, kept in a Zync-branded core-memory module for later extraction.
           </p>
         </div>
         <ActionButton onClick={() => void loadStatus()} disabled={loadState === "loading"}>

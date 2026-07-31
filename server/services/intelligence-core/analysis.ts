@@ -2,7 +2,7 @@
  * Shared deterministic text analysis for the Intelligence Core engines.
  *
  * These are intentionally lightweight, dependency-free heuristics — the
- * same style as ZedStrategicReasoningEngine's trigger patterns — so the
+ * same style as ZarStrategicReasoningEngine's trigger patterns — so the
  * whole Intelligence Core runs synchronously in-process with no model
  * call and no added latency on the hot path.
  */

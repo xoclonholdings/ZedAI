@@ -185,7 +185,7 @@ export async function recommendWebullSymbol(
     direction: top.direction,
     quote: top.quote,
     reason: signal
-      ? `Zed scanned ${scored.length} Webull ${asset} symbol(s) and picked ${top.symbol}: ${signal.signal.toUpperCase()} signal with ${signal.strength}% conviction.`
-      : `Zed scanned ${scored.length} Webull ${asset} symbol(s) and picked ${top.symbol}: strongest momentum from available bars.`,
+      ? `ZAR scanned ${scored.length} Webull ${asset} symbol(s) and picked ${top.symbol}: ${signal.signal.toUpperCase()} signal with ${signal.strength}% conviction.`
+      : `ZAR scanned ${scored.length} Webull ${asset} symbol(s) and picked ${top.symbol}: strongest momentum from available bars.`,
   };
 }

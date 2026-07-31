@@ -103,7 +103,7 @@ export function registerDiagnosticsRoutes(
       return agent;
     });
     res.json({
-      system: "ZED",
+      system: "ZAR",
       aiProvider: {
         status: aiHealth.status,
         models: aiHealth.models,

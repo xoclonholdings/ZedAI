@@ -8,7 +8,7 @@ import { db, isDatabaseRequired } from "../../db";
  * Everything Trading stores (learned knowledge, stage progression,
  * theses, paper trades, and governance history) used to
  * live only in flat JSON files under hub/trading/. On an ephemeral host
- * that directory is wiped on every restart/redeploy, so Zed forgot what
+ * that directory is wiped on every restart/redeploy, so ZAR forgot what
  * it learned and lost its progress.
  *
  * This module backs that same data with the app's Neon/Drizzle database

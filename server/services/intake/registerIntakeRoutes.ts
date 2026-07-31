@@ -13,7 +13,7 @@
  * secret (INTAKE_WEBHOOK_SECRET) when one is configured. App-level
  * endpoints (/api/intake/command, /api/intake/context/*) are gated by
  * the existing isAuthenticated middleware so behavior matches the rest
- * of Zed's auth model.
+ * of ZAR's auth model.
  */
 
 import type { Express, Request, Response, NextFunction } from "express";
@@ -33,13 +33,13 @@ function userIdFrom(req: any): string | null {
  * Lightweight shared-secret check for webhook endpoints. When the env
  * var is unset the check is permissive so local development still
  * works; when set, callers must include the matching value via the
- * X-Zed-Intake-Secret header or `secret` query param.
+ * X-ZAR-Intake-Secret header or `secret` query param.
  */
 function verifyIntakeSecret(req: Request, res: Response, next: NextFunction) {
   const expected = process.env.INTAKE_WEBHOOK_SECRET;
   if (!expected) return next();
   const provided =
-    (req.headers["x-zed-intake-secret"] as string | undefined) ||
+    (req.headers["x-zar-intake-secret"] as string | undefined) ||
     (typeof req.query.secret === "string" ? req.query.secret : undefined);
   if (provided && provided === expected) return next();
   void logRuntimeEvent({

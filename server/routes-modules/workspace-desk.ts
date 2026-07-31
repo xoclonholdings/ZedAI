@@ -48,7 +48,7 @@ export function registerWorkspaceDeskRoutes(app: Express): void {
       });
       res.json({ entry });
     } catch (err: any) {
-      res.status(500).json({ error: err?.message || "Zed could not build this right now." });
+      res.status(500).json({ error: err?.message || "ZAR could not build this right now." });
     }
   });
 
