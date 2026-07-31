@@ -83,15 +83,15 @@ export default function ProjectDetailPage() {
   return (
     <div className="p-4 max-w-3xl mx-auto space-y-4 pb-24">
         {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+          <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-3 py-2 text-sm text-red-300">
             {error}
           </div>
         )}
 
         {loading && !project ? (
-          <div className="text-center text-muted-foreground py-10 text-sm">Loading…</div>
+          <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
         ) : !project ? (
-          <div className="text-center text-muted-foreground py-10 text-sm">
+          <div className="py-12 text-center text-sm text-muted-foreground">
             Project not found.
           </div>
         ) : (
@@ -106,7 +106,7 @@ export default function ProjectDetailPage() {
                     size="sm"
                     onClick={saveInstructions}
                     disabled={saveStatus === "saving"}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-8"
+                    className="rounded-lg zar-gradient h-8"
                   >
                     <Save size={12} className="mr-1" />
                     {saveStatus === "saving"
@@ -137,7 +137,7 @@ export default function ProjectDetailPage() {
                 <Button
                   size="sm"
                   onClick={() => setAddOpen((v) => !v)}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 h-8"
+                  className="rounded-lg zar-gradient h-8"
                 >
                   <Plus size={12} className="mr-1" />
                   {addOpen ? "Cancel" : "Add"}
@@ -154,7 +154,7 @@ export default function ProjectDetailPage() {
               )}
 
               {sources.length === 0 ? (
-                <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-6 text-center text-xs text-muted-foreground">
+                <div className="zar-glass rounded-2xl px-3 py-6 text-center text-xs text-muted-foreground">
                   No sources yet
                 </div>
               ) : (
@@ -173,7 +173,7 @@ export default function ProjectDetailPage() {
             <RelatedObjects
               canonicalName={project.name}
               type="project"
-              className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+              className="zar-glass rounded-2xl p-4"
             />
 
             <section className="pt-2">

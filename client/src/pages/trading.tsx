@@ -88,11 +88,21 @@ function decisionBadgeClass(decision?: string): string {
   return "border-red-400/30 bg-red-500/10 text-red-200";
 }
 
-function StatCard({ label, value, note }: { label: string; value: string | number; note?: string }) {
+function StatCard({
+  label,
+  value,
+  note,
+  valueClassName,
+}: {
+  label: string;
+  value: string | number;
+  note?: string;
+  valueClassName?: string;
+}) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="zar-glass rounded-2xl p-4">
       <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
+      <div className={`mt-2 text-2xl font-semibold ${valueClassName || "text-white"}`}>{value}</div>
       {note && <div className="mt-1 text-xs text-muted-foreground">{note}</div>}
     </div>
   );
@@ -151,7 +161,7 @@ function GovernanceDecisionRow({ decision }: { decision: TradingGovernanceDecisi
 
 function Panel({ title, children, icon }: { title: string; children: React.ReactNode; icon?: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-black/30 p-4 shadow-[0_0_24px_rgba(147,51,234,0.12)]">
+    <section className="zar-glass rounded-2xl p-4">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
         {icon}
         {title}
@@ -324,7 +334,17 @@ export default function TradingPage() {
                   <div className="grid gap-3 md:grid-cols-4">
                     <StatCard label="Decisions" value={governanceDecisions.length} note="audit trail" />
                     <StatCard label="Incidents" value={incidents.length} note="risk denials" />
-                    <StatCard label="Live Eligibility" value={latestGovernanceDecision?.liveTradingEligibility || "Not Eligible"} note="live trading disabled" />
+                    <StatCard
+                      label="Live Eligibility"
+                      value={latestGovernanceDecision?.liveTradingEligibility || "Not Eligible"}
+                      note="live trading disabled"
+                      valueClassName={
+                        latestGovernanceDecision?.liveTradingEligibility &&
+                        latestGovernanceDecision.liveTradingEligibility !== "Not Eligible"
+                          ? "text-emerald-300"
+                          : "text-red-300"
+                      }
+                    />
                     <StatCard
                       label="Sample Size"
                       value={`${sample?.currentSampleSize ?? 0}/${sample?.requiredSampleSize ?? 100}`}
@@ -341,7 +361,11 @@ export default function TradingPage() {
                         {governanceDecisions.map((decision) => (
                           <GovernanceDecisionRow key={decision.id} decision={decision} />
                         ))}
-                        {governanceDecisions.length === 0 && <p className="text-sm text-muted-foreground">No governance decisions yet.</p>}
+                        {governanceDecisions.length === 0 && (
+                          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center text-sm text-muted-foreground">
+                            No governance decisions yet.
+                          </div>
+                        )}
                       </div>
                     </Panel>
 
@@ -361,7 +385,11 @@ export default function TradingPage() {
                             </div>
                           </div>
                         ))}
-                        {incidents.length === 0 && <p className="text-sm text-muted-foreground">No governance incidents recorded.</p>}
+                        {incidents.length === 0 && (
+                          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center text-sm text-muted-foreground">
+                            No governance incidents recorded.
+                          </div>
+                        )}
                       </div>
                     </Panel>
                   </div>
