@@ -146,15 +146,12 @@ export default function KnowledgePage() {
   return (
     <main className="mx-auto max-w-3xl space-y-4 p-4 pb-24">
         <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-blue-500/10 via-cyan-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-blue-200/80">
-            <Network size={14} />
-            Source-backed knowledge
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold">What ZAR knows and can cite</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold">
+            <Network size={18} className="text-blue-300" />
+            What ZAR knows
+          </h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Every record here traces back to something you gave ZAR — a note, a file,
-            a conversation. Teach it something new below, or browse what's already
-            there, its sources, and how it connects.
+            Everything you've taught ZAR, with sources and how it connects.
           </p>
           <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-white/60">
             <Badge variant="secondary" className="zed-glass border-white/10 text-[10px] uppercase tracking-[0.12em]">
@@ -289,8 +286,13 @@ export default function KnowledgePage() {
         )}
 
         <section className="space-y-3">
-          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Records{loading ? " (loading)" : ""}
+          <div>
+            <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              Records{loading ? " (loading)" : ""}
+            </div>
+            <p className="mt-0.5 text-[11.5px] text-white/45">
+              Grouped by what kind of thing each note became — a decision, a rule, an open question, and so on.
+            </p>
           </div>
           {loading ? (
             <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
