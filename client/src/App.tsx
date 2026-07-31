@@ -29,7 +29,6 @@ import BudgetPage from "@/pages/budget";
 import WorkspacePage from "@/pages/workspace";
 import HistoryPage from "@/pages/history";
 import InboxPage from "@/pages/inbox";
-import LearningPage from "@/pages/learning";
 import LearningStudioPage from "@/pages/learning-studio";
 import SettingsPage from "@/pages/settings";
 import ConnectPage from "@/pages/connect";
@@ -200,8 +199,9 @@ function Router() {
         {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><LearningStudioPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
+      {/* Legacy route: the old Memory "Learning" page merged into Knowledge (see knowledge.tsx). */}
       <Route path="/learning">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><LearningPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="knowledge"><KnowledgePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/decisions">

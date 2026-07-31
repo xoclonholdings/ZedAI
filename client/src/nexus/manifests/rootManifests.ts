@@ -59,10 +59,15 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
   rootManifest({
     id: "memory",
     label: "Memory",
-    summary: "The governed memory surface for retained, revisable, evidence-backed context.",
+    summary: "The governed retention policy for what ZAR keeps, revises, and forgets.",
     icon: "Brain",
     color: "#a78bfa",
-    currentSurfacePath: "/learning",
+    // No dedicated page yet — the object browser this used to point at
+    // (/learning) was a duplicate of the Knowledge hub's own page and has
+    // been merged there (see knowledge.tsx). Memory's real, distinct job is
+    // retention/privacy policy, which isn't built yet; this stays null
+    // rather than pointing at a page it doesn't actually own.
+    currentSurfacePath: null,
     consumes: ["memory_policy", "retained_memory", "evidence"],
     tags: ["memory", "retention", "evidence"],
     capabilities: [
@@ -74,7 +79,10 @@ export const NEXUS_ROOT_MANIFESTS: readonly NexusNodeManifest[] = [
       }),
       capability("memory", "relevant-context", "Relevant Memory Context", "Expose retained authoritative memory as context without making retrieval authoritative.", {
         actionKind: "read",
-        actionRoute: "/learning",
+        // Not this hub's own page — Knowledge (/knowledge) is where a human
+        // actually browses/teaches retained memory now. This capability
+        // exposes it as context to the reasoning pipeline, not a nav target.
+        actionRoute: null,
         dependencies: [dependency("memory.policy", "Relevant memory must honor the user's policy.")],
         terms: ["memory", "context", "continuity", "evidence"],
       }),
