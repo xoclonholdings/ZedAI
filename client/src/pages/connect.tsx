@@ -99,22 +99,28 @@ export default function ConnectPage() {
   const connectedCount = integrations.filter((i) => i.status !== "disconnected").length;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-        <header className="mb-6">
-          <h2 className="text-[18px] font-semibold tracking-[-0.01em] text-white">
-            Connected accounts
-          </h2>
-          <p className="mt-1.5 max-w-full text-[13.5px] leading-snug text-white/50 sm:max-w-[62ch]">
-            Give ZAR access to accounts it can act in for you. Credentials stay
-            server-side and are never shown again.{" "}
-            {connectedCount > 0 && `${connectedCount} connected.`}
+    <div className="mx-auto max-w-2xl space-y-4 pb-10">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
+            <Link2 size={18} className="text-cyan-300" />
+            Connect
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Give ZAR access to accounts it can act in for you. Credentials stay server-side and are never shown again.
           </p>
-        </header>
+          {connectedCount > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="zar-glass rounded-full border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-white/70">
+                {connectedCount} connected
+              </span>
+            </div>
+          )}
+        </section>
 
         <button
           type="button"
           onClick={() => navigate("/trading")}
-          className="mb-3 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-fuchsia-500/10 via-purple-500/10 to-black p-4 text-left transition-colors hover:border-white/20"
+          className="zar-glass flex w-full items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(217,70,239,0.25)] active:scale-[0.99]"
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/15 text-fuchsia-300">
             <LineChart size={18} />
@@ -131,7 +137,7 @@ export default function ConnectPage() {
         <button
           type="button"
           onClick={() => navigate("/inbox")}
-          className="mb-6 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-black p-4 text-left transition-colors hover:border-white/20"
+          className="zar-glass flex w-full items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
         >
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-300">
             <InboxIcon size={18} />
@@ -146,7 +152,7 @@ export default function ConnectPage() {
         </button>
 
         {gaps.length > 0 && (
-          <div className="mb-6 space-y-2.5">
+          <div className="space-y-2.5">
             {gaps.map((gap) => (
               <IntegrationGapCard
                 key={gap.id}
@@ -161,7 +167,7 @@ export default function ConnectPage() {
         )}
 
         {loading ? (
-          <p className="text-[13px] text-white/40">Loading...</p>
+          <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
         ) : (
           <div className="space-y-6">
             {CATEGORIES.map((category) => {
@@ -171,7 +177,7 @@ export default function ConnectPage() {
               if (categoryProviders.length === 0) return null;
               return (
                 <section key={category.label}>
-                  <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40">
+                  <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                     {category.label}
                   </div>
                   <div className="space-y-2.5">
@@ -191,15 +197,15 @@ export default function ConnectPage() {
         )}
 
         {connectCategories && connectCategories.categories.length > 0 && (
-          <section className="mt-6">
-            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/40">
+          <section>
+            <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
               Business &amp; Platform Integrations
             </div>
             <div className="space-y-2">
               {connectCategories.categories.map((category) => (
                 <div
                   key={category.id}
-                  className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3"
+                  className="zar-glass flex items-center justify-between gap-2 rounded-xl p-3"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -217,7 +223,7 @@ export default function ConnectPage() {
                     <button
                       type="button"
                       onClick={() => navigate("/admin")}
-                      className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/70 transition-colors hover:text-white"
+                      className="zar-button shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] text-white/70 hover:text-white"
                     >
                       Manage
                     </button>
@@ -312,7 +318,7 @@ function ProviderCard({
   };
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+    <div className="zar-glass rounded-2xl p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -330,7 +336,7 @@ function ProviderCard({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="shrink-0 rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/70 transition-colors hover:text-white"
+          className="zar-button shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] text-white/70 hover:text-white"
         >
           {open ? "Close" : connected ? "Edit" : "Connect"}
         </button>
@@ -342,7 +348,7 @@ function ProviderCard({
             type="button"
             onClick={() => void test()}
             disabled={busy}
-            className="rounded-lg bg-cyan-400 px-2.5 py-1 text-[11.5px] font-medium text-black transition-colors hover:bg-cyan-300 disabled:opacity-50"
+            className="zar-button rounded-lg px-2.5 py-1 text-[11.5px] font-medium text-white/80 disabled:opacity-50"
           >
             {busy ? "Testing…" : "Test"}
           </button>
@@ -350,7 +356,7 @@ function ProviderCard({
             type="button"
             onClick={() => void disconnect()}
             disabled={busy}
-            className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11.5px] text-white/70 transition-colors hover:text-red-300 disabled:opacity-50"
+            className="zar-button rounded-lg px-2.5 py-1 text-[11.5px] text-white/70 hover:text-red-300 disabled:opacity-50"
           >
             Disconnect
           </button>
@@ -367,7 +373,7 @@ function ProviderCard({
               onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
               placeholder={`${field.label}${field.optional ? " (optional)" : ""}`}
               autoComplete={field.secret ? "new-password" : "off"}
-              className="w-full min-w-0 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
+              className="zar-input w-full min-w-0 rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:outline-none"
             />
           ))}
           {error && <p className="text-[12px] text-red-300">{error}</p>}
@@ -375,7 +381,7 @@ function ProviderCard({
             type="button"
             onClick={() => void save()}
             disabled={busy}
-            className="w-full rounded-lg bg-cyan-400 px-3 py-1.5 text-[13px] font-medium text-black transition-colors hover:bg-cyan-300 disabled:opacity-40"
+            className="zar-gradient w-full rounded-lg px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-40"
           >
             {busy ? "Saving…" : "Save"}
           </button>
