@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { ChevronLeft, Clock, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,40 +57,25 @@ export default function HistoryPage() {
   const isEmpty = conversations.length === 0 && flowRuns.length === 0;
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/nexus")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          Nexus
-        </Button>
-        <div className="flex items-center gap-2">
-          <Clock size={16} className="text-cyan-300" />
-          <span className="font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-            History
-          </span>
+    <main className="mx-auto max-w-3xl space-y-4">
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={refresh}
+            disabled={loading}
+            className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
+          >
+            <RefreshCw size={14} className={loading ? "mr-1 animate-spin" : "mr-1"} />
+            Refresh
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={refresh}
-          disabled={loading}
-          className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground zed-button"
-        >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-        </Button>
-      </div>
 
-      <main className="mx-auto max-w-3xl space-y-5 p-4 pb-24">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
           <div className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">Saved Activity</div>
           <h1 className="mt-2 text-2xl font-semibold">History</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Review chat conversations separately from template flow runs and completed work.
+            Chat conversations and completed flow runs, in one place.
           </p>
         </section>
 
@@ -103,8 +88,8 @@ export default function HistoryPage() {
         {loading && isEmpty ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
         ) : isEmpty ? (
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-            No history yet. Chat conversations and template flow runs will appear here.
+          <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+            No history yet. Chat conversations and flow runs will appear here.
           </div>
         ) : (
           <>
@@ -117,7 +102,7 @@ export default function HistoryPage() {
               </div>
 
               {conversations.length === 0 ? (
-                <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
+                <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
                   No chat conversations yet.
                 </div>
               ) : (
@@ -127,7 +112,7 @@ export default function HistoryPage() {
                       key={conversation.id}
                       type="button"
                       onClick={() => navigate(`/chat/${conversation.id}`)}
-                      className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-left transition-colors hover:bg-white/5"
+                      className="zed-glass w-full rounded-xl px-3 py-3 text-left transition-all hover:shadow-[0_0_18px_rgba(103,232,249,0.25)]"
                     >
                       <div className="truncate text-sm font-medium">
                         {conversation.title || "New Conversation"}
@@ -147,14 +132,14 @@ export default function HistoryPage() {
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-purple-200">
-                  Template Flows History
+                  Flow Runs
                 </h2>
                 <span className="text-xs text-muted-foreground">{flowRuns.length}</span>
               </div>
 
               {flowRuns.length === 0 ? (
-                <div className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-muted-foreground">
-                  No template flow runs yet.
+                <div className="zed-glass rounded-2xl p-4 text-sm text-muted-foreground">
+                  No flow runs yet.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -163,7 +148,7 @@ export default function HistoryPage() {
                       key={item.id}
                       type="button"
                       onClick={() => navigate(`/history/${item.id}`)}
-                      className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-left transition-colors hover:bg-white/5"
+                      className="zed-glass w-full rounded-xl px-3 py-3 text-left transition-all hover:shadow-[0_0_18px_rgba(168,85,247,0.25)]"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-medium">{item.flowName}</span>
@@ -184,7 +169,6 @@ export default function HistoryPage() {
             </section>
           </>
         )}
-      </main>
-    </div>
+    </main>
   );
 }

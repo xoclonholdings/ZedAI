@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "wouter";
-import { ChevronLeft, RefreshCw, RotateCcw, XCircle } from "lucide-react";
+import { useParams } from "wouter";
+import { RefreshCw, RotateCcw, XCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -21,7 +21,6 @@ function canCancel(status: FlowRun["status"]): boolean {
 }
 
 export function RunDetailPage() {
-  const [, navigate] = useLocation();
   const { runId } = useParams<{ runId?: string }>();
   const [run, setRun] = useState<FlowRun | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,43 +97,33 @@ export function RunDetailPage() {
   }, [run?.status]);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/10 px-4 pb-3 pt-safe-sm zed-glass">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/history")}
-          className="rounded-xl text-muted-foreground hover:text-foreground zed-button"
-        >
-          <ChevronLeft size={16} className="mr-1" />
-          History
-        </Button>
-        <span className="max-w-[60vw] truncate font-medium">{run?.flowName || "History Item"}</span>
+    <main className="mx-auto max-w-3xl space-y-4">
+      <div className="flex justify-end">
         <Button
           variant="ghost"
           size="sm"
           onClick={fetchRun}
           disabled={loading}
-          className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground zed-button"
+          className="rounded-xl text-xs text-muted-foreground hover:text-foreground zed-button"
         >
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+          <RefreshCw size={14} className={loading ? "mr-1 animate-spin" : "mr-1"} />
+          Refresh
         </Button>
       </div>
 
-      <div className="mx-auto max-w-3xl space-y-3 p-4 pb-24">
-        {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+          {error}
+        </div>
+      )}
 
-        {loading && !run ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
-        ) : !run ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">History item not found.</div>
-        ) : (
-          <>
-            <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5">
+      {loading && !run ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">Loading...</div>
+      ) : !run ? (
+        <div className="py-12 text-center text-sm text-muted-foreground">History item not found.</div>
+      ) : (
+        <>
+          <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className={`border text-[10px] uppercase tracking-[0.16em] ${RUN_STATUS_STYLE[run.status]}`}>
                   {statusLabel(run.status)}
@@ -170,7 +159,7 @@ export function RunDetailPage() {
             {run.status === "awaiting_approval" && (
               <div className="space-y-2 rounded-xl border border-purple-500/30 bg-purple-500/5 p-3">
                 <p className="text-sm font-medium text-purple-200">
-                  This item needs approval before ZED can continue.
+                  This item needs approval before ZAR can continue.
                 </p>
                 <div className="flex gap-2">
                   <Button onClick={approve} disabled={actionPending !== null} className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700">
@@ -193,7 +182,7 @@ export function RunDetailPage() {
             </div>
 
             {run.report && (
-              <section className="rounded-2xl border border-white/10 bg-black/30 p-4">
+              <section className="zed-glass rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Report</div>
                 <h2 className="mt-2 text-lg font-semibold">{run.report.title}</h2>
                 <div className="zed-markdown mt-3 text-sm leading-6 text-muted-foreground">
@@ -237,8 +226,7 @@ export function RunDetailPage() {
             )}
           </>
         )}
-      </div>
-    </div>
+    </main>
   );
 }
 
