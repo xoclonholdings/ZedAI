@@ -276,7 +276,13 @@ export default function HomePage() {
   const pendingAllocation = budget?.pendingAllocation ?? 0;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -left-16 -top-8 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl zar-float" />
+        <div className="absolute -right-12 top-1/3 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl zar-float" />
+        <div className="absolute -bottom-16 left-1/4 h-80 w-80 rounded-full bg-fuchsia-500/10 blur-3xl zar-float" />
+      </div>
+
       <header className="sticky top-0 z-20 border-b border-white/10 zar-glass px-4 pb-3 pt-safe-sm">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
@@ -289,7 +295,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigate("/chat")}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/70 hover:text-white transition-colors"
+              className="zar-button inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-[12.5px] text-white/80"
             >
               <MessageSquare size={12} />
               Chat
@@ -298,7 +304,7 @@ export default function HomePage() {
               type="button"
               onClick={() => void refresh()}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[12.5px] text-white/60 hover:text-white/90 hover:bg-white/[0.08] transition-colors"
+              className="zar-button inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12.5px] text-white/70"
               aria-label="Refresh"
             >
               <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -308,10 +314,10 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+      <main className="relative z-10 max-w-3xl mx-auto px-4 py-6 space-y-4">
         {/* Approvals banner */}
         {isAdmin && approvalsCount > 0 && (
-          <section className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-4 flex items-start gap-3">
+          <section className="rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-4 flex items-start gap-3 backdrop-blur-sm">
             <Bell size={16} className="text-amber-300 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <div className="text-[13.5px] font-medium text-amber-100">
@@ -333,7 +339,7 @@ export default function HomePage() {
 
         {/* Active workspace banner */}
         {activeWorkspace && (
-          <section className="rounded-2xl border border-cyan-400/30 bg-cyan-400/[0.05] px-4 py-3 flex items-center justify-between gap-3">
+          <section className="rounded-2xl border border-cyan-400/30 bg-cyan-400/[0.05] px-4 py-3 flex items-center justify-between gap-3 backdrop-blur-sm">
             <div className="min-w-0 flex-1">
               <div className="text-[10.5px] uppercase tracking-[0.14em] text-cyan-200/80">
                 In workspace
@@ -345,7 +351,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigate(`/chat?ctx=${activeWorkspace}`)}
-              className="shrink-0 rounded-lg border border-cyan-400/40 bg-cyan-400/[0.1] text-cyan-100 hover:bg-cyan-400/[0.18] px-3 py-1.5 text-[12px]"
+              className="shrink-0 rounded-lg border border-cyan-400/40 bg-cyan-400/[0.1] text-cyan-100 hover:bg-cyan-400/[0.18] hover:shadow-[0_0_14px_rgba(34,211,238,0.3)] px-3 py-1.5 text-[12px] transition-all"
             >
               Continue
             </button>
@@ -370,7 +376,7 @@ export default function HomePage() {
 
         {/* Discovery Feed */}
         {discoveryItems.length > 0 && (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <section className="zar-glass rounded-2xl p-4 md:p-5">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
                 Discovery feed
@@ -393,7 +399,7 @@ export default function HomePage() {
         )}
 
         {/* Knowledge Map */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+        <section className="zar-glass rounded-2xl p-4 md:p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
               Knowledge map
@@ -423,7 +429,7 @@ export default function HomePage() {
                   key={tile.label}
                   type="button"
                   onClick={() => navigate(tile.href)}
-                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                  className="zar-glass rounded-xl p-3 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
                 >
                   <TIcon size={15} className="text-cyan-300/80 mb-1.5" />
                   <div className="flex items-baseline gap-2">
@@ -439,7 +445,7 @@ export default function HomePage() {
         </section>
 
         {/* Workspaces launcher */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+        <section className="zar-glass rounded-2xl p-4 md:p-5">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
               Workspaces
@@ -454,7 +460,7 @@ export default function HomePage() {
                   key={w.href}
                   type="button"
                   onClick={() => navigate(w.href)}
-                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                  className="zar-glass rounded-xl p-3 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
                 >
                   <WIcon size={15} className="text-cyan-300/80 mb-1.5" />
                   <div className="text-[13px] font-medium text-white truncate">{w.label}</div>
@@ -467,7 +473,7 @@ export default function HomePage() {
 
         {/* Recent projects */}
         {projects.length > 0 && (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <section className="zar-glass rounded-2xl p-4 md:p-5">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
                 Recent projects
@@ -486,7 +492,7 @@ export default function HomePage() {
                   key={p.id}
                   type="button"
                   onClick={() => navigate(`/projects/${p.id}`)}
-                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+                  className="zar-glass rounded-xl p-3 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
                 >
                   <div className="flex items-center gap-2">
                     <FolderKanban size={13} className="text-cyan-300/80 shrink-0" />
@@ -508,7 +514,7 @@ export default function HomePage() {
 
         {/* Current work — compact domain signals; details live on their pages */}
         {(currentStageDef || budget) && (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 md:p-5">
+          <section className="zar-glass rounded-2xl p-4 md:p-5">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50 mb-3">
               Current work
             </div>
@@ -563,10 +569,10 @@ function QuickAction({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-2xl border p-3 text-left transition-colors active:opacity-80 ${
+      className={`rounded-2xl p-3 text-left transition-all active:opacity-80 ${
         emphasis
-          ? "border-amber-400/40 bg-amber-400/[0.08] hover:bg-amber-400/[0.12]"
-          : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
+          ? "border border-amber-400/40 bg-amber-400/[0.08] hover:bg-amber-400/[0.12] hover:shadow-[0_0_18px_rgba(251,191,36,0.25)]"
+          : "zar-glass hover:shadow-[0_0_18px_rgba(139,0,255,0.25)]"
       }`}
     >
       <Icon
@@ -592,16 +598,16 @@ function DiscoveryCard({
   onClick: () => void;
 }) {
   const map = {
-    amber: "border-amber-400/25 bg-amber-400/[0.05] text-amber-200",
-    cyan: "border-cyan-400/25 bg-cyan-400/[0.05] text-cyan-200",
-    fuchsia: "border-fuchsia-400/25 bg-fuchsia-400/[0.05] text-fuchsia-200",
-    emerald: "border-emerald-400/25 bg-emerald-400/[0.05] text-emerald-200",
+    amber: "border-amber-400/25 bg-amber-400/[0.05] text-amber-200 hover:shadow-[0_0_16px_rgba(251,191,36,0.25)]",
+    cyan: "border-cyan-400/25 bg-cyan-400/[0.05] text-cyan-200 hover:shadow-[0_0_16px_rgba(34,211,238,0.25)]",
+    fuchsia: "border-fuchsia-400/25 bg-fuchsia-400/[0.05] text-fuchsia-200 hover:shadow-[0_0_16px_rgba(232,121,249,0.25)]",
+    emerald: "border-emerald-400/25 bg-emerald-400/[0.05] text-emerald-200 hover:shadow-[0_0_16px_rgba(52,211,153,0.25)]",
   } as const;
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl border p-3 text-left transition-colors active:opacity-80 hover:bg-white/[0.05] ${map[accent]}`}
+      className={`rounded-xl border p-3 text-left backdrop-blur-sm transition-all active:opacity-80 hover:bg-white/[0.05] ${map[accent]}`}
     >
       <Icon size={14} className="mb-1.5" />
       <div className="text-[16.5px] font-semibold tabular-nums text-white">{count}</div>
@@ -628,7 +634,7 @@ function CurrentWorkRow({
     <button
       type="button"
       onClick={() => navigate(href)}
-      className="w-full flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-left hover:bg-white/[0.05] hover:border-white/20 transition-colors active:opacity-80"
+      className="w-full flex items-center gap-3 zar-glass rounded-xl px-3 py-2.5 text-left transition-all hover:shadow-[0_0_16px_rgba(103,232,249,0.25)] active:opacity-80"
     >
       <div className="shrink-0 w-8 h-8 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-300 flex items-center justify-center">
         <Icon size={14} />

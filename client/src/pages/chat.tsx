@@ -54,7 +54,7 @@ export default function ChatPage() {
         <button
           type="button"
           onClick={() => navigate("/nexus")}
-          className="flex items-center gap-1 rounded-xl px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+          className="zar-button flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-[13px] text-white/80"
         >
           <ChevronLeft size={16} />
           Nexus
