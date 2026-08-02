@@ -47,6 +47,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
   const [integrations, setIntegrations] = useState<TradingIntegration[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [tab, setTab] = useState<"feed" | "accounts" | "data" | "execution">("feed");
+  const [durable, setDurable] = useState<boolean>(true);
 
   const loadIntegrations = useCallback(async () => {
     try {
@@ -55,6 +56,7 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
         const data = await res.json();
         setProviders(data.providers || []);
         setIntegrations(data.integrations || []);
+        setDurable(data.durable !== false);
       }
     } catch {
       /* silent */
@@ -210,6 +212,11 @@ export default function TrainingConsole({ onFed }: { onFed?: () => void }) {
         <p className="mb-2 text-[11.5px] text-white/40 leading-snug">
           Connect only the services that support a live integration. Webull is the primary paper-trading connection.
         </p>
+        {!durable && (
+          <div className="mb-2 rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-3 py-2 text-[11.5px] text-amber-100 leading-snug">
+            Heads up — connections can't be saved permanently right now, so they may not stick after a restart. Once the database is connected they'll persist for good.
+          </div>
+        )}
         {providers.length === 0 ? (
           <EmptyBox>Loading providers…</EmptyBox>
         ) : (
