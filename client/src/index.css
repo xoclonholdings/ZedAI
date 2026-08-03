@@ -681,3 +681,94 @@
   height: 100vh;
   height: 100dvh;
 }
+
+/* ZEBULON celestial-navigation home. World-space placement remains in the
+ * constellation manifest; these rules only reserve interface-space chrome. */
+.zebulon-zcos-wordmark {
+  background: linear-gradient(92deg, #c4b5fd 0%, #f0abfc 48%, #a5f3fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  text-shadow: 0 0 30px rgba(167, 139, 250, 0.18);
+}
+
+.zebulon-chart-vignette {
+  background:
+    linear-gradient(180deg, rgba(0, 1, 6, 0.28) 0%, transparent 20%, transparent 72%, rgba(0, 1, 7, 0.72) 100%),
+    radial-gradient(ellipse 72% 74% at 50% 43%, transparent 40%, rgba(0, 1, 6, 0.48) 100%);
+}
+
+.zebulon-chart-orientation span {
+  position: absolute;
+  color: rgba(191, 219, 254, 0.24);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+}
+
+.zebulon-chart-north { left: 50%; top: 1.9rem; transform: translateX(-50%); }
+.zebulon-chart-south { bottom: 13.9rem; left: 50%; transform: translateX(-50%); }
+.zebulon-chart-west { left: 0.55rem; top: 48%; transform: translateY(-50%); }
+.zebulon-chart-east { right: 0.55rem; top: 48%; transform: translateY(-50%); }
+
+.zebulon-chart-orientation::before,
+.zebulon-chart-orientation::after {
+  position: absolute;
+  content: "";
+  background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.08), transparent);
+}
+
+.zebulon-chart-orientation::before {
+  left: 1.25rem;
+  right: 1.25rem;
+  top: 48%;
+  height: 1px;
+}
+
+.zebulon-chart-orientation::after {
+  bottom: 13.5rem;
+  left: 50%;
+  top: 1.75rem;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(125, 211, 252, 0.07), transparent);
+}
+
+.zebulon-vessel-panel {
+  bottom: calc(env(safe-area-inset-bottom) + 10.6rem);
+}
+
+.zebulon-chart-legend {
+  bottom: calc(env(safe-area-inset-bottom) + 16.5rem);
+}
+
+@media (max-width: 639px) {
+  .zebulon-vessel-panel {
+    bottom: calc(env(safe-area-inset-bottom) + 9.85rem);
+  }
+
+  .zebulon-chart-legend {
+    display: none;
+  }
+
+  .zebulon-catalog-readout {
+    display: none;
+  }
+}
+
+@media (max-height: 840px) {
+  .zebulon-chart-legend {
+    display: none;
+  }
+
+  .zebulon-header-copy > :nth-child(n + 3) {
+    display: none;
+  }
+
+  .zebulon-chart-south,
+  .zebulon-chart-orientation::after {
+    display: none;
+  }
+}
