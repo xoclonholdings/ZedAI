@@ -183,7 +183,10 @@ export function registerTradingTrainingRoutes(app: Express): void {
 
   app.get("/api/trading/integrations", isAuthenticated, async (req: any, res) => {
     const integrations = await TradingIntegrationsStore.list(userIdFrom(req));
-    res.json({ integrations, providers: INTEGRATION_PROVIDERS });
+    // durable=false means no database is reachable, so connections would
+    // only live in throwaway files — the UI warns the user instead of
+    // letting them vanish silently on the next restart.
+    res.json({ integrations, providers: INTEGRATION_PROVIDERS, durable: tradingDbAvailable() });
   });
 
   app.post("/api/trading/integrations/:provider", isAuthenticated, async (req: any, res) => {
