@@ -10,6 +10,7 @@
     "smoke": "tsx scripts/smokeCheck.ts",
     "verify:execution": "tsx scripts/executionVerification.ts",
     "verify:live": "tsx scripts/liveExecutionVerification.ts",
+    "verify:subagents": "tsx scripts/verifySubagentSystem.ts",
     "merge-memory": "tsx scripts/mergeMemorySources.ts",
     "compact-memory": "tsx scripts/compactFoundationMemory.ts",
     "memory:foundation:dry-run": "tsx scripts/reparseFoundationMemoryToGraph.ts",

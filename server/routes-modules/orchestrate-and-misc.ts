@@ -65,7 +65,8 @@ export function registerOrchestrateAndMiscRoutes(
       return agent;
     });
     res.json({
-      orchestrator: "ManagerAgent",
+      orchestrator: "SubagentOrchestrator",
+      orchestrationMode: "parallel-subagent-dispatch",
       active_agents: normalizedAgents.filter((a) => a.status === "active"),
       planned_agents: normalizedAgents.filter((a) => a.status === "planned"),
       integrations: settings.integrations,
