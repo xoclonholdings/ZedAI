@@ -148,7 +148,7 @@ export async function proposeTrade(input: ProposeTradeInput): Promise<ProposeTra
     };
   }
 
-  if (directionPreference === "auto" && quote?.signal && quote.signal.signal !== "neutral") {
+  if (directionPreference === "auto" && quote?.signal) {
     directionPreference = quote.signal.signal === "buy" ? "long" : "short";
   }
 

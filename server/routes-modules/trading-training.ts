@@ -13,6 +13,7 @@ import { TRADING_KNOWLEDGE_AREAS } from "../zcos/trading/TradingCurriculum";
 import { TradingIntegrationsStore } from "../zcos/trading/TradingIntegrationsStore";
 import { testWebullConnection } from "../zcos/trading/WebullBridge";
 import { advanceStage, recordAssessment } from "../services/TradingProgressionStore";
+import { tradingDbAvailable } from "../zcos/trading/tradingPersistence";
 import { TRADING_STAGES, type TradingStageId } from "../../shared/trading-progression";
 import {
   INTEGRATION_PROVIDERS,

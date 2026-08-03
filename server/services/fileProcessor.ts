@@ -3,6 +3,7 @@ import path from "path";
 import multer from "multer";
 import * as yauzl from "yauzl";
 import * as mammoth from "mammoth";
+import pdfParse from "pdf-parse";
 
 // =========================
 // MULTER CONFIG
@@ -131,8 +132,16 @@ export async function processImageFile(filePath: string): Promise<string> {
   return buffer.toString("base64"); // raw base64 only (no AI call)
 }
 
-export async function processPdfFile(_filePath: string): Promise<string> {
-  return "PDF processing not implemented.";
+export async function processPdfFile(filePath: string): Promise<string> {
+  const buffer = await fs.promises.readFile(filePath);
+  try {
+    const parsed = await pdfParse(buffer);
+    const text = parsed.text?.trim();
+    return text || "No extractable text found in this PDF (it may be scanned/image-only).";
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to parse PDF: ${detail}`);
+  }
 }
 
 // =========================

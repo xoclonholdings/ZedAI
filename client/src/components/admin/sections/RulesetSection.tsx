@@ -6,6 +6,7 @@ import {
   SettingGroup,
   SettingRow,
 } from "./settings/atoms";
+import type { AdminSection } from "../types";
 
 import { AccessForm } from "./ruleset/AccessForm";
 import { ParametersForm } from "./ruleset/ParametersForm";
@@ -42,6 +43,8 @@ interface RuleGroup {
   label: string;
   purpose: string;
   friendlyLocation: string;
+  /** Which top-level Admin tab actually hosts the friendly version of this rule group. */
+  friendlyTab: AdminSection;
 }
 
 const RULE_GROUPS: RuleGroup[] = [
@@ -51,6 +54,7 @@ const RULE_GROUPS: RuleGroup[] = [
     purpose:
       "Identity, tone, formality, when to ask clarifying questions, response style.",
     friendlyLocation: "Settings → How ZAR sounds (Admin panel)",
+    friendlyTab: "settings",
   },
   {
     key: "security.yaml",
@@ -58,6 +62,7 @@ const RULE_GROUPS: RuleGroup[] = [
     purpose:
       "What actions need your OK, how long approvals stay pending, topics ZAR handles carefully.",
     friendlyLocation: "Settings → What needs your approval (Admin panel)",
+    friendlyTab: "settings",
   },
   {
     key: "parameters.yaml",
@@ -65,6 +70,7 @@ const RULE_GROUPS: RuleGroup[] = [
     purpose:
       "Temperature, token budgets, model choice, per-agent overrides. Most of this is auto-derived from your Voice settings.",
     friendlyLocation: "Settings → How ZAR sounds — the sliders derive these",
+    friendlyTab: "settings",
   },
   {
     key: "access.yaml",
@@ -72,6 +78,7 @@ const RULE_GROUPS: RuleGroup[] = [
     purpose:
       "Which outside services ZAR is allowed to reach, filesystem layout, single-user vs multi-user mode.",
     friendlyLocation: "Connections tab (Admin panel)",
+    friendlyTab: "integrations",
   },
 ];
 
@@ -214,7 +221,7 @@ export default function RulesetSection() {
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => navigate(group.friendlyLocation.includes("Connections") ? "/admin" : "/admin")}
+                  onClick={() => navigate(`/admin?tab=${group.friendlyTab}`)}
                   className="inline-flex items-center rounded-lg bg-cyan-400 text-black font-medium px-3 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors active:opacity-80"
                 >
                   Go to the friendly version

@@ -17,7 +17,7 @@ import {
  * mobile.
  *
  * Behind the scenes it still hits the same endpoints:
- *   GET/PUT   /api/admin/settings/security
+ *   GET/POST  /api/admin/security-settings
  *   GET/POST  /api/admin/users
  *   GET       /api/admin/security-log
  * Nothing functional was removed — only the visual language changed.
@@ -134,8 +134,8 @@ export default function SecuritySection() {
       setStatus("saving");
       setErrorMessage(undefined);
       try {
-        const res = await fetch("/api/admin/settings/security", {
-          method: "PUT",
+        const res = await fetch("/api/admin/security-settings", {
+          method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(patch),
