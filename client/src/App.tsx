@@ -14,6 +14,7 @@ import Login from "@/pages/login";
 import Admin from "@/pages/admin";
 import HomePage from "@/pages/home";
 import NexusRootPage from "@/nexus/pages/NexusRootPage";
+import ZebulonConstellationPage from "@/zebulon/ZebulonConstellationPage";
 import { NexusProvider } from "@/nexus";
 import { ConsoleWorkspaceFrame } from "@/console/ConsoleWorkspaceFrame";
 import FlowsPage from "@/pages/flows";
@@ -98,7 +99,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/">
-        {isAuthenticated ? <NexusRootPage /> : <Login />}
+        {isAuthenticated ? <ZebulonConstellationPage /> : <Login />}
       </Route>
 
       <Route path="/chat/:id?">
