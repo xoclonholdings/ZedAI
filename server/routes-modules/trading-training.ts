@@ -4,6 +4,7 @@ import type { Express } from "express";
 import { isAuthenticated } from "../localAuth";
 import { processFile, upload } from "../services/fileProcessor";
 import { importTradingKnowledge } from "../zcos/trading/TradingKnowledgeBase";
+import { tradingDbAvailable } from "../zcos/trading/tradingPersistence";
 import {
   assessKnowledgeArea,
   assessStage,
