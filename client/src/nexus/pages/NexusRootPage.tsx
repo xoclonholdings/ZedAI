@@ -221,9 +221,14 @@ export default function NexusRootPage() {
       headerLeft={
         <div className="min-w-0">
           <div className="flex h-9 items-center gap-2 leading-none">
-            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl">
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              aria-label="Back to the Zebulon star map"
+              className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent focus:outline-none sm:text-3xl"
+            >
               ZCOS
-            </span>
+            </button>
             <ConsoleLogoutButton />
           </div>
           <div className="flex h-4 items-center truncate text-[9px] font-medium uppercase tracking-[0.12em] text-white/40">

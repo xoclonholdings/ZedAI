@@ -665,7 +665,7 @@ export class ChatExecutionService {
         .filter(Boolean)
         .join("\n\n");
 
-      trace.servicesInvoked.push("ZarAutonomousOrchestrator.route", "ManagerAgent.route");
+      trace.servicesInvoked.push("ZarAutonomousOrchestrator.route", "SubagentOrchestrator.dispatch");
       const routeRequest = {
         userId: input.userId,
         message: effectiveMessage,

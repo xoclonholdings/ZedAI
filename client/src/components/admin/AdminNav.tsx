@@ -3,6 +3,16 @@ import { ChevronDown } from "lucide-react";
 
 import type { AdminSection, AdminNavTab } from "./types";
 
+export const ADMIN_SECTIONS: AdminSection[] = [
+  "settings",
+  "integrations",
+  "knowledge",
+  "approvals",
+  "logs",
+  "security",
+  "advanced",
+];
+
 const TABS: AdminNavTab[] = [
   { id: "settings", label: "Settings" },
   { id: "integrations", label: "Connections" },

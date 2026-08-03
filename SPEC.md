@@ -193,31 +193,114 @@ Every request through `ChatExecutionService` assembles an `ExecutionTrace` (trac
 
 Per the buffer requirement above, the provider layer supports true streaming via `streamProviderChat`, and `ModelProviderService.generateBufferedStreamFromProvider` streams-then-buffers so callers get provider-timeout resilience while presentation still runs on complete text. `OperationsAgent` is the pilot lane; other agents can migrate with a one-line swap from `generateChatFromProvider`.
 
-### Orchestration
+### Orchestration — Subagent-Based Architecture
 
-- Multi-agent orchestration endpoint:
-  - `POST /api/orchestrate`
-- Orchestrator status endpoint:
-  - `GET /api/orchestrate/status`
-- Manager agent routes work to specialist agents in `server/agents/`
-- Current active agents:
-  - `OperationsAgent`
-  - `IntelligenceAgent` (`R&D Agent` in the UI)
-- `BusinessManagerAgent` is reachable in the current live orchestrator and may operate as an active lane when Business Operations is enabled in Admin settings
-- `FinanceAgent` is one phased specialist feature for trading, crypto/web3, forex, market opportunity, accumulation strategy, wealth-building, and capital allocation analysis
-- The current FinanceAgent phase is Trading Intelligence: disciplined market analysis, paper-trading validation, strategy audits, trade thesis generation, risk controls, journal review, and performance analytics; this phase does not execute live trades, transmit orders, move funds, or manage live capital
-- Later FinanceAgent phases expand the same feature, not a separate entity, into broader market opportunity, accumulation strategy, wealth-building, and capital allocation workflows while preserving the same evidence, validation, approval, and risk-control requirements
-- `FinanceAgent` is intended as a distinct lane from `BusinessManagerAgent`, focusing on predictive analysis, market opportunity, accumulation strategy, and trading/wealth contexts while sharing research blackboard data with the R&D/Intelligence lane
-- Current planned agents:
-  - `IDEOperatorAgent`
-  - `AudioEngineerAgent`
-  - future expanded `BusinessManagerAgent` capability layers, including planned Gusto integration
-- Agent-mode UI supports explicit targeting for:
-  - `Auto`
-  - `Operations`
-  - `R&D`
-  - `Business`
-- Agents coordinate indirectly through scoped memory, rules, approvals, and logs rather than direct agent-to-agent chat handoff
+ZAR's orchestration has transitioned from a centralized lane router (ManagerAgent) to a **parallel subagent dispatch system** where each specialized subagent independently determines which capability lanes and reasoning modes it needs.
+
+#### Orchestration Model
+
+- **Entry point**: Multi-agent orchestration endpoint `POST /api/orchestrate` (user provides message, parameters, optional explicit targeting)
+- **Dispatch**: `SubagentOrchestrator.dispatch()` spawns a pool of specialized subagents in parallel
+- **Autonomy**: Each subagent analyzes the request and independently selects which lanes and capabilities it activates (Finance, Operations, Intelligence, Business, etc.)
+- **Synthesis**: `ResultAggregator` merges parallel results into a unified response
+- **Orchestrator status**: `GET /api/orchestrate/status` (orchestrator health, active subagents, dispatch queue)
+
+#### Architecture
+
+The subagent infrastructure lives under `server/orchestrator/subagents/`:
+
+- `SubagentOrchestrator.ts` — main dispatcher; spawns subagents, tracks execution, triggers synthesis
+- `SubagentBase.ts` — abstract base class; every subagent inherits lane-detection and approval-policy checking
+- `SubagentFactory.ts` — factory pattern to instantiate subagents by type
+- `SubagentTypes.ts` — typed definitions for subagent input/output, execution state, results
+- `ResultAggregator.ts` — synthesizes parallel results into final response
+
+Specialized subagent implementations live under `server/orchestrator/subagents/implementations/`:
+
+- `FinanceSubagent.ts` — inherits FinanceAgent lane rules; autonomous trading intelligence, strategy validation, risk analysis
+- `IntelligenceSubagent.ts` — inherits IntelligenceAgent lane rules; web research, analysis, trend synthesis
+- `OperationsSubagent.ts` — inherits OperationsAgent lane rules; calendar, email, task management, approvals
+- `BusinessSubagent.ts` — inherits BusinessManagerAgent lane rules; payroll, ecommerce, real estate, acquisitions
+
+#### Execution Flow
+
+1. **User request arrives** at `POST /api/orchestrate` with message and optional explicit target lane
+2. **ZAR gives the order**: SubagentOrchestrator loads ZAR Core rules (Cognitive Core, Lexicon Authority, Principle Engine, Governance), applies Lexicon resolution to the message, and assembles the dispatch context
+3. **Subagents spawn in parallel**: Factory creates instances of available subagents; each runs concurrently with access to the same context
+4. **Each subagent determines its lane**: Using keyword detection, LLM classification (if enabled), and message context, each subagent decides:
+   - Does this request activate my lane? (e.g., "is there a trading element?" → FinanceSubagent yes/no)
+   - What capability level does my lane need? (analysis, action, approval, retrieval, synthesis, etc.)
+   - What approval policies apply to my lane's actions?
+5. **Subagents execute their responsibilities**: Only activated subagents run; each generates its own reasoning trace, applies its lane-specific policies, and returns a typed result
+6. **Results aggregate**: ResultAggregator collects all subagent results, de-duplicates, prioritizes by confidence, and merges into a unified response respecting voice/presentation policy
+7. **User gets the answer**: Single synthesized response with integrated reasoning and action recommendations from all active lanes
+
+#### Lane Definitions and Subagent Capabilities
+
+**FinanceSubagent** (Trading Intelligence phase):
+- Activates on: trading, crypto, forex, options, ETFs, backtesting, paper trades, trade theses, position management, wealth planning, portfolio analysis, risk controls
+- Enforces: FinanceAgent SKILL.md rules (market context, statistical edge, risk validation, continuous improvement)
+- Outputs: trade theses, strategy audits, risk analysis, journal reviews, backtesting guidance
+- Never: executes live trades, transmits orders, manages live capital
+
+**IntelligenceSubagent** (R&D/Research):
+- Activates on: research, web lookups, URLs, current/latest/news intent, analysis, deep research, explanations, comparisons, market scans
+- Capabilities: web search, document analysis, trend synthesis, competitor research, knowledge graph retrieval
+- Outputs: research summaries with sources, analysis reports, trend identification, curated collections
+
+**OperationsSubagent** (Task & Calendar Management):
+- Activates on: calendar, email, scheduling, reminders, tasks, posts, voicemail, invoicing, cancellations, bookings
+- Capabilities: calendar integration, email drafting, task creation, approval routing
+- Constraints: respects approval policies (Never, Ask, Auto per action type)
+- Outputs: scheduled actions, draft communications, approval requests
+
+**BusinessSubagent** (Business Operations):
+- Activates on: payroll, contractors, ecommerce/dropshipping, real estate, business credit, acquisitions, business operations
+- Capabilities: business intelligence, contractor/employee management, deal flow analysis
+- Outputs: business recommendations, operational guidance
+
+#### Approval and Authorization
+
+- All subagent side effects (send email, schedule calendar, execute action) respect the approval policy from `hub/config/admin-settings.json`
+- Each subagent consults `approvalPolicy.ts` before acting; policy routing works at the action level, not the lane level
+- Non-autonomous actions are queued for admin approval; `Never` actions are refused with a logged reason
+- Subagent execution traces are recorded per-lane; ResultAggregator preserves approval context in the final trace
+
+#### Coordination and Memory
+
+- Subagents coordinate indirectly through scoped memory, shared knowledge graph, and unified execution logs, not direct agent-to-agent chat
+- All subagents have read access to shared Knowledge Graph, Lexicon Authority, Foundation memory, Project memory, and Personalization corpus
+- Write operations to memory are validated and conflict-aware; canonical updates preserve provenance
+- Scoped memory isolation ensures one subagent's working context does not leak into another's
+
+#### Current Implemented Subagents
+
+- `OperationsSubagent` — active, tested
+- `IntelligenceSubagent` — active, tested
+- `BusinessManagerSubagent` — active, tested
+- `FinanceSubagent` — active, tested (Trading Intelligence phase)
+
+#### Planned Subagent Expansions
+
+- `IDEOperatorSubagent` — IDE orchestration, code execution, dev tools
+- `AudioEngineerSubagent` — voice, audio processing, transcription
+- Future specialized subagents for emerging capability areas
+
+#### Explicit Lane Targeting (UI)
+
+Agent-mode UI still supports explicit targeting:
+- `Auto` — SubagentOrchestrator decides which subagents activate
+- `Operations` — only OperationsSubagent
+- `R&D` — only IntelligenceSubagent
+- `Business` — only BusinessManagerSubagent
+- `Finance` — only FinanceSubagent (when enabled)
+
+#### Orchestrator Configuration
+
+- `hub/config/parameters.yaml` can control subagent pool size, execution timeout per subagent, synthesis strategy
+- `ZED_ORCHESTRATOR_PARALLEL_MODE=false` (if set) falls back to sequential subagent execution for debugging
+- `ZED_ORCHESTRATOR_DISABLE_SUBAGENT_<name>=true` can disable specific subagents at runtime
+- Runtime logs record subagent spawn, execution time per lane, and aggregation details for observability
 
 ### Knowledge Ingestion and Context
 
