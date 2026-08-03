@@ -146,6 +146,8 @@ export interface TradeThesis {
   riskReward: number | null;
   invalidationConditions: string[];
   confidenceScore: number;
+  /** Structured setup tag from the Market Structure Engine (e.g. "sweep_bos_bullish_ob"), when computed. */
+  setupType?: string;
   outcome?: "unresolved" | "validated" | "invalidated" | "paper_traded";
   notes?: string;
   governanceDecisionId?: string;
@@ -219,6 +221,21 @@ export interface TradingPatternAnalytics {
   worstAssetClasses: string[];
   bestTimeframes: string[];
   worstTimeframes: string[];
+  /**
+   * Outcome-based learning from the Market Structure Engine's setup tags
+   * (e.g. "sweep_bos_bullish_ob"). Populated only for closed trades whose
+   * linked thesis carries a `setupType` — null/empty until enough of
+   * those exist to say anything meaningful.
+   */
+  structureLearning: {
+    sweepSuccessRate: number | null;
+    orderBlockPerformance: number | null;
+    structuralContinuationRate: number | null;
+    reversalFrequency: number | null;
+    bestConfluenceCombinations: string[];
+    worstConfluenceCombinations: string[];
+    sampleSize: number;
+  };
 }
 
 export interface TradingPerformanceReport {

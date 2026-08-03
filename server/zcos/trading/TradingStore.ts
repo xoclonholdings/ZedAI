@@ -16,6 +16,7 @@ import type {
   TradingPatternAnalytics,
   TradingPerformanceReport,
 } from "../../../shared/trading-types";
+import type { MarketStructureAnalysis, StructureAlert } from "../../../shared/market-structure-types";
 
 const TRADING_DIR = path.resolve(HUB_DIR, "trading");
 const KNOWLEDGE_PATH = path.resolve(TRADING_DIR, "knowledge.json");
@@ -24,6 +25,9 @@ const PAPER_TRADES_PATH = path.resolve(TRADING_DIR, "paper-trades.json");
 const GOVERNANCE_DECISIONS_PATH = path.resolve(TRADING_DIR, "governance-decisions.json");
 const GOVERNANCE_SETTINGS_PATH = path.resolve(TRADING_DIR, "governance-settings.json");
 const INCIDENT_REPORTS_PATH = path.resolve(TRADING_DIR, "incident-reports.json");
+const STRUCTURE_ALERTS_PATH = path.resolve(TRADING_DIR, "structure-alerts.json");
+const STRUCTURE_SNAPSHOTS_PATH = path.resolve(TRADING_DIR, "structure-snapshots.json");
+const STRUCTURE_ALERTS_MAX = 200;
 const TRADING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working", "trading-intelligence.md");
 
 const DEFAULT_PAPER_GOVERNANCE_CHECKS: Record<string, { enabled: boolean; blocking: boolean }> = {
@@ -156,10 +160,86 @@ function calculateProfitFactor(grossWins: number, grossLosses: number): number {
 function setupNameFor(trade: PaperTrade, thesis?: TradeThesis): string {
   return (
     trade.setupName ||
+    thesis?.setupType ||
     thesis?.status ||
     thesis?.reason?.slice(0, 48) ||
     `${trade.symbol} ${trade.direction}`
   );
+}
+
+/**
+ * Outcome-based learning from the Market Structure Engine's setup tags.
+ * Only trades whose linked thesis carries a `setupType` (i.e. was
+ * generated with real computed structure) count here — free-text setup
+ * names from before the engine existed, or manually entered theses,
+ * don't get counted as structure-tagged evidence.
+ */
+function buildStructureLearning(
+  closedTrades: PaperTrade[],
+  theses: TradeThesis[],
+): TradingPatternAnalytics["structureLearning"] {
+  const thesisById = new Map(theses.map((thesis) => [thesis.id, thesis]));
+  const tagStats = new Map<string, { count: number; wins: number }>();
+
+  let sweepWins = 0;
+  let sweepTotal = 0;
+  let obWins = 0;
+  let obTotal = 0;
+  let continuationWins = 0;
+  let continuationTotal = 0;
+  let reversalCount = 0;
+
+  for (const trade of closedTrades) {
+    const thesis = trade.thesisId ? thesisById.get(trade.thesisId) : undefined;
+    const tag = thesis?.setupType;
+    if (!tag) continue;
+
+    const stats = tagStats.get(tag) || { count: 0, wins: 0 };
+    stats.count += 1;
+    if (trade.outcome === "win") stats.wins += 1;
+    tagStats.set(tag, stats);
+
+    const isWin = trade.outcome === "win";
+    if (tag.includes("sweep")) {
+      sweepTotal += 1;
+      if (isWin) sweepWins += 1;
+    }
+    if (tag.includes("_ob")) {
+      obTotal += 1;
+      if (isWin) obWins += 1;
+    }
+    if (tag.includes("bos")) {
+      continuationTotal += 1;
+      if (isWin) continuationWins += 1;
+    }
+    if (tag.includes("choch") || tag.includes("mss")) {
+      reversalCount += 1;
+    }
+  }
+
+  const ranked = Array.from(tagStats.entries()).filter(([, stats]) => stats.count > 0);
+  const byWinRate = (direction: "best" | "worst") =>
+    ranked
+      .slice()
+      .sort((a, b) => {
+        const ar = a[1].wins / a[1].count;
+        const br = b[1].wins / b[1].count;
+        return direction === "best" ? br - ar : ar - br;
+      })
+      .slice(0, 5)
+      .map(([tag, stats]) => `${tag} (${stats.wins}/${stats.count})`);
+
+  const sampleSize = Array.from(tagStats.values()).reduce((sum, s) => sum + s.count, 0);
+
+  return {
+    sweepSuccessRate: sweepTotal > 0 ? Number((sweepWins / sweepTotal).toFixed(4)) : null,
+    orderBlockPerformance: obTotal > 0 ? Number((obWins / obTotal).toFixed(4)) : null,
+    structuralContinuationRate: continuationTotal > 0 ? Number((continuationWins / continuationTotal).toFixed(4)) : null,
+    reversalFrequency: sampleSize > 0 ? Number((reversalCount / sampleSize).toFixed(4)) : null,
+    bestConfluenceCombinations: byWinRate("best"),
+    worstConfluenceCombinations: byWinRate("worst"),
+    sampleSize,
+  };
 }
 
 function increment(map: Map<string, { count: number; wins: number; pnl: number }>, key: string, trade: PaperTrade) {
@@ -224,6 +304,7 @@ function buildPatternAnalytics(closedTrades: PaperTrade[], theses: TradeThesis[]
     worstAssetClasses: rankedByWinRate(assetStats, "worst"),
     bestTimeframes: rankedByWinRate(timeframeStats, "best"),
     worstTimeframes: rankedByWinRate(timeframeStats, "worst"),
+    structureLearning: buildStructureLearning(closedTrades, theses),
   };
 }
 
@@ -534,6 +615,40 @@ export const TradingStore = {
     await writeJsonArray(INCIDENT_REPORTS_PATH, [incident, ...incidents]);
     await this.appendMemory(`Trading incident recorded: ${incident.symbol || "trade"}. ${incident.incident}.`);
     return incident;
+  },
+
+  async listStructureAlerts(userId?: string, limit = 50): Promise<StructureAlert[]> {
+    await ensureTradingDirs();
+    const alerts = await readJsonArray<StructureAlert>(STRUCTURE_ALERTS_PATH);
+    return alerts
+      .filter((alert) => !userId || alert.userId === userId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, limit);
+  },
+
+  /** Appends new alerts, keeping only the most recent `STRUCTURE_ALERTS_MAX` overall. */
+  async addStructureAlerts(newAlerts: StructureAlert[]): Promise<void> {
+    if (!newAlerts.length) return;
+    const existing = await readJsonArray<StructureAlert>(STRUCTURE_ALERTS_PATH);
+    const merged = [...newAlerts, ...existing]
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, STRUCTURE_ALERTS_MAX);
+    await writeJsonArray(STRUCTURE_ALERTS_PATH, merged);
+    for (const alert of newAlerts) {
+      await this.appendMemory(`Structure alert: ${alert.message}`);
+    }
+  },
+
+  /** The last computed structure analysis per symbol, used to diff for alerts. One entry per symbol. */
+  async getLastStructureSnapshot(symbol: string): Promise<MarketStructureAnalysis | null> {
+    const snapshots = await readJsonArray<MarketStructureAnalysis>(STRUCTURE_SNAPSHOTS_PATH);
+    return snapshots.find((s) => s.symbol === symbol.toUpperCase()) || null;
+  },
+
+  async saveStructureSnapshot(analysis: MarketStructureAnalysis): Promise<void> {
+    const snapshots = await readJsonArray<MarketStructureAnalysis>(STRUCTURE_SNAPSHOTS_PATH);
+    const next = [analysis, ...snapshots.filter((s) => s.symbol !== analysis.symbol)].slice(0, 200);
+    await writeJsonArray(STRUCTURE_SNAPSHOTS_PATH, next);
   },
 
   async getPerformance(userId?: string): Promise<TradingPerformanceReport> {

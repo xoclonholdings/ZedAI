@@ -274,14 +274,18 @@ export async function authorizePaperTrade(input: PaperTradeAuthorizationInput): 
       "market_structure",
       "Market Structure",
       hasText(input.thesis?.marketStructure) ? "PASS" : "UNKNOWN",
-      hasText(input.thesis?.marketStructure) ? String(input.thesis?.marketStructure) : "Market structure is unavailable.",
+      hasText(input.thesis?.marketStructure)
+        ? `${input.thesis?.setupType ? "Engine-computed: " : "Free text (not engine-verified): "}${input.thesis?.marketStructure}`
+        : "Market structure is unavailable.",
       { missingInformation: hasText(input.thesis?.marketStructure) ? undefined : ["Market structure"], critical: true },
     ),
     checklistItem(
       "liquidity_conditions",
       "Liquidity Conditions",
       hasText(input.thesis?.liquidityAnalysis) ? "PASS" : "UNKNOWN",
-      hasText(input.thesis?.liquidityAnalysis) ? String(input.thesis?.liquidityAnalysis) : "Liquidity analysis is unavailable.",
+      hasText(input.thesis?.liquidityAnalysis)
+        ? `${input.thesis?.setupType ? "Engine-computed: " : "Free text (not engine-verified): "}${input.thesis?.liquidityAnalysis}`
+        : "Liquidity analysis is unavailable.",
       { missingInformation: hasText(input.thesis?.liquidityAnalysis) ? undefined : ["Liquidity analysis"], critical: true },
     ),
     checklistItem(

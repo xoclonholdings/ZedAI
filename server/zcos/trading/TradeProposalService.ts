@@ -3,9 +3,11 @@ import type { TradingSignal } from "../../../shared/trading-training-types";
 
 import { generateTradeStrategy, type DirectionPreference, type GeneratedStrategy } from "./TradeStrategyGenerator";
 import { createTradeThesis } from "./TradeThesisEngine";
-import { getMarketQuote, type MarketQuote } from "./MarketDataService";
+import { getMarketQuote, getMultiTimeframeSeries, type MarketQuote } from "./MarketDataService";
 import { recommendSymbol } from "./SymbolRecommender";
 import { getWebullMarketQuote, recommendWebullSymbol } from "./WebullBridge";
+import { analyzeMarketStructure } from "./MarketStructureEngine";
+import type { MarketStructureAnalysis } from "../../../shared/market-structure-types";
 
 /**
  * One "propose a trade" flow shared by every execution target (internal
@@ -84,6 +86,7 @@ export type ProposeTradeResult =
       thesisId: string;
       marketData: MarketDataSummary;
       signal: TradingSignal | null;
+      structure: MarketStructureAnalysis | null;
       recommendedSymbol: { symbol: string; reason: string } | null;
     };
 
@@ -148,9 +151,19 @@ export async function proposeTrade(input: ProposeTradeInput): Promise<ProposeTra
     };
   }
 
-  if (directionPreference === "auto" && quote?.signal && quote.signal.signal !== "neutral") {
+  // The neutral case already returned above, so any signal reaching here is buy/sell.
+  if (directionPreference === "auto" && quote?.signal) {
     directionPreference = quote.signal.signal === "buy" ? "long" : "short";
   }
+
+  // Real market structure (swings, BOS/CHoCH, liquidity, order blocks,
+  // multi-timeframe alignment) from ZAR's own historical-bar feed, used
+  // regardless of which execution adapter is proposing the trade — a
+  // symbol's structure doesn't depend on which broker will fill it.
+  const series = await getMultiTimeframeSeries(symbol, input.asset).catch(() => []);
+  const structureAnalysis = series.length
+    ? analyzeMarketStructure(symbol, series, "Daily", quote?.signal)
+    : null;
 
   const strategy = await generateTradeStrategy({
     userId: input.userId,
@@ -162,6 +175,7 @@ export async function proposeTrade(input: ProposeTradeInput): Promise<ProposeTra
     referencePrice: input.referencePrice ?? quote?.price,
     stopDistance: quote?.atr,
     signal: quote?.signal ?? null,
+    structureAnalysis,
   });
 
   const thesis = await createTradeThesis({
@@ -181,6 +195,7 @@ export async function proposeTrade(input: ProposeTradeInput): Promise<ProposeTra
     riskReward: strategy.riskReward,
     invalidationConditions: strategy.invalidation.split("\n").map((s) => s.trim()).filter(Boolean),
     confidenceScore: strategy.confidence,
+    setupType: strategy.setupType,
     notes: input.notesPrefix ? `${input.notesPrefix} ${strategy.basis}` : strategy.basis,
   });
 
@@ -190,6 +205,7 @@ export async function proposeTrade(input: ProposeTradeInput): Promise<ProposeTra
     thesisId: thesis.id,
     marketData: summarize(quote),
     signal: quote?.signal ?? null,
+    structure: structureAnalysis,
     recommendedSymbol: recommendation ? { symbol: recommendation.symbol, reason: recommendation.reason } : null,
   };
 }

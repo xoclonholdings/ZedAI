@@ -1,15 +1,14 @@
 import type { SetupStatus, TradingAssetClass } from "../../../shared/trading-types";
+import type { MarketStructureAnalysis } from "../../../shared/market-structure-types";
 
 import { TradingStore } from "./TradingStore";
+import { getMultiTimeframeSeries, getMarketQuote } from "./MarketDataService";
+import { analyzeMarketStructure } from "./MarketStructureEngine";
 
 export interface ScannerObservation {
   symbol: string;
   assetClass: TradingAssetClass;
-  timeframe: string;
-  trend?: "up" | "down" | "range" | "unclear";
-  structureEvent?: "bos" | "choch" | "breakout" | "reversal" | "none";
-  liquidityEvent?: "sweep" | "grab" | "equal_highs" | "equal_lows" | "none";
-  confluenceScore?: number;
+  timeframe?: string;
   riskReward?: number;
   notes?: string;
 }
@@ -22,44 +21,55 @@ export interface ScannerResult {
   score: number;
   reasons: string[];
   requiredNextChecks: string[];
+  structure: MarketStructureAnalysis | null;
 }
 
-function clampScore(value?: number): number {
-  if (typeof value !== "number" || Number.isNaN(value)) return 0;
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function classify(score: number, observation: ScannerObservation): SetupStatus {
-  if (observation.trend === "unclear" || observation.structureEvent === "none") return "observe";
-  if (score >= 75 && (observation.riskReward || 0) >= 2) return "valid_setup";
+function classify(score: number, riskReward: number | undefined, hasStructure: boolean): SetupStatus {
+  if (!hasStructure) return "observe";
+  if (score >= 75 && (riskReward || 0) >= 2) return "valid_setup";
   if (score >= 55) return "possible_setup";
   if (score >= 35) return "watch";
   return "no_trade";
 }
 
+/**
+ * Evaluates a symbol from real, computed market structure — swings,
+ * structural events, liquidity, order blocks, and multi-timeframe
+ * alignment — instead of trusting caller-supplied structure/liquidity
+ * flags. The confluence score and structure read come directly from
+ * `MarketStructureEngine`, the same engine strategy generation and
+ * governance use, so the scanner, the strategy proposal, and the
+ * governance checklist can no longer disagree about what's actually
+ * happening in price.
+ */
 export async function evaluateScannerObservation(observation: ScannerObservation): Promise<ScannerResult> {
+  const symbol = observation.symbol.toUpperCase();
   const reasons: string[] = [];
-  let score = clampScore(observation.confluenceScore);
 
-  if (observation.structureEvent && observation.structureEvent !== "none") {
-    score += 10;
-    reasons.push(`Structure event detected: ${observation.structureEvent}.`);
+  const [series, quote] = await Promise.all([
+    getMultiTimeframeSeries(symbol, observation.assetClass),
+    getMarketQuote(symbol, observation.assetClass),
+  ]);
+
+  const primaryTimeframe = observation.timeframe || (series[0]?.timeframe ?? "Daily");
+  const structure = series.length
+    ? analyzeMarketStructure(symbol, series, primaryTimeframe, quote?.signal)
+    : null;
+
+  let score = structure?.confluence.score ?? 0;
+
+  if (structure) {
+    reasons.push(structure.explanation);
+  } else {
+    reasons.push("No live price history was reachable for this symbol, so market structure could not be read.");
   }
-  if (observation.liquidityEvent && observation.liquidityEvent !== "none") {
-    score += 10;
-    reasons.push(`Liquidity event detected: ${observation.liquidityEvent}.`);
-  }
+
   if ((observation.riskReward || 0) >= 2) {
-    score += 10;
+    score = Math.min(100, score + 5);
     reasons.push(`Risk/reward is acceptable at ${observation.riskReward}.`);
   }
-  if (observation.trend && observation.trend !== "unclear") {
-    score += 5;
-    reasons.push(`Trend context: ${observation.trend}.`);
-  }
 
-  score = Math.min(100, score);
-  const status = classify(score, observation);
+  const status = classify(score, observation.riskReward, structure !== null);
   const requiredNextChecks = [
     "Confirm multi-timeframe alignment before thesis creation.",
     "Define invalidation before opening any paper trade.",
@@ -67,13 +77,14 @@ export async function evaluateScannerObservation(observation: ScannerObservation
   ];
 
   const result: ScannerResult = {
-    symbol: observation.symbol.toUpperCase(),
+    symbol,
     assetClass: observation.assetClass,
-    timeframe: observation.timeframe,
+    timeframe: primaryTimeframe,
     status,
     score,
-    reasons: reasons.length ? reasons : ["No high-confluence condition detected."],
+    reasons,
     requiredNextChecks,
+    structure,
   };
 
   await TradingStore.appendMemory(

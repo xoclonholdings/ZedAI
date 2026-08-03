@@ -3,6 +3,7 @@ import type {
   TradingAssetClass,
 } from "../../../shared/trading-types";
 import type { TradingSignal } from "../../../shared/trading-training-types";
+import type { MarketStructureAnalysis } from "../../../shared/market-structure-types";
 
 import { executeProviderChat } from "../../core/providers/provider-executor";
 import { buildTradingCurriculumContext } from "./TradingCurriculum";
@@ -51,6 +52,13 @@ export interface GenerateStrategyInput {
   stopDistance?: number;
   /** Live technical signal, when available — grounds the thesis in real reads. */
   signal?: TradingSignal | null;
+  /**
+   * Real, computed market structure (swings, BOS/CHoCH, liquidity, order
+   * blocks, multi-timeframe alignment) from the Market Structure Engine,
+   * when live bars were reachable. Replaces the generic structural prose
+   * with facts specific to this symbol's actual price action.
+   */
+  structureAnalysis?: MarketStructureAnalysis | null;
 }
 
 export interface GeneratedStrategy {
@@ -239,6 +247,39 @@ function buildLiquidityAnalysis(direction: TradeDirection): string {
   ].join(" ");
 }
 
+/** Real structure/liquidity text from the Market Structure Engine, when available. */
+function buildEngineMarketStructure(structure: MarketStructureAnalysis): string {
+  const primary = structure.timeframes.find((t) => t.timeframe === structure.primaryTimeframe) || structure.timeframes[0];
+  const parts = [structure.explanation];
+  if (structure.timeframes.length > 1) {
+    const trendList = structure.timeframes.map((t) => `${t.timeframe}: ${t.trend}`).join("; ");
+    parts.push(`Trend by timeframe — ${trendList}.`);
+  }
+  if (primary) {
+    parts.push(`Internal structure is ${primary.internalStructure}; external structure is ${primary.externalStructure}.`);
+  }
+  return parts.join(" ");
+}
+
+function buildEngineLiquidityAnalysis(structure: MarketStructureAnalysis): string {
+  const primary = structure.timeframes.find((t) => t.timeframe === structure.primaryTimeframe) || structure.timeframes[0];
+  if (!primary) return "No liquidity levels were computed.";
+  const swept = primary.liquidity.filter((l) => l.status === "swept");
+  const active = primary.liquidity.filter((l) => l.status === "active");
+  const sentences: string[] = [];
+  if (swept.length) {
+    const last = swept[swept.length - 1];
+    sentences.push(`${last.kind.replace(/_/g, " ")} near ${last.price} has already been swept.`);
+  } else {
+    sentences.push("No liquidity pool on this timeframe has been swept yet.");
+  }
+  const nearestAbove = active.filter((l) => l.price > primary.lastClose).sort((a, b) => a.price - b.price)[0];
+  const nearestBelow = active.filter((l) => l.price < primary.lastClose).sort((a, b) => b.price - a.price)[0];
+  if (nearestAbove) sentences.push(`The nearest resting liquidity above price sits near ${nearestAbove.price} (${nearestAbove.kind.replace(/_/g, " ")}).`);
+  if (nearestBelow) sentences.push(`The nearest resting liquidity below price sits near ${nearestBelow.price} (${nearestBelow.kind.replace(/_/g, " ")}).`);
+  return sentences.join(" ");
+}
+
 function buildEntryPlan(direction: TradeDirection): string {
   const zone = direction === "long" ? "reclaimed support" : "rejected resistance";
   const side = direction === "long" ? "above" : "below";
@@ -288,7 +329,21 @@ function buildInvalidation(direction: TradeDirection): string[] {
  * promise. It reflects how much of the learned framework the draft is
  * grounded in — never certainty.
  */
-function scoreConfidence(knowledgeMatches: number, auto: boolean, signal?: TradingSignal | null): number {
+function scoreConfidence(
+  knowledgeMatches: number,
+  auto: boolean,
+  signal?: TradingSignal | null,
+  structure?: MarketStructureAnalysis | null,
+): number {
+  if (structure) {
+    // Confluence already synthesizes structure, liquidity, alignment, and
+    // indicator agreement — anchor on it and only lightly adjust for the
+    // remaining, structure-independent inputs.
+    let score = structure.confluence.score;
+    score += Math.min(8, knowledgeMatches * 2);
+    if (!auto) score += 4;
+    return clampConfidence(score);
+  }
   let score = 62; // baseline for a clean structural draft
   score += Math.min(16, knowledgeMatches * 4); // grounded in stored rules
   if (!auto) score += 6; // user-specified direction adds conviction
@@ -296,7 +351,8 @@ function scoreConfidence(knowledgeMatches: number, auto: boolean, signal?: Tradi
   return clampConfidence(score);
 }
 
-function inferSetupType(direction: TradeDirection, signal?: TradingSignal | null): string {
+function inferSetupType(direction: TradeDirection, signal?: TradingSignal | null, structure?: MarketStructureAnalysis | null): string {
+  if (structure) return structure.setupTag;
   const rsiVote = signal?.votes.find((vote) => vote.name === "RSI 14")?.detail || "";
   const momentum = signal?.votes.find((vote) => vote.name === "Momentum")?.verdict;
   if (/overbought/i.test(rsiVote) && direction === "short") return "Mean-reversion short";
@@ -486,8 +542,8 @@ function normalizeModelProposal(
     direction,
     timeframe,
     riskReward,
-    confidence: clampConfidence(Number(proposal.confidence || scoreConfidence(knowledgeMatches, false))),
-    setupType: cleanText(proposal.setupType || inferSetupType(direction, input.signal), "setupType"),
+    confidence: clampConfidence(Number(proposal.confidence || scoreConfidence(knowledgeMatches, false, input.signal, input.structureAnalysis))),
+    setupType: cleanText(proposal.setupType || inferSetupType(direction, input.signal, input.structureAnalysis), "setupType"),
     thesis: cleanText(proposal.thesis, "thesis"),
     marketStructure: cleanText(proposal.marketStructure, "marketStructure"),
     liquidityAnalysis: cleanText(proposal.liquidityAnalysis, "liquidityAnalysis"),
@@ -534,6 +590,18 @@ async function generateModelTradeStrategy(
     liveMarketDataAvailable: pricedFromReference,
     minimumRewardRisk: 2,
     maxPaperRisk: MAX_PAPER_RISK,
+    computedMarketStructure: input.structureAnalysis
+      ? {
+          explanation: input.structureAnalysis.explanation,
+          confluenceScore: input.structureAnalysis.confluence.score,
+          confluenceFactors: input.structureAnalysis.confluence.factors,
+          timeframeTrends: Object.fromEntries(input.structureAnalysis.timeframes.map((t) => [t.timeframe, t.trend])),
+          alignment: input.structureAnalysis.alignment.summary,
+          setupTag: input.structureAnalysis.setupTag,
+          instruction:
+            "Use these computed structure facts as the ground truth for marketStructure/liquidityAnalysis/timeframeAlignment — describe them in plain language, do not contradict or invent additional structure beyond what's given here.",
+        }
+      : null,
     recentKnowledge: knowledgeEntries.slice(0, 4).map((entry) => ({
       title: entry.title,
       rules: entry.rules.slice(0, 5),
@@ -623,7 +691,7 @@ async function generateRuleBasedTradeStrategy(
   const { direction, auto } = resolveDirection(input.directionPreference, knowledgeText, input.signal);
 
   const riskReward = roundRR(3.0);
-  const confidence = scoreConfidence(knowledgeEntries.length, auto, input.signal);
+  const confidence = scoreConfidence(knowledgeEntries.length, auto, input.signal, input.structureAnalysis);
 
   const pricedFromReference =
     typeof input.referencePrice === "number" &&
@@ -652,10 +720,10 @@ async function generateRuleBasedTradeStrategy(
     timeframe,
     riskReward,
     confidence,
-    setupType: inferSetupType(direction, input.signal),
+    setupType: inferSetupType(direction, input.signal, input.structureAnalysis),
     thesis: buildDataDrivenThesis(symbol, direction, levels, riskReward, input.signal),
-    marketStructure: buildMarketStructure(direction, timeframe),
-    liquidityAnalysis: buildLiquidityAnalysis(direction),
+    marketStructure: input.structureAnalysis ? buildEngineMarketStructure(input.structureAnalysis) : buildMarketStructure(direction, timeframe),
+    liquidityAnalysis: input.structureAnalysis ? buildEngineLiquidityAnalysis(input.structureAnalysis) : buildLiquidityAnalysis(direction),
     entryPlan: buildEntryPlan(direction),
     stopPlan: buildStopPlan(direction),
     targetPlan: buildTargetPlan(direction),
@@ -665,7 +733,9 @@ async function generateRuleBasedTradeStrategy(
     target: levels.target,
     size: levels.size,
     riskAmount: levels.riskAmount,
-    timeframeAlignment: buildTimeframeAlignment(timeframe, direction),
+    timeframeAlignment: input.structureAnalysis
+      ? Object.fromEntries(input.structureAnalysis.timeframes.map((t) => [t.timeframe, t.trend]))
+      : buildTimeframeAlignment(timeframe, direction),
     session: sessionFor(input.asset),
     draft,
     pricedFromReference,

@@ -25,6 +25,7 @@ export interface CreateTradeThesisInput {
   riskReward?: number | null;
   invalidationConditions: string[];
   confidenceScore?: number;
+  setupType?: string;
   status?: SetupStatus;
   notes?: string;
 }
@@ -73,6 +74,7 @@ export async function createTradeThesis(input: CreateTradeThesisInput): Promise<
     riskReward: typeof input.riskReward === "number" ? input.riskReward : null,
     invalidationConditions: input.invalidationConditions,
     confidenceScore: clampConfidence(input.confidenceScore),
+    setupType: input.setupType,
     outcome: "unresolved",
     notes: [input.notes, `Relevant knowledge:\n${knowledgeContext}`].filter(Boolean).join("\n\n"),
   });

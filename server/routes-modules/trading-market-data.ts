@@ -1,7 +1,7 @@
 import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
-import { getMarketQuote, getMarketDataStatus } from "../zcos/trading/MarketDataService";
+import { getMarketQuote, getMarketDataStatus, getMultiTimeframeSeries } from "../zcos/trading/MarketDataService";
 import { runBacktest } from "../zcos/trading/BacktestEngine";
 import { tradingDbAvailable } from "../zcos/trading/tradingPersistence";
 import {
@@ -10,7 +10,9 @@ import {
   clearMarketDataKey,
   type MarketDataVendor,
 } from "../zcos/trading/MarketDataKeysStore";
-import { toNumber } from "./trading-route-helpers";
+import { analyzeMarketStructure, generateStructureAlerts } from "../zcos/trading/MarketStructureEngine";
+import { TradingStore } from "../zcos/trading/TradingStore";
+import { userIdFrom, toNumber } from "./trading-route-helpers";
 
 /** Live market data, data-vendor keys, storage status, and backtesting. */
 export function registerTradingMarketDataRoutes(app: Express): void {
@@ -114,5 +116,55 @@ export function registerTradingMarketDataRoutes(app: Express): void {
       });
     }
     res.json({ live: true, quote });
+  });
+
+  /**
+   * Real market structure for a symbol — swings, structural events
+   * (BOS/CHoCH/MSS), liquidity, institutional footprints, price
+   * interaction, multi-timeframe alignment, and a single confluence
+   * score, all computed from live bars by the Market Structure Engine.
+   * Also diffs against the last computed snapshot for this symbol and
+   * records any new intelligent alerts (structure shift, liquidity
+   * sweep, high-confluence zone, major order block test, trend reversal,
+   * multi-timeframe alignment) for later retrieval.
+   */
+  app.get("/api/trading/market-data/structure", isAuthenticated, async (req: any, res) => {
+    const symbol = String(req.query.symbol || "").trim();
+    if (!symbol) return res.status(400).json({ error: "symbol is required" });
+    const asset = (req.query.asset ? String(req.query.asset) : "stock") as any;
+    const primaryTimeframe = req.query.timeframe ? String(req.query.timeframe) : "Daily";
+
+    const [series, quote] = await Promise.all([
+      getMultiTimeframeSeries(symbol, asset),
+      getMarketQuote(symbol, asset),
+    ]);
+
+    if (!series.length) {
+      return res.json({
+        live: false,
+        structure: null,
+        note: "No live price history is reachable for this symbol right now, so market structure can't be read.",
+      });
+    }
+
+    const structure = analyzeMarketStructure(symbol, series, primaryTimeframe, quote?.signal);
+    if (!structure) {
+      return res.json({ live: true, structure: null, note: "Not enough bars were available to detect structure." });
+    }
+
+    const userId = userIdFrom(req);
+    const previous = await TradingStore.getLastStructureSnapshot(symbol);
+    const alerts = generateStructureAlerts(userId, structure, previous);
+    await TradingStore.saveStructureSnapshot(structure);
+    if (alerts.length) await TradingStore.addStructureAlerts(alerts);
+
+    res.json({ live: true, structure, newAlerts: alerts });
+  });
+
+  /** Recently generated structure alerts (structure shifts, sweeps, high-confluence zones, …). */
+  app.get("/api/trading/market-data/alerts", isAuthenticated, async (req: any, res) => {
+    const limit = req.query.limit ? Math.max(1, Math.min(200, toNumber(req.query.limit, 50))) : 50;
+    const alerts = await TradingStore.listStructureAlerts(userIdFrom(req), limit);
+    res.json({ alerts });
   });
 }

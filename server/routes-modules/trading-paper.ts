@@ -122,7 +122,7 @@ export function registerTradingPaperRoutes(app: Express): void {
       symbol: String(req.body.symbol).toUpperCase(),
       direction: req.body.direction,
       timeframe: req.body.timeframe,
-      setupName: req.body.setupName,
+      setupName: req.body.setupName || thesis?.setupType,
       entry: toNumber(req.body.entry),
       stop: toNumber(req.body.stop),
       target: toNumber(req.body.target),

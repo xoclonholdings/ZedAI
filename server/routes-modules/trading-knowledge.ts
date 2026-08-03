@@ -67,17 +67,13 @@ export function registerTradingKnowledgeRoutes(app: Express): void {
   });
 
   app.post("/api/trading/scanner/evaluate", isAuthenticated, async (req, res) => {
-    const missing = requireFields(req.body || {}, ["symbol", "assetClass", "timeframe"]);
+    const missing = requireFields(req.body || {}, ["symbol", "assetClass"]);
     if (missing) return res.status(400).json({ error: `${missing} is required` });
 
     const result = await evaluateScannerObservation({
       symbol: String(req.body.symbol),
       assetClass: req.body.assetClass,
-      timeframe: String(req.body.timeframe),
-      trend: req.body.trend,
-      structureEvent: req.body.structureEvent,
-      liquidityEvent: req.body.liquidityEvent,
-      confluenceScore: toNumber(req.body.confluenceScore),
+      timeframe: req.body.timeframe ? String(req.body.timeframe) : undefined,
       riskReward: req.body.riskReward === undefined ? undefined : toNumber(req.body.riskReward),
       notes: req.body.notes,
     });

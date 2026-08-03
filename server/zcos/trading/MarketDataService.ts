@@ -192,6 +192,32 @@ export async function getHistoricalBars(
   return { bars, dates, source: "Yahoo Finance" };
 }
 
+export interface TimeframeBarSeries {
+  timeframe: string;
+  bars: MarketBar[];
+}
+
+/**
+ * Daily, Weekly, and Monthly bar series for the same symbol, ready for
+ * multi-timeframe market-structure analysis. Weekly/Monthly are real
+ * aggregations of the daily series (see `resampleBars`), not a separate
+ * fetch. Returns an empty array if no historical daily bars are reachable.
+ */
+export async function getMultiTimeframeSeries(
+  symbol: string,
+  asset: TradingAssetClass,
+  range = "2y",
+): Promise<TimeframeBarSeries[]> {
+  const { bars, dates } = await getHistoricalBars(symbol, asset, range);
+  if (!bars.length) return [];
+  const series: TimeframeBarSeries[] = [{ timeframe: "Daily", bars }];
+  const weekly = resampleBars(bars, dates, "week");
+  if (weekly.length >= 12) series.unshift({ timeframe: "Weekly", bars: weekly });
+  const monthly = resampleBars(bars, dates, "month");
+  if (monthly.length >= 12) series.unshift({ timeframe: "Monthly", bars: monthly });
+  return series;
+}
+
 async function fromYahoo(symbol: string, asset: TradingAssetClass): Promise<MarketQuote | null> {
   const ticker = encodeURIComponent(toYahooSymbol(symbol, asset));
   // 6 months of daily bars — enough history for SMA50 / RSI / MACD.
@@ -319,6 +345,45 @@ export async function getMarketQuote(
     }
   }
   return null;
+}
+
+/**
+ * Resample daily bars (oldest→newest, with parallel ISO dates from
+ * `getHistoricalBars`) into weekly or monthly bars by grouping on
+ * calendar week/month boundaries. This is real aggregation of real
+ * prices — not synthesized data — so Monthly/Weekly/Daily market
+ * structure can be analyzed together without needing a separate
+ * intraday data feed (4H/1H/15m/5m/1m require one and aren't faked here).
+ */
+export function resampleBars(
+  bars: MarketBar[],
+  dates: string[],
+  period: "week" | "month",
+): MarketBar[] {
+  if (!bars.length || bars.length !== dates.length) return [];
+  const groups = new Map<string, MarketBar[]>();
+  for (let i = 0; i < bars.length; i++) {
+    const date = new Date(dates[i]);
+    if (Number.isNaN(date.getTime())) continue;
+    let key: string;
+    if (period === "month") {
+      key = `${date.getUTCFullYear()}-${date.getUTCMonth()}`;
+    } else {
+      const dayOfWeek = date.getUTCDay();
+      const monday = new Date(date);
+      monday.setUTCDate(date.getUTCDate() - ((dayOfWeek + 6) % 7));
+      key = monday.toISOString().slice(0, 10);
+    }
+    const group = groups.get(key) || [];
+    group.push(bars[i]);
+    groups.set(key, group);
+  }
+  return Array.from(groups.values()).map((group) => ({
+    o: group[0].o,
+    h: Math.max(...group.map((b) => b.h)),
+    l: Math.min(...group.map((b) => b.l)),
+    c: group[group.length - 1].c,
+  }));
 }
 
 /** Names of the keyed vendors currently configured (saved in-app or env). */

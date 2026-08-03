@@ -78,6 +78,7 @@ export function registerTradingStrategyRoutes(app: Express): void {
         session: result.strategy.session,
         marketData: result.marketData,
         signal: result.signal,
+        structure: result.structure,
         recommendedSymbol: result.recommendedSymbol,
       });
     } catch (error: any) {
@@ -131,6 +132,7 @@ export function registerTradingStrategyRoutes(app: Express): void {
       riskReward: req.body.riskReward === undefined ? null : toNumber(req.body.riskReward),
       invalidationConditions: toArray(req.body.invalidationConditions),
       confidenceScore: toNumber(req.body.confidenceScore, 50),
+      setupType: req.body.setupType ? String(req.body.setupType) : undefined,
       status: req.body.status,
       notes: req.body.notes,
     });
