@@ -4,7 +4,7 @@ import type {
 } from "../../../shared/trading-training-types";
 
 import { TradingStore } from "./TradingStore";
-import { getEvaluationReport } from "./EvaluationEngine";
+import { getEvaluationReport, DEFAULT_EVALUATION_CONFIG } from "./EvaluationEngine";
 
 /**
  * Stage 6 — Qualification.
@@ -39,7 +39,7 @@ export async function getQualificationReport(userId: string): Promise<Qualificat
   // Edge — positive, growing expectancy. Scaled so a solid expectancy tops out.
   const edge = clamp(expectancy <= 0 ? 0 : 60 + Math.min(40, expectancy * 4));
   // Drawdown control — evaluation drawdown limit as the yardstick.
-  const ddLimit = evalReport?.config.maxTotalDrawdown || 2000;
+  const ddLimit = evalReport?.config.maxTotalDrawdown || DEFAULT_EVALUATION_CONFIG.maxTotalDrawdown;
   const ddUsedPct = ddLimit > 0 ? Math.min(1, (evalReport?.maxDrawdownSeen || Math.abs(drawdown)) / ddLimit) : 1;
   const drawdownControl = clamp((1 - ddUsedPct) * 100);
   // Consistency — win rate + profit factor, penalised by loss streaks.

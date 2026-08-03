@@ -76,7 +76,10 @@ export async function recommendSymbol(
 ): Promise<SymbolRecommendation | null> {
   const universe = UNIVERSE[asset] || UNIVERSE.etf;
   const avoid = new Set((opts.avoidSymbols || []).map((symbol) => symbol.trim().toUpperCase()).filter(Boolean));
-  const pool = universe.some((symbol) => !avoid.has(symbol.toUpperCase())) ? universe : universe.concat();
+  // If every symbol in the universe is on the avoid list, ignore the
+  // avoid list entirely rather than returning nothing.
+  const ignoreAvoidList = !universe.some((symbol) => !avoid.has(symbol.toUpperCase()));
+  const pool = universe;
 
   const scored: Array<{
     score: number;
@@ -89,7 +92,7 @@ export async function recommendSymbol(
     signalStrength: number;
   }> = [];
   for (const symbol of pool) {
-    if (avoid.has(symbol.toUpperCase()) && pool === universe) continue;
+    if (avoid.has(symbol.toUpperCase()) && !ignoreAvoidList) continue;
     const quote = await getMarketQuote(symbol, asset);
     if (!quote) continue;
     const mom = scoreSymbol(quote.bars);

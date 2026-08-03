@@ -91,12 +91,16 @@ export function backtestOverBars(
     const slipR = (2 * entry * (slippageBps / 10000)) / riskDist;
     const costR = slipR + commissionR;
 
-    const record = (grossR: number, outcomeWin: boolean, isTimeout: boolean, held: number) => {
+    // A trade counts as a win/loss by its NET (post-cost) result, uniformly
+    // across every exit path — previously the level-hit path counted wins
+    // by the raw gross outcome while the timeout path counted by net,
+    // which mixed two different definitions of "win" in the same winRate.
+    const record = (grossR: number, isTimeout: boolean, held: number) => {
       const net = grossR - costR;
       rMultiples.push(net);
       grossSum += grossR;
       costSum += costR;
-      if (outcomeWin) wins++;
+      if (net > 0) wins++;
       else losses++;
       if (isTimeout) timeouts++;
       holdSum += held;
@@ -107,7 +111,7 @@ export function backtestOverBars(
     for (let j = i + 1; j < Math.min(i + 1 + maxHoldBars, bars.length); j++) {
       const hit = resolveAgainstRange(direction, stop, target, bars[j].h, bars[j].l);
       if (hit) {
-        record(hit.outcome === "win" ? riskReward : -1, hit.outcome === "win", false, j - i);
+        record(hit.outcome === "win" ? riskReward : -1, false, j - i);
         i = j + 1;
         resolved = true;
         break;
@@ -118,7 +122,7 @@ export function backtestOverBars(
       const exitIdx = Math.min(i + maxHoldBars, bars.length - 1);
       const exit = bars[exitIdx].c;
       const r = (direction === "long" ? exit - entry : entry - exit) / riskDist;
-      record(r, r - costR > 0, true, exitIdx - i);
+      record(r, true, exitIdx - i);
       i = exitIdx + 1;
     }
   }
@@ -130,9 +134,12 @@ export function backtestOverBars(
   const expectancyR = round2(netR / totalTrades);
   const grossExpectancyR = round2(grossSum / totalTrades);
   const costPerTradeR = round2(costSum / totalTrades);
-  const grossWin = rMultiples.filter((r) => r > 0).reduce((a, b) => a + b, 0);
-  const grossLoss = Math.abs(rMultiples.filter((r) => r < 0).reduce((a, b) => a + b, 0));
-  const profitFactor = grossLoss > 0 ? round2(grossWin / grossLoss) : grossWin > 0 ? 99 : 0;
+  // Profit factor is conventionally net-of-costs (matches TradingStore's
+  // own calculateProfitFactor) — named net*, not gross*, since these sum
+  // rMultiples (already net of costR), not the pre-cost grossR values.
+  const netWin = rMultiples.filter((r) => r > 0).reduce((a, b) => a + b, 0);
+  const netLoss = Math.abs(rMultiples.filter((r) => r < 0).reduce((a, b) => a + b, 0));
+  const profitFactor = netLoss > 0 ? round2(netWin / netLoss) : netWin > 0 ? 99 : 0;
   const winRate = round2((wins / totalTrades) * 100);
 
   // Max drawdown in R across the equity curve.

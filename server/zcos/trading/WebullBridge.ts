@@ -20,4 +20,10 @@ export {
   listWebullOrders,
 } from "./WebullAccounts";
 export { getWebullMarketQuote, recommendWebullSymbol } from "./WebullMarketData";
-export { placeWebullOrder, type WebullOrderInput, type WebullOrderResult } from "./WebullOrders";
+export {
+  placeWebullOrder,
+  placeWebullPaperOrder,
+  placeWebullLiveOrder,
+  type WebullOrderInput,
+  type WebullOrderResult,
+} from "./WebullOrders";

@@ -1,6 +1,9 @@
+import fs from "fs/promises";
+import path from "path";
 import { sql } from "drizzle-orm";
 
 import { db, isDatabaseRequired } from "../../db";
+import { HUB_DIR } from "../../utils/repoPaths";
 
 /**
  * Durable persistence for the Trading module.
@@ -98,4 +101,46 @@ export async function writeTradingState<T>(scope: string, key: string, data: T):
     if (isDatabaseRequired()) throw error;
     return false;
   }
+}
+
+const FALLBACK_DIR = path.resolve(HUB_DIR, "trading", "state");
+
+function fallbackFile(scope: string, key: string): string {
+  const safe = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, "_");
+  return path.resolve(FALLBACK_DIR, `${safe(scope)}__${safe(key)}.json`);
+}
+
+/**
+ * Same contract as readTradingState/writeTradingState, but actually
+ * implements the local/offline JSON fallback the module doc promises —
+ * readTradingState/writeTradingState alone silently no-op with no
+ * database configured, which several callers (TradovateBridge,
+ * EvaluationEngine, LiveTradingEngine, MarketDataKeysStore) previously
+ * assumed happened automatically. Use these for any new single-object
+ * config instead of the raw functions above.
+ */
+export async function readTradingObject<T>(scope: string, key: string): Promise<T | null> {
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
+    const stored = await readTradingState<T>(scope, key);
+    if (stored !== null) return stored;
+    if (tradingPersistenceRequired()) return null;
+  }
+  try {
+    const raw = await fs.readFile(fallbackFile(scope, key), "utf8");
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeTradingObject<T>(scope: string, key: string, data: T): Promise<void> {
+  if (tradingDbAvailable() || tradingPersistenceRequired()) {
+    const ok = await writeTradingState(scope, key, data);
+    if (ok) return;
+    if (tradingPersistenceRequired()) {
+      throw new Error(`Unable to persist trading state ${scope}/${key} to PostgreSQL.`);
+    }
+  }
+  await fs.mkdir(FALLBACK_DIR, { recursive: true });
+  await fs.writeFile(fallbackFile(scope, key), JSON.stringify(data, null, 2), "utf8");
 }

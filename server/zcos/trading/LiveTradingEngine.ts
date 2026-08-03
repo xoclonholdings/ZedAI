@@ -3,10 +3,10 @@ import type {
   LiveTradingState,
 } from "../../../shared/trading-training-types";
 
-import { readTradingState, writeTradingState } from "./tradingPersistence";
-import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
+import { readTradingObject, writeTradingObject } from "./tradingPersistence";
 import { getQualificationReport } from "./QualificationEngine";
 import { tradovateConfigured } from "./TradovateBridge";
+import { getWebullStatus } from "./WebullAuth";
 import { loadProgression } from "../../services/TradingProgressionStore";
 
 /**
@@ -17,14 +17,18 @@ import { loadProgression } from "../../services/TradingProgressionStore";
  * that must all be satisfied before anything could execute — qualification
  * passed, a broker connected, and the kill switch armed.
  *
- * It deliberately does NOT place orders. Real execution requires a broker
- * order bridge (Tradovate is the intended one); until that exists ZAR
- * reports "ready, pending broker" instead of pretending it can trade live.
- * This keeps the promotion path honest end-to-end.
+ * This module itself never places an order — it only computes and stores
+ * the gate state (`getLiveState`/`canExecute`). Real order routing lives
+ * in each broker's own route: `POST /api/trading/webull/order` (via
+ * `placeWebullLiveOrder`) and `POST /api/trading/tradovate/order` (when
+ * connected in "live" mode) both call `getLiveState(userId).canExecute`
+ * before touching the broker, so this file is the single source of truth
+ * either path defers to. Until a broker resolves to a genuine production
+ * connection, `brokerConnected` stays false and status reports
+ * "ready, pending broker" instead of pretending it can trade live.
  */
 
 const CONFIG_SCOPE = "live-config";
-const BROKER_PROVIDERS = ["webull", "tradovate"];
 
 export const DEFAULT_LIVE_CONFIG: LiveTradingConfig = {
   maxRiskPerTrade: 100,
@@ -34,7 +38,7 @@ export const DEFAULT_LIVE_CONFIG: LiveTradingConfig = {
 };
 
 async function loadConfig(userId: string): Promise<LiveTradingConfig> {
-  const stored = await readTradingState<LiveTradingConfig>(CONFIG_SCOPE, userId);
+  const stored = await readTradingObject<LiveTradingConfig>(CONFIG_SCOPE, userId);
   return { ...DEFAULT_LIVE_CONFIG, ...(stored || {}) };
 }
 
@@ -43,7 +47,7 @@ export async function saveLiveConfig(
   patch: Partial<LiveTradingConfig>,
 ): Promise<LiveTradingConfig> {
   const next = { ...(await loadConfig(userId)), ...patch };
-  await writeTradingState(CONFIG_SCOPE, userId, next);
+  await writeTradingObject(CONFIG_SCOPE, userId, next);
   return next;
 }
 
@@ -52,21 +56,23 @@ export async function setKillSwitch(userId: string, armed: boolean): Promise<Liv
   return getLiveState(userId);
 }
 
+/**
+ * A broker only counts as "connected" for live/funded execution if it's
+ * actually resolved to a PRODUCTION connection — a sandbox/demo-only
+ * connection (either provider) must never make Live status report
+ * "armed", since neither placeWebullLiveOrder nor the Tradovate live
+ * order route will actually execute against anything but production.
+ */
 async function broker(userId: string): Promise<{ connected: boolean; label: string }> {
-  // A fully-configured Tradovate LIVE bridge is the real order rail.
   const tv = await tradovateConfigured(userId).catch(() => ({ configured: false, environment: "demo" as const }));
   if (tv.configured && tv.environment === "live") {
     return { connected: true, label: "Tradovate (live)" };
   }
-  const integrations = await TradingIntegrationsStore.list(userId).catch(() => []);
-  const found = integrations.find(
-    (i) =>
-      BROKER_PROVIDERS.includes(i.provider) &&
-      (i.status === "connected" || i.status === "configured"),
-  );
-  return found
-    ? { connected: true, label: found.label }
-    : { connected: false, label: "No broker connected" };
+  const webull = await getWebullStatus(userId).catch(() => null);
+  if (webull?.connected && webull.mode === "production") {
+    return { connected: true, label: "Webull (production)" };
+  }
+  return { connected: false, label: "No broker connected" };
 }
 
 export async function getLiveState(userId: string): Promise<LiveTradingState> {

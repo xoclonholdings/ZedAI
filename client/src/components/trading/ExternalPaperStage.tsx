@@ -84,22 +84,29 @@ export default function ExternalPaperStage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [reportRes, statusRes] = await Promise.all([
         fetch("/api/trading/external-paper", { credentials: "include" }),
         fetch("/api/trading/webull/status", { credentials: "include" }),
       ]);
-      if (reportRes.ok) setReport((await reportRes.json()).report);
-      if (statusRes.ok) {
-        const nextStatus = (await statusRes.json()).status;
-        setStatus(nextStatus);
-        setForm((current) => ({
-          ...current,
-          endpoint: nextStatus?.saved?.endpoint || "",
-          accountId: nextStatus?.saved?.accountId || "",
-          environment: nextStatus?.saved?.environment || "sandbox",
-        }));
+      if (!reportRes.ok) {
+        const body = await reportRes.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load external-paper progress (HTTP ${reportRes.status})`);
       }
+      setReport((await reportRes.json()).report);
+      if (!statusRes.ok) {
+        const body = await statusRes.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load Webull status (HTTP ${statusRes.status})`);
+      }
+      const nextStatus = (await statusRes.json()).status;
+      setStatus(nextStatus);
+      setForm((current) => ({
+        ...current,
+        endpoint: nextStatus?.saved?.endpoint || "",
+        accountId: nextStatus?.saved?.accountId || "",
+        environment: nextStatus?.saved?.environment || "sandbox",
+      }));
     } catch (err: any) {
       setError(err?.message || "Failed to load external paper");
     } finally {
@@ -269,7 +276,7 @@ export default function ExternalPaperStage() {
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
       {notice && <NoticeBanner kind="success">{notice}</NoticeBanner>}
       {!report ? (
-        <EmptyBox>Loading...</EmptyBox>
+        error ? null : <EmptyBox>Loading external paper…</EmptyBox>
       ) : (
         <div className="space-y-4">
           <WebullConnectCard

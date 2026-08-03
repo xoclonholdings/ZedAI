@@ -31,9 +31,14 @@ export default function EvaluationStage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/trading/evaluation", { credentials: "include" });
-      if (res.ok) setReport((await res.json()).report);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load evaluation (HTTP ${res.status})`);
+      }
+      setReport((await res.json()).report);
     } catch (err: any) {
       setError(err?.message || "Failed to load evaluation");
     } finally {
@@ -54,8 +59,9 @@ export default function EvaluationStage() {
           method: "POST",
           credentials: "include",
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        setReport((await res.json()).report);
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+        setReport(body.report);
       } catch (err: any) {
         setError(err?.message || "Action failed");
       } finally {
@@ -75,7 +81,7 @@ export default function EvaluationStage() {
     >
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
       {!report ? (
-        <EmptyBox>Loading evaluation…</EmptyBox>
+        error ? null : <EmptyBox>Loading evaluation…</EmptyBox>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">

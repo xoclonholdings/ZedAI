@@ -26,9 +26,14 @@ export default function LiveStage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/trading/live", { credentials: "include" });
-      if (res.ok) setState((await res.json()).state);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load live state (HTTP ${res.status})`);
+      }
+      setState((await res.json()).state);
     } catch (err: any) {
       setError(err?.message || "Failed to load live state");
     } finally {
@@ -70,7 +75,7 @@ export default function LiveStage() {
     >
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
       {!state ? (
-        <EmptyBox>Loading live state…</EmptyBox>
+        error ? null : <EmptyBox>Loading live state…</EmptyBox>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">

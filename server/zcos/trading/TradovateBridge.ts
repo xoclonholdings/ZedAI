@@ -1,4 +1,4 @@
-import { readTradingState, writeTradingState } from "./tradingPersistence";
+import { readTradingObject, writeTradingObject } from "./tradingPersistence";
 
 /**
  * Tradovate execution bridge — the real order rail.
@@ -47,7 +47,7 @@ function baseUrl(env: TradovateEnvironment): string {
 }
 
 async function loadCreds(userId: string): Promise<Partial<TradovateCredentials>> {
-  const stored = await readTradingState<Partial<TradovateCredentials>>(CRED_SCOPE, userId);
+  const stored = await readTradingObject<Partial<TradovateCredentials>>(CRED_SCOPE, userId);
   return stored || {};
 }
 
@@ -63,7 +63,7 @@ export async function saveTradovateCredentials(
   if (patch.environment === "demo" || patch.environment === "live") next.environment = patch.environment;
   if (!next.appVersion) next.appVersion = "1.0";
   if (!next.deviceId) next.deviceId = `zar-${userId}`.replace(/[^a-zA-Z0-9-]/g, "").slice(0, 64);
-  await writeTradingState(CRED_SCOPE, userId, next);
+  await writeTradingObject(CRED_SCOPE, userId, next);
 }
 
 function completeness(creds: Partial<TradovateCredentials>): { complete: boolean; missing: string[] } {

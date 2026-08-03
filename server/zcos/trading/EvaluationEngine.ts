@@ -1,8 +1,9 @@
 import type { EvaluationConfig, EvaluationReport } from "../../../shared/trading-training-types";
 
-import { readTradingState, writeTradingState } from "./tradingPersistence";
+import { readTradingObject, writeTradingObject } from "./tradingPersistence";
 import { TradingStore } from "./TradingStore";
 import { TradingIntegrationsStore } from "./TradingIntegrationsStore";
+import { tradovateConfigured } from "./TradovateBridge";
 
 /**
  * Stage 5 — External evaluation.
@@ -39,7 +40,7 @@ function round2(n: number): number {
 }
 
 async function loadConfig(userId: string): Promise<EvaluationConfig> {
-  const stored = await readTradingState<EvaluationConfig>(CONFIG_SCOPE, userId);
+  const stored = await readTradingObject<EvaluationConfig>(CONFIG_SCOPE, userId);
   return { ...DEFAULT_EVALUATION_CONFIG, ...(stored || {}) };
 }
 
@@ -48,28 +49,35 @@ export async function saveEvaluationConfig(
   patch: Partial<EvaluationConfig>,
 ): Promise<EvaluationConfig> {
   const next = { ...(await loadConfig(userId)), ...patch };
-  await writeTradingState(CONFIG_SCOPE, userId, next);
+  await writeTradingObject(CONFIG_SCOPE, userId, next);
   return next;
 }
 
 async function loadStartedAt(userId: string): Promise<string | null> {
-  const state = await readTradingState<{ startedAt: string | null }>(STATE_SCOPE, userId);
+  const state = await readTradingObject<{ startedAt: string | null }>(STATE_SCOPE, userId);
   return state?.startedAt ?? null;
 }
 
 export async function startEvaluation(userId: string): Promise<EvaluationReport> {
-  await writeTradingState(STATE_SCOPE, userId, { startedAt: new Date().toISOString() });
+  await writeTradingObject(STATE_SCOPE, userId, { startedAt: new Date().toISOString() });
   return getEvaluationReport(userId);
 }
 
 export async function resetEvaluation(userId: string): Promise<EvaluationReport> {
-  await writeTradingState(STATE_SCOPE, userId, { startedAt: null });
+  await writeTradingObject(STATE_SCOPE, userId, { startedAt: null });
   return getEvaluationReport(userId);
 }
 
 async function evaluationProvider(
   userIdArg: string,
 ): Promise<{ connected: boolean; label: string }> {
+  // Tradovate credentials live in their own store (TradovateBridge), not
+  // TradingIntegrationsStore, so a fully-configured Tradovate connection
+  // must be checked directly — otherwise it always reads as disconnected
+  // here even when real Tradovate demo/live trading is working.
+  const tradovate = await tradovateConfigured(userIdArg).catch(() => ({ configured: false, environment: "demo" as const }));
+  if (tradovate.configured) return { connected: true, label: `Tradovate (${tradovate.environment})` };
+
   const integrations = await TradingIntegrationsStore.list(userIdArg).catch(() => []);
   const connected = integrations.find(
     (i) =>

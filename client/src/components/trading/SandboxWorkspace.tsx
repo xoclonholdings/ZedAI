@@ -223,10 +223,16 @@ export default function SandboxWorkspace() {
       if (tradesRes.ok) {
         const data = await tradesRes.json();
         setTrades(data.trades || []);
+      } else {
+        const body = await tradesRes.json().catch(() => ({}));
+        throw new Error(responseError(body, `Could not load trades (HTTP ${tradesRes.status})`));
       }
       if (perfRes.ok) {
         const data = await perfRes.json();
         setPerformance(data.report || null);
+      } else {
+        const body = await perfRes.json().catch(() => ({}));
+        throw new Error(responseError(body, `Could not load performance (HTTP ${perfRes.status})`));
       }
     } catch (err: any) {
       setError(err?.message || "Failed to load trades");
@@ -700,6 +706,24 @@ function PerfPill({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ExecutionBadge({ trade }: { trade: PaperTrade }) {
+  if (!trade.executionMode || trade.executionMode === "internal") return null;
+  const isLive = trade.executionMode === "live";
+  const label = isLive
+    ? `LIVE · ${trade.executionProvider || "broker"}`
+    : `paper · ${trade.executionProvider || "broker"}`;
+  return (
+    <span
+      title={isLive ? "Executed on the real, funded account" : "Executed on the broker's paper/sandbox account"}
+      className={`text-[10.5px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${
+        isLive ? "bg-red-500/20 text-red-200" : "bg-amber-400/15 text-amber-200"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
 function TradeCard({ trade, onClose }: { trade: PaperTrade; onClose: () => void }) {
   const rrPlanned = Math.abs(trade.target - trade.entry) / Math.max(Math.abs(trade.entry - trade.stop), 0.000001);
   return (
@@ -717,6 +741,7 @@ function TradeCard({ trade, onClose }: { trade: PaperTrade; onClose: () => void 
             >
               {trade.direction}
             </span>
+            <ExecutionBadge trade={trade} />
             {trade.setupName && (
               <span className="text-[11px] text-white/50">· {trade.setupName}</span>
             )}
@@ -745,61 +770,130 @@ function TradeCard({ trade, onClose }: { trade: PaperTrade; onClose: () => void 
   );
 }
 
+const EXECUTION_QUALITY_TONE: Record<string, string> = {
+  excellent: "bg-emerald-400/15 text-emerald-300",
+  good: "bg-cyan-400/15 text-cyan-200",
+  needs_work: "bg-amber-400/15 text-amber-200",
+  poor: "bg-red-400/15 text-red-300",
+};
+
+const RULE_COMPLIANCE_TONE: Record<string, string> = {
+  clean: "bg-emerald-400/15 text-emerald-300",
+  minor_violations: "bg-amber-400/15 text-amber-200",
+  major_violations: "bg-red-400/15 text-red-300",
+};
+
 function ClosedTradeRow({ trade }: { trade: PaperTrade }) {
+  const [open, setOpen] = useState(false);
+  const report = trade.reviewReport;
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 flex items-center justify-between gap-3 flex-wrap">
-      <div className="min-w-0 flex items-center gap-2 flex-wrap">
-        <span className="text-[13.5px] font-medium text-white">{trade.symbol}</span>
-        <span
-          className={`text-[10px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${
-            trade.direction === "long"
-              ? "bg-emerald-400/10 text-emerald-300/80"
-              : "bg-red-400/10 text-red-300/80"
-          }`}
-        >
-          {trade.direction}
-        </span>
-        {trade.outcome && (
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+      <button
+        type="button"
+        onClick={() => report && setOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-3 flex-wrap text-left"
+      >
+        <div className="min-w-0 flex items-center gap-2 flex-wrap">
+          <span className="text-[13.5px] font-medium text-white">{trade.symbol}</span>
           <span
             className={`text-[10px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${
-              trade.outcome === "win"
-                ? "bg-emerald-400/15 text-emerald-300"
-                : trade.outcome === "loss"
-                  ? "bg-red-400/15 text-red-300"
-                  : "bg-white/10 text-white/60"
+              trade.direction === "long"
+                ? "bg-emerald-400/10 text-emerald-300/80"
+                : "bg-red-400/10 text-red-300/80"
             }`}
           >
-            {trade.outcome}
+            {trade.direction}
           </span>
-        )}
-        <span className="text-[11.5px] text-white/50">
-          in ${trade.entry} → out ${trade.exitPrice}
-        </span>
-      </div>
-      <span
-        className={`text-[13px] font-semibold tabular-nums ${
-          (trade.realizedPnl || 0) > 0
-            ? "text-emerald-300"
-            : (trade.realizedPnl || 0) < 0
-              ? "text-red-300"
-              : "text-white/60"
-        }`}
-      >
-        {money(trade.realizedPnl)}
-      </span>
+          <ExecutionBadge trade={trade} />
+          {trade.outcome && (
+            <span
+              className={`text-[10px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${
+                trade.outcome === "win"
+                  ? "bg-emerald-400/15 text-emerald-300"
+                  : trade.outcome === "loss"
+                    ? "bg-red-400/15 text-red-300"
+                    : "bg-white/10 text-white/60"
+              }`}
+            >
+              {trade.outcome}
+            </span>
+          )}
+          <span className="text-[11.5px] text-white/50">
+            in ${trade.entry} → out ${trade.exitPrice}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-[13px] font-semibold tabular-nums ${
+              (trade.realizedPnl || 0) > 0
+                ? "text-emerald-300"
+                : (trade.realizedPnl || 0) < 0
+                  ? "text-red-300"
+                  : "text-white/60"
+            }`}
+          >
+            {money(trade.realizedPnl)}
+          </span>
+          {report && (
+            <span className="text-[10.5px] uppercase tracking-[0.06em] text-cyan-300/80">
+              {open ? "Hide review" : "Review"}
+            </span>
+          )}
+        </div>
+      </button>
+      {open && report && (
+        <div className="mt-2.5 space-y-2 border-t border-white/[0.06] pt-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`text-[10px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${EXECUTION_QUALITY_TONE[report.executionQuality] || "bg-white/10 text-white/60"}`}>
+              Execution: {report.executionQuality.replace("_", " ")}
+            </span>
+            <span className={`text-[10px] uppercase tracking-[0.06em] rounded-full px-2 py-0.5 ${RULE_COMPLIANCE_TONE[report.ruleCompliance] || "bg-white/10 text-white/60"}`}>
+              Rules: {report.ruleCompliance.replace("_", " ")}
+            </span>
+          </div>
+          {report.mistakes.length > 0 && (
+            <ReviewList label="Rule violations" items={report.mistakes} />
+          )}
+          {report.lessonsLearned.length > 0 && (
+            <ReviewList label="Lessons learned" items={report.lessonsLearned} />
+          )}
+          <ReviewList label="Recommended improvements" items={report.recommendedImprovements} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReviewList({ label, items }: { label: string; items: string[] }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-[0.06em] text-white/40 mb-1">{label}</div>
+      <ul className="space-y-1">
+        {items.map((item, i) => (
+          <li key={i} className="text-[11.5px] text-white/70 leading-snug pl-3 relative before:absolute before:left-0 before:content-['–']">
+            {item}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
 const PAPER_GOVERNANCE_CHECKS = [
   ["market_context", "Market"],
+  ["trend_alignment", "Trend"],
   ["market_structure", "Structure"],
   ["liquidity_conditions", "Liquidity"],
+  ["session", "Session"],
+  ["news_filter", "News"],
+  ["trade_thesis", "Thesis"],
   ["entry_rules", "Entry"],
   ["exit_rules", "Exit"],
   ["risk_limits", "Risk"],
   ["position_size", "Size"],
+  ["correlation", "Correlation"],
   ["drawdown_limits", "Drawdown"],
+  ["system_health", "System"],
   ["risk_reward", "R:R"],
 ] as const;
 

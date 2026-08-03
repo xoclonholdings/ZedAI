@@ -1,4 +1,4 @@
-import { readTradingState, writeTradingState } from "./tradingPersistence";
+import { readTradingObject, writeTradingObject } from "./tradingPersistence";
 
 /**
  * Durable storage for market-data vendor API keys the user enters in the
@@ -34,7 +34,7 @@ export const VENDOR_LABELS: Record<MarketDataVendor, string> = {
 };
 
 async function readStored(): Promise<StoredMarketDataKeys> {
-  const data = await readTradingState<StoredMarketDataKeys>(SCOPE, KEY);
+  const data = await readTradingObject<StoredMarketDataKeys>(SCOPE, KEY);
   return data && typeof data === "object" ? data : {};
 }
 
@@ -46,14 +46,14 @@ export async function saveMarketDataKeys(input: Partial<StoredMarketDataKeys>): 
     const value = input[vendor];
     if (typeof value === "string" && value.trim()) next[vendor] = value.trim();
   }
-  await writeTradingState(SCOPE, KEY, next);
+  await writeTradingObject(SCOPE, KEY, next);
 }
 
 /** Clear one vendor's saved key (falls back to env after this). */
 export async function clearMarketDataKey(vendor: MarketDataVendor): Promise<void> {
   const current = await readStored();
   delete current[vendor];
-  await writeTradingState(SCOPE, KEY, current);
+  await writeTradingObject(SCOPE, KEY, current);
 }
 
 /**

@@ -16,9 +16,14 @@ export default function QualificationStage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/trading/qualification", { credentials: "include" });
-      if (res.ok) setReport((await res.json()).report);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load qualification (HTTP ${res.status})`);
+      }
+      setReport((await res.json()).report);
     } catch (err: any) {
       setError(err?.message || "Failed to load qualification");
     } finally {
@@ -40,7 +45,7 @@ export default function QualificationStage() {
     >
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
       {!report ? (
-        <EmptyBox>Loading scorecard…</EmptyBox>
+        error ? null : <EmptyBox>Loading scorecard…</EmptyBox>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-2 flex-wrap">

@@ -579,10 +579,14 @@ function ProviderCard({
     setBusy(true);
     setError(null);
     try {
-      await fetch(`/api/trading/integrations/${info.provider}`, {
+      const res = await fetch(`/api/trading/integrations/${info.provider}`, {
         method: "DELETE",
         credentials: "include",
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not disconnect (HTTP ${res.status})`);
+      }
       onChanged();
     } catch (err: any) {
       setError(err?.message || "Failed to disconnect");

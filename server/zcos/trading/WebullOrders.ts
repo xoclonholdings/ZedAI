@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 
 import type { ExecutionAdapterStatus } from "./ExecutionAdapterTypes";
 import { getWebullStatus } from "./WebullAuth";
+import { getLiveState } from "./LiveTradingEngine";
 import {
   explainWebullAuthFailure,
   getWebullConnection,
@@ -117,4 +118,61 @@ export async function placeWebullOrder(userId: string, input: WebullOrderInput):
     environment: status.mode,
     message: `Webull accepted the ${input.side} ${orderType} order for ${input.quantity} ${input.symbol.toUpperCase()}.`,
   };
+}
+
+/**
+ * External-paper order placement — hard-requires the resolved credential
+ * to be a SANDBOX account. `placeWebullOrder` itself signs against
+ * whichever environment the user's saved connection resolves to
+ * (sandbox or production); without this check, a user whose saved
+ * Webull connection is set to "production" would have a real order
+ * placed on their real funded account by what the UI calls "paper
+ * trading" — no governance gate, no confirmation. This refuses instead.
+ */
+export async function placeWebullPaperOrder(userId: string, input: WebullOrderInput): Promise<WebullOrderResult> {
+  const connection = await getWebullConnection(userId);
+  const candidate = resolveActiveWebullCredential(connection);
+  if (!candidate) {
+    return { ok: false, environment: "unknown", message: "No Webull credentials available." };
+  }
+  if (candidate.mode !== "sandbox") {
+    return {
+      ok: false,
+      environment: candidate.mode,
+      message:
+        "Refused: this Webull connection is configured for production, not sandbox. External paper trading only ever runs against a sandbox account — connect a sandbox Webull app, or use the governed live order path if you actually intend to trade the funded account.",
+    };
+  }
+  return placeWebullOrder(userId, input);
+}
+
+/**
+ * Live (funded-account) order placement — hard-requires the resolved
+ * credential to be PRODUCTION, and requires every governance gate from
+ * the Live stage (qualification passed, broker connected, kill switch
+ * armed) before signing anything. Mirrors the same gate the Tradovate
+ * live path already enforces in trading-tradovate.ts, applied to Webull.
+ */
+export async function placeWebullLiveOrder(userId: string, input: WebullOrderInput): Promise<WebullOrderResult> {
+  const connection = await getWebullConnection(userId);
+  const candidate = resolveActiveWebullCredential(connection);
+  if (!candidate) {
+    return { ok: false, environment: "unknown", message: "No Webull credentials available." };
+  }
+  if (candidate.mode !== "production") {
+    return {
+      ok: false,
+      environment: candidate.mode,
+      message: "Refused: this Webull connection is configured for sandbox, not production. Connect a production Webull app to place live orders on the funded account.",
+    };
+  }
+  const live = await getLiveState(userId);
+  if (!live.canExecute) {
+    return {
+      ok: false,
+      environment: candidate.mode,
+      message: `Refused by live-trading governance: ${live.blockers.join(" ")}`,
+    };
+  }
+  return placeWebullOrder(userId, input);
 }
