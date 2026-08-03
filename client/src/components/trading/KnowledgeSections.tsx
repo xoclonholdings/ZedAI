@@ -7,6 +7,7 @@ import type {
 } from "@shared/trading-training-types";
 
 import {
+  EmptyBox,
   NoticeBanner,
   StageShell,
   textareaClass,
@@ -44,12 +45,15 @@ export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/trading/knowledge/areas", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setAreas(data.areas || []);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load sections (HTTP ${res.status})`);
       }
+      const data = await res.json();
+      setAreas(data.areas || []);
     } catch (err: any) {
       setError(err?.message || "Failed to load sections");
     } finally {
@@ -76,6 +80,10 @@ export default function KnowledgeSections({ onFed }: { onFed?: () => void }) {
       refreshing={loading}
     >
       {error && <NoticeBanner kind="error">{error}</NoticeBanner>}
+
+      {areas.length === 0 && (loading || !error) && (
+        <EmptyBox>{loading ? "Loading sections…" : "No knowledge sections are configured."}</EmptyBox>
+      )}
 
       {areas.length > 0 && (
         <label className="block">

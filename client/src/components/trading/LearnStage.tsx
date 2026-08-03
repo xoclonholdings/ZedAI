@@ -73,27 +73,39 @@ export default function LearnStage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
+    setError(null);
     try {
       const url = query.trim()
         ? `/api/trading/knowledge?query=${encodeURIComponent(query.trim())}`
         : "/api/trading/knowledge";
-      const res = await fetch(url, { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setEntries(data.entries || []);
+      const res = await fetch(url, { credentials: "include", signal });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load knowledge (HTTP ${res.status})`);
       }
+      const data = await res.json();
+      setEntries(data.entries || []);
     } catch (err: any) {
+      if (err?.name === "AbortError") return;
       setError(err?.message || "Failed to load knowledge");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   }, [query]);
 
+  // Debounced + stale-response-safe: typing quickly cancels the previous
+  // in-flight search instead of racing it, so a slower earlier response
+  // can never overwrite the result of what's currently in the box.
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    const controller = new AbortController();
+    const timer = setTimeout(() => void refresh(controller.signal), query ? 300 : 0);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [refresh, query]);
 
   const submit = useCallback(async () => {
     setError(null);

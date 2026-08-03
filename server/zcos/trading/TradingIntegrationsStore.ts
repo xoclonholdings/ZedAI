@@ -67,6 +67,31 @@ function now(): string {
   return new Date().toISOString();
 }
 
+const userLocks = new Map<string, Promise<unknown>>();
+
+/**
+ * Serializes read-modify-write operations per user. Every mutator here
+ * (connect/disconnect/test/recordTestResult) does readAll → mutate →
+ * writeAll with no transaction — two concurrent calls for the same user
+ * (e.g. saving one provider's credentials while another finishes a test)
+ * would both read the same stale array and the second writeAll would
+ * silently overwrite the first's change. Chaining every mutation for a
+ * given user behind the previous one closes that window without needing
+ * a real database transaction.
+ */
+function withUserLock<T>(userId: string, fn: () => Promise<T>): Promise<T> {
+  const previous = userLocks.get(userId) ?? Promise.resolve();
+  const settle = previous.then(fn, fn);
+  userLocks.set(
+    userId,
+    settle.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return settle;
+}
+
 async function readAll(userId: string): Promise<StoredIntegration[]> {
   // Durable DB is the source of truth so connections survive restarts.
   const fromDb = await readTradingState<StoredIntegration[]>(INTEGRATIONS_SCOPE, keyFor(userId));
@@ -147,40 +172,44 @@ export const TradingIntegrationsStore = {
     secrets?: Record<string, string>;
     notes?: string;
   }): Promise<TradingIntegration> {
-    const info = integrationProviderInfo(input.provider);
-    if (!info) throw new Error(`Unknown provider: ${input.provider}`);
+    return withUserLock(input.userId, async () => {
+      const info = integrationProviderInfo(input.provider);
+      if (!info) throw new Error(`Unknown provider: ${input.provider}`);
 
-    const records = await readAll(input.userId);
-    const index = records.findIndex((r) => r.provider === input.provider);
-    const existing = index >= 0 ? records[index] : undefined;
+      const records = await readAll(input.userId);
+      const index = records.findIndex((r) => r.provider === input.provider);
+      const existing = index >= 0 ? records[index] : undefined;
 
-    const record: StoredIntegration = {
-      provider: input.provider,
-      label: input.label?.trim() || info.label,
-      status: "configured",
-      baseUrl: input.baseUrl?.trim() || existing?.baseUrl,
-      fields: { ...(existing?.fields || {}), ...(input.fields || {}) },
-      // Only overwrite a secret when a non-empty value is supplied.
-      secrets: { ...(existing?.secrets || {}) },
-      notes: input.notes ?? existing?.notes,
-      lastTestedAt: existing?.lastTestedAt,
-      lastResult: existing?.lastResult,
-      createdAt: existing?.createdAt || now(),
-      updatedAt: now(),
-    };
-    for (const [key, value] of Object.entries(input.secrets || {})) {
-      if (typeof value === "string" && value.trim()) record.secrets[key] = value.trim();
-    }
+      const record: StoredIntegration = {
+        provider: input.provider,
+        label: input.label?.trim() || info.label,
+        status: "configured",
+        baseUrl: input.baseUrl?.trim() || existing?.baseUrl,
+        fields: { ...(existing?.fields || {}), ...(input.fields || {}) },
+        // Only overwrite a secret when a non-empty value is supplied.
+        secrets: { ...(existing?.secrets || {}) },
+        notes: input.notes ?? existing?.notes,
+        lastTestedAt: existing?.lastTestedAt,
+        lastResult: existing?.lastResult,
+        createdAt: existing?.createdAt || now(),
+        updatedAt: now(),
+      };
+      for (const [key, value] of Object.entries(input.secrets || {})) {
+        if (typeof value === "string" && value.trim()) record.secrets[key] = value.trim();
+      }
 
-    if (index >= 0) records[index] = record;
-    else records.push(record);
-    await writeAll(input.userId, records);
-    return sanitize(record);
+      if (index >= 0) records[index] = record;
+      else records.push(record);
+      await writeAll(input.userId, records);
+      return sanitize(record);
+    });
   },
 
   async disconnect(userId: string, provider: IntegrationProvider): Promise<void> {
-    const records = await readAll(userId);
-    await writeAll(userId, records.filter((r) => r.provider !== provider));
+    await withUserLock(userId, async () => {
+      const records = await readAll(userId);
+      await writeAll(userId, records.filter((r) => r.provider !== provider));
+    });
   },
 
   /**
@@ -190,41 +219,43 @@ export const TradingIntegrationsStore = {
    * NOT fabricate a live data pull.
    */
   async test(userId: string, provider: IntegrationProvider): Promise<TradingIntegration> {
-    const info = integrationProviderInfo(provider);
-    if (!info) throw new Error(`Unknown provider: ${provider}`);
-    const records = await readAll(userId);
-    const index = records.findIndex((r) => r.provider === provider);
-    if (index < 0) throw new Error(`${info.label} is not connected yet.`);
-    const record = records[index];
+    return withUserLock(userId, async () => {
+      const info = integrationProviderInfo(provider);
+      if (!info) throw new Error(`Unknown provider: ${provider}`);
+      const records = await readAll(userId);
+      const index = records.findIndex((r) => r.provider === provider);
+      if (index < 0) throw new Error(`${info.label} is not connected yet.`);
+      const record = records[index];
 
-    let status: IntegrationStatus = "configured";
-    let result: string;
+      let status: IntegrationStatus = "configured";
+      let result: string;
 
-    if (provider === "custom") {
-      const url = record.baseUrl;
-      if (!url) {
-        status = "error";
-        result = "No base URL set. Add the endpoint URL, then test again.";
+      if (provider === "custom") {
+        const url = record.baseUrl;
+        if (!url) {
+          status = "error";
+          result = "No base URL set. Add the endpoint URL, then test again.";
+        } else {
+          const reach = await probeUrl(url);
+          status = reach.ok ? "connected" : "error";
+          result = reach.message;
+        }
       } else {
-        const reach = await probeUrl(url);
-        status = reach.ok ? "connected" : "error";
-        result = reach.message;
+        const requiredNonSecret = info.fields.filter((f) => !f.secret && !f.optional);
+        const missing = requiredNonSecret.filter((f) => !String(record.fields[f.key] || "").trim());
+        if (missing.length) {
+          status = "error";
+          result = `Missing: ${missing.map((f) => f.label).join(", ")}.`;
+        } else {
+          status = "configured";
+          result = "Saved securely. ZAR will use this login to sign in and work in the account for you.";
+        }
       }
-    } else {
-      const requiredNonSecret = info.fields.filter((f) => !f.secret && !f.optional);
-      const missing = requiredNonSecret.filter((f) => !String(record.fields[f.key] || "").trim());
-      if (missing.length) {
-        status = "error";
-        result = `Missing: ${missing.map((f) => f.label).join(", ")}.`;
-      } else {
-        status = "configured";
-        result = "Saved securely. ZAR will use this login to sign in and work in the account for you.";
-      }
-    }
 
-    records[index] = { ...record, status, lastTestedAt: now(), lastResult: result, updatedAt: now() };
-    await writeAll(userId, records);
-    return sanitize(records[index]);
+      records[index] = { ...record, status, lastTestedAt: now(), lastResult: result, updatedAt: now() };
+      await writeAll(userId, records);
+      return sanitize(records[index]);
+    });
   },
 
   /**
@@ -239,18 +270,20 @@ export const TradingIntegrationsStore = {
     provider: IntegrationProvider,
     outcome: { status: IntegrationStatus; result: string },
   ): Promise<TradingIntegration> {
-    const records = await readAll(userId);
-    const index = records.findIndex((r) => r.provider === provider);
-    if (index < 0) throw new Error(`${integrationProviderInfo(provider)?.label || provider} is not connected yet.`);
-    records[index] = {
-      ...records[index],
-      status: outcome.status,
-      lastTestedAt: now(),
-      lastResult: outcome.result,
-      updatedAt: now(),
-    };
-    await writeAll(userId, records);
-    return sanitize(records[index]);
+    return withUserLock(userId, async () => {
+      const records = await readAll(userId);
+      const index = records.findIndex((r) => r.provider === provider);
+      if (index < 0) throw new Error(`${integrationProviderInfo(provider)?.label || provider} is not connected yet.`);
+      records[index] = {
+        ...records[index],
+        status: outcome.status,
+        lastTestedAt: now(),
+        lastResult: outcome.result,
+        updatedAt: now(),
+      };
+      await writeAll(userId, records);
+      return sanitize(records[index]);
+    });
   },
 };
 

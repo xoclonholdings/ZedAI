@@ -87,16 +87,19 @@ export default function StrategyStage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/trading/theses", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setTheses(
-          [...(data.theses || [])].sort((a: TradeThesis, b: TradeThesis) =>
-            a.createdAt < b.createdAt ? 1 : -1,
-          ),
-        );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load strategies (HTTP ${res.status})`);
       }
+      const data = await res.json();
+      setTheses(
+        [...(data.theses || [])].sort((a: TradeThesis, b: TradeThesis) =>
+          a.createdAt < b.createdAt ? 1 : -1,
+        ),
+      );
     } catch (err: any) {
       setError(err?.message || "Failed to load strategies");
     } finally {

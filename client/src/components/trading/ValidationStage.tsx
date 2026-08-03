@@ -76,29 +76,34 @@ export default function ValidationStage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [thesesRes, decisionsRes] = await Promise.all([
         fetch("/api/trading/theses", { credentials: "include" }),
         fetch("/api/trading/governance/decisions", { credentials: "include" }),
       ]);
-      if (thesesRes.ok) {
-        const data = await thesesRes.json();
-        setTheses(
-          [...(data.theses || [])].sort((a: TradeThesis, b: TradeThesis) =>
-            a.createdAt < b.createdAt ? 1 : -1,
-          ),
-        );
+      if (!thesesRes.ok) {
+        const body = await thesesRes.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load strategies (HTTP ${thesesRes.status})`);
       }
-      if (decisionsRes.ok) {
-        // Map the latest decision per thesis so reviewed strategies show
-        // their full checklist/reasons on load, not just after re-review.
-        const data = await decisionsRes.json();
-        const byThesis: Record<string, TradingGovernanceDecision> = {};
-        for (const d of (data.decisions || []) as TradingGovernanceDecision[]) {
-          if (d.thesisId && !byThesis[d.thesisId]) byThesis[d.thesisId] = d;
-        }
-        setDecisions(byThesis);
+      const thesesData = await thesesRes.json();
+      setTheses(
+        [...(thesesData.theses || [])].sort((a: TradeThesis, b: TradeThesis) =>
+          a.createdAt < b.createdAt ? 1 : -1,
+        ),
+      );
+      if (!decisionsRes.ok) {
+        const body = await decisionsRes.json().catch(() => ({}));
+        throw new Error(body?.error || `Could not load governance decisions (HTTP ${decisionsRes.status})`);
       }
+      // Map the latest decision per thesis so reviewed strategies show
+      // their full checklist/reasons on load, not just after re-review.
+      const decisionsData = await decisionsRes.json();
+      const byThesis: Record<string, TradingGovernanceDecision> = {};
+      for (const d of (decisionsData.decisions || []) as TradingGovernanceDecision[]) {
+        if (d.thesisId && !byThesis[d.thesisId]) byThesis[d.thesisId] = d;
+      }
+      setDecisions(byThesis);
     } catch (err: any) {
       setError(err?.message || "Failed to load strategies");
     } finally {
