@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+import { useSearch } from "wouter/use-location";
 import { ChevronLeft, Shield } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UseAuth";
-import AdminNav from "@/components/admin/AdminNav";
+import AdminNav, { ADMIN_SECTIONS } from "@/components/admin/AdminNav";
 import SettingsSection from "@/components/admin/sections/SettingsSection";
 import KnowledgeSection from "@/components/admin/sections/KnowledgeSection";
 import AdvancedSection from "@/components/admin/sections/AdvancedSection";
@@ -18,8 +19,16 @@ import zarLogo from "@assets/Zar_logo.png";
 
 export default function Admin() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { user } = useAuth() as { user?: any };
   const [section, setSection] = useState<AdminSection>("settings");
+
+  // Lets other parts of the app deep-link into a specific Admin tab, e.g.
+  // navigate("/admin?tab=integrations") from the Rules "friendly version" links.
+  useEffect(() => {
+    const tab = new URLSearchParams(search).get("tab") as AdminSection | null;
+    if (tab && (ADMIN_SECTIONS as string[]).includes(tab)) setSection(tab);
+  }, [search]);
 
   // Approvals are managed at the shell so the nav-tab badge stays accurate
   // even when the user isn't on the Approvals tab.

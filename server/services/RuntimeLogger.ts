@@ -3,7 +3,7 @@ import path from "path";
 import { HUB_LOG_DIR } from "../utils/repoPaths";
 
 export type RuntimeLogLevel = "info" | "warn" | "error";
-export type RuntimeLogSource = "server" | "client";
+export type RuntimeLogSource = "server" | "client" | "orchestrator";
 
 export interface RuntimeLogEntry {
   timestamp: string;

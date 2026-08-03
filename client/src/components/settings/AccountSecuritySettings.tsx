@@ -97,7 +97,7 @@ export default function AccountSecuritySettings() {
   async function handleLogout() {
     await logout();
     queryClient.clear();
-    navigate("/login");
+    navigate("/");
   }
 
   return (

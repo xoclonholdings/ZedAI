@@ -2,7 +2,9 @@
  * Tests for SubagentOrchestrator and subagent implementations.
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, beforeEach } from "node:test";
+import assert from "node:assert/strict";
+
 import { SubagentOrchestrator } from "../SubagentOrchestrator";
 import { FinanceSubagent } from "../implementations/FinanceSubagent";
 import { IntelligenceSubagent } from "../implementations/IntelligenceSubagent";
@@ -23,8 +25,8 @@ describe("SubagentOrchestrator", () => {
 
   it("should initialize with active subagents", () => {
     const status = orchestrator.getStatus();
-    expect(status.ready).toBe(true);
-    expect(status.activeSubagents.length).toBeGreaterThan(0);
+    assert.strictEqual(status.ready, true);
+    assert.ok(status.activeSubagents.length > 0);
   });
 
   it("should dispatch and aggregate results", async () => {
@@ -37,9 +39,9 @@ describe("SubagentOrchestrator", () => {
 
     const result = await orchestrator.dispatch(context);
 
-    expect(result.consolidatedResponse).toBeDefined();
-    expect(result.activeLanes.length).toBeGreaterThan(0);
-    expect(result.subagentResults.length).toBeGreaterThan(0);
+    assert.notStrictEqual(result.consolidatedResponse, undefined);
+    assert.ok(result.activeLanes.length > 0);
+    assert.ok(result.subagentResults.length > 0);
   });
 
   it("should activate FinanceSubagent on finance keywords", async () => {
@@ -52,7 +54,7 @@ describe("SubagentOrchestrator", () => {
 
     const result = await orchestrator.dispatch(context);
 
-    expect(result.activeLanes).toContain("finance");
+    assert.ok(result.activeLanes.includes("finance"));
   });
 
   it("should activate IntelligenceSubagent on research keywords", async () => {
@@ -65,7 +67,7 @@ describe("SubagentOrchestrator", () => {
 
     const result = await orchestrator.dispatch(context);
 
-    expect(result.activeLanes).toContain("intelligence");
+    assert.ok(result.activeLanes.includes("intelligence"));
   });
 
   it("should activate OperationsSubagent on task keywords", async () => {
@@ -78,7 +80,7 @@ describe("SubagentOrchestrator", () => {
 
     const result = await orchestrator.dispatch(context);
 
-    expect(result.activeLanes).toContain("operations");
+    assert.ok(result.activeLanes.includes("operations"));
   });
 
   it("should activate BusinessSubagent on business keywords", async () => {
@@ -91,7 +93,7 @@ describe("SubagentOrchestrator", () => {
 
     const result = await orchestrator.dispatch(context);
 
-    expect(result.activeLanes).toContain("business");
+    assert.ok(result.activeLanes.includes("business"));
   });
 
   it("should handle explicit lane targeting", async () => {
@@ -105,7 +107,7 @@ describe("SubagentOrchestrator", () => {
 
     const result = await orchestrator.dispatch(context);
 
-    expect(result.activeLanes).toContain("finance");
+    assert.ok(result.activeLanes.includes("finance"));
   });
 
   it("should track execution time", async () => {
@@ -118,7 +120,7 @@ describe("SubagentOrchestrator", () => {
 
     const result = await orchestrator.dispatch(context);
 
-    expect(result.totalExecutionTime).toBeGreaterThan(0);
+    assert.ok(result.totalExecutionTime > 0);
   });
 
   it("should support parallel and sequential modes", async () => {
@@ -142,8 +144,8 @@ describe("SubagentOrchestrator", () => {
     const resultParallel = await orchestratorParallel.dispatch(context);
     const resultSeq = await orchestratorSeq.dispatch(context);
 
-    expect(resultParallel.synthesisStrategy).toBeDefined();
-    expect(resultSeq.synthesisStrategy).toBeDefined();
+    assert.notStrictEqual(resultParallel.synthesisStrategy, undefined);
+    assert.notStrictEqual(resultSeq.synthesisStrategy, undefined);
   });
 
   it("should correctly identify inactive subagents", async () => {
@@ -157,7 +159,7 @@ describe("SubagentOrchestrator", () => {
     const result = await orchestrator.dispatch(context);
 
     const inactiveResults = result.subagentResults.filter((r) => !r.activated);
-    expect(inactiveResults.length).toBeGreaterThan(0);
+    assert.ok(inactiveResults.length > 0);
   });
 });
 
@@ -173,8 +175,8 @@ describe("FinanceSubagent", () => {
 
     const result = await subagent.execute(context);
 
-    expect(result.activated).toBe(true);
-    expect(result.laneName).toBe("finance");
+    assert.strictEqual(result.activated, true);
+    assert.strictEqual(result.laneName, "finance");
   });
 });
 
@@ -190,8 +192,8 @@ describe("IntelligenceSubagent", () => {
 
     const result = await subagent.execute(context);
 
-    expect(result.activated).toBe(true);
-    expect(result.laneName).toBe("intelligence");
+    assert.strictEqual(result.activated, true);
+    assert.strictEqual(result.laneName, "intelligence");
   });
 });
 
@@ -207,8 +209,8 @@ describe("OperationsSubagent", () => {
 
     const result = await subagent.execute(context);
 
-    expect(result.activated).toBe(true);
-    expect(result.laneName).toBe("operations");
+    assert.strictEqual(result.activated, true);
+    assert.strictEqual(result.laneName, "operations");
   });
 });
 
@@ -224,7 +226,7 @@ describe("BusinessSubagent", () => {
 
     const result = await subagent.execute(context);
 
-    expect(result.activated).toBe(true);
-    expect(result.laneName).toBe("business");
+    assert.strictEqual(result.activated, true);
+    assert.strictEqual(result.laneName, "business");
   });
 });
