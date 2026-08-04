@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes nexus-settle {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 :root {
   --background: hsl(245, 15%, 6%);
   --foreground: hsl(240, 10%, 95%);
@@ -684,17 +696,6 @@
 
 /* ZEBULON celestial-navigation home. World-space placement remains in the
  * constellation manifest; these rules only reserve interface-space chrome. */
-.zebulon-zcos-wordmark {
-  background: linear-gradient(92deg, #c4b5fd 0%, #f0abfc 48%, #a5f3fc 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-size: clamp(1.55rem, 3vw, 2rem);
-  font-weight: 800;
-  letter-spacing: 0.025em;
-  text-shadow: 0 0 30px rgba(167, 139, 250, 0.18);
-}
-
 .zebulon-chart-vignette {
   background:
     linear-gradient(180deg, rgba(0, 1, 6, 0.28) 0%, transparent 20%, transparent 72%, rgba(0, 1, 7, 0.72) 100%),
@@ -760,10 +761,6 @@
 
 @media (max-height: 840px) {
   .zebulon-chart-legend {
-    display: none;
-  }
-
-  .zebulon-header-copy > :nth-child(n + 3) {
     display: none;
   }
 

@@ -2,12 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 
 import { ConsoleShell } from "@/console/ConsoleShell";
-import { ConsoleLogoutButton } from "@/console/ConsoleLogoutButton";
 import { ZAR_NEXUS_CONSOLE } from "@/console/consoleIdentity";
 import NexusCore from "../components/NexusCore";
+import { NexusConsoleHeaderBrand, NexusConsoleHeaderTelemetry } from "../components/NexusConsoleHeader";
 import { NexusDeveloperInspector } from "../components/NexusDeveloperInspector";
 import { NexusHubOverlay } from "../components/NexusHubOverlay";
-import { NexusLiveClock, NexusLiveDate, NexusLiveQuote } from "../components/NexusLiveGreeting";
 import type { NexusDomain } from "../components/NexusCore";
 import { isNexusRootNodeId, routeForNexusNode } from "../graph/rootConstellation";
 import { nexusDomainsFromRootNodes } from "../scene/nexusDomainAdapter";
@@ -219,53 +218,15 @@ export default function NexusRootPage() {
       dockPowered={dockPowered}
       onDockPowerChange={setDockPowered}
       headerLeft={
-        <div className="min-w-0">
-          <div className="flex h-9 items-center gap-2 leading-none">
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              aria-label="Back to the Zebulon star map"
-              className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent focus:outline-none sm:text-3xl"
-            >
-              ZCOS
-            </button>
-            <ConsoleLogoutButton />
-          </div>
-          <div className="flex h-4 items-center truncate text-[9px] font-medium uppercase tracking-[0.12em] text-white/40">
-            Zebulon Commander
-          </div>
-          <div className="flex h-6 items-center">
-            {stage === "home" && ambientDomain ? (
-              <div
-                className="flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1 backdrop-blur"
-                style={{ animation: "nexus-settle 300ms ease both" }}
-              >
-                <span
-                  className="block h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ background: ambientDomain.color, boxShadow: `0 0 8px 2px ${ambientDomain.color}88` }}
-                  aria-hidden="true"
-                />
-                <span className="text-[10px] font-medium tracking-[0.2em] text-white/70">
-                  {ambientDomain.label}
-                </span>
-              </div>
-            ) : null}
-          </div>
-        </div>
+        <NexusConsoleHeaderBrand
+          onWordmarkClick={() => navigate("/")}
+          wordmarkAriaLabel="Back to the Zebulon Galaxy map"
+          context={stage === "home" && ambientDomain
+            ? { label: ambientDomain.label, color: ambientDomain.color }
+            : null}
+        />
       }
-      headerRightExtra={
-        <div className="flex flex-col items-end">
-          <div className="flex h-9 items-center">
-            <NexusLiveClock visible={stage === "home"} />
-          </div>
-          <div className="flex h-4 items-center">
-            <NexusLiveDate visible={stage === "home"} />
-          </div>
-          <div className="flex h-6 items-center">
-            <NexusLiveQuote visible={stage === "home"} />
-          </div>
-        </div>
-      }
+      headerRightExtra={<NexusConsoleHeaderTelemetry visible={stage === "home"} />}
     >
       {/* Celestial system - fills the entire viewport. This IS the application screen. */}
       <div className="absolute inset-0" data-nexus-region="scene">
@@ -307,10 +268,6 @@ export default function NexusRootPage() {
       {showHub && <NexusHubOverlay onBack={goHome} />}
 
       {showInspector && <NexusDeveloperInspector />}
-
-      <style>{`
-        @keyframes nexus-settle { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-      `}</style>
     </ConsoleShell>
   );
 }

@@ -11,9 +11,9 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber"
 import { useLocation } from "wouter";
 import * as THREE from "three";
 
-import { ConsoleLogoutButton } from "@/console/ConsoleLogoutButton";
 import { ConsoleShell } from "@/console/ConsoleShell";
 import { ZAR_NEXUS_CONSOLE } from "@/console/consoleIdentity";
+import { NexusConsoleHeaderBrand, NexusConsoleHeaderTelemetry } from "@/nexus/components/NexusConsoleHeader";
 import { canUseNexusWebgl } from "@/nexus/scene/nexusSceneContract";
 import {
   GALAXY_CONSTELLATION,
@@ -866,24 +866,9 @@ function ConstellationScene({
   );
 }
 
-function useOnlineStatus(): boolean {
-  const [online, setOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
-  useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
-    window.addEventListener("online", update);
-    window.addEventListener("offline", update);
-    return () => {
-      window.removeEventListener("online", update);
-      window.removeEventListener("offline", update);
-    };
-  }, []);
-  return online;
-}
-
 export default function ZebulonConstellationPage() {
   const [, navigate] = useLocation();
   const reducedMotion = Boolean(useReducedMotion());
-  const online = useOnlineStatus();
   const [webgl, setWebgl] = useState(true);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -932,48 +917,21 @@ export default function ZebulonConstellationPage() {
     if (!warpingId) resetOverview();
   }, [resetOverview, warpingId]);
 
+  const headerGalaxy = galaxyById(warpingId ?? focusedId ?? hoveredId) ?? galaxyById("zar")!;
+
   return (
     <ConsoleShell
       identity={ZAR_NEXUS_CONSOLE}
       dockPowered={dockPowered}
       onDockPowerChange={setDockPowered}
       headerLeft={
-        <div className="zebulon-header-copy">
-          <div className="flex items-center gap-2.5 leading-none">
-            <span className="zebulon-zcos-wordmark">ZCOS</span>
-            <ConsoleLogoutButton />
-          </div>
-          <div className="mt-1 text-[9px] font-medium uppercase tracking-[0.22em] text-white/48 sm:text-[10px]">
-            Zebulon Commander
-          </div>
-          <div className="mt-5 text-[10px] font-medium uppercase tracking-[0.27em] text-white/70 sm:text-[11px]">
-            Select a constellation
-          </div>
-          <div className="mt-2.5 flex items-start gap-3 text-[9px] leading-[1.55] tracking-[0.04em] text-white/48 sm:text-[10px]">
-            <Crosshair size={19} strokeWidth={1} className="mt-0.5 shrink-0 text-cyan-100/55" aria-hidden="true" />
-            <span>
-              Each Sun is a Galaxy.<br />
-              Each Galaxy is a Universe.
-            </span>
-          </div>
-        </div>
+        <NexusConsoleHeaderBrand
+          onWordmarkClick={resetOverview}
+          wordmarkAriaLabel="Reset the Zebulon Galaxy map"
+          context={{ label: headerGalaxy.name, color: headerGalaxy.accent }}
+        />
       }
-      headerRightExtra={
-        <div className="zebulon-status-stack">
-          <div
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-[9px] font-medium uppercase tracking-[0.18em] backdrop-blur-xl sm:text-[10px]"
-            data-nexus-online={online}
-          >
-            <span
-              className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-300" : "bg-amber-300"}`}
-              style={{ boxShadow: online ? "0 0 10px 2px rgba(110,231,183,0.65)" : "0 0 10px 2px rgba(252,211,77,0.5)" }}
-            />
-            <span className={online ? "text-emerald-200/85" : "text-amber-200/85"}>
-              NEXUS {online ? "ONLINE" : "OFFLINE"}
-            </span>
-          </div>
-        </div>
-      }
+      headerRightExtra={<NexusConsoleHeaderTelemetry visible={!warpingId} />}
     >
       <div
         className="absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_80%_58%_at_50%_42%,#080d24_0%,#030716_44%,#010208_78%,#000104_100%)]"
@@ -1046,7 +1004,7 @@ export default function ZebulonConstellationPage() {
       </AnimatePresence>
 
       <div className="zebulon-chart-legend pointer-events-none absolute left-5 z-10 rounded-lg border border-white/10 bg-black/28 px-3 py-2.5 text-[8px] uppercase tracking-[0.16em] text-white/42 backdrop-blur-sm sm:left-7">
-        <div className="flex items-center gap-2.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-100 shadow-[0_0_8px_2px_rgba(191,219,254,0.7)]" /> Star / Galaxy gateway</div>
+        <div className="flex items-center gap-2.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-100 shadow-[0_0_8px_2px_rgba(191,219,254,0.7)]" /> App / Galaxy gateway</div>
         <div className="mt-1.5 flex items-center gap-2.5"><Orbit size={10} /> Nebula</div>
         <div className="mt-1.5 flex items-center gap-2.5"><span className="h-px w-3 bg-cyan-100/30" /> Catalog reference</div>
         <div className="mt-1.5 flex items-center gap-2.5"><Crosshair size={10} /> Navigation beacon</div>

@@ -9,6 +9,7 @@ import {
 
 describe("Zebulon constellation authority", () => {
   test("defines the exact six Galaxy gateways and subtitles", () => {
+    expect(GALAXY_CONSTELLATION.every((galaxy) => galaxy.level === "application-galaxy")).toBe(true);
     expect(GALAXY_CONSTELLATION.map(({ name, console }) => [name, console])).toEqual([
       ["ZAR", "NEXUS"],
       ["ZETA", "SENTRY"],

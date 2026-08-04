@@ -9,6 +9,8 @@
 export type GalaxyNebulaCharacter = "intelligence" | "structured" | "creative" | "beacon" | "binary" | "frontier";
 
 export interface GalaxyStar {
+  /** Top-level ZCOS application entrance; planets/hubs live inside it. */
+  readonly level: "application-galaxy";
   readonly id: string;
   readonly name: "ZAR" | "ZETA" | "ZYNC" | "ZYLO" | "ZENO" | "ZWAP!";
   readonly console: "NEXUS" | "SENTRY" | "CANVAS" | "COMPASS" | "UNITE" | "DISCOVERY";
@@ -49,6 +51,7 @@ export const ZEBULON_VESSEL_ROUTE = "/nexus";
 
 export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
   {
+    level: "application-galaxy",
     id: "zar",
     name: "ZAR",
     console: "NEXUS",
@@ -66,6 +69,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     route: ZEBULON_VESSEL_ROUTE,
   },
   {
+    level: "application-galaxy",
     id: "zeta",
     name: "ZETA",
     console: "SENTRY",
@@ -83,6 +87,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     route: null,
   },
   {
+    level: "application-galaxy",
     id: "zync",
     name: "ZYNC",
     console: "CANVAS",
@@ -100,6 +105,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     route: null,
   },
   {
+    level: "application-galaxy",
     id: "zylo",
     name: "ZYLO",
     console: "COMPASS",
@@ -117,6 +123,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     route: null,
   },
   {
+    level: "application-galaxy",
     id: "zeno",
     name: "ZENO",
     console: "UNITE",
@@ -139,6 +146,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     route: null,
   },
   {
+    level: "application-galaxy",
     id: "zwap",
     name: "ZWAP!",
     console: "DISCOVERY",
