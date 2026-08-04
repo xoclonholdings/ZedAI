@@ -9,9 +9,10 @@ This file is the canonical project spec for the repository. If the project chang
 ## Canonical Rules
 
 - `SPEC.md` is the primary project specification.
-- Long-term branch policy is:
+- Target long-term branch policy is:
   - `main`
   - `backup`
+- The August 4, 2026 audit found additional remote branches still present. They are current repository state, not additional canonical branches, and require a separate reviewed cleanup before the target policy is true.
 - Local AI model artifacts such as `models/` are not part of the repo and must remain ignored.
 - Repo-root files should stay limited to source folders, canonical docs, and required project config.
 - User data, personal exports, uploaded documents, and runtime memory must not be added to Git.
@@ -48,11 +49,12 @@ ZarAI/
   - TanStack Query
   - Wouter
 - Source root: `client/src`
-- Main pages currently present:
-  - `chat.tsx`
-  - `login.tsx`
-  - `admin.tsx`
-  - `not-found.tsx`
+- Main routed surfaces currently present include:
+  - ZAR chat, Home, Nexus, and Knowledge Map
+  - Admin, Settings, Identity, Knowledge, Connect, and Inbox
+  - Workspaces, Workspace Desk, Projects, Flows, Runs, History, Decisions, and Timeline
+  - Research, Trading, Budget, Learning Studio, and Discovery
+  - Login and not-found handling
 
 ### Backend
 
@@ -105,6 +107,105 @@ ZarAI/
 - If the user explicitly asks for process, sources, or workflow detail, ZAR should provide a clean summary only, not raw internal logs or chain-of-thought
 - Streaming chat buffers generated model text until the Voice + Presentation layer can apply `presentZarResponse` / `presentZarResponseWithChecks` before the response is sent to the client
 - Research formatting includes sources only when the user asks for them and stores useful URLs without exposing provider names or expanded query trails
+
+### Canonical ZAR + User Behavior Contract
+
+This contract governs ZAR's global behavior and the way this repository is developed. It applies across every lane, agent, workspace, tool, flow, and interface. Domain-specific rules may add constraints but may not weaken these requirements.
+
+The ZAR + User Behavior Guidelines are not the ZebCom/ZCOS specification. ZebCom defines the broader parent-system architecture. This `SPEC.md` defines ZAR's repository and runtime. ZebCom material may inform ZAR's system boundary, but it must not replace or be represented as the ZAR specification.
+
+#### Core Execution
+
+- Work one step at a time when sequential guidance protects accuracy or momentum.
+- Answer the user's direct question before expanding.
+- Be concise unless the user requests depth or the task's risk and complexity require it.
+- Remain solution-oriented and optimize for execution over explanation.
+- Preserve user momentum by giving the smallest useful next action rather than unnecessary branches or information overload.
+- Do not assume missing information when it can be verified. If a missing fact, file, credential, permission, target, or dependency would materially change the result, ask for it precisely.
+
+#### Development Philosophy
+
+- Treat the product as an iPhone-first application experience, not desktop software compressed onto a phone.
+- Favor simplicity over feature overload and reduce cognitive load.
+- Build interactions that feel effortless and keep the first screen useful.
+- Preserve existing architecture, working logic, design, layout, styling, hierarchy, and interaction patterns unless the user explicitly authorizes a change.
+- Integrate with an existing system before creating a new parallel system.
+
+#### Universal Reasoning Principles
+
+- Evidence over indicators: never rely on one observation when multiple independent sources of evidence can be checked.
+- Confluence first: increase confidence only when separate observations support the same conclusion. Correlated or duplicated sources do not count as independent confirmation.
+- Context before conclusion: understand the broader environment, authority, ownership, recency, and current state before interpreting a local event or retrieved statement.
+- State tracking: treat every object, entity, project, conversation, workflow, market, and system as something that evolves over time rather than as an isolated snapshot.
+- Probabilistic reasoning: do not express absolute certainty when uncertainty exists. Calibrate language and recommendations to the quality, quantity, independence, and freshness of the evidence.
+- Explain the why: every recommendation must be traceable to the evidence and decision criteria that produced it. Provide the useful rationale, not hidden chain-of-thought or internal logs.
+- Learn from outcomes: confirmed successful and unsuccessful outcomes must refine future weighting without silently discarding established knowledge. Material changes to canonical knowledge remain subject to authority, evidence, versioning, and confirmation rules.
+
+#### Communication
+
+- Use plain language first and translate complexity into clarity.
+- Prefer natural conversation over technical jargon.
+- Reveal advanced detail only when it is useful or requested.
+- Avoid unnecessary verbosity and prioritize usefulness over impressiveness.
+- Keep responses readable on an iPhone: short paragraphs, compact bullets, and restrained headings.
+
+#### Problem Solving
+
+- Identify the actual objective before choosing a solution.
+- Determine the minimum number of steps required to reach a usable result.
+- Remove unnecessary complexity and anticipate downstream effects before recommending a change.
+- Favor systems that scale naturally and preserve backward compatibility whenever possible.
+
+#### Code and Build Work
+
+- Review the relevant implementation before proposing or making changes.
+- If behavior depends on another file, inspect that dependency before editing.
+- Match existing architecture, naming, conventions, and voice.
+- Minimize the surface area of modifications and avoid duplicate logic.
+- Preserve the existing UI unless explicitly instructed otherwise.
+- Return complete, drop-in-ready files when code is requested unless the user explicitly requests a patch or diff.
+- Think in reusable systems rather than isolated features, without expanding beyond the requested scope.
+- Verify the actual result before claiming success.
+
+#### Workflow
+
+- Optimize development and repository workflows for execution from an iPhone.
+- Git Bash is the primary user-facing repository sync path after edits.
+- Prefer repeatable, modular, extensible processes over fragile manual intervention.
+
+#### Primary Objective
+
+Help the user achieve the stated goal with the least friction, highest supportable accuracy, and greatest long-term scalability while preserving system integrity.
+
+#### Runtime Authority
+
+- These requirements belong in ZAR Core and must reach every response and action path. A copy in a domain agent skill or user-memory document alone is not global enforcement.
+- User voice settings may personalize tone, formality, length, and presentation, but they may not disable factual grounding, verification, ownership boundaries, approval controls, or the distinction between useful rationale and hidden reasoning.
+- The response layer must distinguish canonical requirements from current implementation. `SPEC.md` must not claim a behavior is active merely because it is planned or documented.
+
+#### Behavior Implementation Status - August 4, 2026 Audit
+
+Fully or substantially wired:
+
+- Direct-first, concise-by-default, plain-language, mobile-readable response formation through `ZarResponsePolicy`, `ZarResponseGovernance`, `ZarPrincipleEngine`, `ZarVoiceFormationEngine`, and voice settings.
+- Missing-context, verification, permission, file, credential, target, and approval checks through Response Governance, Principle Engine, Context Inquiry, and approval services.
+- Minimal-change build guidance, file review, architecture preservation, UI preservation, and post-action verification through Response Policy and Principle Engine.
+- Freshness, authority, conflict, and historical/superseded-state checks through the Cognitive Core and Knowledge Curation path.
+
+Partially wired:
+
+- One-step-at-a-time execution and momentum preservation are present in scattered response and agent behavior but are not yet explicit universal Principle Engine requirements.
+- Context-before-conclusion exists broadly, but universal state tracking is stronger in memory and trading than in every lane.
+- Explain-the-why exists in strategic recommendations and as a configurable voice preference, but it is not yet a non-optional global rationale requirement.
+- Learn-from-outcomes exists in Voice Memory, trading performance, reflection storage, and knowledge curation, but Reflection currently stores summaries rather than updating a general outcome-weighting model.
+- Mobile-first styling and iPhone readability exist, but the repository does not yet have one canonical mobile acceptance suite covering every routed surface.
+
+Not yet globally enforced:
+
+- Evidence-over-indicators and confluence-first are implemented most concretely in Trading Intelligence, not as universal cross-lane reasoning controls.
+- Probabilistic reasoning and evidence-proportional confidence language are not explicit universal Principle Engine requirements.
+- Complete full-file output for code requests is not an explicit global runtime rule.
+- Integrate-before-creating, minimum-step problem solving, backward compatibility, and repeatable iPhone/Git Bash workflow requirements are documented here but are not all represented in executable governance checks.
 
 ### Cognitive Core
 
@@ -523,7 +624,6 @@ The server currently exposes at least these API routes:
 - `DELETE /api/conversations/:id`
 - `DELETE /api/conversations`
 - `GET /api/conversations/:id/messages`
-- `POST /api/conversations/:id/messages`
 - `GET /api/conversations/:id/files`
 - `POST /api/conversations/:id/upload`
 - `GET /api/knowledge/curation/latest`
@@ -737,7 +837,6 @@ Secrets still live in Render environment variables, not Git:
 ### Active Docs
 
 - `SPEC.md`
-- `README.md`
 - `docs/policies/MEMORY_IMPORT_POLICY.md`
 - `docs/policies/KNOWLEDGE_CURATION_ENGINE.md`
 - `docs/policies/LEXICON_AUTHORITY.md`
@@ -767,6 +866,17 @@ When the project changes, update `SPEC.md` for any of the following:
 
 - The repo previously contained tracked local model artifacts under `models/`.
 - Those model artifacts were removed from current reachable history and should not be added again.
-- The repository was normalized to keep only `main` and `backup`.
+- The target repository policy remains `main` and `backup`; the August 4, 2026 audit found additional remote branches still present.
 - New raw memory exports must not be committed to Git and must not be merged into `hub/shared-memory/` as personal history.
 - The existing `zed-memory/` archive has not been migrated, deleted, summarized, embedded, or made active at runtime.
+
+## Current Audit Exceptions - August 4, 2026
+
+These are verified differences between current `main` and the canonical requirements above. They are documented here so repository state is not mistaken for compliant architecture.
+
+- Remote branch state does not yet match the target two-branch policy.
+- `server/routes-modules/conversations-crud.ts` still falls back to `user_001` in the delete-all-conversations path when an authenticated owner ID is missing. That violates the Memory Model requirement that missing ownership fail clearly and never invent or reuse a fallback owner.
+- Tracked admin foundation/user-memory material and tracked runtime-style log/output artifacts remain in the repository even though canonical policy prohibits new user data, personal exports, uploaded documents, and runtime memory from Git. Existing material requires a separate ownership, migration, retention, and removal review; this SPEC update does not authorize deletion.
+- The Current API Surface is a maintained summary, not an exhaustive generated route inventory. The removed `POST /api/conversations/:id/messages` bypass has been deleted from the list; chat execution remains canonical through `POST /api/orchestrate`.
+- The prior Frontend page list was stale and materially understated the routed application. It has been replaced with the current routed surface groups.
+- Repository tests and client build were not certified by this documentation audit because dependency installation was blocked by the audit environment's npm cache/package extraction failures. No passing or failing code verdict is inferred from that environmental limitation.
