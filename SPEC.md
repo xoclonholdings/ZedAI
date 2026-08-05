@@ -17,6 +17,50 @@ This file is the canonical project spec for the repository. If the project chang
 - Repo-root files should stay limited to source folders, canonical docs, and required project config.
 - User data, personal exports, uploaded documents, and runtime memory must not be added to Git.
 
+## Implementation Status and Dating Policy
+
+Every material feature documented in this specification must carry a status and a last-verified date. The date records when the repository implementation was checked; it is not necessarily the feature's original build date.
+
+Status meanings:
+
+- **Active** - a substantive implementation exists and is connected to its intended runtime or user surface. Active does not mean independently production-certified.
+- **Partial** - meaningful implementation exists, but one or more required integrations, controls, providers, lifecycle steps, or user surfaces remain incomplete.
+- **Scaffolded** - contracts, routes, types, or interface surfaces exist, but the feature is not yet a complete end-to-end capability.
+- **Planned** - the capability is named or configured but no substantive implementation is active.
+- **Blocked** - implementation exists, but a verified governance, ownership, security, authorization, or operational dependency prevents it from being declared production-ready.
+
+### Feature Progress Register - August 4, 2026
+
+| Feature | Status | Progress comment | Next gate | Last verified |
+| --- | --- | --- | --- | --- |
+| Zebulon constellation home | Active | The signed-in `/` route renders the six-galaxy WebGL constellation and shared Nexus header. | Complete device and accessibility acceptance testing. | August 4, 2026 |
+| Nexus and Console architecture | Active | Root manifests, capability registry, constellation navigation, application boundaries, console frame, and ZAR-directed navigation are connected. | Finish acceptance coverage across every root application. | August 4, 2026 |
+| Persistent communication dock | Partial | Text, Talk, Image, Draw, Doc, and Upload are declared; text, browser dictation, uploads, drawing, browser, and memory-upload surfaces exist. Provider-backed transcription remains incomplete. | Replace the transcription stub and certify every mode end to end. | August 4, 2026 |
+| Flows and Runs | Active | Definitions, publication, archiving, stage execution, approval pauses, retries, cancellation, reports, history, and seeded published flows are implemented. | Remove fallback owner IDs and complete production ownership checks. | August 4, 2026 |
+| Flow Suggestions | Active | Repeated request patterns can be detected, accepted as flows, or dismissed. | Validate suggestion quality and cross-user isolation with production data. | August 4, 2026 |
+| Execution system | Active | Digital execution, human execution bridging, task lifecycle, approvals, retries, reporting, and tool dispatch have a unified service and route layer. | Eliminate remaining stubbed tool actions and certify approval coverage. | August 4, 2026 |
+| External command intake | Partial | Voice transcripts, email, SMS, WhatsApp, Telegram, Discord, Slack, and generic webhook payloads can enter a shared command gateway. | Replace invented external owner IDs with verified account-to-user mapping. | August 4, 2026 |
+| Autonomous operations | Partial | Deferred actions, retry review, approval rechecks, blocked-task monitoring, and follow-up notifications exist. | Add a continuously owned scheduler tick and restart-safe execution guarantees. | August 4, 2026 |
+| Workflow intelligence | Partial | Inbox watching, priority classification, scheduling drafts, meeting follow-ups, and voice-matched drafting exist as services and routes. | Complete provider integrations and end-to-end operational tests. | August 4, 2026 |
+| Browser and sign-in control | Partial | Persistent sessions, browser navigation, sign-in profiles, verification pauses, and live human handoff are implemented. | Finish provider-specific reliability, credential safety, and takeover testing. | August 4, 2026 |
+| Connect intelligence | Active | User secrets, integration-gap detection, GitHub status, and firewall visibility have connected APIs and UI surfaces. | Complete provider-by-provider connection verification. | August 4, 2026 |
+| ZYNC Coding Operator | Partial | Repository scan, code search, impact review, verification jobs, branch inspection, and backup-refresh controls exist. | Resolve remaining TypeScript/operational exceptions and certify repository-write boundaries. | August 4, 2026 |
+| Object Memory | Partial | A structured object graph, deterministic extraction, relationships, conflict tracking, reparse, and selective retrieval exist. | Merge it under the canonical Knowledge Authority and one durable ownership model. | August 4, 2026 |
+| Knowledge-centered UI | Partial | Knowledge Map, Decisions, Timeline, Discovery, related-object, and memory views are routed over real stores. | Complete data truthfulness, empty-state, and relationship-view acceptance checks. | August 4, 2026 |
+| Learning Studio | Active | Sources, blueprints, revisions, approvals, lessons, assessments, attempts, and mastery state are implemented. | Validate curriculum authority, ownership, and multi-session persistence. | August 4, 2026 |
+| Workspace Desks | Active | Persistent Education and Operations desks use workspace memory and scoped context. | Expand only through reviewed workspace types and preserve ownership isolation. | August 4, 2026 |
+| Research Desk | Active | Search, saved documents, uploads, findings, and action-on-research flows are implemented. | Complete source persistence and research-to-action approval tests. | August 4, 2026 |
+| Budget system | Active | Dual Reserve Strategy, income allocation, deposits, balances, targets, treasury readiness, settings, and reports are implemented. | Validate calculations and durable per-user persistence against production data. | August 4, 2026 |
+| Project filing | Active | Project instructions, sources, conversation filing, and project-scoped context injection are implemented. | Finish project ownership and cross-surface context acceptance testing. | August 4, 2026 |
+| Trading progression | Active | Learn, Strategy, Validation, Internal Paper, External Paper, Evaluation/Qualification, and Live stages are represented in UI and state. | Enforce stage advancement from verified outcomes rather than user-controlled state alone. | August 4, 2026 |
+| Market Structure Engine | Active | Swing structure, BOS, CHoCH, MSS, liquidity, order blocks, breakers, FVGs, confluence, alerts, and outcome-oriented analysis are implemented. | Expand market-data validation and longitudinal statistics certification. | August 4, 2026 |
+| Tradovate bridge | Partial | Demo/live credential state, governed order submission, qualification checks, trade recording, and kill-switch integration exist. | Complete provider certification and resolve live-trading authorization. | August 4, 2026 |
+| Polymarket US bridge | Partial | Connection status and event-market discovery are implemented. | Add a reviewed credential and execution policy before any order capability. | August 4, 2026 |
+| Governed live trading | Blocked | Live-stage state, qualification gates, Webull/Tradovate order paths, risk limits, and a kill switch exist in code. | The project owner must explicitly authorize the canonical live-trading policy; provider and safety certification must then pass. | August 4, 2026 |
+| Server-side voice transcription | Scaffolded | `/api/voice/transcribe` exists as a future transcription boundary. | Connect a real approved transcription provider and add privacy/retention controls. | August 4, 2026 |
+| IDE Operator subagent | Planned | The agent is named in configuration but is not an active specialized subagent. | Implement and register the subagent after ZYNC authority boundaries are settled. | August 4, 2026 |
+| Audio Engineer subagent | Planned | The agent is named in configuration but is not active. | Implement only after the audio ingestion, transcription, storage, and consent model is approved. | August 4, 2026 |
+
 ## Repository Layout
 
 ```text
@@ -342,7 +386,7 @@ Specialized subagent implementations live under `server/orchestrator/subagents/i
 - Activates on: trading, crypto, forex, options, ETFs, backtesting, paper trades, trade theses, position management, wealth planning, portfolio analysis, risk controls
 - Enforces: FinanceAgent SKILL.md rules (market context, statistical edge, risk validation, continuous improvement)
 - Outputs: trade theses, strategy audits, risk analysis, journal reviews, backtesting guidance
-- Never: executes live trades, transmits orders, manages live capital
+- Never: directly executes live trades, transmits orders, or manages live capital. Separate provider bridges contain governed order routes; those routes are outside the subagent and remain blocked as a canonical production capability pending owner authorization and certification.
 
 **IntelligenceSubagent** (R&D/Research):
 - Activates on: research, web lookups, URLs, current/latest/news intent, analysis, deep research, explanations, comparisons, market scans
@@ -402,6 +446,408 @@ Agent-mode UI still supports explicit targeting:
 - `ZED_ORCHESTRATOR_PARALLEL_MODE=false` (if set) falls back to sequential subagent execution for debugging
 - `ZED_ORCHESTRATOR_DISABLE_SUBAGENT_<name>=true` can disable specific subagents at runtime
 - Runtime logs record subagent spawn, execution time per lane, and aggregation details for observability
+
+### Zebulon Constellation, Nexus, and Console
+
+**Status:** Active
+
+**Progress verified:** August 4, 2026
+
+The signed-in root route is a ZCOS-hosted application shell for ZAR. It uses the Zebulon six-galaxy constellation as the visual entry point, Nexus as the root navigation and capability-discovery architecture, and Console as the persistent interaction frame.
+
+Zebulon constellation implementation:
+
+- `client/src/zebulon/ZebulonConstellationPage.tsx`
+- `client/src/zebulon/galaxyConstellation.ts`
+- The scene presents ZAR, ZETA, ZYNC, ZYLO, ZENO, and ZWAP as distinct galaxies in a constellation-scale field.
+- The signed-in `/` route renders this experience rather than a flat application registry.
+- The shared Nexus header is retained across the galaxy map.
+
+Nexus root applications:
+
+- Identity
+- Memory
+- Knowledge
+- Workspaces
+- Projects
+- Tools
+- Connect
+- Settings
+
+The root application contract lives under `client/src/nexus/` and includes:
+
+- `NexusManifestRegistry` for permanent root manifests
+- `NexusConstellationEngine` for graph relationships and active-node state
+- `NexusCapabilityRegistry` and `centralCapabilityRegistry` for declared actions
+- `NexusProvider` for focused-node and navigation state
+- application boundaries with base paths, route patterns, state namespaces, ownership declarations, consumed ZAR Core capabilities, and implementation status
+- ZAR-directed actions that can focus, activate, or navigate to a declared capability
+
+The Console framework lives under `client/src/console/` and provides the shared shell, dock, workspace frame, browser context, standby bar, glass panel, activation behavior, logout control, and console identity.
+
+Progress note - August 4, 2026:
+
+- Core navigation, constellation rendering, capability declaration, console framing, and the signed-in root experience are connected.
+- The remaining work is acceptance and hardening across device sizes, keyboard/touch navigation, accessibility, and every root application boundary.
+- The orphaned `NexusApplicationScaffold.tsx` is not evidence of an additional active application and must not be counted as a completed feature.
+
+### Persistent Communication Layer
+
+**Status:** Partial
+
+**Progress verified:** August 4, 2026
+
+The universal communication dock represents actions, not navigation. Its approved modes are:
+
+- Text
+- Talk
+- Image
+- Draw
+- Doc
+- Upload
+
+The declaration lives in `client/src/nexus/communication/persistentCommunication.ts`. The Nexus conversation surface, controller, message list, composer, attachments, file upload, memory upload, draw canvas, live browser, and voice dock live under `client/src/nexus/components/communication/`.
+
+Progress note - August 4, 2026:
+
+- Text dispatch uses the canonical conversation and orchestration path.
+- Browser dictation, file upload, document/memory upload, drawing, and live-browser surfaces exist.
+- Server-side transcription remains scaffolded at `/api/voice/transcribe`; a real approved transcription provider, retention policy, and complete end-to-end voice test are still required.
+
+### Flows, Runs, and Flow Suggestions
+
+**Status:** Active with an ownership exception
+
+**Progress verified:** August 4, 2026
+
+Flows are reusable, multi-stage operational shortcuts owned by ZAR at the HTTP surface and ZCOS at the execution lifecycle. Definitions and run state are managed by `FlowStore`; execution is owned by the ZCOS flow engine and agent-stage adapters.
+
+Implemented behavior includes:
+
+- create, edit, duplicate, publish, archive, and list flow definitions
+- launch a flow from a user brief and structured context
+- execute ordered stages through Operations, Intelligence, Business, Finance, Content, Security, or Manager responsibilities
+- carry prior stage output into later stages
+- pause for approval, accept or reject a stage, resume, retry, or cancel
+- generate run reports and preserve run history
+- seed and expose published flows through the Tools and Runs surfaces
+
+Flow Suggestions use repeated request patterns to propose a reusable shortcut. A suggestion can be accepted into a flow or dismissed. The implementation lives in `FlowSuggestionEngine.ts`, `FlowSuggestionStore.ts`, and `/api/flows/suggestions*`.
+
+Progress note - August 4, 2026:
+
+- The feature is substantive and routed in both user and admin surfaces.
+- Production ownership is not complete because run and approval paths still fall back to values such as `anonymous`, `user`, or `unknown` when authenticated ownership is missing.
+- Canonical completion requires these paths to fail clearly when `userId` is absent and to verify that the authenticated user owns every run being read or mutated.
+
+### Execution, Approval, and Human Action System
+
+**Status:** Active
+
+**Progress verified:** August 4, 2026
+
+The execution system translates an approved intent into a tracked task. Its service layer lives under `server/services/execution/` and registers additive route families under `/api/execution`, `/api/approval`, `/api/workflow`, and `/api/operational`.
+
+Implemented components:
+
+- `TaskExecutionEngine` prepares executable requests.
+- `ExecutionPipeline` coordinates approvals, digital execution, human execution, completion, and failure.
+- `DigitalExecutionService` dispatches supported digital actions.
+- `HumanExecutionBridge` queues work that requires a person.
+- `TaskLifecycleManager` tracks pending, approved, running, blocked, failed, completed, and retry state.
+- `ExecutionApprovalHandler`, `AgentApprovalAdapter`, `ApprovalDecisionHandler`, notifications, and watchdogs connect action-level policy to task execution.
+- `SelfRepairService` applies bounded deterministic retry strategies to known runtime failures.
+
+Progress note - August 4, 2026:
+
+- The unified lifecycle and approval boundaries are implemented.
+- Some tool-orchestration actions still return stub results and are not complete external actions.
+- Production certification requires an action-by-action proof that every side effect consults the same approval authority and retains the authenticated owner.
+
+### External Command Intake
+
+**Status:** Partial
+
+**Progress verified:** August 4, 2026
+
+The intake layer accepts commands from:
+
+- voice transcript
+- email
+- SMS
+- WhatsApp
+- Telegram
+- Discord
+- Slack
+- generic webhook
+
+`ExternalCommandGateway` normalizes messages, `ChannelContextManager` preserves channel context, `VoiceCommandBridge` handles transcript intake, and `MessagingBridge` maps messaging providers. Routes are registered under the intake route family.
+
+Progress note - August 4, 2026:
+
+- The normalization and routing architecture exists.
+- The current gateway may construct owners such as `external:<channel>:<sender>` rather than resolving an authenticated ZAR user.
+- This feature is not production-ready until every external identity is linked through a verified account-to-user mapping and unverified senders are quarantined rather than treated as memory owners.
+
+### Autonomous Operations and Workflow Intelligence
+
+**Status:** Partial
+
+**Progress verified:** August 4, 2026
+
+Autonomous operations include:
+
+- deferred action scheduling
+- retry review and bounded re-execution
+- approval rechecks
+- blocked-task monitoring
+- follow-up notification generation
+- omnichannel operational memory
+- tool orchestration
+
+Workflow intelligence includes:
+
+- email inbox watching
+- priority classification
+- scheduling-draft preparation
+- meeting follow-up generation
+- voice-matched drafting
+
+Progress note - August 4, 2026:
+
+- Service and route layers are implemented and can be invoked.
+- Continuous autonomy is incomplete because the follow-up engine does not own a continuously running internal tick across deploy restarts; it still depends on an external or manually invoked scheduler path.
+- Provider integrations, restart safety, duplicate-execution protection, and end-to-end notification tests remain required.
+
+### Browser, Sign-In, and Connect Intelligence
+
+**Status:** Partial overall; Connect surface active
+
+**Progress verified:** August 4, 2026
+
+Browser and sign-in control provide:
+
+- persistent browser sessions
+- navigation and browser action routes
+- provider login profiles
+- credential-assisted sign-in
+- pauses for verification codes or user intervention
+- live human browser handoff
+- browser-state delivery to connected clients
+
+Connect intelligence provides:
+
+- per-user secrets storage
+- integration-gap detection and review
+- GitHub connection/status readouts
+- firewall status and provider visibility
+- admin integration configuration
+
+Progress note - August 4, 2026:
+
+- The browser lifecycle, sign-in profiles, live handoff socket, user-secret surface, integration gaps, GitHub readouts, and firewall surface exist.
+- Browser control remains partial until provider-specific reliability, safe credential handling, takeover expiry, and cross-user session isolation are fully tested.
+- Connect is active as an inspection and configuration surface; individual providers remain subject to their own connection status and approval requirements.
+
+### ZYNC Coding Operator
+
+**Status:** Partial
+
+**Progress verified:** August 4, 2026
+
+ZYNC Coding Operator is the code and repository operations surface available through Admin. Its service and route implementation provide:
+
+- repository scanning
+- code search
+- impact review over explicit files or a search query
+- verification jobs
+- branch inspection
+- backup-refresh controls
+- operational status reporting
+
+Progress note - August 4, 2026:
+
+- The feature is implemented beyond a placeholder and has a dedicated UI section.
+- It is not yet a specialized `IDEOperatorSubagent`; that subagent remains planned.
+- Repository-write permissions, minimal-surface edits, branch policy, backup semantics, and verification failures must remain governed before the feature is production-certified.
+
+### Project Filing and Work Surfaces
+
+**Status:** Active
+
+**Progress verified:** August 4, 2026
+
+Project filing includes:
+
+- project creation and project records
+- project instructions injected into agent context
+- source records containing links, excerpts, documents, and notes
+- conversation filing to a project
+- project-scoped retrieval and work history
+
+Workspace Desks provide persistent working surfaces grounded in workspace memory. Education and Operations desks are currently implemented. A desk accepts an objective, notes or source material, and workspace context without replacing the canonical project or memory authorities.
+
+Research Desk includes:
+
+- web and document research initiation
+- persistent research documents
+- uploads and saved findings
+- source-aware research results
+- an action-on-research path that can pass findings into ZAR execution
+
+Progress note - August 4, 2026:
+
+- Projects, sources, workspace desks, and Research Desk are routed and backed by real services/stores.
+- Remaining work centers on durable per-user persistence, ownership checks on every project/source mutation, and approval coverage when research is converted into an outward action.
+
+### Learning Studio
+
+**Status:** Active
+
+**Progress verified:** August 4, 2026
+
+Learning Studio turns source material into a reviewable learning program. The implementation includes:
+
+- source ingestion
+- blueprint generation and revision
+- explicit blueprint approval
+- lessons and ordered units
+- assessments and attempts
+- mastery and progress tracking
+- workspace-aware learning context
+
+The service lives under `server/services/learning/`, routes under `server/routes-modules/learning.ts`, shared contracts under `shared/learning-types.ts`, and the user surface at `client/src/pages/learning-studio.tsx`.
+
+Progress note - August 4, 2026:
+
+- The full learning lifecycle is represented in service, route, type, and UI layers.
+- Completion requires authority checks for source material, per-user isolation, durable persistence validation, and acceptance tests across resumed sessions.
+
+### Budget System
+
+**Status:** Active
+
+**Progress verified:** August 4, 2026
+
+The Budget system implements the Dual Reserve Strategy and related treasury controls. It supports:
+
+- income allocation rules
+- deposit recording
+- personal reserve, payroll, operating reserve, emergency fund, and treasury balances
+- targets and stage readiness
+- treasury-readiness evaluation
+- labels, currency, and payroll-path settings
+- generated reports
+
+Progress note - August 4, 2026:
+
+- The store, route family, shared types, calculations, settings surface, and report path are implemented.
+- Production certification requires calculation tests against real user scenarios and confirmation that budget state is durably isolated by authenticated user.
+
+### Object Memory and Knowledge-Centered Navigation
+
+**Status:** Partial and transitional
+
+**Progress verified:** August 4, 2026
+
+Object Memory introduces a structured graph with deterministic extraction, relationships, conflicts, selective retrieval, and object-oriented reparse. It recognizes persistent object types including projects, decisions, tasks, people, companies, goals, events, research, files, conversations, and other typed knowledge records.
+
+The current implementation lives under:
+
+- `server/services/object-memory/`
+- `shared/object-memory-types.ts`
+- `hub/shared-memory/object-memory/graph.json` as a local graph path
+- object-oriented UI surfaces for Knowledge Map, Decisions, Timeline, Discovery, and related objects
+
+Knowledge-centered navigation exposes persistent information through routed views instead of making chat the only shell. It reuses existing project, approval, memory, research, reflection, conflict, and activity stores; empty states must remain honest and no view may fabricate operational data.
+
+Progress note - August 4, 2026:
+
+- Extraction, retrieval, graph storage, conflicts, and routed object views exist.
+- Object Memory currently overlaps the canonical Knowledge Ingestion graph under `hub/shared-memory/knowledge-graph/`.
+- It must not become a second canonical truth engine. Completion requires one Knowledge Authority, one durable ownership model, shared provenance/conflict rules, and an explicit migration or adapter plan.
+
+### Trading Intelligence and Progression
+
+**Status:** Active through evaluation; live execution blocked pending authorization
+
+**Progress verified:** August 4, 2026
+
+The Trading workspace follows a staged progression:
+
+1. Learn
+2. Strategy
+3. Validation
+4. Internal Paper
+5. External Paper
+6. Evaluation and Qualification
+7. Live
+
+The progression contract is defined in `shared/trading-progression.ts`, per-user state is managed by `TradingProgressionStore`, and the client exposes stage-specific surfaces under `client/src/components/trading/`.
+
+The Market Structure Engine computes:
+
+- swing structure and HH/HL/LH/LL state
+- break of structure (BOS)
+- change of character (CHoCH)
+- market structure shift (MSS)
+- liquidity pools, sweeps, and draw on liquidity
+- order blocks, breaker blocks, mitigation/rejection blocks, and supply/demand zones
+- fair value gaps and other imbalances
+- retest, rejection, acceptance, and failure behavior
+- multi-factor confluence scores
+- structural alerts and setup context
+
+Trading governance requires evidence, invalidation, stop and target math, risk amount, position size, rule checks, decision records, and outcome review. The education foundation remains source-grounded and separates education from individualized recommendations and execution.
+
+Progress note - August 4, 2026:
+
+- Progression, market structure, scanner, strategy, proposal, paper-trading, evaluation, qualification, and performance layers exist.
+- Stage state can still be updated through progression endpoints; canonical advancement should ultimately be derived from verified learning, trading, and qualification outcomes.
+- Market data coverage and longitudinal performance statistics require further certification before the system can claim a validated statistical edge.
+
+### External Trading Providers and Live-Governance Boundary
+
+**Tradovate status:** Partial
+
+**Polymarket US status:** Partial
+
+**Governed live trading status:** Blocked
+
+**Progress verified:** August 4, 2026
+
+Tradovate supports:
+
+- demo and live credential state
+- provider connection status
+- governed order requests
+- qualification and live-stage checks
+- risk and thesis validation before submission
+- recording accepted external orders into the common TradingStore
+- kill-switch enforcement for live mode
+
+Polymarket US currently supports:
+
+- connection status
+- event-market discovery/search
+
+The Live stage includes:
+
+- maximum risk per trade
+- maximum daily loss
+- maximum total drawdown
+- qualification gating
+- provider readiness checks
+- a kill switch
+- Webull and Tradovate execution paths in repository code
+
+Progress note - August 4, 2026:
+
+- The presence of live-order code does not itself establish owner authorization to trade live capital.
+- The earlier statement that FinanceSubagent never transmits orders remains true for the subagent itself; order submission is implemented through separate governed provider bridges and route handlers.
+- Live trading is blocked as a canonical production capability until the project owner explicitly approves the live-trading policy and provider, safety, credential, audit, kill-switch, approval, and recovery tests pass.
+- Polymarket US has no authorized order-execution capability in this specification.
+- Kalshi remains planned/configurable research work and is not an active execution provider.
 
 ### Knowledge Ingestion and Context
 
@@ -614,7 +1060,32 @@ The detailed operating policy is `docs/policies/KNOWLEDGE_CURATION_ENGINE.md`.
 
 ## Current API Surface
 
-The server currently exposes at least these API routes:
+The route registry contains hundreds of handlers. This section is a maintained subsystem map plus representative routes; it is not an exhaustive generated inventory.
+
+Subsystem route families:
+
+- Conversations and uploads: `/api/conversations*`
+- Canonical orchestration: `/api/orchestrate*`
+- Intelligence planning and document retrieval: `/api/intelligence*`
+- Knowledge ingestion, graph, and curation: `/api/knowledge-ingestion*`, `/api/knowledge*`, `/api/context*`
+- Lexicon Authority: `/api/lexicon*`
+- Projects and project filing: `/api/projects*`
+- Research Desk: `/api/research*`
+- Flows, runs, and suggestions: `/api/flows*`, `/api/admin/flows*`
+- Execution and approval: `/api/execution*`, `/api/approval*`, `/api/admin/approval*`
+- Operational automation and workflow intelligence: `/api/operational*`, `/api/workflow*`
+- External command intake and messaging bridges: `/api/intake*`
+- Browser and sign-in control: `/api/browser*`, browser-sign-in and live-handoff routes
+- Connect, integration gaps, user secrets, and provider status: `/api/connect*`, `/api/me/secrets*`
+- ZYNC Coding Operator: `/api/admin/zync*`
+- Learning Studio: `/api/learning*`
+- Workspace Desks: `/api/workspace-desk*`
+- Budget: `/api/budget*`
+- Trading intelligence, training, paper, progression, providers, and live-stage governance: `/api/trading*`
+- Admin settings, users, rules, logs, traces, security, and diagnostics: `/api/admin*`
+- Personalization: `/api/me/personalization*`
+
+Representative routes include:
 
 - `GET /api/health` (alias `GET /healthz`)
 - `GET /api/me`
@@ -680,6 +1151,22 @@ The server currently exposes at least these API routes:
 - `GET /api/me/personalization/notes/:slug`
 - `POST /api/me/personalization/notes`
 - `DELETE /api/me/personalization/notes/:slug`
+- `GET /api/flows`
+- `POST /api/flows/:id/run`
+- `GET /api/flows/runs`
+- `GET /api/flows/suggestions`
+- `POST /api/execution/dispatch`
+- `GET /api/projects`
+- `GET /api/research/documents`
+- `GET /api/learning/paths`
+- `GET /api/budget/state`
+- `GET /api/trading/progression`
+- `GET /api/trading/external-paper`
+- `GET /api/trading/evaluation`
+- `GET /api/trading/qualification`
+- `GET /api/trading/live`
+- `GET /api/trading/tradovate/status`
+- `GET /api/trading/execution/polymarket/status`
 
 ## Local Development
 
@@ -757,6 +1244,7 @@ Canonical config is in `netlify.toml`:
 ## Research and Market Analysis
 
 - The `R&D Agent` is the current research lane and is backed by `IntelligenceAgent`
+- Research Desk is the persistent user surface for searches, research documents, uploads, saved findings, and action-on-research requests.
 - It supports:
   - general research synthesis
   - stock and crypto analysis prompts
@@ -769,8 +1257,9 @@ Canonical config is in `netlify.toml`:
   - sentiment
   - event contracts
 - Keyword expansion is internal response machinery and should not appear in normal user-facing research answers
-- FinanceAgent shares market-research context with the R&D/Intelligence lane, but remains one phased finance feature whose current Trading Intelligence phase focuses on paper-trading validation, market-structure analysis, strategy audits, and risk management before later expansion into broader opportunity and capital-allocation workflows
+- FinanceAgent shares market-research context with the R&D/Intelligence lane. Trading Intelligence currently includes education, strategy, validation, internal paper, external paper, evaluation, qualification, market-structure analysis, provider bridges, and a blocked live stage. Broader opportunity and capital-allocation workflows remain later phases.
 - Kalshi support is currently planned and configurable in Admin > Integrations, but not yet active for live contract execution or trading workflows
+- Polymarket US market discovery is partially active; order execution is not authorized by this specification.
 
 ## Configuration Sources
 
@@ -789,9 +1278,29 @@ Canonical config is in `netlify.toml`:
 - `server/routes-modules/knowledge.ts`
 - `server/routes-modules/knowledge-ingestion.ts`
 - `server/routes-modules/lexicon.ts`
+- `server/routes-modules/flows.ts`
+- `server/routes-modules/flow-suggestions.ts`
+- `server/routes-modules/projects.ts`
+- `server/routes-modules/research.ts`
+- `server/routes-modules/learning.ts`
+- `server/routes-modules/workspace-desk.ts`
+- `server/routes-modules/budget.ts`
+- `server/routes-modules/browser.ts`
+- `server/routes-modules/browser-signin.ts`
+- `server/routes-modules/connect.ts`
+- `server/routes-modules/zync-coding-operator.ts`
+- `server/routes-modules/trading-*.ts`
 - `server/services/KnowledgeCurationEngine.ts`
 - `server/services/knowledge-ingestion/`
 - `server/services/lexicon-authority/`
+- `server/services/object-memory/`
+- `server/services/execution/`
+- `server/services/intake/`
+- `server/services/operational/`
+- `server/services/workflow/`
+- `server/services/learning/`
+- `server/services/workspace-desk/`
+- `server/zcos/trading/`
 - `hub/config/lexicon-domains.yaml`
 - `server/services/ZarResponseGovernance.ts`
 - `server/services/ZarResponsePolicy.ts`
@@ -805,6 +1314,11 @@ Canonical config is in `netlify.toml`:
 - `client/tsconfig.json`
 - `client/tsconfig.build.json`
 - `client/vite.config.ts`
+- `client/src/App.tsx`
+- `client/src/nexus/`
+- `client/src/console/`
+- `client/src/zebulon/`
+- `client/src/pages/`
 
 ## Runtime Behavior
 
@@ -861,6 +1375,8 @@ When the project changes, update `SPEC.md` for any of the following:
 - knowledge graph object lifecycle
 - response governance behavior
 - environment requirements
+- implementation status or production-readiness state
+- the progress comment and last-verified date for every material feature
 
 ## Known Historical Notes
 
@@ -876,6 +1392,11 @@ These are verified differences between current `main` and the canonical requirem
 
 - Remote branch state does not yet match the target two-branch policy.
 - `server/routes-modules/conversations-crud.ts` still falls back to `user_001` in the delete-all-conversations path when an authenticated owner ID is missing. That violates the Memory Model requirement that missing ownership fail clearly and never invent or reuse a fallback owner.
+- Flow execution and approval routes still contain fallback owners such as `anonymous` and `user`; Flow Suggestions may use `unknown`; external intake can construct owners from unverified channel sender identifiers; omnichannel memory permits missing ownership. These paths violate the same canonical ownership rule and block production certification for the affected features.
+- The direct outbound messaging path requires a complete audit proving that every provider send passes through canonical action-level approval policy before it can be treated as production-safe.
+- Object Memory and the Knowledge Ingestion graph currently create overlapping graph authorities. Object Memory remains transitional until both are unified under one Knowledge Authority and durable owner model.
+- Governed live-order routes exist for Webull and Tradovate, but live trading is not authorized as a canonical production capability. It remains blocked pending explicit owner policy and provider/safety certification.
+- Autonomous follow-up does not yet own a continuously running internal scheduler tick, so deferred monitoring is not guaranteed merely because the service exists.
 - Tracked admin foundation/user-memory material and tracked runtime-style log/output artifacts remain in the repository even though canonical policy prohibits new user data, personal exports, uploaded documents, and runtime memory from Git. Existing material requires a separate ownership, migration, retention, and removal review; this SPEC update does not authorize deletion.
 - The Current API Surface is a maintained summary, not an exhaustive generated route inventory. The removed `POST /api/conversations/:id/messages` bypass has been deleted from the list; chat execution remains canonical through `POST /api/orchestrate`.
 - The prior Frontend page list was stale and materially understated the routed application. It has been replaced with the current routed surface groups.
