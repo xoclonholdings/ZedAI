@@ -223,23 +223,43 @@ export function registerMemoryUploadRoutes(app: Express): void {
           typeof req.body?.workspace === "string" ? req.body.workspace.trim() : "";
 
         const inputs: Array<{ sourceFile: string; text: string; title?: string }> = [];
+        const processingFailures: Array<{ fileName: string; error: string }> = [];
 
         // Path A: multipart files. Each file is processed for text
         // extraction (PDF/CSV/text/DOCX/etc via existing fileProcessor).
         const files = (req.files as Express.Multer.File[] | undefined) || [];
         for (const file of files) {
-          const processed = await processFile(file.path, file.mimetype).catch((err) => ({
-            extractedContent: "",
-            error: err?.message || "processing failed",
-          } as any));
-          if (processed?.extractedContent && processed.extractedContent.trim()) {
-            inputs.push({
-              sourceFile: `upload/${file.originalname}`,
-              text: processed.extractedContent,
-              title: file.originalname,
+          try {
+            const processed = await processFile(file.path, file.mimetype, file.originalname);
+            if (processed.error || !processed.extractedContent?.trim()) {
+              processingFailures.push({
+                fileName: file.originalname,
+                error: processed.error || "No extractable content was found.",
+              });
+            } else {
+              inputs.push({
+                sourceFile: `upload/${file.originalname}`,
+                text: processed.extractedContent,
+                title: file.originalname,
+              });
+            }
+          } catch (err: any) {
+            processingFailures.push({
+              fileName: file.originalname,
+              error: err?.message || "File processing failed.",
             });
+          } finally {
+            await fs.unlink(file.path).catch(() => {});
           }
-          await fs.unlink(file.path).catch(() => {});
+        }
+
+        if (processingFailures.length > 0) {
+          return res.status(422).json({
+            error: processingFailures
+              .map((failure) => `${failure.fileName}: ${failure.error}`)
+              .join(" "),
+            failures: processingFailures,
+          });
         }
 
         // Path B: JSON body {title, content}. Coexists with file

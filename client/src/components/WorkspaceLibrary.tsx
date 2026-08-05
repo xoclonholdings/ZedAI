@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BookOpen, ChevronDown, ChevronUp, Plus, Upload, X } from "lucide-react";
 
 import { cleanSummary, cleanTitle } from "@/lib/text";
+import { uploadRequest } from "@/lib/uploadRequest";
 import type { BaseObject, ObjectGraph } from "@shared/object-memory-types";
 
 /**
@@ -72,11 +73,20 @@ export default function WorkspaceLibrary({
           fd.append("content", content.trim());
           fd.append("title", title.trim() || `${friendlyType(workspace)} note`);
         }
-        res = await fetch("/api/me/memory/upload", {
-          method: "POST",
-          credentials: "include",
-          body: fd,
-        });
+        const body = await uploadRequest<any>("/api/me/memory/upload", fd);
+        const added = body?.totals?.newObjects ?? 0;
+        setNotice(
+          added > 0
+            ? `ZAR learned ${added} thing${added === 1 ? "" : "s"} into ${friendlyType(workspace)} memory.`
+            : "Saved into this memory scope.",
+        );
+        setTitle("");
+        setContent("");
+        setFiles([]);
+        if (fileRef.current) fileRef.current.value = "";
+        setShowForm(false);
+        await refresh();
+        return;
       } else {
         res = await fetch("/api/me/memory/upload", {
           method: "POST",

@@ -3,6 +3,12 @@ import { useMutation } from "@tanstack/react-query";
 import { BrainCircuit, Loader2 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
+import { uploadRequest } from "@/lib/uploadRequest";
+import {
+  EXTRACTABLE_UPLOAD_ACCEPT,
+  MAX_UPLOAD_FILE_SIZE_BYTES,
+  MAX_UPLOAD_FILE_SIZE_LABEL,
+} from "@shared/upload-policy";
 
 interface NexusMemoryUploadProps {
   readonly onDone: () => void;
@@ -25,14 +31,10 @@ export function NexusMemoryUpload({ onDone }: NexusMemoryUploadProps) {
     mutationFn: async (files: File[]) => {
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
-      const response = await fetch("/api/me/memory/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data?.error || "Upload failed");
-      return data;
+      return uploadRequest<{ totals?: { newObjects?: number } }>(
+        "/api/me/memory/upload",
+        formData,
+      );
     },
     onSuccess: (data) => {
       const newObjects = data?.totals?.newObjects ?? 0;
@@ -60,6 +62,15 @@ export function NexusMemoryUpload({ onDone }: NexusMemoryUploadProps) {
     const files = event.target.files ? Array.from(event.target.files) : [];
     event.target.value = "";
     if (files.length === 0) return;
+    const oversized = files.find((file) => file.size > MAX_UPLOAD_FILE_SIZE_BYTES);
+    if (oversized) {
+      toast({
+        title: "File too large",
+        description: `${oversized.name} exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} limit.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setUploadingCount(files.length);
     uploadMutation.mutate(files);
   }
@@ -92,7 +103,7 @@ export function NexusMemoryUpload({ onDone }: NexusMemoryUploadProps) {
         multiple
         onChange={handleFileInput}
         className="hidden"
-        accept=".zip,.csv,.txt,.md,.docx,.json,.xlsx,.pdf"
+        accept={EXTRACTABLE_UPLOAD_ACCEPT}
         aria-label="Choose files for ZAR to learn from"
       />
     </button>

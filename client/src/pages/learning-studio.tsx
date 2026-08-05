@@ -15,6 +15,7 @@ import AssistantMarkdown from "@/components/chat/AssistantMarkdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadRequest } from "@/lib/uploadRequest";
 import type {
   AssessmentAttempt,
   LearningAssessment,
@@ -152,13 +153,10 @@ export default function LearningStudioPage() {
       if (form.notes.trim()) fd.append("notes", form.notes.trim());
       for (const file of files) fd.append("files", file);
 
-      const res = await fetch("/api/learning/paths/blueprint", {
-        method: "POST",
-        credentials: "include",
-        body: fd,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      const body = await uploadRequest<LearningPathDetail>(
+        "/api/learning/paths/blueprint",
+        fd,
+      );
       const next = body as LearningPathDetail;
       setDetail(next);
       setEditableBlueprint(next.blueprint || null);

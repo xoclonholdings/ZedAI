@@ -74,21 +74,20 @@ export function registerLearningRoutes(app: Express): void {
         await ensureSessionUserInDatabase(req);
         const sources = [];
         for (const file of files) {
-          const processed = await processFile(file.path, file.mimetype).catch((error) => ({
-            extractedContent: "",
-            error: error?.message || "processing failed",
-          } as any));
+          const processed = await processFile(file.path, file.mimetype, file.originalname);
+          if (processed.error || !processed.extractedContent?.trim()) {
+            await cleanupFile(file.path);
+            throw new Error(
+              `${file.originalname}: ${processed.error || "No extractable content was found."}`,
+            );
+          }
           sources.push({
             kind: "file" as const,
             label: file.originalname,
-            content:
-              processed?.extractedContent && String(processed.extractedContent).trim()
-                ? String(processed.extractedContent)
-                : `Attached file ${file.originalname}; no extractable text was produced.`,
+            content: processed.extractedContent,
             metadata: {
               mimeType: file.mimetype,
               size: file.size,
-              processingError: processed?.error,
             },
           });
           await cleanupFile(file.path);

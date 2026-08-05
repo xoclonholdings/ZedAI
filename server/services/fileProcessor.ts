@@ -4,6 +4,12 @@ import multer from "multer";
 import * as yauzl from "yauzl";
 import * as mammoth from "mammoth";
 import pdfParse from "pdf-parse";
+import {
+  EXTRACTABLE_UPLOAD_MIME_TYPES,
+  IMAGE_UPLOAD_MIME_TYPES,
+  MAX_UPLOAD_FILE_SIZE_BYTES,
+} from "../../shared/upload-policy";
+import { UPLOADS_DIR } from "../utils/repoPaths";
 
 // =========================
 // MULTER CONFIG
@@ -11,23 +17,55 @@ import pdfParse from "pdf-parse";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = "uploads";
+    const dir = UPLOADS_DIR;
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    const name = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
+    const safeOriginalName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, "_");
+    const name = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeOriginalName}`;
     cb(null, name);
   }
 });
 
+const ACCEPTED_MIME_TYPES = new Set<string>([
+  ...EXTRACTABLE_UPLOAD_MIME_TYPES,
+  ...IMAGE_UPLOAD_MIME_TYPES,
+]);
+
+const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
+  ".txt": "text/plain",
+  ".md": "text/markdown",
+  ".csv": "text/csv",
+  ".json": "application/json",
+  ".pdf": "application/pdf",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".zip": "application/zip",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+};
+
+export function resolvedMimeType(fileName: string, suppliedMimeType: string): string {
+  if (ACCEPTED_MIME_TYPES.has(suppliedMimeType)) return suppliedMimeType;
+  return MIME_TYPE_BY_EXTENSION[path.extname(fileName).toLowerCase()] || suppliedMimeType;
+}
+
 export const upload = multer({
   storage,
   limits: {
-    fileSize: 32 * 1024 * 1024 * 1024
-  }
+    fileSize: MAX_UPLOAD_FILE_SIZE_BYTES,
+    files: 20,
+  },
+  fileFilter: (_req, file, cb) => {
+    const mimeType = resolvedMimeType(file.originalname, file.mimetype);
+    if (ACCEPTED_MIME_TYPES.has(mimeType)) return cb(null, true);
+    cb(new Error(`Unsupported file type: ${file.mimetype || path.extname(file.originalname) || "unknown"}`));
+  },
 });
 
 // =========================
@@ -127,17 +165,15 @@ export async function processZipFile(filePath: string): Promise<any> {
   });
 }
 
-export async function processImageFile(filePath: string): Promise<string> {
-  const buffer = await fs.promises.readFile(filePath);
-  return buffer.toString("base64"); // raw base64 only (no AI call)
-}
-
 export async function processPdfFile(filePath: string): Promise<string> {
   const buffer = await fs.promises.readFile(filePath);
   try {
     const parsed = await pdfParse(buffer);
     const text = parsed.text?.trim();
-    return text || "No extractable text found in this PDF (it may be scanned/image-only).";
+    if (!text) {
+      throw new Error("No extractable text was found in this PDF. It may be scanned or image-only.");
+    }
+    return text;
   } catch (error) {
     const detail = error instanceof Error ? error.message : "Unknown error";
     throw new Error(`Failed to parse PDF: ${detail}`);
@@ -148,16 +184,22 @@ export async function processPdfFile(filePath: string): Promise<string> {
 // MAIN PROCESSOR
 // =========================
 
-export async function processFile(filePath: string, mimeType: string): Promise<ProcessedFile> {
+export async function processFile(
+  filePath: string,
+  mimeType: string,
+  originalName?: string,
+): Promise<ProcessedFile> {
 
   const fileName = path.basename(filePath);
   const stats = await fs.promises.stat(filePath);
+  const sourceName = originalName || fileName;
+  const effectiveMimeType = resolvedMimeType(sourceName, mimeType);
 
   const result: ProcessedFile = {
     id: fileName,
     fileName,
-    originalName: fileName,
-    mimeType,
+    originalName: sourceName,
+    mimeType: effectiveMimeType,
     size: stats.size
   };
 
@@ -165,15 +207,17 @@ export async function processFile(filePath: string, mimeType: string): Promise<P
     let extractedContent = "";
     let analysis: any = {};
 
-    switch (mimeType) {
+    switch (effectiveMimeType) {
 
       case "text/plain":
       case "text/markdown":
+      case "application/json":
         extractedContent = await processTextFile(filePath);
         analysis = { type: "text", length: extractedContent.length };
         break;
 
       case "text/csv":
+      case "application/vnd.ms-excel":
         const csv = await processCsvFile(filePath);
         extractedContent = JSON.stringify(csv, null, 2);
         analysis = {
@@ -202,9 +246,7 @@ export async function processFile(filePath: string, mimeType: string): Promise<P
       case "image/png":
       case "image/webp":
       case "image/gif":
-        extractedContent = await processImageFile(filePath);
-        analysis = { type: "image_base64" };
-        break;
+        throw new Error("Image analysis is not connected yet. The image was not added to ZAR's knowledge.");
 
       case "application/pdf":
         extractedContent = await processPdfFile(filePath);
@@ -212,7 +254,7 @@ export async function processFile(filePath: string, mimeType: string): Promise<P
         break;
 
       default:
-        throw new Error(`Unsupported file type: ${mimeType}`);
+        throw new Error(`Unsupported file type: ${effectiveMimeType}`);
     }
 
     result.extractedContent = extractedContent;

@@ -4,6 +4,7 @@ import { Eraser, Redo2, Send, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { uploadRequest } from "@/lib/uploadRequest";
 
 const COLORS = ["#ffffff", "#22d3ee", "#a855f7", "#f472b6", "#facc15", "#34d399"];
 const CANVAS_HEIGHT = 220;
@@ -76,13 +77,10 @@ export function NexusDrawCanvas({ ensureConversationId, onSent }: NexusDrawCanva
 
       const formData = new FormData();
       formData.append("files", file);
-      const response = await fetch(`/api/conversations/${conversationId}/upload`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      if (!response.ok) throw new Error("Upload failed");
-      const data = await response.json();
+      const data = await uploadRequest<any>(
+        `/api/conversations/${conversationId}/upload`,
+        formData,
+      );
       return { conversationId, data };
     },
     onSuccess: ({ conversationId, data }) => {

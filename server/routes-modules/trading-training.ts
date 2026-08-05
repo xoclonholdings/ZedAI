@@ -73,14 +73,30 @@ export function registerTradingTrainingRoutes(app: Express): void {
         }
 
         const inputs: Array<{ title: string; text: string }> = [];
+        const failures: Array<{ fileName: string; error: string }> = [];
 
         const files = (req.files as Express.Multer.File[] | undefined) || [];
         for (const file of files) {
-          const processed = await processFile(file.path, file.mimetype).catch(() => null);
-          if (processed?.extractedContent && processed.extractedContent.trim()) {
+          const processed = await processFile(file.path, file.mimetype, file.originalname).catch((error) => ({
+            extractedContent: "",
+            error: error?.message || "File processing failed.",
+          } as any));
+          if (processed?.error || !processed?.extractedContent?.trim()) {
+            failures.push({
+              fileName: file.originalname,
+              error: processed?.error || "No extractable content was found.",
+            });
+          } else {
             inputs.push({ title: file.originalname, text: processed.extractedContent });
           }
           await fs.unlink(file.path).catch(() => {});
+        }
+
+        if (failures.length > 0) {
+          return res.status(422).json({
+            error: failures.map((failure) => `${failure.fileName}: ${failure.error}`).join(" "),
+            failures,
+          });
         }
 
         if (typeof req.body?.text === "string" && req.body.text.trim()) {

@@ -145,7 +145,7 @@ export function registerResearchRoutes(app: Express): void {
         const userId = userIdFrom(req);
         const documents = [];
         for (const file of files) {
-          const processed = await processFile(file.path, file.mimetype).catch((err) => ({
+          const processed = await processFile(file.path, file.mimetype, file.originalname).catch((err) => ({
             extractedContent: "",
             error: err?.message || "processing failed",
           } as any));

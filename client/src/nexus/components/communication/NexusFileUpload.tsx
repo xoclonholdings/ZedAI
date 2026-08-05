@@ -3,6 +3,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Upload } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
+import { uploadRequest } from "@/lib/uploadRequest";
+import {
+  EXTRACTABLE_UPLOAD_ACCEPT,
+  EXTRACTABLE_UPLOAD_MIME_TYPES,
+  MAX_UPLOAD_FILE_SIZE_BYTES,
+  MAX_UPLOAD_FILE_SIZE_LABEL,
+} from "@shared/upload-policy";
 
 interface NexusFileUploadProps {
   readonly conversationId: string;
@@ -15,21 +22,8 @@ interface NexusFileUploadProps {
   readonly label?: string;
 }
 
-const MAX_SIZE = 32 * 1024 * 1024 * 1024;
-const DEFAULT_ALLOWED_TYPES = [
-  "text/plain",
-  "text/csv",
-  "application/pdf",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/json",
-  "text/markdown",
-];
-const DEFAULT_ACCEPT = ".csv,.xlsx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.json";
+const DEFAULT_ALLOWED_TYPES = EXTRACTABLE_UPLOAD_MIME_TYPES;
+const DEFAULT_ACCEPT = EXTRACTABLE_UPLOAD_ACCEPT;
 
 /**
  * The dock's compact upload trigger - real upload (POST to the conversation's
@@ -54,21 +48,19 @@ export function NexusFileUpload({
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
 
-      const response = await fetch(`/api/conversations/${conversationId}/upload`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Upload failed");
-      return response.json();
+      return uploadRequest<{ conversationId?: string; files?: unknown[]; warnings?: Array<{ warning: string }> }>(
+        `/api/conversations/${conversationId}/upload`,
+        formData,
+      );
     },
     onSuccess: (data, files) => {
       const uploadedCount = Array.isArray(data?.files) ? data.files.length : files.length;
       const oneFile = uploadedCount === 1;
       toast({
         title: oneFile ? "File attached" : `${uploadedCount} files attached`,
-        description: "Attached to this conversation.",
+        description: data?.warnings?.length
+          ? data.warnings.map((warning) => warning.warning).join(" ")
+          : "Attached to this conversation.",
       });
 
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "files"] });
@@ -96,12 +88,20 @@ export function NexusFileUpload({
   }
 
   function handleFiles(files: File[]) {
+    const acceptedExtensions = accept
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.startsWith("."));
     const validFiles = files.filter((file) => {
-      if (file.size > MAX_SIZE) {
-        toast({ title: "File too large", description: `${file.name} exceeds 32GB limit`, variant: "destructive" });
+      if (file.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
+        toast({ title: "File too large", description: `${file.name} exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} limit.`, variant: "destructive" });
         return false;
       }
-      if (!allowedTypes.includes(file.type)) {
+      const lowerName = file.name.toLowerCase();
+      const acceptedByExtension = acceptedExtensions.some((extension) =>
+        lowerName.endsWith(extension),
+      );
+      if (!allowedTypes.includes(file.type) && !acceptedByExtension) {
         toast({ title: "Unsupported file type", description: `${file.name} is not a supported file type`, variant: "destructive" });
         return false;
       }

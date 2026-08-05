@@ -1,10 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
+import multer from "multer";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection, gracefulShutdown, isDatabaseRequired } from "./db";
 import { runMigrations } from "./migrations";
 import { fallbackStorage } from "./services/fallbackStorage";
 import { UPLOADS_DIR, ensureRuntimeDataReady } from "./utils/repoPaths";
+import { MAX_UPLOAD_FILE_SIZE_LABEL } from "../shared/upload-policy";
 
 const app = express();
 
@@ -153,6 +155,24 @@ app.use((req, res, next) => {
   });
 
   const server = await registerRoutes(app);
+
+  app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
+    if (error instanceof multer.MulterError) {
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({
+          error: `The selected file exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} upload limit.`,
+          code: error.code,
+        });
+      }
+      return res.status(400).json({ error: error.message, code: error.code });
+    }
+
+    if (error instanceof Error && error.message.startsWith("Unsupported file type:")) {
+      return res.status(415).json({ error: error.message, code: "UNSUPPORTED_FILE_TYPE" });
+    }
+
+    next(error);
+  });
 
   if (app.get("env") === "development") {
     await setupVite(app, server);

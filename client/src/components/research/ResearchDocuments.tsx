@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, FileText, FolderKanban, GraduationCap, HardDrive, Loader2, Lock, RotateCcw, Trash2, Upload } from "lucide-react";
+import { uploadRequest } from "@/lib/uploadRequest";
 
 /**
  * Create / Document, then File it.
@@ -125,13 +126,7 @@ export default function ResearchDocuments({
     try {
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
-      const res = await fetch("/api/research/documents/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
+      const body = await uploadRequest<any>("/api/research/documents/upload", formData);
       setNotice(
         body.documents?.length === 1
           ? `Filed "${body.documents[0].title}" to ZAR's Files.`

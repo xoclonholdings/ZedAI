@@ -285,11 +285,37 @@ export function registerConversationCrudRoutes(app: Express): void {
         if (!files || files.length === 0) {
           return res.status(400).json({ error: "No files uploaded" });
         }
-        const processedFiles = [];
+        const readyFiles: Array<{ file: any; processed: Awaited<ReturnType<typeof processFile>> }> = [];
+        const failures: Array<{ fileName: string; error: string }> = [];
+
         for (const file of files) {
           try {
-            const processed = await processFile(file.path, file.mimetype);
+            const processed = await processFile(file.path, file.mimetype, file.originalname);
+            if (processed.error) {
+              failures.push({ fileName: file.originalname, error: processed.error });
+            } else {
+              readyFiles.push({ file, processed });
+            }
+          } catch (err: any) {
+            failures.push({
+              fileName: file.originalname,
+              error: err?.message || "File processing failed.",
+            });
+          } finally {
+            await cleanupFile(file.path);
+          }
+        }
 
+        if (failures.length > 0) {
+          return res.status(422).json({
+            error: failures.map((failure) => `${failure.fileName}: ${failure.error}`).join(" "),
+            failures,
+          });
+        }
+
+        const processedFiles = [];
+        const warnings: Array<{ fileName: string; warning: string }> = [];
+        for (const { file, processed } of readyFiles) {
             // Document Intelligence — push the extracted content through
             // the Knowledge Ingestion pipeline so the upload becomes
             // connected, queryable graph knowledge instead of one-shot
@@ -300,11 +326,17 @@ export function registerConversationCrudRoutes(app: Express): void {
               documentIntelligence = await DocumentIntelligenceService.ingestUploadedFile({
                 originalName: file.originalname,
                 fileName: file.filename,
-                mimeType: file.mimetype,
+                mimeType: processed.mimeType,
                 content: String(processed.extractedContent),
                 conversationId,
                 userId: req.user?.claims?.sub,
               }).catch((err: any) => ({ ingested: false, skippedReason: String(err?.message || err) }));
+              if (documentIntelligence?.ingested === false) {
+                warnings.push({
+                  fileName: file.originalname,
+                  warning: documentIntelligence.skippedReason || "Document ingestion failed.",
+                });
+              }
             }
 
             const saved = await storage.createFile(
@@ -312,7 +344,7 @@ export function registerConversationCrudRoutes(app: Express): void {
                 conversationId,
                 fileName: file.filename,
                 originalName: file.originalname,
-                mimeType: file.mimetype,
+                mimeType: processed.mimeType,
                 size: file.size,
                 status: processed.error ? "error" : "completed",
                 extractedContent: processed.extractedContent,
@@ -322,15 +354,13 @@ export function registerConversationCrudRoutes(app: Express): void {
               }),
             );
             processedFiles.push(saved);
-          } catch (err) {
-            console.error("File processing error:", err);
-          }
-          await cleanupFile(file.path);
         }
-        res.json({ conversationId, files: processedFiles });
-      } catch (error) {
+        res.json({ conversationId, files: processedFiles, warnings });
+      } catch (error: any) {
         console.error(error);
-        res.status(500).json({ error: "Upload failed" });
+        const files = (req.files as any[] | undefined) || [];
+        await Promise.allSettled(files.map((file) => cleanupFile(file.path)));
+        res.status(500).json({ error: error?.message || "Upload failed" });
       }
     },
   );

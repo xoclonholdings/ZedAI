@@ -5,6 +5,7 @@ import { Compass, History, Link as LinkIcon, Network, Plus, Scale, Upload, X } f
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cleanSummary, cleanTitle, friendlySource } from "@/lib/text";
+import { uploadRequest } from "@/lib/uploadRequest";
 import type { AnyMemoryObject, BaseObject, ObjectGraph } from "@shared/object-memory-types";
 
 interface UploadResponse {
@@ -78,19 +79,18 @@ export default function KnowledgePage() {
     }
     setSubmitting(true);
     try {
-      let res: Response;
+      let body: UploadResponse & { error?: string };
       if (file) {
         const fd = new FormData();
         fd.append("files", file);
         if (form.title.trim()) fd.append("title", form.title.trim());
         if (hasText) fd.append("content", form.content.trim());
-        res = await fetch("/api/me/memory/upload", {
-          method: "POST",
-          credentials: "include",
-          body: fd,
-        });
+        body = await uploadRequest<UploadResponse & { error?: string }>(
+          "/api/me/memory/upload",
+          fd,
+        );
       } else {
-        res = await fetch("/api/me/memory/upload", {
+        const res = await fetch("/api/me/memory/upload", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -99,9 +99,9 @@ export default function KnowledgePage() {
             content: form.content.trim(),
           }),
         });
+        body = await res.json().catch(() => ({}) as any);
+        if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       }
-      const body: UploadResponse & { error?: string } = await res.json().catch(() => ({}) as any);
-      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
       setNotice(
         `Learned ${body.totals?.newObjects ?? 0} object${body.totals?.newObjects === 1 ? "" : "s"} — ZAR can pull them into any conversation.`,
       );
