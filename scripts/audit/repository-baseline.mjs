@@ -25,6 +25,66 @@ const uniqueSorted = (items, key = (item) => JSON.stringify(item)) => {
   return [...byKey.values()].sort((a, b) => key(a).localeCompare(key(b)));
 };
 
+const classifyClientRoute = (route) => {
+  if (route === "/" || route === "/home" || route.startsWith("/galaxy/")) return { owner: "Portal / ZCOS constellation", disposition: "Adapt" };
+  if (route.startsWith("/nexys") || route.startsWith("/chat")) return { owner: "ZAR Nexys", disposition: "Adapt" };
+  if (route.startsWith("/admin")) return { owner: "ZCOS Command Desk / Admin Access", disposition: "Adapt" };
+  if (route.startsWith("/trading") || route.startsWith("/budget")) return { owner: "ZILLION Prosper -> Capital", disposition: "Migrate" };
+  if (route.startsWith("/flows") || route.startsWith("/runs")) return { owner: "ZYLO Compass -> Automate", disposition: "Migrate" };
+  if (route.startsWith("/learning")) return { owner: "ZENITH Logos -> Scholar", disposition: "Migrate" };
+  if (route.startsWith("/workspaces") || route === "/workspace") return { owner: "Galaxy Desks", disposition: "Migrate" };
+  if (route.startsWith("/projects")) return { owner: "Galaxy Desk Projects / All Projects", disposition: "Adapt" };
+  if (route.startsWith("/settings")) return { owner: "Settings", disposition: "Adapt" };
+  if (route.startsWith("/connect")) return { owner: "Settings -> Integrations", disposition: "Migrate" };
+  if (route.startsWith("/identity")) return { owner: "ZCOS Identity", disposition: "Adapt" };
+  if (route.startsWith("/inbox")) return { owner: "ZAR Operate -> Support", disposition: "Adapt" };
+  if (route.startsWith("/history")) return { owner: "ZCOS History / originating Desk", disposition: "Adapt" };
+  if (
+    route.startsWith("/knowledge") ||
+    route.startsWith("/decisions") ||
+    route.startsWith("/timeline") ||
+    route.startsWith("/discovery")
+  ) return { owner: "ZCOS Knowledge Engine", disposition: "Migrate" };
+  throw new Error(`Unclassified client route: ${route}`);
+};
+
+const classifyWriter = (file) => {
+  const rules = [
+    [/server\/scripts\/(?:executionVerification|liveExecutionVerification)\.ts$/, "Verification tooling", "Preserve"],
+    [/server\/scripts\/reparseFoundationMemoryToGraph\.ts$/, "Migration tooling", "Preserve"],
+    [/fileProcessor(?:\.test)?\.ts$/, "ZENITH Files / temporary upload cleanup", "Adapt"],
+    [/server\/agents\/finance\//, "ZILLION Prosper -> Capital", "Migrate"],
+    [/server\/agents\/intelligence\//, "ZAR Operate -> Brainstorm/Research", "Adapt"],
+    [/server\/agents\/(?:business-manager|operations)\//, "ZAR orchestration / canonical Desk owner", "Adapt"],
+    [/orchestrator\/manager-agent\/routing-log\.ts$/, "ZAR Trace / ZETA Integrity audit", "Adapt"],
+    [/routes-modules\/approvals\.ts$|services\/approval\//, "ZCOS execution approvals", "Adapt"],
+    [/routes-modules\/ruleset\.ts$|services\/admin-settings\//, "Settings / Admin Access", "Adapt"],
+    [/services\/auth\//, "ZCOS Identity security", "Adapt"],
+    [/BrowserSessionStore\.ts$|FileSessionStore\.ts$/, "ZCOS device/runtime sessions", "Adapt"],
+    [/services\/budget\/|server\/zcos\/trading\/|TradingProgressionStore\.ts$/, "ZILLION Prosper -> Capital", "Migrate"],
+    [/ChromaService\.ts$/, "Knowledge/Memory retrieval index", "Adapt"],
+    [/EmailInboxService\.ts$|services\/intake\//, "ZCOS Channel Service", "Adapt"],
+    [/services\/execution\//, "ZCOS execution / ZAR Tasks (Implement)", "Adapt"],
+    [/services\/fallbackStorage\.ts$/, "Legacy fallback storage", "Retirement-blocked"],
+    [/services\/flow\/|FlowStore\.ts$|FlowSuggestionStore\.ts$/, "ZYLO Compass -> Automate", "Migrate"],
+    [/IntegrationGapStore\.ts$|UserSecretsStore\.ts$/, "Settings -> Integrations", "Adapt"],
+    [/knowledge-ingestion\/|KnowledgeCurationEngine\.ts$/, "ZCOS Knowledge Engine", "Migrate"],
+    [/services\/learning\//, "ZENITH Logos -> Scholar", "Migrate"],
+    [/lexicon-authority\//, "ZCOS Knowledge Engine -> Lexicon", "Migrate"],
+    [/object-memory\//, "Shared Objects + Memory/Knowledge routing", "Migrate"],
+    [/DeferredActionScheduler\.ts$/, "ZCOS execution / ZYLO Automate", "Migrate"],
+    [/OmnichannelMemoryService\.ts$/, "Channel Service + canonical Memory", "Replace"],
+    [/ProjectFilingStore\.ts$/, "Galaxy Desk Projects / All Projects", "Adapt"],
+    [/RuntimeLogger\.ts$|SecurityAudit\.ts$/, "ZETA Control -> Integrity / ZCOS audit", "Adapt"],
+    [/UserPersonalization(?:Corpus|Store)\.ts$/, "Settings explicit preferences / ZWAP! Glow adaptation", "Migrate"],
+    [/routes-modules\/(?:memory-upload|research|trading-training)\.ts$/, "Temporary upload cleanup under canonical Files owner", "Adapt"],
+  ];
+  for (const [pattern, owner, disposition] of rules) {
+    if (pattern.test(file)) return { owner, disposition };
+  }
+  throw new Error(`Unclassified filesystem writer: ${file}`);
+};
+
 const textExtensions = new Set([
   ".cjs", ".css", ".html", ".js", ".json", ".jsx", ".md", ".mjs", ".ps1",
   ".sql", ".toml", ".ts", ".tsx", ".txt", ".yaml", ".yml",
@@ -87,6 +147,7 @@ for (const [path, content] of contents) {
         route: match[1],
         file: path,
         line: lineNumberAt(content, match.index),
+        ...classifyClientRoute(match[1]),
       });
     }
   }
@@ -104,6 +165,7 @@ for (const [path, content] of contents) {
       operation: match[1],
       file: path,
       line: lineNumberAt(content, match.index),
+      ...classifyWriter(path),
     });
   }
 
@@ -280,8 +342,25 @@ ${table(
 ## Top-Level Client Routes
 
 ${table(
-  ["Route", "Source"],
-  report.clientRoutes.map((item) => ["`" + item.route + "`", "`" + item.file + ":" + item.line + "`"]),
+  ["Route", "Locked owner", "Disposition", "Source"],
+  report.clientRoutes.map((item) => [
+    "`" + item.route + "`",
+    item.owner,
+    item.disposition,
+    "`" + item.file + ":" + item.line + "`",
+  ]),
+)}
+
+## Filesystem Writer Ownership
+
+${table(
+  ["Source", "Operation", "Locked owner", "Disposition"],
+  report.filesystemWriters.map((item) => [
+    "`" + item.file + ":" + item.line + "`",
+    item.operation,
+    item.owner,
+    item.disposition,
+  ]),
 )}
 
 ## Inventory Notes
