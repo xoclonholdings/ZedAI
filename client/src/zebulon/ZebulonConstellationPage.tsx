@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { ArrowRight, Crosshair, Orbit, RotateCcw, Rocket } from "lucide-react";
+import { ArrowRight, BookOpen, Crosshair, Database, FolderOpen, Navigation, Orbit, RotateCcw, Rocket } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useLocation } from "wouter";
@@ -866,6 +866,117 @@ function ConstellationScene({
   );
 }
 
+const GALAXY_DOCK_TOOLS = [
+  { id: "memory", label: "Memory", Icon: Database, route: "/learning/studio" },
+  { id: "knowledge", label: "Knowledge", Icon: BookOpen, route: "/knowledge" },
+  { id: "projects", label: "Projects", Icon: FolderOpen, route: "/projects" },
+] as const;
+
+/** The Image-2 galaxy-map bottom bar: Galaxy Map (admin) · compass dial · NΞXYS Dock tools. */
+function GalaxyMapDock({ navigate }: { readonly navigate: (to: string) => void }) {
+  return (
+    <div
+      data-testid="galaxy-map-dock"
+      className="flex w-full items-center justify-between gap-2 rounded-2xl border border-violet-300/12 bg-[linear-gradient(105deg,rgba(4,8,20,0.86),rgba(8,6,24,0.88),rgba(3,8,18,0.86))] px-3 py-2.5 shadow-[0_12px_55px_rgba(0,0,0,0.45),0_0_32px_rgba(124,58,237,0.08)] backdrop-blur-2xl sm:px-4"
+    >
+      <button
+        type="button"
+        data-testid="galaxy-map-admin-button"
+        onClick={() => navigate("/admin")}
+        className="flex shrink-0 items-center gap-1.5 rounded-lg px-1.5 py-1 text-white/55 transition hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/40"
+      >
+        <Crosshair size={15} />
+        <span className="hidden text-[9px] font-medium uppercase tracking-[0.16em] xs:inline sm:inline">Galaxy Map</span>
+      </button>
+
+      <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-violet-300/25 bg-violet-400/5 shadow-[0_0_22px_rgba(139,92,246,0.22)]" aria-hidden="true">
+        <span className="absolute inset-[3px] rounded-full border border-white/10" />
+        <span className="absolute inset-[7px] rounded-full border border-violet-200/10" />
+        <Navigation size={16} className="-rotate-45 text-violet-100" strokeWidth={1.5} />
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="hidden items-center gap-1.5 sm:flex">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.7)]" />
+          <span className="text-[9px] font-medium uppercase tracking-[0.16em] text-emerald-200/70">NΞXYS Dock</span>
+        </div>
+        {GALAXY_DOCK_TOOLS.map(({ id, label, Icon, route }) => (
+          <button
+            key={id}
+            type="button"
+            data-testid={`galaxy-dock-${id}`}
+            onClick={() => navigate(route)}
+            className="flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-0.5 text-white/60 transition hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/40"
+          >
+            <Icon size={16} />
+            <span className="text-[8px] font-medium uppercase tracking-[0.12em]">{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Focused-star info card: name, console, and a one-line galaxy summary. */
+function StarDetailCard({
+  star,
+  reducedMotion,
+  warping,
+  onEnter,
+}: {
+  readonly star: GalaxyStar;
+  readonly reducedMotion: boolean;
+  readonly warping: boolean;
+  readonly onEnter: () => void;
+}) {
+  return (
+    <motion.section
+      key={`star-card-${star.id}`}
+      className="zebulon-vessel-panel absolute inset-x-3 z-20 mx-auto flex max-w-[760px] items-center justify-between gap-4 rounded-2xl border bg-[linear-gradient(105deg,rgba(4,8,20,0.88),rgba(8,6,24,0.9),rgba(3,8,18,0.88))] px-4 py-3 backdrop-blur-2xl sm:px-5"
+      style={{ borderColor: `${star.accent}33`, boxShadow: `0 12px 55px rgba(0,0,0,0.45), 0 0 34px ${star.accent}22` }}
+      aria-label={`${star.name} galaxy`}
+      data-testid="star-detail-card"
+      initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 12 }}
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border"
+          style={{ borderColor: `${star.accent}44`, boxShadow: `0 0 24px ${star.accent}33` }}
+        >
+          <span className="h-2.5 w-2.5 rounded-full" style={{ background: star.accent, boxShadow: `0 0 10px 2px ${star.accent}` }} />
+        </div>
+        <div className="min-w-0">
+          <h2 className="truncate text-[12px] font-bold uppercase tracking-[0.16em]" style={{ color: star.accentSoft }}>
+            {star.name} <span className="font-medium text-white/45">· {star.console}</span>
+          </h2>
+          <p className="mt-1 text-[10px] leading-snug text-white/55">{star.description}</p>
+        </div>
+      </div>
+      {star.route ? (
+        <button
+          type="button"
+          data-testid="star-enter-button"
+          onClick={onEnter}
+          disabled={warping}
+          className="flex shrink-0 items-center gap-2 rounded-lg border bg-black/30 px-4 py-2.5 text-[9px] font-medium uppercase tracking-[0.16em] text-white/75 transition hover:text-white focus:outline-none focus:ring-2 disabled:opacity-40 sm:px-5"
+          style={{ borderColor: `${star.accent}44` }}
+        >
+          Enter <ArrowRight size={14} />
+        </button>
+      ) : (
+        <span
+          data-testid="star-gateway-forming"
+          className="shrink-0 rounded-lg border border-white/12 px-3 py-2 text-center text-[8px] uppercase leading-tight tracking-[0.16em] text-white/40"
+        >
+          Gateway<br />forming
+        </span>
+      )}
+    </motion.section>
+  );
+}
+
 export default function ZebulonConstellationPage() {
   const [, navigate] = useLocation();
   const reducedMotion = Boolean(useReducedMotion());
@@ -918,12 +1029,14 @@ export default function ZebulonConstellationPage() {
   }, [resetOverview, warpingId]);
 
   const headerGalaxy = galaxyById(warpingId ?? focusedId ?? hoveredId) ?? galaxyById("zar")!;
+  const focusedStar = galaxyById(focusedId);
 
   return (
     <ConsoleShell
       identity={ZAR_NEXYS_CONSOLE}
       dockPowered={dockPowered}
       onDockPowerChange={setDockPowered}
+      bottomBar={<GalaxyMapDock navigate={navigate} />}
       headerLeft={
         <NexysConsoleHeaderBrand
           onWordmarkClick={resetOverview}
@@ -1021,9 +1134,17 @@ export default function ZebulonConstellationPage() {
         <div className="mt-1.5 flex items-center gap-2.5"><Crosshair size={10} /> Navigation beacon</div>
       </div>
 
-      <AnimatePresence>
-        {!dockPowered ? (
+      <AnimatePresence mode="wait">
+        {focusedStar && !warpingId ? (
+          <StarDetailCard
+            star={focusedStar}
+            reducedMotion={reducedMotion}
+            warping={Boolean(warpingId)}
+            onEnter={() => focusedStar.route && beginWarp(focusedStar.id, focusedStar.route)}
+          />
+        ) : !dockPowered ? (
           <motion.section
+            key="zebulon-vessel"
             className="zebulon-vessel-panel absolute inset-x-3 z-20 mx-auto flex max-w-[760px] items-center justify-between gap-4 rounded-2xl border border-violet-300/15 bg-[linear-gradient(105deg,rgba(4,8,20,0.86),rgba(8,6,24,0.88),rgba(3,8,18,0.86))] px-4 py-3 shadow-[0_12px_55px_rgba(0,0,0,0.45),0_0_32px_rgba(124,58,237,0.08)] backdrop-blur-2xl sm:px-5"
             aria-label="Zebulon Vessel"
             initial={reducedMotion ? false : { opacity: 0, y: 12 }}

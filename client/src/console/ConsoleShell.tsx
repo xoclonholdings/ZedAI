@@ -25,6 +25,7 @@ export function ConsoleShell(props: {
   readonly headerRightExtra?: ReactNode;
   readonly dockPowered: boolean;
   readonly onDockPowerChange: (next: boolean) => void;
+  readonly bottomBar?: ReactNode;
   readonly children: ReactNode;
 }) {
   return (
@@ -40,6 +41,7 @@ function ConsoleShellBody({
   headerRightExtra,
   dockPowered,
   onDockPowerChange,
+  bottomBar,
   children,
 }: {
   readonly identity: ConsoleIdentity;
@@ -47,6 +49,7 @@ function ConsoleShellBody({
   readonly headerRightExtra?: ReactNode;
   readonly dockPowered: boolean;
   readonly onDockPowerChange: (next: boolean) => void;
+  readonly bottomBar?: ReactNode;
   readonly children: ReactNode;
 }) {
   const { fullPageOpen } = useConsoleBrowser();
@@ -87,10 +90,14 @@ function ConsoleShellBody({
         data-nexys-region="communication"
       >
         <div className="flex w-full max-w-[760px] flex-col items-end gap-2">
-          <ConsoleActivator active={dockPowered} onToggle={() => onDockPowerChange(!dockPowered)} accent={identity.accent} />
-          <div className="w-full">
-            <ConsoleDock powered={dockPowered} onPowerChange={onDockPowerChange} accent={identity.accent} />
-          </div>
+          {bottomBar ?? (
+            <>
+              <ConsoleActivator active={dockPowered} onToggle={() => onDockPowerChange(!dockPowered)} accent={identity.accent} />
+              <div className="w-full">
+                <ConsoleDock powered={dockPowered} onPowerChange={onDockPowerChange} accent={identity.accent} />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

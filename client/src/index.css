@@ -738,16 +738,16 @@
 }
 
 .zebulon-vessel-panel {
-  bottom: calc(env(safe-area-inset-bottom) + 10.6rem);
+  bottom: calc(env(safe-area-inset-bottom) + 5.3rem);
 }
 
 .zebulon-chart-legend {
-  bottom: calc(env(safe-area-inset-bottom) + 16.5rem);
+  bottom: calc(env(safe-area-inset-bottom) + 9.8rem);
 }
 
 @media (max-width: 639px) {
   .zebulon-vessel-panel {
-    bottom: calc(env(safe-area-inset-bottom) + 9.85rem);
+    bottom: calc(env(safe-area-inset-bottom) + 5rem);
   }
 
   .zebulon-chart-legend {
