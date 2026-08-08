@@ -197,7 +197,7 @@ ZAR by Text is SMS access to the user's existing ZAR, not a separate chatbot. It
 
 The first iPhone voice release supports saying `ZAR` while the app is open in the foreground. Locked-screen and app-closed activation are out of scope until separately certified and must be described truthfully.
 
-## 14. Relationship Learning and Constitution
+## 14. Continuous Relationship Learning and Constitution
 
 Required learning flow:
 
