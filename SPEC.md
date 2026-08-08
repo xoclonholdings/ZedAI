@@ -1,12 +1,284 @@
-# ZAR AI Specification
+# ZCOS + ZAR Canonical System Specification
+
+**Repository:** `xoclonholdings/ZedAI`  
+**Target architecture locked:** August 8, 2026  
+**Implementation baseline:** `main` at `7500b8010fdaa1783e5f745d74ca25af22825b31`  
+**Role:** Canonical repository authority  
+**State:** Migration required; a locked requirement is not automatically active or certified
+
+## 1. Authority and Status
+
+This file combines the locked ZCOS architecture and ZAR contract with dated evidence about the current repository. The locked target governs whenever legacy implementation conflicts with it. Existing code remains migration evidence until safely adapted, replaced, or retired.
+
+Authority order:
+
+1. ZCOS Architecture Foundation: ecosystem ownership, eight galaxies, seven domains, partitions, Admin Access, Extensions, Settings, Portal, and migration boundaries.
+2. Locked ZCOS Memory Engine and Knowledge Engine specifications: canonical records, lifecycle, provenance, retrieval, correction, deletion, and curation.
+3. ZAR System Specification: ZAR Nexys, Operate, cognition, learning, Constitution, channels, orchestration, execution, and certification.
+4. ZAR + User Interaction Guidelines and Behavior: reasoning, communication, mobile-first development, file review, minimal change, full-file delivery, and verification.
+5. Current code and dated inventories: implementation evidence only.
+
+Statuses are Planned, Scaffolded, Partial, Active, Blocked, and Certified. Migration dispositions are Preserve, Adapt, Migrate, Replace, Retirement-blocked, Retire-later, and Certify-later. Code presence never proves compliance or certification.
+
+## 2. Governing Architecture
+
+Zebulon Commander Operating System (ZCOS) governs every galaxy. A galaxy is a distinct specialized system, not an isolated app with duplicate foundational authorities.
+
+- One ZCOS and one unified intelligence ecosystem.
+- Eight distinct galaxies.
+- One unified Identity referenced everywhere.
+- One central ZCOS Memory Engine with eight isolated galaxy partitions.
+- One central ZCOS Knowledge Engine with eight isolated galaxy partitions.
+- Memory and Knowledge remain separate authorities while sharing object infrastructure.
+- Cross-galaxy access is explicit, scoped, revocable, time-bounded, and audited through Admin Access.
+- Extensions install once for the unified Identity and appear through Apps in every galaxy.
+- Every galaxy presents seven shared domains and one specialized Desk.
+- Portal is transport, not content or administration.
+- Approved UI/UX is preserved while ownership, routing, data, and runtime wiring are migrated unless a separate design change is authorized.
+
+## 3. ZCOS Command Desk
+
+| Surface | Purpose |
+| --- | --- |
+| All Memory | Unified view across all Memory partitions without dissolving boundaries |
+| All Knowledge | Unified view across all Knowledge partitions |
+| All Projects | Unified view of work created through galaxy Desks |
+| Admin Access | Authorization, installation, access, revocation, and audit governance |
+
+Admin Access owns galaxy authorization, cross-galaxy read/write/contribution grants, scope, duration, revocation, promotion/sharing, Extension permissions, and audit evidence.
+
+## 4. Eight Galaxies
+
+| Galaxy | Console | Desk | Desk surfaces |
+| --- | --- | --- | --- |
+| ZAR | Nexys | Operate | Support; Brainstorm/Research; Tasks (Implement) |
+| ZYNC | Canvas | Build | Coding; Design; Publish |
+| ZETA | Control | Integrity | Logs; Diagnostics; Monitoring |
+| ZENO | Unite | Forum | Threads; Notes; Rooms |
+| ZYLO | Compass | Automate | Flows/Loops; Skills; Templates |
+| ZWAP! | Discovery | Explore | Glow; News; Journal/Blog |
+| ZENITH | Logos | Scholar | Learning Studio; Library; Files |
+| ZILLION | Prosper | Capital | Budgeting; Trading; Investing |
+
+Existing workspaces and pages are migration sources; they do not redefine this table.
+
+## 5. Seven Shared Galaxy Domains
+
+Every galaxy exposes:
+
+1. **Identity** - unified user identity.
+2. **Memory** - galaxy-aware personal and experiential retention.
+3. **Knowledge** - galaxy-aware substantiated understanding.
+4. **Apps** - universal Extension access.
+5. **Desk** - specialized work.
+6. **Settings** - account, system, appearance, and account actions.
+7. **Portal** - movement between the galaxy, constellation, other galaxies, and ZCOS Command.
+
+Legacy Workspaces, Projects, Tools, and Connect nodes must be reassigned to locked owners rather than retained as competing shared domains.
+
+## 6. Identity and Ownership
+
+Identity exists once at ZCOS level. Canonical profile data is full name, preferred name, profile image, email address, and Privy wallet address. Profile may open from Settings, but Identity owns it.
+
+Every protected read, write, deletion, retrieval, task, approval, and channel requires one verified owner. Fallback owners such as `anonymous`, `user`, `unknown`, `default-user`, `user_001`, or sender-derived identities are prohibited.
+
+## 7. Memory
+
+One ZCOS Memory Engine owns canonical Memory. Existing Object Memory becomes structural migration material, not a competing authority.
+
+- Eight partitions: ZAR, ZYNC, ZETA, ZENO, ZYLO, ZWAP!, ZENITH, and ZILLION.
+- Each galaxy reads/writes its own partition by default.
+- Every record retains owner, origin galaxy, source, and provenance.
+- Cross-galaxy access requires an active Admin Access grant.
+- All Memory unifies visibility without erasing partitions.
+- The user-facing organization is **You**, **Topics**, and **Galaxies** over the same records.
+- `Tell ZAR what to remember` creates a user-directed Memory eligible to enter as Confirmed.
+
+Memory types are experience, decision, person/relationship, event, and user-directed memory. Records include occurred time, source, topics, entities, relationships, derivation, lifecycle, confirmation, supersession, retention, deletion, version, and audit metadata.
+
+Lifecycle states are Proposed, Active, Confirmed, Corrected, Superseded, Rejected, and Forgotten. Source ledger, canonical store, indexes, and audit ledger remain distinct. Vectors are indexes only. Conversations are sources/history, not automatic long-term Memory. Corrections and forgetting cascade without removing required audit evidence.
+
+Settings -> Memory contains Enable Memory, Memory Summary, and Manage Memory. With Memory off, no new long-term Memory is extracted and existing Memory is not retrieved. Existing records remain unless deleted. Conversation history is separate. Re-enabling restores authorized access but does not silently rebuild Memory from disabled-period conversations.
+
+## 8. Knowledge
+
+One ZCOS Knowledge Engine owns eight Knowledge partitions. Memory preserves experience; Knowledge holds what ZCOS understands and can substantiate.
+
+Required surfaces:
+
+- **Topics**
+- **Knowledge Map** for concepts, facts, claims, rules, systems, and relationships
+- **Sources** for UGC/Uploaded or Extracted/Compiled origin, evidence, and provenance
+- **Lexicon** for meanings, terminology, slang, symbols, and contextual language
+- **Curation** for conflicts, duplicates, confidence, currency, gaps, and open questions
+
+Each galaxy accesses its own partition by default. All Knowledge is the unified view. Admin Access governs cross-galaxy use. Origin is Sources metadata, not another top-level surface. Only lifecycle-eligible, authorized records may reach retrieval. Local JSON, vector indexes, exports, and archives are never canonical production truth.
+
+## 9. Shared Object Framework and Domain Boundaries
+
+Memory and Knowledge may share object IDs, typed properties, sources, evidence, relationships, confidence, provenance, indexes, conflict detection, and versions. They must not collapse into one authority.
+
+| Authority | Owns |
+| --- | --- |
+| Identity | Canonical user profile |
+| Memory | Experiences, decisions, relationships, events, and user-directed memories |
+| Knowledge | Facts, claims, concepts, systems, rules, sources, and substantiated relationships |
+| Files | Original artifacts under ZENITH Logos -> Scholar -> Files |
+| Library | Organization/access under ZENITH Scholar |
+| Glow | Adaptation under ZWAP! Discovery -> Explore |
+| History | What occurred; not automatically Memory |
+| Apps | Installed ZCOS Extensions |
+| Integrations | Connected external services |
+| Desk/Projects | Galaxy-owned work |
+| Portal | Movement between system locations |
+
+## 10. Apps, Desks, Settings, and Portal
+
+Apps is the universal Extension layer. Extensions install once and appear in every galaxy. Confirmed Extensions include PoeTrees Music, Zupreme Imports, Property Pulse, Self-Help Simplified, EmojiLingo, Fantasma Firewall/FanFI, Heritage Haven, Forensic Vision, and Good Neighbor. Apps is separate from Settings -> Integrations.
+
+Every galaxy has exactly one specialized Desk. Work created there becomes a Project associated with the originating galaxy. All Projects provides the unified view; cross-galaxy authority requires Admin Access.
+
+Settings preserves Claude's simple grouped-card layout:
+
+| Group | Settings |
+| --- | --- |
+| Account | Profile; Billing; Notifications; Time & Focus; Privacy; Shared Links |
+| System | Capabilities; Integrations; Device Permissions; Voice; Memory; Interaction Style; Haptic Feedback |
+| Appearance | Light; Dark; System |
+| Account Actions | Log out; Delete account |
+
+Profile links to Identity. Integrations manages external services. Device Permissions governs device access. Admin Access governs galaxies, Extensions, and cross-galaxy authority. Interaction Style contains tone, response length, explanation depth, pace, and preferred response formats.
+
+Portal opens the constellation, identifies the current galaxy, permits entry into another galaxy or ZCOS Command, and preserves unified Identity. Portal contains no content, Settings, Memory, Knowledge, or administration.
+
+## 11. ZAR Identity, Behavior, and Runtime
+
+ZAR is the user's relational operator and primary working intelligence inside ZCOS. ZAR does not own ZCOS-wide Identity, Memory, Knowledge, permissions, every galaxy's work, or provider truth.
+
+ZAR preserves one identity across Nexys, Operate, SMS, foreground voice, and future verified channels. It understands objectives, assembles authorized context, reasons under the behavior contract, coordinates specialists, prepares/performs authorized work, verifies outcomes, and reports truthfully. It distinguishes recommendation, preparation, approval, execution, verification, and completion. Canned, hardcoded, fallback, or template responses may not impersonate ZAR.
+
+Behavior applies to every response, action, channel, agent, workflow, and development path:
+
+- Direct answer first; concise by default.
+- One step at a time when sequence protects accuracy or momentum.
+- Verify material unknowns; ask only the minimum question that changes the result.
+- Evidence over indicators; confluence first; context before conclusion; state tracking; probabilistic reasoning; explain the useful why; learn from confirmed outcomes.
+- Plain language and mobile-readable presentation without hidden chain-of-thought.
+- Review every relevant file and dependency before editing.
+- Preserve approved architecture, logic, UI/UX, naming, and interaction patterns.
+- Make the smallest sufficient change; add no duplicate system or unrequested feature.
+- Return complete files when code is requested unless a patch/diff is explicitly requested.
+- Verify build, tests, runtime, and rendered UI where applicable before claiming success.
+
+All live ZAR paths must use one governed runtime: authenticate, classify, assemble authorized context, apply behavior, plan, check capability/authorization/approval, execute, verify/reconcile, present one response, and record safe audit/learning evidence. No route, agent, stream, channel, or fallback may bypass it.
+
+## 12. Nexys, Dock, and Operate
+
+Nexys is ZAR's Console and presents the seven shared domains plus persistent ZAR access. Legacy eight-node Nexus structures are migration sources.
+
+Locked dock:
+
+1. Text
+2. Talk
+3. Image
+4. Chat
+5. Document
+6. Upload
+
+Preserve the approved visual pattern while rewiring behavior. Draw becomes Chat.
+
+Operate contains Support, Brainstorm/Research, and Tasks (Implement). Work moves between them without duplicate conversations or loss of Project, source, approval, or outcome state. Existing workspaces, Research Desk, projects, execution, and agents map here or to another canonical galaxy.
+
+## 13. Channels: ZAR by Text and Foreground Voice
+
+Every channel reaches the same ZAR runtime, Identity, behavior, permissions, Memory, Knowledge, and approvals. Presentation constraints may change; identity and authority do not.
+
+ZAR by Text is SMS access to the user's existing ZAR, not a separate chatbot. It requires a dedicated-number experience, concise replies, basic-phone support, verified phone-to-Identity linking, consent, revocation, authenticity validation, replay protection, idempotency, rate limits, retry safety, redacted logs, leakage prevention, and sensitive-action confirmation. An external sender identifier never becomes owner.
+
+The first iPhone voice release supports saying `ZAR` while the app is open in the foreground. Locked-screen and app-closed activation are out of scope until separately certified and must be described truthfully.
+
+## 14. Relationship Learning and Constitution
+
+Required learning flow:
+
+`Conversation/event -> Experience -> Memory evaluation -> Evidence -> Observation -> Learning Proposal -> Review -> Confirmed understanding -> Collaboration`
+
+Proposal states include pending review, needs more evidence, deferred, accepted, rejected, merged, and superseded. Only accepted and activated results influence canonical collaboration. Every stage retains owner, provenance, confidence, relationships, state history, and correction paths.
+
+Learning Studio belongs to ZENITH Scholar and is not relationship learning. Reflection creates governed candidates/evidence, not truth. Glow receives authorized adaptation signals but owns neither ZAR learning nor Memory.
+
+The ZAR Constitution's canonical sections are Identity, Principles, Goals, Working Style, Relationship Contract, Memory Policy, Active Tensions, and Becoming. Mutation records are Articles, Amendments, and DeletionRequests. Only confirmed Articles enter active context. Mutations are versioned, attributable, and atomic with proposal resolution. Corrections propagate without silently rewriting Memory, Knowledge, Settings, or Constitution history. PostgreSQL is the intended durable authority.
+
+## 15. Tasks, Integrations, Failure, and Security
+
+ZAR coordinates specialists and galaxies through typed authorized contracts. Every consequential side effect must prove authenticated owner, capability, target/scope, current authorization, action-specific approval when required, idempotency, retry safety, verified result or explicit unknown outcome, audit evidence, and reconciliation.
+
+Settings -> Integrations manages external services. Each integration binds to one Identity, scopes, permitted galaxies/capabilities, protected credential references, and revocation. External channels normalize into typed envelopes retaining provider, sender, message ID, time, attachments, authenticity evidence, and verification state.
+
+Missing authentication fails closed. Provider unavailable, rejected, timed-out, rate-limited, partial, and unknown states remain distinct. Automatic repair may not duplicate uncertain effects, bypass approval, broaden scope, or hide failure. Authorization is server-side. Secrets never enter prompts, logs, Memory, Knowledge, client payloads, or committed files. External content is untrusted and cannot redefine policy. Material access, changes, approvals, actions, grants, sharing, deletion, and recovery create audit evidence.
+
+## 16. Canonical Migration Ownership
+
+| Existing area | Locked destination |
+| --- | --- |
+| Home/Nexus/Console/constellation | Nexys, shared-domain shell, persistent interaction, and Portal |
+| Workspaces | Galaxy Desks |
+| Projects | Originating Desk and All Projects |
+| Tools | Extensions, Integrations, device capabilities, or Desk capabilities |
+| Connect | Settings -> Integrations plus verified Channel Service |
+| Object Memory | Shared objects plus canonical Memory/Knowledge/domain routing |
+| Knowledge Ingestion/Curation | ZCOS Knowledge Engine |
+| Reflection | Governed ZAR learning or Memory candidates |
+| Learning Studio | ZENITH Logos -> Scholar |
+| Flows/Runs/Suggestions | ZYLO Compass -> Automate |
+| Autonomous operations | ZCOS execution and ZYLO Automate |
+| Trading/Budget | ZILLION Prosper -> Capital |
+| ZYNC Coding Operator | ZYNC Canvas -> Build |
+| Files/uploads | Originals to ZENITH Files; derived claims to Knowledge |
+| Discovery | ZWAP! Discovery -> Explore |
+| External intake | ZCOS Channel Service with verified Identity binding |
+
+Inventory before mutation. Assign every route, service, UI, store, prompt, agent, provider, scheduler, and writer. Create adapters before data movement. Cut over one write authority at a time. Block old writes before retirement. Do not delete branches, user records, archives, or stores incidentally.
+
+## 17. Required Contracts and Certification
+
+Required contracts include OwnerContext, ZCOS grants/audit, Shared Objects, Memory Engine, Knowledge Engine, ZarRuntime, ZarBehaviorPolicy, ZarLearningService, ZarConstitutionService, ZarContextService, ZarResponseService, OperateService, ResearchService, TaskService, OrchestrationService, ChannelService, and ZarTraceService.
+
+Certification requires dated evidence for owner isolation, eight galaxies, seven domains, Memory/Knowledge lifecycle and partitions, behavioral enforcement, no canned responses, learning/Constitution atomicity, Operate/Project routing, side-effect governance, supported-iPhone accessibility and design preservation, SMS security, foreground voice truthfulness, build, typecheck, automated/security tests, runtime checks, rendered UI review, data reconciliation, exceptions, approver, and unresolved blockers.
+
+Provider channels, autonomous schedulers, destructive workflows, and live trading remain partial, blocked, or uncertified until their separate suites pass.
+
+## 18. Phase 0 Baseline
+
+Audited source baseline: `main` at `7500b8010fdaa1783e5f745d74ca25af22825b31`, August 7, 2026 EDT.
+
+Known blockers:
+
+- Fallback and sender-derived ownership exists in executable paths.
+- External intake may become permissive without authenticity configuration.
+- Object Memory, Knowledge Ingestion, Memory-backed Curation, project-memory Reflection, and filesystem context overlap.
+- The database does not yet implement all partitions, grants, lifecycle, provenance, learning, and Constitution models.
+- Nexys root and dock do not yet match seven domains and the final six actions.
+- Non-ZAR galaxy workspaces are themed ZAR scaffolds.
+- Build and tests require fresh execution before any pass/fail claim.
+
+Phase 0 exit requires a reviewed canonical SPEC diff and reproducible baseline inventory tagged with commit SHA/date. No application code, data, UI, or branch cleanup belongs in Phase 0.
+
+---
+
+# Dated Repository Implementation Evidence
+
+The material below preserves the repository's August 4, 2026 implementation inventory and operating details for migration traceability. Any legacy six-galaxy, Nexus, dock, Workspace, Tools, Connect, Object Memory, Learning Studio, Flow, Trading/Budget, or ZYNC placement below is evidence, not authority over the locked contract above.
+
+## August 4, 2026 Repository Specification Snapshot
 
 ## Purpose
 
 ZAR AI is a multi-agent AI application built around an Express backend and a React/Vite frontend. The system supports chat, conversation history, file upload, admin controls, and orchestrated agent workflows backed by Lightning AI as the sole model provider (accessed directly) and optional external services.
 
-This file is the canonical project spec for the repository. If the project changes, update this document instead of spreading source-of-truth details across multiple Markdown files.
+At this baseline, this file served as the repository specification. Its implementation details remain preserved below, but the locked August 8 contract above now governs target ownership and behavior.
 
-## Canonical Rules
+## August 4 Repository Rules
 
 - `SPEC.md` is the primary project specification.
 - Target long-term branch policy is:
