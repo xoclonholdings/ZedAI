@@ -15,6 +15,7 @@ import Admin from "@/pages/admin";
 import HomePage from "@/pages/home";
 import NexysRootPage from "@/nexys/pages/NexysRootPage";
 import ZebulonConstellationPage from "@/zebulon/ZebulonConstellationPage";
+import GalaxyWorkspacePage from "@/zebulon/GalaxyWorkspacePage";
 import { NexysProvider } from "@/nexys";
 import { ConsoleWorkspaceFrame } from "@/console/ConsoleWorkspaceFrame";
 import FlowsPage from "@/pages/flows";
@@ -122,6 +123,10 @@ function Router() {
 
       <Route path="/nexys/:nodeId/:view?">
         {isAuthenticated ? <NexysRootPage /> : <Login />}
+      </Route>
+
+      <Route path="/galaxy/:id">
+        {isAuthenticated ? <GalaxyWorkspacePage /> : <Login />}
       </Route>
 
       <Route path="/knowledge-map">

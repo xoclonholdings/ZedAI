@@ -51,10 +51,11 @@ describe("Zebulon constellation authority", () => {
     expect(zylo.position[1]).not.toBeCloseTo(zwap.position[1], 1);
   });
 
-  test("exposes only the existing vessel destination and a perspective home camera", () => {
-    expect(GALAXY_CONSTELLATION.filter((star) => star.route)).toEqual([
-      expect.objectContaining({ id: "zar", route: ZEBULON_VESSEL_ROUTE }),
-    ]);
+  test("wires ZAR to its vessel and every other galaxy to its own workspace route", () => {
+    expect(GALAXY_CONSTELLATION.find((star) => star.id === "zar")!.route).toBe(ZEBULON_VESSEL_ROUTE);
+    expect(
+      GALAXY_CONSTELLATION.filter((star) => star.id !== "zar").every((star) => star.route === `/galaxy/${star.id}`),
+    ).toBe(true);
     expect(ZEBULON_VESSEL_ROUTE).toBe("/nexys");
     expect(ZEBULON_HOME_CAMERA.fov).toBeGreaterThan(35);
     expect(ZEBULON_HOME_CAMERA.fov).toBeLessThan(60);

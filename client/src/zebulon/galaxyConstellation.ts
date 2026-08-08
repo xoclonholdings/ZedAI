@@ -88,7 +88,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     dustStretch: [0.78, 1.18],
     labelOffset: [1.05, -0.65],
     hitRadius: 0.92,
-    route: null,
+    route: "/galaxy/zeta",
   },
   {
     level: "application-galaxy",
@@ -107,7 +107,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     dustStretch: [1.35, 0.9],
     labelOffset: [1.15, -0.7],
     hitRadius: 1.05,
-    route: null,
+    route: "/galaxy/zync",
   },
   {
     level: "application-galaxy",
@@ -126,7 +126,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     dustStretch: [1.05, 0.74],
     labelOffset: [0.7, -0.75],
     hitRadius: 0.96,
-    route: null,
+    route: "/galaxy/zylo",
   },
   {
     level: "application-galaxy",
@@ -150,7 +150,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
       radius: 0.26,
       intensity: 0.48,
     },
-    route: null,
+    route: "/galaxy/zeno",
   },
   {
     level: "application-galaxy",
@@ -169,7 +169,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     dustStretch: [1.5, 0.76],
     labelOffset: [1.12, -0.76],
     hitRadius: 1.08,
-    route: null,
+    route: "/galaxy/zwap",
   },
   {
     level: "application-galaxy",
@@ -188,7 +188,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     dustStretch: [0.95, 1.12],
     labelOffset: [0.8, -0.75],
     hitRadius: 0.98,
-    route: null,
+    route: "/galaxy/zenith",
   },
   {
     level: "application-galaxy",
@@ -207,7 +207,7 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     dustStretch: [1.3, 0.85],
     labelOffset: [1.1, -0.72],
     hitRadius: 1.1,
-    route: null,
+    route: "/galaxy/zillion",
   },
 ]);
 
