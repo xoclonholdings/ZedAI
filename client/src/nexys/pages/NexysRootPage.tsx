@@ -256,7 +256,7 @@ export default function NexysRootPage() {
         className="pointer-events-none absolute inset-0"
         style={{
           background: atmosphereColor
-            ? `radial-gradient(ellipse 85% 70% at 50% 45%, ${atmosphereColor}26 0%, ${atmosphereColor}10 40%, transparent 75%)`
+            ? `radial-gradient(ellipse 85% 70% at 50% 45%, ${atmosphereColor}3d 0%, ${atmosphereColor}1a 42%, transparent 78%)`
             : "transparent",
           opacity: atmosphereColor ? 1 : 0,
           transition: "opacity 700ms ease",

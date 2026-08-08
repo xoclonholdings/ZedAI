@@ -502,13 +502,13 @@ function Universe({ starCount }: { starCount: number }) {
     () => buildScatterGeometry(starCount, 18, 36, 1, ["#ffffff", "#bfe8ff", "#d9c8ff", CYAN]),
     [starCount],
   );
-  const starMat = useMemo(() => makePointsMaterial(5), []);
+  const starMat = useMemo(() => makePointsMaterial(5.6), []);
   const nebulae = useMemo(
     () => [
-      { tex: makeNebulaTexture(275), pos: [-9, 4, -14], scale: 22, opacity: 0.5 },
-      { tex: makeNebulaTexture(190), pos: [11, -3, -16], scale: 26, opacity: 0.42 },
-      { tex: makeNebulaTexture(315), pos: [4, 7, -18], scale: 20, opacity: 0.38 },
-      { tex: makeNebulaTexture(230), pos: [-12, -6, -20], scale: 24, opacity: 0.34 },
+      { tex: makeNebulaTexture(275), pos: [-9, 4, -14], scale: 22, opacity: 0.6 },
+      { tex: makeNebulaTexture(190), pos: [11, -3, -16], scale: 26, opacity: 0.5 },
+      { tex: makeNebulaTexture(315), pos: [4, 7, -18], scale: 20, opacity: 0.46 },
+      { tex: makeNebulaTexture(230), pos: [-12, -6, -20], scale: 24, opacity: 0.42 },
     ],
     [],
   );
@@ -565,12 +565,12 @@ function GalaxyField({ count, focused }: { count: number; focused?: boolean }) {
       }),
     [count],
   );
-  const material = useMemo(() => makePointsMaterial(9), []);
+  const material = useMemo(() => makePointsMaterial(10.5), []);
   const dustGeometry = useMemo(
     () => buildScatterGeometry(Math.floor(count * 0.05), 1.5, 7, 0.7, [CYAN, PURPLE, "#ffffff"]),
     [count],
   );
-  const dustMaterial = useMemo(() => makePointsMaterial(6), []);
+  const dustMaterial = useMemo(() => makePointsMaterial(7), []);
 
   useEffect(
     () => () => {
@@ -991,7 +991,7 @@ function Planet({
 
     if (glowRef.current) {
       const m = glowRef.current.material as THREE.SpriteMaterial;
-      const base = 0.4 + focusValueRef.current * 0.3 + Math.sin(t * 1.4 + index) * 0.05;
+      const base = 0.5 + focusValueRef.current * 0.3 + Math.sin(t * 1.4 + index) * 0.05;
       m.opacity = peripheral ? base * 0.35 : base;
     }
     if (moonRef.current) moonRef.current.rotation.y += delta * 0.9;
@@ -1023,14 +1023,14 @@ function Planet({
       >
         <sphereGeometry args={[domain.size, 32, 32]} />
       </mesh>
-      <sprite ref={glowRef} scale={[domain.size * 4.1, domain.size * 4.1, 1]}>
+      <sprite ref={glowRef} scale={[domain.size * 4.7, domain.size * 4.7, 1]}>
         <spriteMaterial
           map={glowTexture}
           color={domain.color}
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}
-          opacity={0.4}
+          opacity={0.52}
         />
       </sprite>
       {(domain.ring || (domain.usage ?? 0) > 0.02) && (
@@ -1156,11 +1156,11 @@ function CoreOrb({
       labelMatRef.current.opacity += (opacityTarget - labelMatRef.current.opacity) * fadeRate;
     }
     if (haloRef.current) {
-      const breathe = 3.1 + Math.sin(clock.elapsedTime * 1.6) * 0.22;
+      const breathe = 3.5 + Math.sin(clock.elapsedTime * 1.6) * 0.26;
       haloRef.current.scale.setScalar(breathe);
       const haloMat = haloRef.current.material as THREE.SpriteMaterial;
       haloMat.color.lerp(e.halo, k);
-      haloMat.opacity += (opacityTarget * 0.85 - haloMat.opacity) * fadeRate;
+      haloMat.opacity += (opacityTarget * 0.98 - haloMat.opacity) * fadeRate;
     }
   });
 
@@ -1180,16 +1180,16 @@ function CoreOrb({
       >
         <sphereGeometry args={[0.62, 48, 48]} />
       </mesh>
-      <sprite ref={haloRef} renderOrder={1} scale={[3.1, 3.1, 3.1]}>
+      <sprite ref={haloRef} renderOrder={1} scale={[3.5, 3.5, 3.5]}>
         <spriteMaterial
           map={haloTexture}
           transparent
           depthWrite={false}
           blending={THREE.AdditiveBlending}
-          opacity={0.85}
+          opacity={0.95}
         />
       </sprite>
-      <pointLight intensity={2.2} distance={9} color={MAGENTA} />
+      <pointLight intensity={3.0} distance={11} color={MAGENTA} />
       {/*
         renderOrder guarantees the wordmark draws last (on top) regardless
         of automatic depth-sort among transparent siblings - the core and

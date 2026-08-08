@@ -987,9 +987,35 @@ export default function ZebulonConstellationPage() {
   const [dockPowered, setDockPowered] = useState(false);
   const [exploring, setExploring] = useState(false);
   const [resetSerial, setResetSerial] = useState(0);
+  const [showHint, setShowHint] = useState(false);
   const warpTimerRef = useRef<number | null>(null);
 
+  const markHintSeen = useCallback(() => {
+    try { window.localStorage.setItem("zcos_map_hint_v1", "1"); } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => setWebgl(canUseNexysWebgl()), []);
+
+  // First-visit onboarding cue on the galaxy map — shown once, then remembered.
+  useEffect(() => {
+    let seen = "1";
+    try { seen = window.localStorage.getItem("zcos_map_hint_v1") ?? ""; } catch { /* ignore */ }
+    if (seen) return;
+    setShowHint(true);
+    const id = window.setTimeout(() => {
+      setShowHint(false);
+      markHintSeen();
+    }, 7000);
+    return () => window.clearTimeout(id);
+  }, [markHintSeen]);
+
+  // Any interaction with a star dismisses (and permanently retires) the cue.
+  useEffect(() => {
+    if (focusedId || hoveredId) {
+      setShowHint(false);
+      markHintSeen();
+    }
+  }, [focusedId, hoveredId, markHintSeen]);
   useEffect(() => () => {
     if (warpTimerRef.current !== null) window.clearTimeout(warpTimerRef.current);
     document.body.style.cursor = "";
@@ -1133,6 +1159,25 @@ export default function ZebulonConstellationPage() {
         <div className="mt-1.5 flex items-center gap-2.5"><span className="h-px w-3 bg-cyan-100/30" /> Constellation line</div>
         <div className="mt-1.5 flex items-center gap-2.5"><Crosshair size={10} /> Navigation beacon</div>
       </div>
+
+      <AnimatePresence>
+        {showHint && !focusedId && !warpingId ? (
+          <motion.div
+            key="map-hint"
+            data-testid="map-onboarding-hint"
+            className="pointer-events-none absolute inset-x-0 z-30 flex justify-center"
+            style={{ top: "57%" }}
+            initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+          >
+            <div className="flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-4 py-2 backdrop-blur-md">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-200 motion-safe:animate-ping" />
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/70">Tap a star to explore</span>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {focusedStar && !warpingId ? (
