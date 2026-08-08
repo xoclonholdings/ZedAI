@@ -8,25 +8,27 @@ import {
 } from "./galaxyConstellation";
 
 describe("Zebulon constellation authority", () => {
-  test("defines the exact six Galaxy gateways and subtitles", () => {
+  test("defines the exact eight Galaxy gateways and subtitles", () => {
     expect(GALAXY_CONSTELLATION.every((galaxy) => galaxy.level === "application-galaxy")).toBe(true);
     expect(GALAXY_CONSTELLATION.map(({ name, console }) => [name, console])).toEqual([
-      ["ZAR", "NEXUS"],
+      ["ZAR", "NΞXYS"],
       ["ZETA", "SENTRY"],
       ["ZYNC", "CANVAS"],
       ["ZYLO", "COMPASS"],
       ["ZENO", "UNITE"],
       ["ZWAP!", "DISCOVERY"],
+      ["ZENITH", "LOGOS"],
+      ["ZILLION", "PROSPER"],
     ]);
   });
 
   test("stores real depth and distinct stellar identities instead of equal menu icons", () => {
-    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.position[2])).size).toBe(6);
-    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.radius)).size).toBe(6);
-    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.haloRadius)).size).toBe(6);
-    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.brightness)).size).toBe(6);
-    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.stellarDensity)).size).toBe(6);
-    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.nebula)).size).toBe(6);
+    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.position[2])).size).toBe(8);
+    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.radius)).size).toBe(8);
+    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.haloRadius)).size).toBe(8);
+    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.brightness)).size).toBe(8);
+    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.stellarDensity)).size).toBe(8);
+    expect(new Set(GALAXY_CONSTELLATION.map((star) => star.nebula)).size).toBe(8);
   });
 
   test("keeps the observed chart asymmetric and off a shared radius", () => {
@@ -53,7 +55,7 @@ describe("Zebulon constellation authority", () => {
     expect(GALAXY_CONSTELLATION.filter((star) => star.route)).toEqual([
       expect.objectContaining({ id: "zar", route: ZEBULON_VESSEL_ROUTE }),
     ]);
-    expect(ZEBULON_VESSEL_ROUTE).toBe("/nexus");
+    expect(ZEBULON_VESSEL_ROUTE).toBe("/nexys");
     expect(ZEBULON_HOME_CAMERA.fov).toBeGreaterThan(35);
     expect(ZEBULON_HOME_CAMERA.fov).toBeLessThan(60);
     expect(ZEBULON_REFERENCE_VIEWPORT).toEqual({ width: 853, height: 1280 });

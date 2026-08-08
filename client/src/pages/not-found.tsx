@@ -15,13 +15,13 @@ export default function NotFoundPage() {
         </h1>
         <h2 className="mb-3 text-2xl font-semibold text-white">Page not found</h2>
         <p className="mb-8 text-sm text-muted-foreground">
-          This route doesn't exist or has moved. Head back to Nexus to find your way.
+          This route doesn't exist or has moved. Head back to Nexys to find your way.
         </p>
         <button
           onClick={() => setLocation('/')}
           className="zar-button zar-gradient rounded-xl px-6 py-3 font-semibold text-white transition-all"
         >
-          Back to Nexus
+          Back to Nexys
         </button>
       </div>
     </div>

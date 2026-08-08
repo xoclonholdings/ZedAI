@@ -13,9 +13,9 @@ import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Admin from "@/pages/admin";
 import HomePage from "@/pages/home";
-import NexusRootPage from "@/nexus/pages/NexusRootPage";
+import NexysRootPage from "@/nexys/pages/NexysRootPage";
 import ZebulonConstellationPage from "@/zebulon/ZebulonConstellationPage";
-import { NexusProvider } from "@/nexus";
+import { NexysProvider } from "@/nexys";
 import { ConsoleWorkspaceFrame } from "@/console/ConsoleWorkspaceFrame";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
@@ -113,15 +113,15 @@ function Router() {
       </Route>
 
       <Route path="/home">
-        {isAuthenticated ? <NexusRootPage /> : <Login />}
+        {isAuthenticated ? <NexysRootPage /> : <Login />}
       </Route>
 
-      <Route path="/nexus">
-        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      <Route path="/nexys">
+        {isAuthenticated ? <NexysRootPage /> : <Login />}
       </Route>
 
-      <Route path="/nexus/:nodeId/:view?">
-        {isAuthenticated ? <NexusRootPage /> : <Login />}
+      <Route path="/nexys/:nodeId/:view?">
+        {isAuthenticated ? <NexysRootPage /> : <Login />}
       </Route>
 
       <Route path="/knowledge-map">
@@ -299,11 +299,11 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <TooltipProvider>
-            <NexusProvider>
+            <NexysProvider>
               <GlobalErrorHooks />
               <Toaster />
               <Router />
-            </NexusProvider>
+            </NexysProvider>
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>

@@ -20,7 +20,7 @@ interface SettingsUser {
 }
 
 /**
- * The real Settings surface, reachable from Nexus's "Settings" domain.
+ * The real Settings surface, reachable from Nexys's "Settings" domain.
  *
  * Reuses the same section components SettingsModal already wires to
  * production APIs (personalization, memory, archived chats, sign-in) -

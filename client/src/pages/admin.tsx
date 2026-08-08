@@ -94,7 +94,7 @@ export default function Admin() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/nexus")}
+            onClick={() => navigate("/nexys")}
             className="shrink-0 text-muted-foreground hover:text-foreground zar-button rounded-xl"
           >
             <ChevronLeft size={16} className="mr-1" />

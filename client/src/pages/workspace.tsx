@@ -153,7 +153,7 @@ const WORKSPACE_INDEX_ORDER = ["research", "operations", "finance", "education"]
 /**
  * The bare /workspace route (no :workspace param) - lists every real
  * workspace instead of silently defaulting into Research. This is what the
- * Nexus "Workspaces" domain's real action route (/workspace) resolves to.
+ * Nexys "Workspaces" domain's real action route (/workspace) resolves to.
  */
 function WorkspaceIndex() {
   const [, navigate] = useLocation();

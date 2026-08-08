@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { Send } from "lucide-react";
 import { useLocation } from "wouter";
 
-import { iconForMode } from "@/nexus/components/NexusConversationSurface";
-import { useNexus } from "@/nexus/state/NexusProvider";
-import { communicationModeViews } from "@/nexus/viewport/NexusViewportModel";
+import { iconForMode } from "@/nexys/components/NexysConversationSurface";
+import { useNexys } from "@/nexys/state/NexysProvider";
+import { communicationModeViews } from "@/nexys/viewport/NexysViewportModel";
 
 /**
  * The console's standby face: one line of the six tool icons, one line of a
@@ -20,7 +20,7 @@ export function ConsoleStandbyBar({
   readonly accent: string;
 }) {
   const [, navigate] = useLocation();
-  const { communicationLayer } = useNexus();
+  const { communicationLayer } = useNexys();
   const [draft, setDraft] = useState("");
   const modes = useMemo(() => communicationModeViews(communicationLayer), [communicationLayer]);
 

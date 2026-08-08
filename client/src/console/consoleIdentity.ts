@@ -2,7 +2,7 @@
  * The ZEBULON Console Framework is galaxy-agnostic: every application galaxy
  * (ZAR, ZETA, ZYNC, ZWAP!, ZENO) gets its own console identity plugged into
  * the same ConsoleShell/ConsoleDock/ConsoleActivator components. Only ZAR's
- * console (NEXUS) is actually wired up today - the other galaxies don't have
+ * console (NEXYS) is actually wired up today - the other galaxies don't have
  * an application behind them yet.
  */
 export interface ConsoleIdentity {
@@ -11,8 +11,8 @@ export interface ConsoleIdentity {
   readonly accent: string;
 }
 
-export const ZAR_NEXUS_CONSOLE: ConsoleIdentity = {
+export const ZAR_NEXYS_CONSOLE: ConsoleIdentity = {
   galaxy: "ZAR",
-  console: "NEXUS",
+  console: "NΞXYS",
   accent: "#a78bfa",
 };

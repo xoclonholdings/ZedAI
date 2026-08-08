@@ -19,7 +19,7 @@ interface NoteDetail {
 }
 
 /**
- * The real Identity surface, reachable from Nexus's "Identity" domain.
+ * The real Identity surface, reachable from Nexys's "Identity" domain.
  *
  * There's no backend concept literally called a "Personal Constitution" -
  * what's real is the per-user personalization notes corpus

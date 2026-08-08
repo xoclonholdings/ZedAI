@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes nexus-settle {
+@keyframes nexys-settle {
   from {
     opacity: 0;
     transform: translateY(6px);
@@ -408,77 +408,77 @@
     left: 100%;
   }
 
-  @keyframes nexus-drift {
+  @keyframes nexys-drift {
     0% { background-position: 0 0, 0 0; }
     100% { background-position: 38px 38px, 38px 38px; }
   }
 
-  @keyframes nexus-pulse {
+  @keyframes nexys-pulse {
     0%, 100% { opacity: 0.58; transform: translate(-50%, -50%) scale(1); }
     50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.04); }
   }
 
-  @keyframes nexus-twinkle {
+  @keyframes nexys-twinkle {
     0%, 100% { opacity: 0.25; }
     50% { opacity: 0.75; }
   }
 
-  @keyframes nexus-orbit-glow {
+  @keyframes nexys-orbit-glow {
     0%, 100% { opacity: 0.85; }
     50% { opacity: 1; }
   }
 
-  @keyframes nexus-rotate-slow {
+  @keyframes nexys-rotate-slow {
     from { transform: translate(-50%, -50%) rotate(0deg); }
     to { transform: translate(-50%, -50%) rotate(360deg); }
   }
 
-  @keyframes nexus-rotate-slow-reverse {
+  @keyframes nexys-rotate-slow-reverse {
     from { transform: translate(-50%, -50%) rotate(360deg); }
     to { transform: translate(-50%, -50%) rotate(0deg); }
   }
 
-  @keyframes nexus-spin-slow {
+  @keyframes nexys-spin-slow {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
 
-  @keyframes nexus-spin-slow-reverse {
+  @keyframes nexys-spin-slow-reverse {
     from { transform: rotate(360deg); }
     to { transform: rotate(0deg); }
   }
 
-  @keyframes nexus-sonar {
+  @keyframes nexys-sonar {
     0% { transform: scale(0.92); opacity: 0.55; }
     100% { transform: scale(1.9); opacity: 0; }
   }
 
-  @keyframes nexus-wave-idle {
+  @keyframes nexys-wave-idle {
     0%, 100% { transform: scaleY(1); opacity: 0.5; }
     50% { transform: scaleY(2.2); opacity: 0.8; }
   }
 
-  @keyframes nexus-wave-active {
+  @keyframes nexys-wave-active {
     0%, 100% { transform: scaleY(0.5); }
     50% { transform: scaleY(3.4); }
   }
 
-  @keyframes nexus-flow {
+  @keyframes nexys-flow {
     to { stroke-dashoffset: -24; }
   }
 
-  @keyframes nexus-breathe {
+  @keyframes nexys-breathe {
     0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(103, 232, 249, 0.28), 0 0 26px rgba(103, 232, 249, 0.35); }
     50% { transform: scale(1.045); box-shadow: 0 0 0 10px rgba(103, 232, 249, 0), 0 0 42px rgba(103, 232, 249, 0.5); }
   }
 
-  @keyframes nexus-orbit-drift {
-    from { transform: rotate(0deg) translateX(var(--nexus-orbit-radius, 40px)) rotate(0deg); }
-    to { transform: rotate(360deg) translateX(var(--nexus-orbit-radius, 40px)) rotate(-360deg); }
+  @keyframes nexys-orbit-drift {
+    from { transform: rotate(0deg) translateX(var(--nexys-orbit-radius, 40px)) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(var(--nexys-orbit-radius, 40px)) rotate(-360deg); }
   }
 
   /*
-    Nexus home is a fixed one-screen app shell, not a scrolling page: the mockup and
+    Nexys home is a fixed one-screen app shell, not a scrolling page: the mockup and
     PWA usage both expect everything (header, constellation, communication, focused
     context) to fit in one viewport with no outer scroll. Mobile stacks the three
     regions as flex rows in document order (constellation -> communication -> focused
@@ -486,7 +486,7 @@
     scrolls internally. From lg upward the same regions reflow into a two-column grid
     via named areas, without touching DOM order.
   */
-  .nexus-home-grid {
+  .nexys-home-grid {
     display: flex;
     flex: 1 1 auto;
     min-height: 0;
@@ -494,24 +494,24 @@
     gap: 0.75rem;
   }
 
-  .nexus-home-grid > [data-nexus-region="constellation"] {
+  .nexys-home-grid > [data-nexys-region="constellation"] {
     flex: 1.15 1 0%;
     min-height: 200px;
     display: flex;
   }
 
-  .nexus-home-grid > [data-nexus-region="communication"] {
+  .nexys-home-grid > [data-nexys-region="communication"] {
     flex: 1 1 0%;
     min-height: 0;
     display: flex;
   }
 
-  .nexus-home-grid > [data-nexus-region="focused"] {
+  .nexys-home-grid > [data-nexys-region="focused"] {
     flex: 0 0 auto;
   }
 
   @media (min-width: 1024px) {
-    .nexus-home-grid {
+    .nexys-home-grid {
       display: grid;
       flex: 1 1 auto;
       min-height: 0;
@@ -523,19 +523,19 @@
         "communication communication";
     }
 
-    .nexus-home-grid > [data-nexus-region="constellation"] {
+    .nexys-home-grid > [data-nexys-region="constellation"] {
       grid-area: constellation;
       flex: none;
       min-height: 0;
     }
 
-    .nexus-home-grid > [data-nexus-region="communication"] {
+    .nexys-home-grid > [data-nexys-region="communication"] {
       grid-area: communication;
       flex: none;
       min-height: 0;
     }
 
-    .nexus-home-grid > [data-nexus-region="focused"] {
+    .nexys-home-grid > [data-nexys-region="focused"] {
       grid-area: focused;
       flex: none;
       min-height: 0;
@@ -543,7 +543,7 @@
     }
   }
 
-  .nexus-particle-field {
+  .nexys-particle-field {
     background-image:
       radial-gradient(1px 1px at 12% 22%, rgba(255,255,255,0.55), transparent 60%),
       radial-gradient(1px 1px at 82% 14%, rgba(125,211,252,0.55), transparent 60%),

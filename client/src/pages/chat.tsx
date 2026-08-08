@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 
 import { useLocationSearch } from "@/lib/useLocationSearch";
-import { useNexusChatSession } from "@/nexus/communication/useNexusChatSession";
-import { NexusConversationRuntime } from "@/nexus/components/communication/NexusConversationRuntime";
+import { useNexysChatSession } from "@/nexys/communication/useNexysChatSession";
+import { NexysConversationRuntime } from "@/nexys/components/communication/NexysConversationRuntime";
 
 function normalizeConversationId(value: string | null | undefined): string | undefined {
   if (!value || value === "undefined" || value === "null") return undefined;
@@ -12,7 +12,7 @@ function normalizeConversationId(value: string | null | undefined): string | und
 
 /**
  * The real chat page ZAR's "Text" mode opens to. Reuses the same session
- * logic (useNexusChatSession) and runtime UI the console's inline composer
+ * logic (useNexysChatSession) and runtime UI the console's inline composer
  * was built on, so workspace/learning context and ZAR-driven navigation
  * behave identically here and in the dock. Rendered inside
  * ConsoleWorkspaceFrame (flush), so it only needs to fill its bounded
@@ -24,8 +24,8 @@ export default function ChatPage() {
   const search = useLocationSearch();
   const conversationId = normalizeConversationId(id);
 
-  const { controller } = useNexusChatSession(conversationId, {
-    onModeAction: () => navigate("/nexus"),
+  const { controller } = useNexysChatSession(conversationId, {
+    onModeAction: () => navigate("/nexys"),
   });
 
   // A conversation created from a blank /chat lands on its own id once the
@@ -48,5 +48,5 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <NexusConversationRuntime controller={controller} />;
+  return <NexysConversationRuntime controller={controller} />;
 }

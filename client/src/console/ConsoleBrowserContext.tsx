@@ -12,7 +12,7 @@ const ConsoleBrowserContext = createContext<ConsoleBrowserContextValue | null>(n
 
 /**
  * Coordinates the console's live browser between two places that don't
- * otherwise share state: the dock's compact address bar (NexusLiveBrowser)
+ * otherwise share state: the dock's compact address bar (NexysLiveBrowser)
  * and the console's main content region, where the fetched page actually
  * renders full-size (ConsoleBrowserFullPage) - same region every other
  * workspace uses, per "the full page should render as all the other pages

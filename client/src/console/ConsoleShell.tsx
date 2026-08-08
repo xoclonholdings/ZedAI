@@ -16,7 +16,7 @@ import { CONSOLE_CONTENT_REGION_CLASS } from "./ConsoleGlassPanel";
  * powers the dock, so it lives right next to what it controls rather than
  * off in the header. Callers supply the backdrop/main content and both
  * header slots in full (home's wordmark + sign-out + planet name, or a
- * workspace's back-to-Nexus control + sign-out + node label) - this
+ * workspace's back-to-Nexys control + sign-out + node label) - this
  * component only owns the parts that must stay identical everywhere.
  */
 export function ConsoleShell(props: {
@@ -84,7 +84,7 @@ function ConsoleShellBody({
       <div
         className="absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         data-console-region="dock"
-        data-nexus-region="communication"
+        data-nexys-region="communication"
       >
         <div className="flex w-full max-w-[760px] flex-col items-end gap-2">
           <ConsoleActivator active={dockPowered} onToggle={() => onDockPowerChange(!dockPowered)} accent={identity.accent} />

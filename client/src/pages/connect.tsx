@@ -40,7 +40,7 @@ const CATEGORIES: Array<{ label: string; providers: IntegrationProvider[] }> = [
 ];
 
 /**
- * The real Connect surface, reachable from Nexus's "Connect" domain.
+ * The real Connect surface, reachable from Nexys's "Connect" domain.
  *
  * Combines two real backends: the per-user trading/market-data accounts
  * (/api/trading/integrations, the only accounts an individual user connects

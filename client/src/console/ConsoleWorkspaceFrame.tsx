@@ -3,11 +3,11 @@ import { ChevronLeft } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocation } from "wouter";
 
-import { nexusRootManifestRegistry, type NexusRootNodeId } from "@/nexus/manifests/rootManifests";
+import { nexysRootManifestRegistry, type NexysRootNodeId } from "@/nexys/manifests/rootManifests";
 import { ConsoleGlassPanel, CONSOLE_CONTENT_REGION_CLASS } from "./ConsoleGlassPanel";
 import { ConsoleLogoutButton } from "./ConsoleLogoutButton";
 import { ConsoleShell } from "./ConsoleShell";
-import { ZAR_NEXUS_CONSOLE } from "./consoleIdentity";
+import { ZAR_NEXYS_CONSOLE } from "./consoleIdentity";
 
 /**
  * Wraps one of the 8 root-node routes (identity, memory, knowledge,
@@ -17,7 +17,7 @@ import { ZAR_NEXUS_CONSOLE } from "./consoleIdentity";
  * are untouched - only the presentation chrome around it changes.
  *
  * Some routes (Trading Intelligence) aren't one of the 8 galaxy domains and
- * have no NexusRootNodeId to look a label/accent up from - `label`/`accent`
+ * have no NexysRootNodeId to look a label/accent up from - `label`/`accent`
  * let those pages use the same frame anyway, without inventing a fake root
  * node for them.
  */
@@ -28,7 +28,7 @@ export function ConsoleWorkspaceFrame({
   flush,
   children,
 }: {
-  readonly nodeId?: NexusRootNodeId;
+  readonly nodeId?: NexysRootNodeId;
   readonly label?: string;
   readonly accent?: string;
   readonly flush?: boolean;
@@ -38,10 +38,10 @@ export function ConsoleWorkspaceFrame({
   const [dockPowered, setDockPowered] = useState(false);
   const reducedMotion = useReducedMotion();
 
-  const manifest = nodeId ? nexusRootManifestRegistry.getManifest(nodeId) : undefined;
+  const manifest = nodeId ? nexysRootManifestRegistry.getManifest(nodeId) : undefined;
   const label = labelOverride ?? manifest?.label ?? nodeId ?? "Workspace";
-  const accent = accentOverride ?? manifest?.visual.color ?? ZAR_NEXUS_CONSOLE.accent;
-  const identity = { ...ZAR_NEXUS_CONSOLE, accent };
+  const accent = accentOverride ?? manifest?.visual.color ?? ZAR_NEXYS_CONSOLE.accent;
+  const identity = { ...ZAR_NEXYS_CONSOLE, accent };
 
   return (
     <ConsoleShell
@@ -52,11 +52,11 @@ export function ConsoleWorkspaceFrame({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => navigate("/nexus")}
+            onClick={() => navigate("/nexys")}
             className="flex items-center gap-1.5 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-[11px] font-medium tracking-[0.08em] text-white/70 backdrop-blur transition hover:border-white/25 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
-            aria-label="Back to Nexus"
+            aria-label="Back to Nexys"
           >
-            <ChevronLeft size={14} /> NEXUS
+            <ChevronLeft size={14} /> NΞXYS
           </button>
           <ConsoleLogoutButton />
         </div>

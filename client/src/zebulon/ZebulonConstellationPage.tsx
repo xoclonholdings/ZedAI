@@ -12,9 +12,9 @@ import { useLocation } from "wouter";
 import * as THREE from "three";
 
 import { ConsoleShell } from "@/console/ConsoleShell";
-import { ZAR_NEXUS_CONSOLE } from "@/console/consoleIdentity";
-import { NexusConsoleHeaderBrand, NexusConsoleHeaderTelemetry } from "@/nexus/components/NexusConsoleHeader";
-import { canUseNexusWebgl } from "@/nexus/scene/nexusSceneContract";
+import { ZAR_NEXYS_CONSOLE } from "@/console/consoleIdentity";
+import { NexysConsoleHeaderBrand, NexysConsoleHeaderTelemetry } from "@/nexys/components/NexysConsoleHeader";
+import { canUseNexysWebgl } from "@/nexys/scene/nexysSceneContract";
 import {
   GALAXY_CONSTELLATION,
   ZEBULON_HOME_CAMERA,
@@ -878,7 +878,7 @@ export default function ZebulonConstellationPage() {
   const [resetSerial, setResetSerial] = useState(0);
   const warpTimerRef = useRef<number | null>(null);
 
-  useEffect(() => setWebgl(canUseNexusWebgl()), []);
+  useEffect(() => setWebgl(canUseNexysWebgl()), []);
   useEffect(() => () => {
     if (warpTimerRef.current !== null) window.clearTimeout(warpTimerRef.current);
     document.body.style.cursor = "";
@@ -921,20 +921,31 @@ export default function ZebulonConstellationPage() {
 
   return (
     <ConsoleShell
-      identity={ZAR_NEXUS_CONSOLE}
+      identity={ZAR_NEXYS_CONSOLE}
       dockPowered={dockPowered}
       onDockPowerChange={setDockPowered}
       headerLeft={
-        <NexusConsoleHeaderBrand
+        <NexysConsoleHeaderBrand
           onWordmarkClick={resetOverview}
           wordmarkAriaLabel="Reset the Zebulon Galaxy map"
           context={{ label: headerGalaxy.name, color: headerGalaxy.accent }}
         />
       }
-      headerRightExtra={<NexusConsoleHeaderTelemetry visible={!warpingId} />}
+      headerRightExtra={
+        <>
+          <div
+            data-testid="nexys-online-pill"
+            className="flex items-center gap-2 rounded-full border border-emerald-300/25 bg-black/40 px-3 py-1 backdrop-blur"
+          >
+            <span className="block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_2px_rgba(52,211,153,0.7)]" aria-hidden="true" />
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-emerald-200/80">NΞXYS Online</span>
+          </div>
+          <NexysConsoleHeaderTelemetry visible={!warpingId} />
+        </>
+      }
     >
       <div
-        className="absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_80%_58%_at_50%_42%,#080d24_0%,#030716_44%,#010208_78%,#000104_100%)]"
+        className="absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_82%_60%_at_50%_40%,#100b34_0%,#0a0722_42%,#050313_76%,#01000a_100%)]"
         data-testid="zebulon-constellation-canvas"
         data-reference-viewport={`${ZEBULON_REFERENCE_VIEWPORT.width}x${ZEBULON_REFERENCE_VIEWPORT.height}`}
       >
@@ -951,7 +962,7 @@ export default function ZebulonConstellationPage() {
             onCreated={({ gl }) => {
               gl.outputColorSpace = THREE.SRGBColorSpace;
               gl.toneMapping = THREE.ACESFilmicToneMapping;
-              gl.toneMappingExposure = 1.15;
+              gl.toneMappingExposure = 1.3;
             }}
             onPointerMissed={handleMissed}
           >
@@ -1004,9 +1015,9 @@ export default function ZebulonConstellationPage() {
       </AnimatePresence>
 
       <div className="zebulon-chart-legend pointer-events-none absolute left-5 z-10 rounded-lg border border-white/10 bg-black/28 px-3 py-2.5 text-[8px] uppercase tracking-[0.16em] text-white/42 backdrop-blur-sm sm:left-7">
-        <div className="flex items-center gap-2.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-100 shadow-[0_0_8px_2px_rgba(191,219,254,0.7)]" /> App / Galaxy gateway</div>
+        <div className="flex items-center gap-2.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-100 shadow-[0_0_8px_2px_rgba(191,219,254,0.7)]" /> Star / Galaxy gateway</div>
         <div className="mt-1.5 flex items-center gap-2.5"><Orbit size={10} /> Nebula</div>
-        <div className="mt-1.5 flex items-center gap-2.5"><span className="h-px w-3 bg-cyan-100/30" /> Catalog reference</div>
+        <div className="mt-1.5 flex items-center gap-2.5"><span className="h-px w-3 bg-cyan-100/30" /> Constellation line</div>
         <div className="mt-1.5 flex items-center gap-2.5"><Crosshair size={10} /> Navigation beacon</div>
       </div>
 

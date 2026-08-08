@@ -6,14 +6,14 @@
  * reference viewport is recorded here so camera framing and visual checks
  * have one stable authority without changing the underlying constellation.
  */
-export type GalaxyNebulaCharacter = "intelligence" | "structured" | "creative" | "beacon" | "binary" | "frontier";
+export type GalaxyNebulaCharacter = "intelligence" | "structured" | "creative" | "beacon" | "binary" | "frontier" | "logos" | "prosper";
 
 export interface GalaxyStar {
   /** Top-level ZCOS application entrance; planets/hubs live inside it. */
   readonly level: "application-galaxy";
   readonly id: string;
-  readonly name: "ZAR" | "ZETA" | "ZYNC" | "ZYLO" | "ZENO" | "ZWAP!";
-  readonly console: "NEXUS" | "SENTRY" | "CANVAS" | "COMPASS" | "UNITE" | "DISCOVERY";
+  readonly name: "ZAR" | "ZETA" | "ZYNC" | "ZYLO" | "ZENO" | "ZWAP!" | "ZENITH" | "ZILLION";
+  readonly console: "NΞXYS" | "SENTRY" | "CANVAS" | "COMPASS" | "UNITE" | "DISCOVERY" | "LOGOS" | "PROSPER";
   readonly accent: string;
   readonly accentSoft: string;
   /** Genuine 3D chart coordinates. Z varies independently for visible depth. */
@@ -47,14 +47,14 @@ export const ZEBULON_HOME_CAMERA = Object.freeze({
   maximumPitch: 0.18,
 });
 
-export const ZEBULON_VESSEL_ROUTE = "/nexus";
+export const ZEBULON_VESSEL_ROUTE = "/nexys";
 
 export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
   {
     level: "application-galaxy",
     id: "zar",
     name: "ZAR",
-    console: "NEXUS",
+    console: "NΞXYS",
     accent: "#a78bfa",
     accentSoft: "#ddd6fe",
     position: [0.35, -0.25, 0.9],
@@ -161,6 +161,42 @@ export const GALAXY_CONSTELLATION: readonly GalaxyStar[] = Object.freeze([
     dustStretch: [1.5, 0.76],
     labelOffset: [1.12, -0.76],
     hitRadius: 1.08,
+    route: null,
+  },
+  {
+    level: "application-galaxy",
+    id: "zenith",
+    name: "ZENITH",
+    console: "LOGOS",
+    accent: "#7dd3fc",
+    accentSoft: "#e0f2fe",
+    position: [-2.4, 4.2, 2.6],
+    radius: 0.79,
+    haloRadius: 1.55,
+    brightness: 0.96,
+    stellarDensity: 205,
+    nebula: "logos",
+    dustStretch: [0.95, 1.12],
+    labelOffset: [0.8, -0.75],
+    hitRadius: 0.98,
+    route: null,
+  },
+  {
+    level: "application-galaxy",
+    id: "zillion",
+    name: "ZILLION",
+    console: "PROSPER",
+    accent: "#34d399",
+    accentSoft: "#a7f3d0",
+    position: [3.4, -3.1, -3.4],
+    radius: 1.02,
+    haloRadius: 2.05,
+    brightness: 0.8,
+    stellarDensity: 355,
+    nebula: "prosper",
+    dustStretch: [1.3, 0.85],
+    labelOffset: [1.1, -0.72],
+    hitRadius: 1.1,
     route: null,
   },
 ]);

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { NexusConversationSurface, type NexusDockMode } from "@/nexus/components/NexusConversationSurface";
+import { NexysConversationSurface, type NexysDockMode } from "@/nexys/components/NexysConversationSurface";
 import { ConsoleStandbyBar } from "./ConsoleStandbyBar";
 
 const POWER_TRANSITION = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
@@ -22,10 +22,10 @@ export function ConsoleDock({
   readonly accent: string;
 }) {
   const reducedMotion = useReducedMotion();
-  const [pendingMode, setPendingMode] = useState<NexusDockMode | undefined>(undefined);
+  const [pendingMode, setPendingMode] = useState<NexysDockMode | undefined>(undefined);
 
   function handleActivate(modeId: string) {
-    setPendingMode(modeId as NexusDockMode);
+    setPendingMode(modeId as NexysDockMode);
     onPowerChange(true);
   }
 
@@ -39,7 +39,7 @@ export function ConsoleDock({
           exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
           transition={POWER_TRANSITION}
         >
-          <NexusConversationSurface initialMode={pendingMode} />
+          <NexysConversationSurface initialMode={pendingMode} />
         </motion.div>
       ) : (
         <motion.div

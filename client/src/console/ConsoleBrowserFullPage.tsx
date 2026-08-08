@@ -46,7 +46,7 @@ function buildReaderDocument(sanitizedHtml: string): string {
 /**
  * The console's live browser, rendered full-size in the main content region
  * - the same glass surface every workspace uses - instead of the dock's own
- * small slot. The dock (NexusLiveBrowser) only owns the address bar; this
+ * small slot. The dock (NexysLiveBrowser) only owns the address bar; this
  * owns the actual fetched page, live for both the user's own navigation and
  * whatever ZAR looks up on its own (both write to the same session).
  */

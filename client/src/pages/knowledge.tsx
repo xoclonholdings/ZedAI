@@ -28,7 +28,7 @@ function friendlyRel(t: string): string {
 }
 
 /**
- * The real Knowledge surface, reachable from Nexus's "Knowledge" domain.
+ * The real Knowledge surface, reachable from Nexys's "Knowledge" domain.
  *
  * Reads and writes the one real "knowledge records + relationship graph"
  * backend in the app (/api/me/memory/graph, /api/me/memory/upload): teach
