@@ -2122,177 +2122,247 @@
     {
       "route": "/",
       "file": "client/src/App.tsx",
-      "line": 102
+      "line": 102,
+      "owner": "Portal / ZCOS constellation",
+      "disposition": "Adapt"
     },
     {
       "route": "/admin",
       "file": "client/src/App.tsx",
-      "line": 136
+      "line": 136,
+      "owner": "ZCOS Command Desk / Admin Access",
+      "disposition": "Adapt"
     },
     {
       "route": "/budget/",
       "file": "client/src/App.tsx",
-      "line": 164
+      "line": 164,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "route": "/budget",
       "file": "client/src/App.tsx",
-      "line": 160
+      "line": 160,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "route": "/chat/:id?",
       "file": "client/src/App.tsx",
-      "line": 106
+      "line": 106,
+      "owner": "ZAR Nexys",
+      "disposition": "Adapt"
     },
     {
       "route": "/connect",
       "file": "client/src/App.tsx",
-      "line": 217
+      "line": 217,
+      "owner": "Settings -> Integrations",
+      "disposition": "Migrate"
     },
     {
       "route": "/decisions/:id",
       "file": "client/src/App.tsx",
-      "line": 250
+      "line": 250,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "route": "/decisions",
       "file": "client/src/App.tsx",
-      "line": 246
+      "line": 246,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "route": "/discovery",
       "file": "client/src/App.tsx",
-      "line": 258
+      "line": 258,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "route": "/flows/:id",
       "file": "client/src/App.tsx",
-      "line": 196
+      "line": 196,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "route": "/flows",
       "file": "client/src/App.tsx",
-      "line": 192
+      "line": 192,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "route": "/galaxy/:id",
       "file": "client/src/App.tsx",
-      "line": 128
+      "line": 128,
+      "owner": "Portal / ZCOS constellation",
+      "disposition": "Adapt"
     },
     {
       "route": "/history/:runId",
       "file": "client/src/App.tsx",
-      "line": 180
+      "line": 180,
+      "owner": "ZCOS History / originating Desk",
+      "disposition": "Adapt"
     },
     {
       "route": "/history",
       "file": "client/src/App.tsx",
-      "line": 184
+      "line": 184,
+      "owner": "ZCOS History / originating Desk",
+      "disposition": "Adapt"
     },
     {
       "route": "/home",
       "file": "client/src/App.tsx",
-      "line": 116
+      "line": 116,
+      "owner": "Portal / ZCOS constellation",
+      "disposition": "Adapt"
     },
     {
       "route": "/identity",
       "file": "client/src/App.tsx",
-      "line": 221
+      "line": 221,
+      "owner": "ZCOS Identity",
+      "disposition": "Adapt"
     },
     {
       "route": "/inbox",
       "file": "client/src/App.tsx",
-      "line": 188
+      "line": 188,
+      "owner": "ZAR Operate -> Support",
+      "disposition": "Adapt"
     },
     {
       "route": "/knowledge-map",
       "file": "client/src/App.tsx",
-      "line": 132
+      "line": 132,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "route": "/knowledge",
       "file": "client/src/App.tsx",
-      "line": 225
+      "line": 225,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "route": "/learning/paths/:id",
       "file": "client/src/App.tsx",
-      "line": 237
+      "line": 237,
+      "owner": "ZENITH Logos -> Scholar",
+      "disposition": "Migrate"
     },
     {
       "route": "/learning/studio",
       "file": "client/src/App.tsx",
-      "line": 233
+      "line": 233,
+      "owner": "ZENITH Logos -> Scholar",
+      "disposition": "Migrate"
     },
     {
       "route": "/learning",
       "file": "client/src/App.tsx",
-      "line": 242
+      "line": 242,
+      "owner": "ZENITH Logos -> Scholar",
+      "disposition": "Migrate"
     },
     {
       "route": "/nexys/:nodeId/:view?",
       "file": "client/src/App.tsx",
-      "line": 124
+      "line": 124,
+      "owner": "ZAR Nexys",
+      "disposition": "Adapt"
     },
     {
       "route": "/nexys",
       "file": "client/src/App.tsx",
-      "line": 120
+      "line": 120,
+      "owner": "ZAR Nexys",
+      "disposition": "Adapt"
     },
     {
       "route": "/projects/:id",
       "file": "client/src/App.tsx",
-      "line": 229
+      "line": 229,
+      "owner": "Galaxy Desk Projects / All Projects",
+      "disposition": "Adapt"
     },
     {
       "route": "/projects",
       "file": "client/src/App.tsx",
-      "line": 209
+      "line": 209,
+      "owner": "Galaxy Desk Projects / All Projects",
+      "disposition": "Adapt"
     },
     {
       "route": "/runs/:runId",
       "file": "client/src/App.tsx",
-      "line": 205
+      "line": 205,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "route": "/runs",
       "file": "client/src/App.tsx",
-      "line": 201
+      "line": 201,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "route": "/settings",
       "file": "client/src/App.tsx",
-      "line": 213
+      "line": 213,
+      "owner": "Settings",
+      "disposition": "Adapt"
     },
     {
       "route": "/timeline",
       "file": "client/src/App.tsx",
-      "line": 254
+      "line": 254,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "route": "/trading/",
       "file": "client/src/App.tsx",
-      "line": 150
+      "line": 150,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "route": "/trading",
       "file": "client/src/App.tsx",
-      "line": 140
+      "line": 140,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "route": "/workspace",
       "file": "client/src/App.tsx",
-      "line": 172
+      "line": 172,
+      "owner": "Galaxy Desks",
+      "disposition": "Migrate"
     },
     {
       "route": "/workspaces/:workspace/tools/:id",
       "file": "client/src/App.tsx",
-      "line": 168
+      "line": 168,
+      "owner": "Galaxy Desks",
+      "disposition": "Migrate"
     },
     {
       "route": "/workspaces/:workspace",
       "file": "client/src/App.tsx",
-      "line": 176
+      "line": 176,
+      "owner": "Galaxy Desks",
+      "disposition": "Migrate"
     }
   ],
   "databaseTables": [
@@ -2371,397 +2441,555 @@
     {
       "operation": "appendFile",
       "file": "server/agents/business-manager/BusinessManagerAgent.ts",
-      "line": 171
+      "line": 171,
+      "owner": "ZAR orchestration / canonical Desk owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/agents/business-manager/BusinessManagerAgent.ts",
-      "line": 193
+      "line": 193,
+      "owner": "ZAR orchestration / canonical Desk owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/agents/finance/FinanceAgent.ts",
-      "line": 418
+      "line": 418,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "appendFile",
       "file": "server/agents/finance/FinanceAgent.ts",
-      "line": 441
+      "line": 441,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "appendFile",
       "file": "server/agents/intelligence/IntelligenceAgent.ts",
-      "line": 312
+      "line": 312,
+      "owner": "ZAR Operate -> Brainstorm/Research",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/agents/operations/OperationsAgent.ts",
-      "line": 274
+      "line": 274,
+      "owner": "ZAR orchestration / canonical Desk owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/agents/operations/OperationsAgent.ts",
-      "line": 289
+      "line": 289,
+      "owner": "ZAR orchestration / canonical Desk owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/agents/operations/OperationsAgent.ts",
-      "line": 309
+      "line": 309,
+      "owner": "ZAR orchestration / canonical Desk owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/orchestrator/manager-agent/routing-log.ts",
-      "line": 33
+      "line": 33,
+      "owner": "ZAR Trace / ZETA Integrity audit",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/routes-modules/approvals.ts",
-      "line": 48
+      "line": 48,
+      "owner": "ZCOS execution approvals",
+      "disposition": "Adapt"
     },
     {
       "operation": "unlink",
       "file": "server/routes-modules/memory-upload.ts",
-      "line": 252
+      "line": 252,
+      "owner": "Temporary upload cleanup under canonical Files owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "unlink",
       "file": "server/routes-modules/research.ts",
-      "line": 152
+      "line": 152,
+      "owner": "Temporary upload cleanup under canonical Files owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/routes-modules/ruleset.ts",
-      "line": 33
+      "line": 33,
+      "owner": "Settings / Admin Access",
+      "disposition": "Adapt"
     },
     {
       "operation": "unlink",
       "file": "server/routes-modules/trading-training.ts",
-      "line": 92
+      "line": 92,
+      "owner": "Temporary upload cleanup under canonical Files owner",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/executionVerification.ts",
-      "line": 39
+      "line": 39,
+      "owner": "Verification tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "rm",
       "file": "server/scripts/executionVerification.ts",
-      "line": 42
+      "line": 42,
+      "owner": "Verification tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/liveExecutionVerification.ts",
-      "line": 295
+      "line": 295,
+      "owner": "Verification tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 231
+      "line": 231,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 354
+      "line": 354,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 355
+      "line": 355,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 356
+      "line": 356,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 357
+      "line": 357,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 358
+      "line": 358,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 359
+      "line": 359,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "appendFile",
       "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
-      "line": 360
+      "line": 360,
+      "owner": "Migration tooling",
+      "disposition": "Preserve"
     },
     {
       "operation": "writeFile",
       "file": "server/services/admin-settings/io.ts",
-      "line": 15
+      "line": 15,
+      "owner": "Settings / Admin Access",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/approval/ApprovalNotificationService.ts",
-      "line": 183
+      "line": 183,
+      "owner": "ZCOS execution approvals",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/auth/AdminMagicLinkService.ts",
-      "line": 249
+      "line": 249,
+      "owner": "ZCOS Identity security",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/BrowserSessionStore.ts",
-      "line": 57
+      "line": 57,
+      "owner": "ZCOS device/runtime sessions",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/budget/BudgetStore.ts",
-      "line": 103
+      "line": 103,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "appendFile",
       "file": "server/services/budget/BudgetStore.ts",
-      "line": 252
+      "line": 252,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/budget/BudgetStore.ts",
-      "line": 74
+      "line": 74,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/ChromaService.ts",
-      "line": 105
+      "line": 105,
+      "owner": "Knowledge/Memory retrieval index",
+      "disposition": "Adapt"
     },
     {
       "operation": "rename",
       "file": "server/services/ChromaService.ts",
-      "line": 142
+      "line": 142,
+      "owner": "Knowledge/Memory retrieval index",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/EmailInboxService.ts",
-      "line": 144
+      "line": 144,
+      "owner": "ZCOS Channel Service",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/execution/DigitalExecutionService.ts",
-      "line": 324
+      "line": 324,
+      "owner": "ZCOS execution / ZAR Tasks (Implement)",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/execution/ExecutionApprovalHandler.ts",
-      "line": 152
+      "line": 152,
+      "owner": "ZCOS execution / ZAR Tasks (Implement)",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/execution/HumanExecutionBridge.ts",
-      "line": 187
+      "line": 187,
+      "owner": "ZCOS execution / ZAR Tasks (Implement)",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/execution/TaskLifecycleManager.ts",
-      "line": 285
+      "line": 285,
+      "owner": "ZCOS execution / ZAR Tasks (Implement)",
+      "disposition": "Adapt"
     },
     {
       "operation": "unlink",
       "file": "server/services/fallbackStorage.ts",
-      "line": 146
+      "line": 146,
+      "owner": "Legacy fallback storage",
+      "disposition": "Retirement-blocked"
     },
     {
       "operation": "unlink",
       "file": "server/services/fallbackStorage.ts",
-      "line": 177
+      "line": 177,
+      "owner": "Legacy fallback storage",
+      "disposition": "Retirement-blocked"
     },
     {
       "operation": "writeFile",
       "file": "server/services/fallbackStorage.ts",
-      "line": 70
+      "line": 70,
+      "owner": "Legacy fallback storage",
+      "disposition": "Retirement-blocked"
     },
     {
       "operation": "writeFile",
       "file": "server/services/fallbackStorage.ts",
-      "line": 93
+      "line": 93,
+      "owner": "Legacy fallback storage",
+      "disposition": "Retirement-blocked"
     },
     {
       "operation": "writeFile",
       "file": "server/services/fileProcessor.test.ts",
-      "line": 15
+      "line": 15,
+      "owner": "ZENITH Files / temporary upload cleanup",
+      "disposition": "Adapt"
     },
     {
       "operation": "rm",
       "file": "server/services/fileProcessor.test.ts",
-      "line": 29
+      "line": 29,
+      "owner": "ZENITH Files / temporary upload cleanup",
+      "disposition": "Adapt"
     },
     {
       "operation": "unlink",
       "file": "server/services/fileProcessor.ts",
-      "line": 276
+      "line": 276,
+      "owner": "ZENITH Files / temporary upload cleanup",
+      "disposition": "Adapt"
     },
     {
       "operation": "unlink",
       "file": "server/services/FileSessionStore.ts",
-      "line": 101
+      "line": 101,
+      "owner": "ZCOS device/runtime sessions",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/FileSessionStore.ts",
-      "line": 50
+      "line": 50,
+      "owner": "ZCOS device/runtime sessions",
+      "disposition": "Adapt"
     },
     {
       "operation": "unlink",
       "file": "server/services/FileSessionStore.ts",
-      "line": 61
+      "line": 61,
+      "owner": "ZCOS device/runtime sessions",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/flow/FlowExecutor.ts",
-      "line": 739
+      "line": 739,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "operation": "appendFile",
       "file": "server/services/flow/FlowExecutor.ts",
-      "line": 761
+      "line": 761,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/FlowStore.ts",
-      "line": 40
+      "line": 40,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/FlowSuggestionStore.ts",
-      "line": 39
+      "line": 39,
+      "owner": "ZYLO Compass -> Automate",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/intake/ChannelContextManager.ts",
-      "line": 180
+      "line": 180,
+      "owner": "ZCOS Channel Service",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/intake/external-command-gateway/log.ts",
-      "line": 27
+      "line": 27,
+      "owner": "ZCOS Channel Service",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/IntegrationGapStore.ts",
-      "line": 36
+      "line": 36,
+      "owner": "Settings -> Integrations",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/knowledge-ingestion/KnowledgeIngestionService.ts",
-      "line": 689
+      "line": 689,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/KnowledgeCurationEngine.ts",
-      "line": 727
+      "line": 727,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "operation": "appendFile",
       "file": "server/services/KnowledgeCurationEngine.ts",
-      "line": 728
+      "line": 728,
+      "owner": "ZCOS Knowledge Engine",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/learning/LearningStore.ts",
-      "line": 88
+      "line": 88,
+      "owner": "ZENITH Logos -> Scholar",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/lexicon-authority/store.ts",
-      "line": 54
+      "line": 54,
+      "owner": "ZCOS Knowledge Engine -> Lexicon",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/object-memory/store.ts",
-      "line": 101
+      "line": 101,
+      "owner": "Shared Objects + Memory/Knowledge routing",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/object-memory/store.ts",
-      "line": 203
+      "line": 203,
+      "owner": "Shared Objects + Memory/Knowledge routing",
+      "disposition": "Migrate"
     },
     {
       "operation": "appendFile",
       "file": "server/services/object-memory/store.ts",
-      "line": 273
+      "line": 273,
+      "owner": "Shared Objects + Memory/Knowledge routing",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/operational/DeferredActionScheduler.ts",
-      "line": 151
+      "line": 151,
+      "owner": "ZCOS execution / ZYLO Automate",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/operational/OmnichannelMemoryService.ts",
-      "line": 126
+      "line": 126,
+      "owner": "Channel Service + canonical Memory",
+      "disposition": "Replace"
     },
     {
       "operation": "writeFile",
       "file": "server/services/ProjectFilingStore.ts",
-      "line": 59
+      "line": 59,
+      "owner": "Galaxy Desk Projects / All Projects",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/services/RuntimeLogger.ts",
-      "line": 37
+      "line": 37,
+      "owner": "ZETA Control -> Integrity / ZCOS audit",
+      "disposition": "Adapt"
     },
     {
       "operation": "appendFile",
       "file": "server/services/SecurityAudit.ts",
-      "line": 48
+      "line": 48,
+      "owner": "ZETA Control -> Integrity / ZCOS audit",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/services/TradingProgressionStore.ts",
-      "line": 80
+      "line": 80,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/UserPersonalizationCorpus.ts",
-      "line": 232
+      "line": 232,
+      "owner": "Settings explicit preferences / ZWAP! Glow adaptation",
+      "disposition": "Migrate"
     },
     {
       "operation": "unlink",
       "file": "server/services/UserPersonalizationCorpus.ts",
-      "line": 248
+      "line": 248,
+      "owner": "Settings explicit preferences / ZWAP! Glow adaptation",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/UserPersonalizationStore.ts",
-      "line": 60
+      "line": 60,
+      "owner": "Settings explicit preferences / ZWAP! Glow adaptation",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/UserPersonalizationStore.ts",
-      "line": 73
+      "line": 73,
+      "owner": "Settings explicit preferences / ZWAP! Glow adaptation",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/services/UserSecretsStore.ts",
-      "line": 57
+      "line": 57,
+      "owner": "Settings -> Integrations",
+      "disposition": "Adapt"
     },
     {
       "operation": "writeFile",
       "file": "server/zcos/trading/TradingIntegrationsStore.ts",
-      "line": 115
+      "line": 115,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/zcos/trading/tradingPersistence.ts",
-      "line": 145
+      "line": 145,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "writeFile",
       "file": "server/zcos/trading/TradingStore.ts",
-      "line": 108
+      "line": 108,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     },
     {
       "operation": "appendFile",
       "file": "server/zcos/trading/TradingStore.ts",
-      "line": 711
+      "line": 711,
+      "owner": "ZILLION Prosper -> Capital",
+      "disposition": "Migrate"
     }
   ],
   "stores": [
