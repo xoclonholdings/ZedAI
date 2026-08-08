@@ -1,0 +1,4260 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-08T21:42:31.000Z",
+  "repository": "https://github.com/xoclonholdings/ZedAI.git",
+  "branch": "main",
+  "commit": "64b8addf93187d1cb8e964154b71449076669875",
+  "commitTime": "2026-08-08T17:38:20-04:00",
+  "counts": {
+    "trackedFiles": 1832,
+    "textFilesScanned": 626,
+    "remoteBranches": 30,
+    "serverRoutes": 329,
+    "clientRoutes": 35,
+    "databaseTables": 14,
+    "filesystemWriters": 79,
+    "stores": 28,
+    "providerAdapters": 33,
+    "schedulers": 25,
+    "promptSites": 254,
+    "uiEntryPoints": 94,
+    "trackedRuntimeArtifacts": 1236
+  },
+  "remoteBranches": [
+    {
+      "name": "origin/agent-learning-studio",
+      "sha": "5eb8e26a2c873b9c2a41d7bd3d74e1ccf596032f"
+    },
+    {
+      "name": "origin/agent/fix-admin-dropdown-c032322",
+      "sha": "c032322fa4683db765ba809fc76500def61793e5"
+    },
+    {
+      "name": "origin/agent/simplify-login-719a2bb",
+      "sha": "719a2bbcbbe2f91ef4c60d138989b6e3cda9cfc1"
+    },
+    {
+      "name": "origin/backup",
+      "sha": "f6607ff89beaa6c649a811c2e00d8c25af9ff6e0"
+    },
+    {
+      "name": "origin/backup-backup",
+      "sha": "f6607ff89beaa6c649a811c2e00d8c25af9ff6e0"
+    },
+    {
+      "name": "origin/claude/add-execution-approval-layers-r3hDl",
+      "sha": "30ffe85efd90039fa38e399659dad4f95abd9eb7"
+    },
+    {
+      "name": "origin/claude/admin-connections-persist-zjy7g7",
+      "sha": "8ba80594d740c0c876e89ca2f90eeab0b36a78c2"
+    },
+    {
+      "name": "origin/claude/app-completion-audit-xu3vn0",
+      "sha": "6c07d7a86ea187cb8ed70b2eb21d3efe9454b1cb"
+    },
+    {
+      "name": "origin/claude/lexicon-authority-subsystem-gvnuqn",
+      "sha": "fbfa55d1571ad39deb2b63970c4b516049ae7538"
+    },
+    {
+      "name": "origin/claude/nexus-ui-completion-7ovp66",
+      "sha": "7199b001ff68d62fd64266aacc392f885053fc74"
+    },
+    {
+      "name": "origin/claude/trading-generate-strategy-j9cuvh",
+      "sha": "a6b2206aec5f3358408711df4dde186d59be40e3"
+    },
+    {
+      "name": "origin/claude/trading-intelligence-rebuild-4tfe4j",
+      "sha": "10e00cfe6a4bc4c1f140322d2e5fbb94847a8c19"
+    },
+    {
+      "name": "origin/claude/zar-unified-capabilities-br4lvc",
+      "sha": "88ffa817f0fd0f27f76b687d6ee2bc8b91af9cd1"
+    },
+    {
+      "name": "origin/claude/zed-claude-capabilities-k2m12i",
+      "sha": "7ed23350ad07ff8cac0a0d2d38067476764ccfdb"
+    },
+    {
+      "name": "origin/dependabot/npm_and_yarn/client/postcss-8.5.25",
+      "sha": "a7792e3c21caa6de0d5da5ea178c0b95a399d8f0"
+    },
+    {
+      "name": "origin/Emergent-nexus",
+      "sha": "c84844864537804b7a2e34415c774b1ba3403597"
+    },
+    {
+      "name": "origin/fix/lightning-gpt-oss-120b",
+      "sha": "17ba868134daf187c0f69e6647e6749c1a7cf4b0"
+    },
+    {
+      "name": "origin/fix/remove-paper-trade-open-cap",
+      "sha": "f24b5f80f95a036a05188fa123c23dc3ff9a65af"
+    },
+    {
+      "name": "origin/fix/trading-lightning-proposals-governance",
+      "sha": "3161e78ef4bd7f3887a0aba3696ef199366a8c12"
+    },
+    {
+      "name": "origin/fix/trading-lightning-proposals-governance-latest",
+      "sha": "68afc24003fb236ccb3d6de1c5719a343f99fad0"
+    },
+    {
+      "name": "origin/frozen-backup",
+      "sha": "2a95024fec4de5404e141dbd5f3e3118f4dc4f29"
+    },
+    {
+      "name": "origin/main",
+      "sha": "64b8addf93187d1cb8e964154b71449076669875"
+    },
+    {
+      "name": "origin/port/admin-connections-persist",
+      "sha": "5c7daf38c6690715e1dca54df9dc528ae6e04957"
+    },
+    {
+      "name": "origin/stabilize/db-backed-runtime-state",
+      "sha": "e8c93e8c56a1d2e44a747f5049ec146789c57e1e"
+    },
+    {
+      "name": "origin/stabilize/memory-ownership-boundary",
+      "sha": "50d97404848721d852a0ad28c5d6639fac27583b"
+    },
+    {
+      "name": "origin/stabilize/postgres-authoritative-store",
+      "sha": "0ab5aed5bebc758e97d30c7ad7da4307193351cb"
+    },
+    {
+      "name": "origin/stabilize/remove-dead-auth-user-route",
+      "sha": "c77cbaee9aa99026ffe0c7752b4d0dd71459ca49"
+    },
+    {
+      "name": "origin/stabilize/remove-runtime-data-current-tree",
+      "sha": "acee1921caae8a20dacd900ed8cdff96f34b1b4e"
+    },
+    {
+      "name": "origin/stabilize/zync-typescript-errors",
+      "sha": "d311503cfc475072a9e43bf781b5b70571c7b4c6"
+    },
+    {
+      "name": "origin/zed-final-backup",
+      "sha": "23249406f4b4db599653260036e20ea7b45b857f"
+    }
+  ],
+  "serverRoutes": [
+    {
+      "method": "DELETE",
+      "route": "/api/conversations/:id",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 214
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/conversations",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 226
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/knowledge/project-memory/:id",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 333
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/knowledge/scratchpad/:id",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 376
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/me/personalization/notes/:slug",
+      "file": "server/routes-modules/me.ts",
+      "line": 115
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/me/secrets/:id",
+      "file": "server/routes-modules/user-secrets.ts",
+      "line": 36
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/projects/:id/sources/:sourceId",
+      "file": "server/routes-modules/projects.ts",
+      "line": 98
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/research/documents/:id",
+      "file": "server/routes-modules/research.ts",
+      "line": 173
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/research/saved/:id",
+      "file": "server/routes-modules/research.ts",
+      "line": 206
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/trading/integrations/:provider",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 268
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/trading/market-data/keys/:vendor",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 55
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/workspaces/:workspace/desk/:id",
+      "file": "server/routes-modules/workspace-desk.ts",
+      "line": 55
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/access-policy",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 128
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/approval-queue",
+      "file": "server/routes-modules/approvals.ts",
+      "line": 78
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/env-validate",
+      "file": "server/routes-modules/env-validate.ts",
+      "line": 8
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/flows/:id",
+      "file": "server/routes-modules/flows.ts",
+      "line": 26
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/flows",
+      "file": "server/routes-modules/flows.ts",
+      "line": 20
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/integrations/firewall/status",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 119
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/integrations/github/readout",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 115
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/integrations/github/status",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 111
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/intelligence-core/status",
+      "file": "server/routes-modules/intelligence-core.ts",
+      "line": 87
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/knowledge/curation",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 164
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/knowledge/overview",
+      "file": "server/routes-modules/orchestrate-and-misc.ts",
+      "line": 84
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/login/email",
+      "file": "server/local-auth/routes-admin-otp.ts",
+      "line": 140
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/logs",
+      "file": "server/routes-modules/admin-logs.ts",
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/provider-diagnostics",
+      "file": "server/routes-modules/diagnostics.ts",
+      "line": 136
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/ruleset/structured",
+      "file": "server/routes-modules/ruleset.ts",
+      "line": 48
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/ruleset",
+      "file": "server/routes-modules/ruleset.ts",
+      "line": 39
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/security-log",
+      "file": "server/routes-modules/admin-logs.ts",
+      "line": 52
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/security-settings",
+      "file": "server/local-auth/routes-security-settings.ts",
+      "line": 22
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/settings",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 29
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/subsystems/omnichannel/search",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 252
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/subsystems/scheduler/actions",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 181
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/subsystems/status",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 37
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/system-status",
+      "file": "server/routes-modules/diagnostics.ts",
+      "line": 84
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/system-test",
+      "file": "server/routes-modules/orchestrate-and-misc.ts",
+      "line": 117
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/traces",
+      "file": "server/routes-modules/admin-logs.ts",
+      "line": 62
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/users",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 133
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/zync-coding-operator/github-branches",
+      "file": "server/routes-modules/zync-coding-operator.ts",
+      "line": 83
+    },
+    {
+      "method": "GET",
+      "route": "/api/admin/zync-coding-operator/status",
+      "file": "server/routes-modules/zync-coding-operator.ts",
+      "line": 18
+    },
+    {
+      "method": "GET",
+      "route": "/api/approval/notifications",
+      "file": "server/services/execution/execution-routes/approval.ts",
+      "line": 48
+    },
+    {
+      "method": "GET",
+      "route": "/api/auth/current-credentials",
+      "file": "server/local-auth/routes-credentials.ts",
+      "line": 96
+    },
+    {
+      "method": "GET",
+      "route": "/api/browser/session",
+      "file": "server/routes-modules/browser.ts",
+      "line": 19
+    },
+    {
+      "method": "GET",
+      "route": "/api/budget/deposits",
+      "file": "server/routes-modules/budget.ts",
+      "line": 81
+    },
+    {
+      "method": "GET",
+      "route": "/api/budget/report",
+      "file": "server/routes-modules/budget.ts",
+      "line": 155
+    },
+    {
+      "method": "GET",
+      "route": "/api/budget/state",
+      "file": "server/routes-modules/budget.ts",
+      "line": 49
+    },
+    {
+      "method": "GET",
+      "route": "/api/connect/categories",
+      "file": "server/routes-modules/connect.ts",
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "route": "/api/connect/gaps",
+      "file": "server/routes-modules/connect.ts",
+      "line": 30
+    },
+    {
+      "method": "GET",
+      "route": "/api/conversations/:id/files",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 261
+    },
+    {
+      "method": "GET",
+      "route": "/api/conversations/:id/messages",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 250
+    },
+    {
+      "method": "GET",
+      "route": "/api/conversations/:id",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 192
+    },
+    {
+      "method": "GET",
+      "route": "/api/conversations/archived",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 116
+    },
+    {
+      "method": "GET",
+      "route": "/api/conversations",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 106
+    },
+    {
+      "method": "GET",
+      "route": "/api/execution/human-bridge",
+      "file": "server/services/execution/execution-routes/human-bridge.ts",
+      "line": 14
+    },
+    {
+      "method": "GET",
+      "route": "/api/execution/tasks/:id",
+      "file": "server/services/execution/execution-routes/execution.ts",
+      "line": 104
+    },
+    {
+      "method": "GET",
+      "route": "/api/execution/tasks",
+      "file": "server/services/execution/execution-routes/execution.ts",
+      "line": 94
+    },
+    {
+      "method": "GET",
+      "route": "/api/flows/:id",
+      "file": "server/routes-modules/flows.ts",
+      "line": 103
+    },
+    {
+      "method": "GET",
+      "route": "/api/flows/runs/:runId/report",
+      "file": "server/routes-modules/flows.ts",
+      "line": 96
+    },
+    {
+      "method": "GET",
+      "route": "/api/flows/runs/:runId",
+      "file": "server/routes-modules/flows.ts",
+      "line": 90
+    },
+    {
+      "method": "GET",
+      "route": "/api/flows/runs",
+      "file": "server/routes-modules/flows.ts",
+      "line": 82
+    },
+    {
+      "method": "GET",
+      "route": "/api/flows/suggestions",
+      "file": "server/routes-modules/flow-suggestions.ts",
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "route": "/api/flows",
+      "file": "server/routes-modules/flows.ts",
+      "line": 65
+    },
+    {
+      "method": "GET",
+      "route": "/api/health/ai-host",
+      "file": "server/routes-modules/ai-host-test.ts",
+      "line": 113
+    },
+    {
+      "method": "GET",
+      "route": "/api/health",
+      "file": "server/index.ts",
+      "line": 153
+    },
+    {
+      "method": "GET",
+      "route": "/api/inbox/email",
+      "file": "server/routes-modules/email-inbox.ts",
+      "line": 7
+    },
+    {
+      "method": "GET",
+      "route": "/api/intake/context/:user_id",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 119
+    },
+    {
+      "method": "GET",
+      "route": "/api/intake/context/me",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 108
+    },
+    {
+      "method": "GET",
+      "route": "/api/intake/contexts",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 129
+    },
+    {
+      "method": "GET",
+      "route": "/api/intake/messaging/compatibility",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 264
+    },
+    {
+      "method": "GET",
+      "route": "/api/intake/recent",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 96
+    },
+    {
+      "method": "GET",
+      "route": "/api/intake/voice/contract",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 296
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge-ingestion/graph",
+      "file": "server/routes-modules/knowledge-ingestion.ts",
+      "line": 45
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge-ingestion/indexes",
+      "file": "server/routes-modules/knowledge-ingestion.ts",
+      "line": 53
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/context",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 80
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/core-memory",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 246
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/curation/latest",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 129
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/personal-base",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 187
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/project-memory",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 178
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/scratchpad",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 347
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/search",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 110
+    },
+    {
+      "method": "GET",
+      "route": "/api/knowledge/voice-memory",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 206
+    },
+    {
+      "method": "GET",
+      "route": "/api/learning/paths/:id",
+      "file": "server/routes-modules/learning.ts",
+      "line": 114
+    },
+    {
+      "method": "GET",
+      "route": "/api/learning/paths",
+      "file": "server/routes-modules/learning.ts",
+      "line": 59
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/authorities",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 133
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/candidates",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 176
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/communities/:communityId/search",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 116
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/domains/:domainId/search",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 108
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/domains",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 100
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/overview",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 185
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/related",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 141
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/resolve-phrase",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 41
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/resolve",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 31
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/search",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 90
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/suggest",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 80
+    },
+    {
+      "method": "GET",
+      "route": "/api/lexicon/user-vocabulary",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 124
+    },
+    {
+      "method": "GET",
+      "route": "/api/me/memory/graph",
+      "file": "server/routes-modules/memory-upload.ts",
+      "line": 195
+    },
+    {
+      "method": "GET",
+      "route": "/api/me/personalization/notes/:slug",
+      "file": "server/routes-modules/me.ts",
+      "line": 80
+    },
+    {
+      "method": "GET",
+      "route": "/api/me/personalization/notes",
+      "file": "server/routes-modules/me.ts",
+      "line": 72
+    },
+    {
+      "method": "GET",
+      "route": "/api/me/secrets",
+      "file": "server/routes-modules/user-secrets.ts",
+      "line": 16
+    },
+    {
+      "method": "GET",
+      "route": "/api/me",
+      "file": "server/routes-modules/me.ts",
+      "line": 26
+    },
+    {
+      "method": "GET",
+      "route": "/api/operational/defer",
+      "file": "server/services/execution/execution-routes/operational.ts",
+      "line": 123
+    },
+    {
+      "method": "GET",
+      "route": "/api/operational/memory",
+      "file": "server/services/execution/execution-routes/operational.ts",
+      "line": 33
+    },
+    {
+      "method": "GET",
+      "route": "/api/orchestrate/status",
+      "file": "server/routes-modules/orchestrate-and-misc.ts",
+      "line": 52
+    },
+    {
+      "method": "GET",
+      "route": "/api/projects/:id",
+      "file": "server/routes-modules/projects.ts",
+      "line": 40
+    },
+    {
+      "method": "GET",
+      "route": "/api/projects",
+      "file": "server/routes-modules/projects.ts",
+      "line": 22
+    },
+    {
+      "method": "GET",
+      "route": "/api/research/documents",
+      "file": "server/routes-modules/research.ts",
+      "line": 109
+    },
+    {
+      "method": "GET",
+      "route": "/api/research/saved",
+      "file": "server/routes-modules/research.ts",
+      "line": 183
+    },
+    {
+      "method": "GET",
+      "route": "/api/research/search/status",
+      "file": "server/routes-modules/research.ts",
+      "line": 55
+    },
+    {
+      "method": "GET",
+      "route": "/api/settings/personalization",
+      "file": "server/routes-modules/me.ts",
+      "line": 47
+    },
+    {
+      "method": "GET",
+      "route": "/api/system/runtime",
+      "file": "server/routes-modules/diagnostics.ts",
+      "line": 31
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/curriculum",
+      "file": "server/routes-modules/trading-knowledge.ts",
+      "line": 39
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/evaluation",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 23
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/execution/adapters",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 34
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/execution/polymarket/markets",
+      "file": "server/routes-modules/trading-polymarket.ts",
+      "line": 12
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/execution/polymarket/status",
+      "file": "server/routes-modules/trading-polymarket.ts",
+      "line": 8
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/execution/webull/status",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 43
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/external-paper",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 18
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/governance/decisions",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 214
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/governance/incidents",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 219
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/governance/paper-settings",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 190
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/integrations",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 201
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/knowledge/areas",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 152
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/knowledge",
+      "file": "server/routes-modules/trading-knowledge.ts",
+      "line": 47
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/live",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 52
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/market-data/alerts",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 165
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/market-data/keys",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 37
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/market-data/quote",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 106
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/market-data/signal",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 88
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/market-data/status",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 31
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/market-data/structure",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 131
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/paper-trades",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 28
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/performance",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 180
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/phase1/status",
+      "file": "server/routes-modules/trading-knowledge.ts",
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/progression",
+      "file": "server/routes-modules/trading-progression.ts",
+      "line": 23
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/qualification",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 47
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/storage-status",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 20
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/theses",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 14
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/tradovate/status",
+      "file": "server/routes-modules/trading-tradovate.ts",
+      "line": 25
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/webull/accounts",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 74
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/webull/orders",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 82
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/webull/positions",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 78
+    },
+    {
+      "method": "GET",
+      "route": "/api/trading/webull/status",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 48
+    },
+    {
+      "method": "GET",
+      "route": "/api/workspaces/:workspace/desk",
+      "file": "server/routes-modules/workspace-desk.ts",
+      "line": 21
+    },
+    {
+      "method": "GET",
+      "route": "/health",
+      "file": "server/index.ts",
+      "line": 39
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/admin/users/:id",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 145
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/budget/balances",
+      "file": "server/routes-modules/budget.ts",
+      "line": 127
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/budget/rule",
+      "file": "server/routes-modules/budget.ts",
+      "line": 105
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/budget/settings",
+      "file": "server/routes-modules/budget.ts",
+      "line": 141
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/budget/targets",
+      "file": "server/routes-modules/budget.ts",
+      "line": 116
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/conversations/:id",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 203
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/knowledge/project-memory/:id",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 318
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/trading/evaluation/config",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 27
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/trading/governance/paper-settings",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 195
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/trading/live/config",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 56
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/trading/progression/stages/:stageId",
+      "file": "server/routes-modules/trading-progression.ts",
+      "line": 32
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/trading/theses/:id",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 150
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/ai-host/test",
+      "file": "server/routes-modules/ai-host-test.ts",
+      "line": 180
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/approve/:id",
+      "file": "server/routes-modules/approvals.ts",
+      "line": 101
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/flows/:id/archive",
+      "file": "server/routes-modules/flows.ts",
+      "line": 53
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/flows/:id/duplicate",
+      "file": "server/routes-modules/flows.ts",
+      "line": 59
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/flows/:id/publish",
+      "file": "server/routes-modules/flows.ts",
+      "line": 47
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/flows",
+      "file": "server/routes-modules/flows.ts",
+      "line": 32
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/integrations/:provider/signin/cancel",
+      "file": "server/routes-modules/browser-signin.ts",
+      "line": 127
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/integrations/:provider/signin/handoff/finalize",
+      "file": "server/routes-modules/browser-signin.ts",
+      "line": 114
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/integrations/:provider/signin/handoff/ticket",
+      "file": "server/routes-modules/browser-signin.ts",
+      "line": 102
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/integrations/:provider/signin/start",
+      "file": "server/routes-modules/browser-signin.ts",
+      "line": 70
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/integrations/:provider/signin/verify",
+      "file": "server/routes-modules/browser-signin.ts",
+      "line": 88
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/integrations/email/test",
+      "file": "server/routes-modules/integration-test.ts",
+      "line": 27
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/login/request-code",
+      "file": "server/local-auth/routes-admin-otp.ts",
+      "line": 34
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/login/verify-code",
+      "file": "server/local-auth/routes-admin-otp.ts",
+      "line": 62
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/reject/:id",
+      "file": "server/routes-modules/approvals.ts",
+      "line": 151
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/ruleset/structured",
+      "file": "server/routes-modules/ruleset.ts",
+      "line": 78
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/ruleset",
+      "file": "server/routes-modules/ruleset.ts",
+      "line": 62
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/security-settings",
+      "file": "server/local-auth/routes-security-settings.ts",
+      "line": 40
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/settings/app/reset",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 44
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/settings/approvals/reset",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 92
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/settings/voice/reset",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 74
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/drafting/voice",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 165
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/inbox/inspect",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 91
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/meeting/follow-up",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 108
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/omnichannel/append",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 243
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/orchestrator/run",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 283
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/priority/classify",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 128
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/scheduler/actions/:id/cancel",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 210
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/scheduler/actions",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 194
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/scheduler/tick",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 227
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/scheduling/prepare",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 145
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/subsystems/self-repair/execute",
+      "file": "server/routes-modules/admin-subsystems.ts",
+      "line": 273
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/users",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 137
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/verify-challenge",
+      "file": "server/local-auth/routes-credentials.ts",
+      "line": 29
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/zync-coding-operator/code-search",
+      "file": "server/routes-modules/zync-coding-operator.ts",
+      "line": 41
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/zync-coding-operator/github-backup/refresh",
+      "file": "server/routes-modules/zync-coding-operator.ts",
+      "line": 95
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/zync-coding-operator/impact-review",
+      "file": "server/routes-modules/zync-coding-operator.ts",
+      "line": 54
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/zync-coding-operator/repo-scan",
+      "file": "server/routes-modules/zync-coding-operator.ts",
+      "line": 31
+    },
+    {
+      "method": "POST",
+      "route": "/api/admin/zync-coding-operator/verify",
+      "file": "server/routes-modules/zync-coding-operator.ts",
+      "line": 67
+    },
+    {
+      "method": "POST",
+      "route": "/api/approval/decide",
+      "file": "server/services/execution/execution-routes/approval.ts",
+      "line": 25
+    },
+    {
+      "method": "POST",
+      "route": "/api/approval/notifications/:id/read",
+      "file": "server/services/execution/execution-routes/approval.ts",
+      "line": 65
+    },
+    {
+      "method": "POST",
+      "route": "/api/approval/sweep",
+      "file": "server/services/execution/execution-routes/approval.ts",
+      "line": 16
+    },
+    {
+      "method": "POST",
+      "route": "/api/auth/update-credentials",
+      "file": "server/local-auth/routes-credentials.ts",
+      "line": 51
+    },
+    {
+      "method": "POST",
+      "route": "/api/browser/navigate",
+      "file": "server/routes-modules/browser.ts",
+      "line": 28
+    },
+    {
+      "method": "POST",
+      "route": "/api/budget/allocate",
+      "file": "server/routes-modules/budget.ts",
+      "line": 62
+    },
+    {
+      "method": "POST",
+      "route": "/api/budget/deposits",
+      "file": "server/routes-modules/budget.ts",
+      "line": 86
+    },
+    {
+      "method": "POST",
+      "route": "/api/client-log",
+      "file": "server/routes-modules/admin-logs.ts",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "route": "/api/connect/gaps/:id/dismiss",
+      "file": "server/routes-modules/connect.ts",
+      "line": 39
+    },
+    {
+      "method": "POST",
+      "route": "/api/context/assess",
+      "file": "server/routes-modules/knowledge-ingestion.ts",
+      "line": 83
+    },
+    {
+      "method": "POST",
+      "route": "/api/conversations/:id/archive",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 168
+    },
+    {
+      "method": "POST",
+      "route": "/api/conversations/:id/restore",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 180
+    },
+    {
+      "method": "POST",
+      "route": "/api/conversations/:id/upload",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 272
+    },
+    {
+      "method": "POST",
+      "route": "/api/conversations",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 128
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/approve",
+      "file": "server/services/execution/execution-routes/execution.ts",
+      "line": 57
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/dispatch",
+      "file": "server/services/execution/execution-routes/execution.ts",
+      "line": 78
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/human-bridge/:id/abandon",
+      "file": "server/services/execution/execution-routes/human-bridge.ts",
+      "line": 56
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/human-bridge/:id/claim",
+      "file": "server/services/execution/execution-routes/human-bridge.ts",
+      "line": 23
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/human-bridge/:id/complete",
+      "file": "server/services/execution/execution-routes/human-bridge.ts",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/human-bridge/:id/requeue",
+      "file": "server/services/execution/execution-routes/human-bridge.ts",
+      "line": 70
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/prepare",
+      "file": "server/services/execution/execution-routes/execution.ts",
+      "line": 18
+    },
+    {
+      "method": "POST",
+      "route": "/api/execution/preview",
+      "file": "server/services/execution/execution-routes/execution.ts",
+      "line": 44
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/:id/run",
+      "file": "server/routes-modules/flows.ts",
+      "line": 111
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/runs/:runId/approve",
+      "file": "server/routes-modules/flows.ts",
+      "line": 126
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/runs/:runId/cancel",
+      "file": "server/routes-modules/flows.ts",
+      "line": 165
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/runs/:runId/reject",
+      "file": "server/routes-modules/flows.ts",
+      "line": 139
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/runs/:runId/resume",
+      "file": "server/routes-modules/flows.ts",
+      "line": 152
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/runs/:runId/retry",
+      "file": "server/routes-modules/flows.ts",
+      "line": 159
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/suggestions/:id/accept",
+      "file": "server/routes-modules/flow-suggestions.ts",
+      "line": 30
+    },
+    {
+      "method": "POST",
+      "route": "/api/flows/suggestions/:id/dismiss",
+      "file": "server/routes-modules/flow-suggestions.ts",
+      "line": 43
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/command",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 57
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/context/active",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 144
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/email",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 180
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/messaging/send",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 246
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/messaging",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 227
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/preview",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 80
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/sms",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 208
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/voice",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 274
+    },
+    {
+      "method": "POST",
+      "route": "/api/intake/webhook",
+      "file": "server/services/intake/registerIntakeRoutes.ts",
+      "line": 159
+    },
+    {
+      "method": "POST",
+      "route": "/api/intelligence/documents/query",
+      "file": "server/routes-modules/intelligence-core.ts",
+      "line": 73
+    },
+    {
+      "method": "POST",
+      "route": "/api/intelligence/plan",
+      "file": "server/routes-modules/intelligence-core.ts",
+      "line": 21
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge-ingestion/conflicts/:id/resolve",
+      "file": "server/routes-modules/knowledge-ingestion.ts",
+      "line": 72
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge-ingestion/import",
+      "file": "server/routes-modules/knowledge-ingestion.ts",
+      "line": 36
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge-ingestion/promote",
+      "file": "server/routes-modules/knowledge-ingestion.ts",
+      "line": 61
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge/curation/evaluate",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 150
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge/curation/review",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 138
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge/project-memory",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 270
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge/scratchpad",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 356
+    },
+    {
+      "method": "POST",
+      "route": "/api/knowledge/voice-memory/correction",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 228
+    },
+    {
+      "method": "POST",
+      "route": "/api/learning/paths/:id/advance",
+      "file": "server/routes-modules/learning.ts",
+      "line": 151
+    },
+    {
+      "method": "POST",
+      "route": "/api/learning/paths/:id/approve",
+      "file": "server/routes-modules/learning.ts",
+      "line": 137
+    },
+    {
+      "method": "POST",
+      "route": "/api/learning/paths/:id/revise",
+      "file": "server/routes-modules/learning.ts",
+      "line": 124
+    },
+    {
+      "method": "POST",
+      "route": "/api/learning/paths/:pathId/lessons/:lessonId/attempts",
+      "file": "server/routes-modules/learning.ts",
+      "line": 160
+    },
+    {
+      "method": "POST",
+      "route": "/api/learning/paths/blueprint",
+      "file": "server/routes-modules/learning.ts",
+      "line": 67
+    },
+    {
+      "method": "POST",
+      "route": "/api/lexicon/candidates",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 151
+    },
+    {
+      "method": "POST",
+      "route": "/api/lexicon/entries/:id/confirm",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 193
+    },
+    {
+      "method": "POST",
+      "route": "/api/lexicon/entries/:id/deprecate",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 221
+    },
+    {
+      "method": "POST",
+      "route": "/api/lexicon/entries/:id/reject",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 207
+    },
+    {
+      "method": "POST",
+      "route": "/api/lexicon/entries/merge",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 236
+    },
+    {
+      "method": "POST",
+      "route": "/api/lexicon/resolve-meaning",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 51
+    },
+    {
+      "method": "POST",
+      "route": "/api/lexicon/resolve-text",
+      "file": "server/routes-modules/lexicon.ts",
+      "line": 66
+    },
+    {
+      "method": "POST",
+      "route": "/api/login",
+      "file": "server/local-auth/routes-login.ts",
+      "line": 24
+    },
+    {
+      "method": "POST",
+      "route": "/api/logout",
+      "file": "server/local-auth/routes-login.ts",
+      "line": 98
+    },
+    {
+      "method": "POST",
+      "route": "/api/me/avatar",
+      "file": "server/routes-modules/me.ts",
+      "line": 129
+    },
+    {
+      "method": "POST",
+      "route": "/api/me/memory/merge-objects",
+      "file": "server/routes-modules/memory-upload.ts",
+      "line": 86
+    },
+    {
+      "method": "POST",
+      "route": "/api/me/memory/upload",
+      "file": "server/routes-modules/memory-upload.ts",
+      "line": 208
+    },
+    {
+      "method": "POST",
+      "route": "/api/me/personalization/notes",
+      "file": "server/routes-modules/me.ts",
+      "line": 94
+    },
+    {
+      "method": "POST",
+      "route": "/api/me/secrets",
+      "file": "server/routes-modules/user-secrets.ts",
+      "line": 24
+    },
+    {
+      "method": "POST",
+      "route": "/api/operational/defer",
+      "file": "server/services/execution/execution-routes/operational.ts",
+      "line": 110
+    },
+    {
+      "method": "POST",
+      "route": "/api/operational/follow-up/tick",
+      "file": "server/services/execution/execution-routes/operational.ts",
+      "line": 77
+    },
+    {
+      "method": "POST",
+      "route": "/api/operational/follow-up",
+      "file": "server/services/execution/execution-routes/operational.ts",
+      "line": 53
+    },
+    {
+      "method": "POST",
+      "route": "/api/operational/memory",
+      "file": "server/services/execution/execution-routes/operational.ts",
+      "line": 20
+    },
+    {
+      "method": "POST",
+      "route": "/api/operational/orchestrate",
+      "file": "server/services/execution/execution-routes/operational.ts",
+      "line": 86
+    },
+    {
+      "method": "POST",
+      "route": "/api/orchestrate",
+      "file": "server/routes-modules/orchestrate-and-misc.ts",
+      "line": 33
+    },
+    {
+      "method": "POST",
+      "route": "/api/projects/:id/sources",
+      "file": "server/routes-modules/projects.ts",
+      "line": 66
+    },
+    {
+      "method": "POST",
+      "route": "/api/projects",
+      "file": "server/routes-modules/projects.ts",
+      "line": 31
+    },
+    {
+      "method": "POST",
+      "route": "/api/research/act",
+      "file": "server/routes-modules/research.ts",
+      "line": 61
+    },
+    {
+      "method": "POST",
+      "route": "/api/research/document",
+      "file": "server/routes-modules/research.ts",
+      "line": 87
+    },
+    {
+      "method": "POST",
+      "route": "/api/research/documents/upload",
+      "file": "server/routes-modules/research.ts",
+      "line": 135
+    },
+    {
+      "method": "POST",
+      "route": "/api/research/documents",
+      "file": "server/routes-modules/research.ts",
+      "line": 117
+    },
+    {
+      "method": "POST",
+      "route": "/api/research/saved",
+      "file": "server/routes-modules/research.ts",
+      "line": 192
+    },
+    {
+      "method": "POST",
+      "route": "/api/research/search",
+      "file": "server/routes-modules/research.ts",
+      "line": 44
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/backtest",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 66
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/evaluation/reset",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 42
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/evaluation/start",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 38
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/governance/review",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 185
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/integrations/:provider/test",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 240
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/integrations/:provider",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 209
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/knowledge/areas/:areaId/assess",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 162
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/knowledge/import",
+      "file": "server/routes-modules/trading-knowledge.ts",
+      "line": 55
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/knowledge/upload",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 55
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/live/kill-switch",
+      "file": "server/routes-modules/trading-stages.ts",
+      "line": 66
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/market-data/keys",
+      "file": "server/routes-modules/trading-market-data.ts",
+      "line": 43
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/paper-trades/:id/close",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 152
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/paper-trades/authorize",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 34
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/paper-trades/resolve",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 147
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/paper-trades",
+      "file": "server/routes-modules/trading-paper.ts",
+      "line": 72
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/progression/advance/:stageId",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 190
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/progression/assess/:stageId",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 173
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/progression/current/:stageId",
+      "file": "server/routes-modules/trading-progression.ts",
+      "line": 72
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/progression/unlock/:stageId",
+      "file": "server/routes-modules/trading-progression.ts",
+      "line": 55
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/scanner/evaluate",
+      "file": "server/routes-modules/trading-knowledge.ts",
+      "line": 69
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/strategies/generate",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 19
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/strategies/propose",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 45
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/strategies/recommend-symbol",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 90
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/theses/:id/archive",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 160
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/theses/:id/governance",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 143
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/theses",
+      "file": "server/routes-modules/trading-strategy.ts",
+      "line": 102
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/tradovate/credentials",
+      "file": "server/routes-modules/trading-tradovate.ts",
+      "line": 29
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/tradovate/order",
+      "file": "server/routes-modules/trading-tradovate.ts",
+      "line": 55
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/webull/credentials",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 52
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/webull/order",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 264
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/webull/paper-orders",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 145
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/webull/propose",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 86
+    },
+    {
+      "method": "POST",
+      "route": "/api/trading/webull/test",
+      "file": "server/routes-modules/trading-webull.ts",
+      "line": 69
+    },
+    {
+      "method": "POST",
+      "route": "/api/voice/transcribe",
+      "file": "server/routes-modules/orchestrate-and-misc.ts",
+      "line": 77
+    },
+    {
+      "method": "POST",
+      "route": "/api/workflow/classify",
+      "file": "server/services/execution/execution-routes/workflow.ts",
+      "line": 35
+    },
+    {
+      "method": "POST",
+      "route": "/api/workflow/draft",
+      "file": "server/services/execution/execution-routes/workflow.ts",
+      "line": 48
+    },
+    {
+      "method": "POST",
+      "route": "/api/workflow/inbox/inspect",
+      "file": "server/services/execution/execution-routes/workflow.ts",
+      "line": 18
+    },
+    {
+      "method": "POST",
+      "route": "/api/workflow/meeting-follow-up",
+      "file": "server/services/execution/execution-routes/workflow.ts",
+      "line": 92
+    },
+    {
+      "method": "POST",
+      "route": "/api/workflow/scheduling",
+      "file": "server/services/execution/execution-routes/workflow.ts",
+      "line": 70
+    },
+    {
+      "method": "POST",
+      "route": "/api/workspaces/:workspace/desk",
+      "file": "server/routes-modules/workspace-desk.ts",
+      "line": 34
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/flows/:id",
+      "file": "server/routes-modules/flows.ts",
+      "line": 41
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/settings/app",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 34
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/settings/approvals",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 83
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/settings/integrations",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 101
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/settings/personalization",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 53
+    },
+    {
+      "method": "PUT",
+      "route": "/api/admin/settings/voice",
+      "file": "server/routes-modules/admin-settings.ts",
+      "line": 65
+    },
+    {
+      "method": "PUT",
+      "route": "/api/conversations/:id/project",
+      "file": "server/routes-modules/projects.ts",
+      "line": 117
+    },
+    {
+      "method": "PUT",
+      "route": "/api/knowledge/core-memory/:key",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 255
+    },
+    {
+      "method": "PUT",
+      "route": "/api/knowledge/personal-base",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 291
+    },
+    {
+      "method": "PUT",
+      "route": "/api/knowledge/voice-memory",
+      "file": "server/routes-modules/knowledge.ts",
+      "line": 215
+    },
+    {
+      "method": "PUT",
+      "route": "/api/projects/:id/instructions",
+      "file": "server/routes-modules/projects.ts",
+      "line": 52
+    },
+    {
+      "method": "PUT",
+      "route": "/api/settings/personalization",
+      "file": "server/routes-modules/me.ts",
+      "line": 56
+    }
+  ],
+  "clientRoutes": [
+    {
+      "route": "/",
+      "file": "client/src/App.tsx",
+      "line": 102
+    },
+    {
+      "route": "/admin",
+      "file": "client/src/App.tsx",
+      "line": 136
+    },
+    {
+      "route": "/budget/",
+      "file": "client/src/App.tsx",
+      "line": 164
+    },
+    {
+      "route": "/budget",
+      "file": "client/src/App.tsx",
+      "line": 160
+    },
+    {
+      "route": "/chat/:id?",
+      "file": "client/src/App.tsx",
+      "line": 106
+    },
+    {
+      "route": "/connect",
+      "file": "client/src/App.tsx",
+      "line": 217
+    },
+    {
+      "route": "/decisions/:id",
+      "file": "client/src/App.tsx",
+      "line": 250
+    },
+    {
+      "route": "/decisions",
+      "file": "client/src/App.tsx",
+      "line": 246
+    },
+    {
+      "route": "/discovery",
+      "file": "client/src/App.tsx",
+      "line": 258
+    },
+    {
+      "route": "/flows/:id",
+      "file": "client/src/App.tsx",
+      "line": 196
+    },
+    {
+      "route": "/flows",
+      "file": "client/src/App.tsx",
+      "line": 192
+    },
+    {
+      "route": "/galaxy/:id",
+      "file": "client/src/App.tsx",
+      "line": 128
+    },
+    {
+      "route": "/history/:runId",
+      "file": "client/src/App.tsx",
+      "line": 180
+    },
+    {
+      "route": "/history",
+      "file": "client/src/App.tsx",
+      "line": 184
+    },
+    {
+      "route": "/home",
+      "file": "client/src/App.tsx",
+      "line": 116
+    },
+    {
+      "route": "/identity",
+      "file": "client/src/App.tsx",
+      "line": 221
+    },
+    {
+      "route": "/inbox",
+      "file": "client/src/App.tsx",
+      "line": 188
+    },
+    {
+      "route": "/knowledge-map",
+      "file": "client/src/App.tsx",
+      "line": 132
+    },
+    {
+      "route": "/knowledge",
+      "file": "client/src/App.tsx",
+      "line": 225
+    },
+    {
+      "route": "/learning/paths/:id",
+      "file": "client/src/App.tsx",
+      "line": 237
+    },
+    {
+      "route": "/learning/studio",
+      "file": "client/src/App.tsx",
+      "line": 233
+    },
+    {
+      "route": "/learning",
+      "file": "client/src/App.tsx",
+      "line": 242
+    },
+    {
+      "route": "/nexys/:nodeId/:view?",
+      "file": "client/src/App.tsx",
+      "line": 124
+    },
+    {
+      "route": "/nexys",
+      "file": "client/src/App.tsx",
+      "line": 120
+    },
+    {
+      "route": "/projects/:id",
+      "file": "client/src/App.tsx",
+      "line": 229
+    },
+    {
+      "route": "/projects",
+      "file": "client/src/App.tsx",
+      "line": 209
+    },
+    {
+      "route": "/runs/:runId",
+      "file": "client/src/App.tsx",
+      "line": 205
+    },
+    {
+      "route": "/runs",
+      "file": "client/src/App.tsx",
+      "line": 201
+    },
+    {
+      "route": "/settings",
+      "file": "client/src/App.tsx",
+      "line": 213
+    },
+    {
+      "route": "/timeline",
+      "file": "client/src/App.tsx",
+      "line": 254
+    },
+    {
+      "route": "/trading/",
+      "file": "client/src/App.tsx",
+      "line": 150
+    },
+    {
+      "route": "/trading",
+      "file": "client/src/App.tsx",
+      "line": 140
+    },
+    {
+      "route": "/workspace",
+      "file": "client/src/App.tsx",
+      "line": 172
+    },
+    {
+      "route": "/workspaces/:workspace/tools/:id",
+      "file": "client/src/App.tsx",
+      "line": 168
+    },
+    {
+      "route": "/workspaces/:workspace",
+      "file": "client/src/App.tsx",
+      "line": 176
+    }
+  ],
+  "databaseTables": [
+    {
+      "table": "analytics",
+      "file": "shared/SystemSchema.ts",
+      "line": 111
+    },
+    {
+      "table": "cache_storage",
+      "file": "shared/SystemSchema.ts",
+      "line": 90
+    },
+    {
+      "table": "chat_sessions",
+      "file": "shared/SessionsSchema.ts",
+      "line": 8
+    },
+    {
+      "table": "conversations",
+      "file": "shared/ConversationsSchema.ts",
+      "line": 7
+    },
+    {
+      "table": "core_memory",
+      "file": "shared/MemorySchema.ts",
+      "line": 8
+    },
+    {
+      "table": "file_storage",
+      "file": "shared/SystemSchema.ts",
+      "line": 21
+    },
+    {
+      "table": "files",
+      "file": "shared/FilesSchema.ts",
+      "line": 7
+    },
+    {
+      "table": "knowledge_base",
+      "file": "shared/SystemSchema.ts",
+      "line": 63
+    },
+    {
+      "table": "learning_state",
+      "file": "shared/LearningSchema.ts",
+      "line": 5
+    },
+    {
+      "table": "memory_index",
+      "file": "shared/SystemSchema.ts",
+      "line": 39
+    },
+    {
+      "table": "messages",
+      "file": "shared/MessagesSchema.ts",
+      "line": 7
+    },
+    {
+      "table": "project_memory",
+      "file": "shared/MemorySchema.ts",
+      "line": 18
+    },
+    {
+      "table": "scratchpad_memory",
+      "file": "shared/MemorySchema.ts",
+      "line": 30
+    },
+    {
+      "table": "users",
+      "file": "shared/UsersSchema.ts",
+      "line": 6
+    }
+  ],
+  "filesystemWriters": [
+    {
+      "operation": "appendFile",
+      "file": "server/agents/business-manager/BusinessManagerAgent.ts",
+      "line": 171
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/agents/business-manager/BusinessManagerAgent.ts",
+      "line": 193
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/agents/finance/FinanceAgent.ts",
+      "line": 418
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/agents/finance/FinanceAgent.ts",
+      "line": 441
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/agents/intelligence/IntelligenceAgent.ts",
+      "line": 312
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/agents/operations/OperationsAgent.ts",
+      "line": 274
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/agents/operations/OperationsAgent.ts",
+      "line": 289
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/agents/operations/OperationsAgent.ts",
+      "line": 309
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/orchestrator/manager-agent/routing-log.ts",
+      "line": 33
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/routes-modules/approvals.ts",
+      "line": 48
+    },
+    {
+      "operation": "unlink",
+      "file": "server/routes-modules/memory-upload.ts",
+      "line": 252
+    },
+    {
+      "operation": "unlink",
+      "file": "server/routes-modules/research.ts",
+      "line": 152
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/routes-modules/ruleset.ts",
+      "line": 33
+    },
+    {
+      "operation": "unlink",
+      "file": "server/routes-modules/trading-training.ts",
+      "line": 92
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 39
+    },
+    {
+      "operation": "rm",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 42
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/liveExecutionVerification.ts",
+      "line": 295
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 231
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 354
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 355
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 356
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 357
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 358
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 359
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/scripts/reparseFoundationMemoryToGraph.ts",
+      "line": 360
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/admin-settings/io.ts",
+      "line": 15
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/approval/ApprovalNotificationService.ts",
+      "line": 183
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/auth/AdminMagicLinkService.ts",
+      "line": 249
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/BrowserSessionStore.ts",
+      "line": 57
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/budget/BudgetStore.ts",
+      "line": 103
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/services/budget/BudgetStore.ts",
+      "line": 252
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/budget/BudgetStore.ts",
+      "line": 74
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/ChromaService.ts",
+      "line": 105
+    },
+    {
+      "operation": "rename",
+      "file": "server/services/ChromaService.ts",
+      "line": 142
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/EmailInboxService.ts",
+      "line": 144
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/execution/DigitalExecutionService.ts",
+      "line": 324
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/execution/ExecutionApprovalHandler.ts",
+      "line": 152
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/execution/HumanExecutionBridge.ts",
+      "line": 187
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/execution/TaskLifecycleManager.ts",
+      "line": 285
+    },
+    {
+      "operation": "unlink",
+      "file": "server/services/fallbackStorage.ts",
+      "line": 146
+    },
+    {
+      "operation": "unlink",
+      "file": "server/services/fallbackStorage.ts",
+      "line": 177
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/fallbackStorage.ts",
+      "line": 70
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/fallbackStorage.ts",
+      "line": 93
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/fileProcessor.test.ts",
+      "line": 15
+    },
+    {
+      "operation": "rm",
+      "file": "server/services/fileProcessor.test.ts",
+      "line": 29
+    },
+    {
+      "operation": "unlink",
+      "file": "server/services/fileProcessor.ts",
+      "line": 276
+    },
+    {
+      "operation": "unlink",
+      "file": "server/services/FileSessionStore.ts",
+      "line": 101
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/FileSessionStore.ts",
+      "line": 50
+    },
+    {
+      "operation": "unlink",
+      "file": "server/services/FileSessionStore.ts",
+      "line": 61
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 739
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 761
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/FlowStore.ts",
+      "line": 40
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/FlowSuggestionStore.ts",
+      "line": 39
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/intake/ChannelContextManager.ts",
+      "line": 180
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/intake/external-command-gateway/log.ts",
+      "line": 27
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/IntegrationGapStore.ts",
+      "line": 36
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/knowledge-ingestion/KnowledgeIngestionService.ts",
+      "line": 689
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/KnowledgeCurationEngine.ts",
+      "line": 727
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/services/KnowledgeCurationEngine.ts",
+      "line": 728
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/learning/LearningStore.ts",
+      "line": 88
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/lexicon-authority/store.ts",
+      "line": 54
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/object-memory/store.ts",
+      "line": 101
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/object-memory/store.ts",
+      "line": 203
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/services/object-memory/store.ts",
+      "line": 273
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/operational/DeferredActionScheduler.ts",
+      "line": 151
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/operational/OmnichannelMemoryService.ts",
+      "line": 126
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/ProjectFilingStore.ts",
+      "line": 59
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/services/RuntimeLogger.ts",
+      "line": 37
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/services/SecurityAudit.ts",
+      "line": 48
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/TradingProgressionStore.ts",
+      "line": 80
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/UserPersonalizationCorpus.ts",
+      "line": 232
+    },
+    {
+      "operation": "unlink",
+      "file": "server/services/UserPersonalizationCorpus.ts",
+      "line": 248
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/UserPersonalizationStore.ts",
+      "line": 60
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/UserPersonalizationStore.ts",
+      "line": 73
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/services/UserSecretsStore.ts",
+      "line": 57
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/zcos/trading/TradingIntegrationsStore.ts",
+      "line": 115
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/zcos/trading/tradingPersistence.ts",
+      "line": 145
+    },
+    {
+      "operation": "writeFile",
+      "file": "server/zcos/trading/TradingStore.ts",
+      "line": 108
+    },
+    {
+      "operation": "appendFile",
+      "file": "server/zcos/trading/TradingStore.ts",
+      "line": 711
+    }
+  ],
+  "stores": [
+    "server/services/AdminSettingsStore.ts",
+    "server/services/BrowserSessionStore.ts",
+    "server/services/FileSessionStore.ts",
+    "server/services/FlowStore.ts",
+    "server/services/FlowSuggestionStore.ts",
+    "server/services/FoundationMemoryService.ts",
+    "server/services/IntegrationGapStore.ts",
+    "server/services/ProjectFilingStore.ts",
+    "server/services/TradingProgressionStore.ts",
+    "server/services/UserPersonalizationStore.ts",
+    "server/services/UserSecretsStore.ts",
+    "server/services/WorkspaceMemoryService.ts",
+    "server/services/admin-settings/dbPersistence.ts",
+    "server/services/budget/BudgetStore.ts",
+    "server/services/learning/LearningStore.ts",
+    "server/services/operational/OmnichannelMemoryService.ts",
+    "server/zcos/trading/MarketDataKeysStore.ts",
+    "server/zcos/trading/TradingIntegrationsStore.ts",
+    "server/zcos/trading/TradingStore.ts",
+    "server/zcos/trading/tradingPersistence.ts",
+    "shared/ConversationsSchema.ts",
+    "shared/FilesSchema.ts",
+    "shared/LearningSchema.ts",
+    "shared/MemorySchema.ts",
+    "shared/MessagesSchema.ts",
+    "shared/SessionsSchema.ts",
+    "shared/SystemSchema.ts",
+    "shared/UsersSchema.ts"
+  ],
+  "providerAdapters": [
+    "client/src/components/admin/ProviderDiagnosticsCard.tsx",
+    "client/src/components/admin/sections/IntegrationsSection.tsx",
+    "client/src/components/admin/sections/integrations/CredentialSignInDialog.tsx",
+    "client/src/components/admin/sections/integrations/shared.tsx",
+    "client/src/components/connect/IntegrationGapCard.tsx",
+    "client/src/nexys/scene/nexysDomainAdapter.ts",
+    "client/src/nexys/state/NexysProvider.tsx",
+    "server/core/providers/lightning-provider.ts",
+    "server/core/providers/provider-config.ts",
+    "server/core/providers/provider-executor.ts",
+    "server/core/providers/provider-helpers.ts",
+    "server/core/providers/provider-interface.ts",
+    "server/routes-modules/integration-test.ts",
+    "server/services/FirewallIntegrationService.ts",
+    "server/services/GitHubIntegrationService.ts",
+    "server/services/IntegrationGapEngine.ts",
+    "server/services/IntegrationGapStore.ts",
+    "server/services/ModelProviderService.ts",
+    "server/services/approval/AgentApprovalAdapter.ts",
+    "server/services/execution/HumanExecutionBridge.ts",
+    "server/services/execution/execution-routes/human-bridge.ts",
+    "server/services/intake/ExternalCommandGateway.ts",
+    "server/services/intake/MessagingBridge.ts",
+    "server/services/intake/VoiceCommandBridge.ts",
+    "server/services/intake/external-command-gateway/log.ts",
+    "server/services/intake/external-command-gateway/normalize.ts",
+    "server/services/intake/external-command-gateway/preview.ts",
+    "server/services/intake/external-command-gateway/types.ts",
+    "server/zcos/trading/ExecutionAdapterTypes.ts",
+    "server/zcos/trading/PolymarketUsBridge.ts",
+    "server/zcos/trading/TradingIntegrationsStore.ts",
+    "server/zcos/trading/TradovateBridge.ts",
+    "server/zcos/trading/WebullBridge.ts"
+  ],
+  "schedulers": [
+    {
+      "operation": "setTimeout",
+      "file": "server/core/providers/provider-helpers.ts",
+      "line": 25
+    },
+    {
+      "operation": "setInterval",
+      "file": "server/db.ts",
+      "line": 119
+    },
+    {
+      "operation": "setInterval",
+      "file": "server/db.ts",
+      "line": 129
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/db.ts",
+      "line": 54
+    },
+    {
+      "operation": "startKnowledgeCurationScheduler",
+      "file": "server/index.ts",
+      "line": 262
+    },
+    {
+      "operation": "startTradeResolverScheduler",
+      "file": "server/index.ts",
+      "line": 272
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/orchestrator/subagents/SubagentOrchestrator.ts",
+      "line": 126
+    },
+    {
+      "operation": "setInterval",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 70
+    },
+    {
+      "operation": "setInterval",
+      "file": "server/services/browserAuth/liveHandoffSocket.ts",
+      "line": 44
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/services/FirewallIntegrationService.ts",
+      "line": 30
+    },
+    {
+      "operation": "startKnowledgeCurationScheduler",
+      "file": "server/services/KnowledgeCurationEngine.ts",
+      "line": 732
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/services/KnowledgeCurationEngine.ts",
+      "line": 755
+    },
+    {
+      "operation": "setInterval",
+      "file": "server/services/KnowledgeCurationEngine.ts",
+      "line": 758
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/services/SelfRepairService.ts",
+      "line": 89
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/services/WebContentService.ts",
+      "line": 255
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/MarketDataService.ts",
+      "line": 53
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/MarketDataService.ts",
+      "line": 70
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/PolymarketUsBridge.ts",
+      "line": 15
+    },
+    {
+      "operation": "startTradeResolverScheduler",
+      "file": "server/zcos/trading/TradeResolverScheduler.ts",
+      "line": 43
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/TradeResolverScheduler.ts",
+      "line": 54
+    },
+    {
+      "operation": "setInterval",
+      "file": "server/zcos/trading/TradeResolverScheduler.ts",
+      "line": 55
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/TradingIntegrationsStore.ts",
+      "line": 292
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/TradovateBridge.ts",
+      "line": 130
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/TradovateBridge.ts",
+      "line": 89
+    },
+    {
+      "operation": "setTimeout",
+      "file": "server/zcos/trading/WebullShared.ts",
+      "line": 202
+    }
+  ],
+  "promptSites": [
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/business-manager/BusinessManagerAgent.ts",
+      "line": 113
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/business-manager/BusinessManagerAgent.ts",
+      "line": 128
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/finance/FinanceAgent.ts",
+      "line": 313
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/finance/FinanceAgent.ts",
+      "line": 362
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/agents/finance/SKILL.md",
+      "line": 62
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/intelligence/IntelligenceAgent.ts",
+      "line": 157
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/intelligence/IntelligenceAgent.ts",
+      "line": 182
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/operations/OperationsAgent.ts",
+      "line": 145
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/agents/operations/OperationsAgent.ts",
+      "line": 99
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/core/providers/lightning-provider.ts",
+      "line": 127
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/core/providers/lightning-provider.ts",
+      "line": 128
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/lightning-provider.ts",
+      "line": 139
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/lightning-provider.ts",
+      "line": 145
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/lightning-provider.ts",
+      "line": 155
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/core/providers/provider-executor.ts",
+      "line": 89
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/core/providers/provider-executor.ts",
+      "line": 92
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/provider-helpers.ts",
+      "line": 3
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/provider-helpers.ts",
+      "line": 4
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/provider-helpers.ts",
+      "line": 5
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/provider-helpers.ts",
+      "line": 8
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/provider-helpers.ts",
+      "line": 9
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/core/providers/provider-interface.ts",
+      "line": 51
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/core/providers/provider-interface.ts",
+      "line": 53
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/core/providers/provider-interface.ts",
+      "line": 60
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/core/providers/provider-interface.ts",
+      "line": 83
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/orchestrator/manager-agent/agent-selection.ts",
+      "line": 75
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/orchestrator/manager-agent/agent-selection.ts",
+      "line": 93
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/orchestrator/ManagerAgent.ts",
+      "line": 138
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/orchestrator/ManagerAgent.ts",
+      "line": 76
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/orchestrator/ManagerAgent.ts",
+      "line": 88
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/routes-modules/ai-host-test.ts",
+      "line": 106
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/routes-modules/conversations-crud.ts",
+      "line": 322
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/routes-modules/projects.ts",
+      "line": 50
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/routes-modules/projects.ts",
+      "line": 52
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/routes-modules/projects.ts",
+      "line": 57
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/routes-modules/projects.ts",
+      "line": 61
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 216
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 218
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 257
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 259
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 281
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 283
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/scripts/executionVerification.ts",
+      "line": 375
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/seeds/flows/learning-curve-destroyer.json",
+      "line": 37
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/admin-settings/mergeSettings.ts",
+      "line": 171
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/AdminSettingsStore.ts",
+      "line": 75
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 185
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 194
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 212
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 253
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 260
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 444
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/browserAuth/BrowserSignInService.ts",
+      "line": 49
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 100
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 209
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 215
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 222
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 252
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 335
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 501
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 516
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 535
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 536
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 542
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 557
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 558
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 562
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 568
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 576
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 582
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 609
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 612
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 614
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 621
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 622
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 627
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 628
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 630
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 635
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 636
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 637
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 638
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 652
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 656
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ChatExecutionService.ts",
+      "line": 658
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/execution/TaskExecutionEngine.ts",
+      "line": 153
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 115
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 136
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 138
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 145
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 162
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 178
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 193
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 410
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 416
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 419
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 431
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/flow/FlowExecutor.ts",
+      "line": 432
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/IntegrationGapEngine.ts",
+      "line": 9
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ContextIntelligenceEngine.ts",
+      "line": 102
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/intelligence-core/ContextIntelligenceEngine.ts",
+      "line": 14
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ContextIntelligenceEngine.ts",
+      "line": 170
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ContextIntelligenceEngine.ts",
+      "line": 172
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ContextIntelligenceEngine.ts",
+      "line": 176
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ContextIntelligenceEngine.ts",
+      "line": 177
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ContextIntelligenceEngine.ts",
+      "line": 34
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/DeepThinkingEngine.ts",
+      "line": 12
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/DeepThinkingEngine.ts",
+      "line": 203
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/DeepThinkingEngine.ts",
+      "line": 219
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/DeepThinkingEngine.ts",
+      "line": 249
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/DocumentIntelligenceService.ts",
+      "line": 8
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/index.ts",
+      "line": 5
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/index.ts",
+      "line": 56
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/index.ts",
+      "line": 65
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ResponseOrchestrationEngine.ts",
+      "line": 106
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/ResponseOrchestrationEngine.ts",
+      "line": 124
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/SelfOrchestrationEngine.ts",
+      "line": 194
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/SelfOrchestrationEngine.ts",
+      "line": 207
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/types.ts",
+      "line": 100
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/types.ts",
+      "line": 116
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/types.ts",
+      "line": 79
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/types.ts",
+      "line": 80
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/types.ts",
+      "line": 84
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/types.ts",
+      "line": 85
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/intelligence-core/types.ts",
+      "line": 9
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-ingestion/KnowledgeIngestionService.ts",
+      "line": 278
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-ingestion/types.ts",
+      "line": 11
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-ingestion/types.ts",
+      "line": 94
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-service/scoring.ts",
+      "line": 68
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-service/sources.ts",
+      "line": 9
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-service/types.ts",
+      "line": 22
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-service/types.ts",
+      "line": 66
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-service/types.ts",
+      "line": 86
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-service/types.ts",
+      "line": 96
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/knowledge-service/types.ts",
+      "line": 98
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/KnowledgeService.ts",
+      "line": 232
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/KnowledgeService.ts",
+      "line": 64
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningContextBuilder.ts",
+      "line": 10
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningContextBuilder.ts",
+      "line": 26
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningContextBuilder.ts",
+      "line": 29
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningContextBuilder.ts",
+      "line": 54
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningContextBuilder.ts",
+      "line": 83
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 124
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 125
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 131
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 132
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 231
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 267
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 268
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 313
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 340
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 341
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 402
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 409
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 413
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 414
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 428
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 435
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 470
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 472
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 478
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 490
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 537
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 616
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 641
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/learning/LearningStudioService.ts",
+      "line": 642
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/lexicon-authority/LexiconAuthorityService.ts",
+      "line": 525
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/lexicon-authority/LexiconAuthorityService.ts",
+      "line": 533
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/lexicon-authority/LexiconAuthorityService.ts",
+      "line": 566
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/lexicon-authority/LexiconAuthorityService.ts",
+      "line": 586
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/lexicon-authority/types.ts",
+      "line": 158
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/memory/loadFromFile.ts",
+      "line": 149
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 100
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 24
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 28
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 37
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 43
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 53
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 63
+    },
+    {
+      "symbol": "systemPrompt",
+      "file": "server/services/ModelProviderService.ts",
+      "line": 91
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ProjectFilingStore.ts",
+      "line": 109
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ProjectFilingStore.ts",
+      "line": 116
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ProjectFilingStore.ts",
+      "line": 27
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ProjectFilingStore.ts",
+      "line": 29
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 108
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 117
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 118
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 129
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 178
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 183
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 184
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/research/ResearchEngine.ts",
+      "line": 198
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/UserRequestSignals.ts",
+      "line": 8
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/voiceSettings.ts",
+      "line": 5
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/voiceSettingsToGeneration.ts",
+      "line": 10
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/workspace-desk/WorkspaceDeskEngine.ts",
+      "line": 108
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/workspace-desk/WorkspaceDeskEngine.ts",
+      "line": 86
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/workspace-desk/WorkspaceDeskEngine.ts",
+      "line": 92
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/workspace-desk/WorkspaceDeskEngine.ts",
+      "line": 93
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/WorkspaceMemoryService.ts",
+      "line": 12
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/WorkspaceMemoryService.ts",
+      "line": 17
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/WorkspaceMemoryService.ts",
+      "line": 38
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/WorkspaceMemoryService.ts",
+      "line": 43
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/WorkspaceMemoryService.ts",
+      "line": 49
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/WorkspaceMemoryService.ts",
+      "line": 71
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/WorkspaceMemoryService.ts",
+      "line": 78
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 12
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 21
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 240
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 242
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 242
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 254
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 256
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarContextBuilder.ts",
+      "line": 37
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarPrincipleEngine.ts",
+      "line": 27
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarPrincipleEngine.ts",
+      "line": 58
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarPrincipleEngine.ts",
+      "line": 70
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarPrincipleEngine.ts",
+      "line": 74
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarPrincipleEngine.ts",
+      "line": 9
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarReflectionEngine.ts",
+      "line": 21
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarReflectionEngine.ts",
+      "line": 68
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarResponseGovernance.ts",
+      "line": 170
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarStrategicReasoningEngine.ts",
+      "line": 23
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarStrategicReasoningEngine.ts",
+      "line": 75
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarStrategicReasoningEngine.ts",
+      "line": 91
+    },
+    {
+      "symbol": "instructions",
+      "file": "server/services/ZarVoiceFormationEngine.ts",
+      "line": 115
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/services/ZarVoiceFormationEngine.ts",
+      "line": 324
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/zcos/trading/TradingKnowledgeBase.ts",
+      "line": 167
+    },
+    {
+      "symbol": "prompt",
+      "file": "server/zcos/trading/TradingKnowledgeBase.ts",
+      "line": 183
+    }
+  ],
+  "runtimeFiles": [
+    "client/package-lock.json",
+    "client/package.json",
+    "client/tsconfig.build.json",
+    "client/tsconfig.json",
+    "client/tsconfig.node.json",
+    "client/vite.config.ts",
+    "netlify.toml",
+    "package-lock.json",
+    "package.json",
+    "render.yaml",
+    "server/db.ts",
+    "server/index.ts",
+    "server/migrations.ts",
+    "server/package-lock.json",
+    "server/package.json",
+    "server/routes.ts",
+    "tsconfig.json",
+    "vitest.config.ts"
+  ],
+  "uiEntryPoints": [
+    "client/src/App.tsx",
+    "client/src/console/ConsoleActivator.tsx",
+    "client/src/console/ConsoleBrowserContext.tsx",
+    "client/src/console/ConsoleBrowserFullPage.tsx",
+    "client/src/console/ConsoleDock.tsx",
+    "client/src/console/ConsoleGlassPanel.tsx",
+    "client/src/console/ConsoleLogoutButton.tsx",
+    "client/src/console/ConsoleShell.tsx",
+    "client/src/console/ConsoleStandbyBar.tsx",
+    "client/src/console/ConsoleWorkspaceFrame.tsx",
+    "client/src/console/consoleIdentity.ts",
+    "client/src/main.tsx",
+    "client/src/nexys/actions/NexysClientActions.ts",
+    "client/src/nexys/apps/rootApplications.ts",
+    "client/src/nexys/apps/types.ts",
+    "client/src/nexys/capabilities/NexysCapabilityRegistry.ts",
+    "client/src/nexys/capabilities/capabilityAvailability.ts",
+    "client/src/nexys/capabilities/centralCapabilityRegistry.ts",
+    "client/src/nexys/capabilities/types.ts",
+    "client/src/nexys/communication/persistentCommunication.ts",
+    "client/src/nexys/communication/types.ts",
+    "client/src/nexys/communication/useNexysChatSession.ts",
+    "client/src/nexys/communication/useNexysConversationController.ts",
+    "client/src/nexys/communication/useNexysDictation.ts",
+    "client/src/nexys/components/NexysApplicationScaffold.tsx",
+    "client/src/nexys/components/NexysCommunicationDock.tsx",
+    "client/src/nexys/components/NexysConsoleHeader.tsx",
+    "client/src/nexys/components/NexysConversationSurface.tsx",
+    "client/src/nexys/components/NexysCore.tsx",
+    "client/src/nexys/components/NexysDeveloperInspector.tsx",
+    "client/src/nexys/components/NexysHubOverlay.tsx",
+    "client/src/nexys/components/NexysIcon.tsx",
+    "client/src/nexys/components/NexysLiveGreeting.tsx",
+    "client/src/nexys/components/communication/NexysAttachmentTray.tsx",
+    "client/src/nexys/components/communication/NexysConversationHeader.tsx",
+    "client/src/nexys/components/communication/NexysConversationRuntime.tsx",
+    "client/src/nexys/components/communication/NexysDrawCanvas.tsx",
+    "client/src/nexys/components/communication/NexysFileUpload.tsx",
+    "client/src/nexys/components/communication/NexysLiveBrowser.tsx",
+    "client/src/nexys/components/communication/NexysMemoryUpload.tsx",
+    "client/src/nexys/components/communication/NexysMessageComposer.tsx",
+    "client/src/nexys/components/communication/NexysMessageItem.tsx",
+    "client/src/nexys/components/communication/NexysMessageList.tsx",
+    "client/src/nexys/components/communication/NexysVoiceDock.tsx",
+    "client/src/nexys/graph/NexysConstellationEngine.ts",
+    "client/src/nexys/graph/rootConstellation.ts",
+    "client/src/nexys/graph/types.ts",
+    "client/src/nexys/index.ts",
+    "client/src/nexys/manifests/NexysManifestRegistry.ts",
+    "client/src/nexys/manifests/rootManifests.ts",
+    "client/src/nexys/manifests/types.ts",
+    "client/src/nexys/pages/NexysRootPage.tsx",
+    "client/src/nexys/pages/nexysInteractionStageModel.ts",
+    "client/src/nexys/scene/nexysDomainAdapter.ts",
+    "client/src/nexys/scene/nexysSceneContract.ts",
+    "client/src/nexys/state/NexysProvider.tsx",
+    "client/src/nexys/viewport/NexysViewportModel.ts",
+    "client/src/pages/ResearchDesk.tsx",
+    "client/src/pages/WorkspaceDesk.tsx",
+    "client/src/pages/admin.tsx",
+    "client/src/pages/budget.tsx",
+    "client/src/pages/chat.tsx",
+    "client/src/pages/connect.tsx",
+    "client/src/pages/decisions.tsx",
+    "client/src/pages/discovery.tsx",
+    "client/src/pages/flow-detail.tsx",
+    "client/src/pages/flows.tsx",
+    "client/src/pages/history.tsx",
+    "client/src/pages/home.tsx",
+    "client/src/pages/identity.tsx",
+    "client/src/pages/inbox.tsx",
+    "client/src/pages/knowledge.tsx",
+    "client/src/pages/learning-studio.tsx",
+    "client/src/pages/login.tsx",
+    "client/src/pages/login/AdminEmailForm.tsx",
+    "client/src/pages/login/SecurePhraseForm.tsx",
+    "client/src/pages/login/UserLoginForm.tsx",
+    "client/src/pages/not-found.tsx",
+    "client/src/pages/project-detail.tsx",
+    "client/src/pages/project-detail/AddSourceCard.tsx",
+    "client/src/pages/project-detail/SourceCard.tsx",
+    "client/src/pages/project-detail/types.ts",
+    "client/src/pages/projects.tsx",
+    "client/src/pages/runs.tsx",
+    "client/src/pages/runs/RunDetailPage.tsx",
+    "client/src/pages/runs/StageCard.tsx",
+    "client/src/pages/runs/styles.ts",
+    "client/src/pages/settings.tsx",
+    "client/src/pages/timeline.tsx",
+    "client/src/pages/trading.tsx",
+    "client/src/pages/workspace.tsx",
+    "client/src/zebulon/GalaxyWorkspacePage.tsx",
+    "client/src/zebulon/ZebulonConstellationPage.tsx",
+    "client/src/zebulon/galaxyConstellation.ts"
+  ],
+  "runtimeArtifactScopes": [
+    {
+      "scope": "client/preview.err.log",
+      "count": 1
+    },
+    {
+      "scope": "client/preview.out.log",
+      "count": 1
+    },
+    {
+      "scope": "hub/shared-memory/**",
+      "count": 6
+    },
+    {
+      "scope": "hub/user-memory/**",
+      "count": 26
+    },
+    {
+      "scope": "server/fallback_storage/**",
+      "count": 17
+    },
+    {
+      "scope": "server/server.err.log",
+      "count": 1
+    },
+    {
+      "scope": "server/server.layout-check.log",
+      "count": 1
+    },
+    {
+      "scope": "server/server.out.log",
+      "count": 1
+    },
+    {
+      "scope": "zed-memory/**",
+      "count": 1182
+    }
+  ]
+}
