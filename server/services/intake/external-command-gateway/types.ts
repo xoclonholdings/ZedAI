@@ -8,6 +8,7 @@ import type {
 import type { TaskRecord } from "../../execution/TaskLifecycleManager";
 import type { OrchestrationResult } from "../../operational/ToolOrchestrationEngine";
 import type { ChannelType } from "../ChannelContextManager";
+import type { OwnerContext } from "../../auth/OwnerContext";
 
 export const COMMAND_LOG_PATH = path.resolve(
   HUB_SHARED_MEMORY_DIR,
@@ -18,10 +19,9 @@ export interface ExternalCommandInput {
   channel: ChannelType;
   sender_id: string;
   message: string;
+  owner_context: OwnerContext;
   metadata?: Record<string, unknown>;
   timestamp?: string;
-  /** Optional ZAR user_id resolved by the upstream caller. */
-  user_id?: string;
   /** Optional related conversation in app_chat. */
   conversation_id?: string | null;
 }

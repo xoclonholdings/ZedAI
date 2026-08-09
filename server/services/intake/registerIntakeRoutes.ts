@@ -7,48 +7,45 @@
  * All endpoints are namespaced under /api/intake so they cannot collide
  * with the existing surface.
  *
- * Webhook-style endpoints (POST /api/intake/webhook, /api/intake/email,
- * /api/intake/sms, /api/intake/whatsapp) are intentionally unauthenticated
- * because they are called by external providers; they rely on a shared
- * secret (INTAKE_WEBHOOK_SECRET) when one is configured. App-level
- * endpoints (/api/intake/command, /api/intake/context/*) are gated by
- * the existing isAuthenticated middleware so behavior matches the rest
- * of ZAR's auth model.
+ * Webhook-style endpoints are called by external providers and require
+ * timestamped HMAC verification plus replay protection. They remain
+ * unrouted until a verified external Identity binding exists. App-level
+ * endpoints use the authenticated OwnerContext contract.
  */
 
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request, Response } from "express";
 import { isAuthenticated, isAdmin } from "../../localAuth";
 import { ExternalCommandGateway } from "./ExternalCommandGateway";
 import { ChannelContextManager, type ChannelType } from "./ChannelContextManager";
 import { VoiceCommandBridge } from "./VoiceCommandBridge";
-import { MessagingBridge, type MessagingTarget } from "./MessagingBridge";
+import { MessagingBridge } from "./MessagingBridge";
 import { logRuntimeEvent } from "../RuntimeLogger";
-import { EmailInboxService } from "../EmailInboxService";
+import {
+  OwnerContextError,
+  ownerContextFromAuthenticatedRequest,
+} from "../auth/OwnerContext";
+import { verifySignedIntakeRequest } from "./IntakeWebhookAuthenticity";
 
-function userIdFrom(req: any): string | null {
-  return req?.user?.claims?.sub || req?.session?.userId || null;
-}
-
-/**
- * Lightweight shared-secret check for webhook endpoints. When the env
- * var is unset the check is permissive so local development still
- * works; when set, callers must include the matching value via the
- * X-ZAR-Intake-Secret header or `secret` query param.
- */
-function verifyIntakeSecret(req: Request, res: Response, next: NextFunction) {
-  const expected = process.env.INTAKE_WEBHOOK_SECRET;
-  if (!expected) return next();
-  const provided =
-    (req.headers["x-zar-intake-secret"] as string | undefined) ||
-    (typeof req.query.secret === "string" ? req.query.secret : undefined);
-  if (provided && provided === expected) return next();
+async function acknowledgeUnboundExternalMessage(
+  req: Request,
+  res: Response,
+  channel: string,
+): Promise<Response> {
   void logRuntimeEvent({
-    level: "warn",
+    level: "info",
     source: "server",
-    event: "intake.webhook.rejected",
-    detail: `Rejected ${req.method} ${req.originalUrl} — bad/missing intake secret`,
+    event: "intake.external.unrouted",
+    detail: `Authenticated ${channel} intake requires an Identity binding`,
+    context: {
+      channel,
+      messageId: req.headers["x-zar-message-id"],
+    },
   });
-  return res.status(401).json({ error: "Invalid intake secret" });
+  return res.status(202).json({
+    accepted: true,
+    routed: false,
+    reason: "Verified Identity binding required",
+  });
 }
 
 export function registerIntakeRoutes(app: Express): void {
@@ -61,18 +58,21 @@ export function registerIntakeRoutes(app: Express): void {
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "message is required" });
       }
-      const user_id = userIdFrom(req);
+      const owner_context = ownerContextFromAuthenticatedRequest(req);
       const result = await ExternalCommandGateway.receive({
         channel: (channel as ChannelType) || "app_chat",
-        sender_id: sender_id || user_id || "unknown",
+        sender_id: sender_id || owner_context.ownerUserId,
         message,
         metadata,
         timestamp,
-        user_id: user_id || undefined,
+        owner_context,
         conversation_id: conversation_id || null,
       });
       res.json(result);
     } catch (err: any) {
+      if (err instanceof OwnerContextError) {
+        return res.status(err.statusCode).json({ error: err.message });
+      }
       res.status(500).json({ error: err?.message || "intake failed" });
     }
   });
@@ -107,11 +107,13 @@ export function registerIntakeRoutes(app: Express): void {
 
   app.get("/api/intake/context/me", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const user_id = userIdFrom(req);
-      if (!user_id) return res.status(401).json({ error: "Unauthenticated" });
-      const ctx = await ChannelContextManager.get(user_id);
+      const owner = ownerContextFromAuthenticatedRequest(req);
+      const ctx = await ChannelContextManager.get(owner.ownerUserId);
       res.json({ context: ctx });
     } catch (err: any) {
+      if (err instanceof OwnerContextError) {
+        return res.status(err.statusCode).json({ error: err.message });
+      }
       res.status(500).json({ error: err?.message || "fetch failed" });
     }
   });
@@ -143,101 +145,65 @@ export function registerIntakeRoutes(app: Express): void {
 
   app.post("/api/intake/context/active", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const user_id = userIdFrom(req);
+      const owner = ownerContextFromAuthenticatedRequest(req);
       const { channel } = req.body || {};
-      if (!user_id) return res.status(401).json({ error: "Unauthenticated" });
       if (!channel) return res.status(400).json({ error: "channel is required" });
-      const ctx = await ChannelContextManager.setActiveChannel(user_id, channel);
+      const ctx = await ChannelContextManager.setActiveChannel(owner.ownerUserId, channel);
       res.json({ context: ctx });
     } catch (err: any) {
+      if (err instanceof OwnerContextError) {
+        return res.status(err.statusCode).json({ error: err.message });
+      }
       res.status(500).json({ error: err?.message || "update failed" });
     }
   });
 
   // ─── External provider webhooks ───────────────────────────────────────────
 
-  app.post("/api/intake/webhook", verifyIntakeSecret, async (req: Request, res: Response) => {
+  app.post("/api/intake/webhook", verifySignedIntakeRequest, async (req: Request, res: Response) => {
     try {
-      const { channel, sender_id, message, metadata, timestamp, user_id } =
-        req.body || {};
+      const { channel, sender_id, message } = req.body || {};
       if (!message || typeof message !== "string") {
         return res.status(400).json({ error: "message is required" });
       }
-      const result = await ExternalCommandGateway.receive({
-        channel: (channel as ChannelType) || "webhook",
-        sender_id: sender_id || "webhook",
-        message,
-        metadata,
-        timestamp,
-        user_id,
-      });
-      res.json(result);
+      void sender_id;
+      return acknowledgeUnboundExternalMessage(req, res, channel || "webhook");
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "webhook failed" });
     }
   });
 
-  app.post("/api/intake/email", verifyIntakeSecret, async (req: Request, res: Response) => {
+  app.post("/api/intake/email", verifySignedIntakeRequest, async (req: Request, res: Response) => {
     try {
-      const { from, subject, body, message_id, user_id, received_at } = req.body || {};
+      const { from, subject, body } = req.body || {};
       if (!from || (!body && !subject)) {
         return res.status(400).json({ error: "from and body/subject are required" });
       }
-      const inboxMessage = await EmailInboxService.recordIncoming({
-        from,
-        subject,
-        body,
-        message_id,
-        user_id,
-        received_at,
-      });
-      const message = `${subject ? `Subject: ${subject}\n\n` : ""}${body || ""}`.trim();
-      const result = await ExternalCommandGateway.receive({
-        channel: "email",
-        sender_id: from,
-        message,
-        metadata: { subject, message_id },
-        user_id,
-      });
-      res.json({ ...result, inbox_message: inboxMessage });
+      return acknowledgeUnboundExternalMessage(req, res, "email");
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "email intake failed" });
     }
   });
 
-  app.post("/api/intake/sms", verifyIntakeSecret, async (req: Request, res: Response) => {
+  app.post("/api/intake/sms", verifySignedIntakeRequest, async (req: Request, res: Response) => {
     try {
-      const { from, body, message_id, user_id } = req.body || {};
+      const { from, body } = req.body || {};
       if (!from || !body) {
         return res.status(400).json({ error: "from and body are required" });
       }
-      const result = await MessagingBridge.routeIncoming({
-        target: "sms",
-        sender_id: from,
-        body,
-        metadata: { message_id },
-        user_id,
-      });
-      res.json(result);
+      return acknowledgeUnboundExternalMessage(req, res, "sms");
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "sms intake failed" });
     }
   });
 
-  app.post("/api/intake/messaging", verifyIntakeSecret, async (req: Request, res: Response) => {
+  app.post("/api/intake/messaging", verifySignedIntakeRequest, async (req: Request, res: Response) => {
     try {
-      const { target, from, body, metadata, user_id } = req.body || {};
+      const { target, from, body } = req.body || {};
       if (!target || !from || !body) {
         return res.status(400).json({ error: "target, from, body are required" });
       }
-      const result = await MessagingBridge.routeIncoming({
-        target: target as MessagingTarget,
-        sender_id: from,
-        body,
-        metadata,
-        user_id,
-      });
-      res.json(result);
+      return acknowledgeUnboundExternalMessage(req, res, target);
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "messaging intake failed" });
     }
@@ -249,13 +215,10 @@ export function registerIntakeRoutes(app: Express): void {
       if (!target || !to || !body) {
         return res.status(400).json({ error: "target, to, body are required" });
       }
-      const result = await MessagingBridge.sendOutbound({
-        target: target as MessagingTarget,
-        to,
-        body,
-        metadata,
+      void metadata;
+      return res.status(409).json({
+        error: "Outbound messaging requires an action-specific approved execution path",
       });
-      res.json(result);
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "send failed" });
     }
@@ -271,23 +234,13 @@ export function registerIntakeRoutes(app: Express): void {
 
   // ─── Voice intake placeholder ─────────────────────────────────────────────
 
-  app.post("/api/intake/voice", verifyIntakeSecret, async (req: Request, res: Response) => {
+  app.post("/api/intake/voice", verifySignedIntakeRequest, async (req: Request, res: Response) => {
     try {
-      const { transcript, speaker_id, confidence, detected_intent, metadata, timestamp, user_id } =
-        req.body || {};
+      const { transcript, speaker_id } = req.body || {};
       if (!transcript || !speaker_id) {
         return res.status(400).json({ error: "transcript and speaker_id are required" });
       }
-      const result = await VoiceCommandBridge.process({
-        transcript,
-        speaker_id,
-        confidence: typeof confidence === "number" ? confidence : 1,
-        detected_intent,
-        metadata,
-        timestamp,
-        user_id,
-      });
-      res.json(result);
+      return acknowledgeUnboundExternalMessage(req, res, "voice");
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "voice intake failed" });
     }

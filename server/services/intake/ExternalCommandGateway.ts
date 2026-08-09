@@ -32,6 +32,7 @@ import { TaskExecutionEngine } from "../execution/TaskExecutionEngine";
 import { TaskLifecycleManager } from "../execution/TaskLifecycleManager";
 import { ApprovalWatchdog } from "../approval/ApprovalWatchdog";
 import { logRuntimeEvent } from "../RuntimeLogger";
+import { assertOwnerContext } from "../auth/OwnerContext";
 
 import { ChannelContextManager, type ChannelType } from "./ChannelContextManager";
 import { logCommand, listRecentCommands } from "./external-command-gateway/log";
@@ -57,12 +58,13 @@ export class ExternalCommandGateway {
    * through ZAR's existing pipelines. No external action is taken.
    */
   static async receive(input: ExternalCommandInput): Promise<GatewayResult> {
+    assertOwnerContext(input.owner_context);
     const channel = SUPPORTED_CHANNELS.includes(input.channel)
       ? input.channel
       : ("unknown" as ChannelType);
     const command_id = `cmd-${randomUUID()}`;
     const received_at = input.timestamp || new Date().toISOString();
-    const user_id = input.user_id || `external:${channel}:${input.sender_id}`;
+    const user_id = input.owner_context.ownerUserId;
     const message = (input.message || "").toString();
 
     // 1. Log the raw command (sanitized excerpt only — never the full

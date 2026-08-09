@@ -14,6 +14,10 @@ import {
 } from "../../shared/schema";
 import { db } from "../db";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
+import {
+  OwnerContextError,
+  ownerContextFromAuthenticatedRequest,
+} from "../services/auth/OwnerContext";
 import { logSecurityEvent } from "../services/SecurityAudit";
 import { getActiveProviderDefaultModel } from "../core/providers/provider-config";
 
@@ -225,7 +229,8 @@ export function registerConversationCrudRoutes(app: Express): void {
 
   app.delete("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub || "user_001";
+      const owner = ownerContextFromAuthenticatedRequest(req);
+      const userId = owner.ownerUserId;
       const all = await storage.getConversationsByUser(userId);
       let deleted = 0;
       for (const conv of all) {
@@ -243,6 +248,9 @@ export function registerConversationCrudRoutes(app: Express): void {
       });
       res.json({ success: true, deleted });
     } catch (err: any) {
+      if (err instanceof OwnerContextError) {
+        return res.status(err.statusCode).json({ error: err.message });
+      }
       res.status(500).json({ error: err.message });
     }
   });

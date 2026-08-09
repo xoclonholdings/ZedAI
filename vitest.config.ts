@@ -6,6 +6,8 @@ export default defineConfig({
     include: [
       "server/zcos/trading/**/*.test.ts",
       "server/services/fileProcessor.test.ts",
+      "server/services/auth/**/*.test.ts",
+      "server/services/intake/**/*.test.ts",
       "shared/**/*.test.ts",
       "client/src/lib/uploadRequest.test.ts",
       "client/src/zebulon/**/*.test.ts",

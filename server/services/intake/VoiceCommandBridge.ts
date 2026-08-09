@@ -14,6 +14,7 @@
 
 import { ExternalCommandGateway, type GatewayResult } from "./ExternalCommandGateway";
 import { logRuntimeEvent } from "../RuntimeLogger";
+import type { OwnerContext } from "../auth/OwnerContext";
 
 export interface VoiceCommandEvent {
   transcript: string;
@@ -21,8 +22,7 @@ export interface VoiceCommandEvent {
   confidence: number; // 0..1
   detected_intent?: string;
   timestamp?: string;
-  /** Optional ZAR user_id resolved by the upstream voice provider. */
-  user_id?: string;
+  owner_context: OwnerContext;
   /** Optional locale / device / room info from the capture device. */
   metadata?: Record<string, unknown>;
 }
@@ -79,7 +79,7 @@ export class VoiceCommandBridge {
           ...(event.metadata || {}),
         },
         timestamp: event.timestamp,
-        user_id: event.user_id,
+        owner_context: event.owner_context,
       });
 
       if (this.hooks.onRouted) await this.hooks.onRouted(gateway_result);

@@ -24,6 +24,7 @@ import { ExternalCommandGateway, type GatewayResult } from "./ExternalCommandGat
 import type { ChannelType } from "./ChannelContextManager";
 import { logRuntimeEvent } from "../RuntimeLogger";
 import { loadAdminSettings } from "../AdminSettingsStore";
+import type { OwnerContext } from "../auth/OwnerContext";
 
 export type MessagingTarget =
   | "whatsapp"
@@ -37,7 +38,7 @@ export interface IncomingMessage {
   sender_id: string;
   body: string;
   metadata?: Record<string, unknown>;
-  user_id?: string;
+  owner_context: OwnerContext;
   timestamp?: string;
 }
 
@@ -81,7 +82,7 @@ export class MessagingBridge {
       message: message.body,
       metadata: { messaging_target: message.target, ...(message.metadata || {}) },
       timestamp: message.timestamp,
-      user_id: message.user_id,
+      owner_context: message.owner_context,
     });
     await logRuntimeEvent({
       level: "info",
@@ -97,30 +98,11 @@ export class MessagingBridge {
    * Outbound — dispatch to the configured provider for the target.
    */
   static async sendOutbound(req: OutboundRequest): Promise<OutboundResult> {
-    try {
-      switch (req.target) {
-        case "telegram":
-          return await this.sendTelegram(req);
-        case "discord":
-          return await this.sendDiscord(req);
-        case "slack":
-          return await this.sendSlack(req);
-        case "sms":
-          return await this.sendTwilio(req, "sms");
-        case "whatsapp":
-          return await this.sendTwilio(req, "whatsapp");
-        default:
-          return { status: "rejected", reason: `Unknown target: ${String(req.target)}` };
-      }
-    } catch (err: any) {
-      await logRuntimeEvent({
-        level: "warn",
-        source: "server",
-        event: "intake.messaging.outbound_error",
-        detail: `${req.target}: ${err?.message || err}`,
-      });
-      return { status: "rejected", reason: err?.message || "send failed" };
-    }
+    void req;
+    return {
+      status: "rejected",
+      reason: "Outbound messaging requires an action-specific approved execution path",
+    };
   }
 
   /**
