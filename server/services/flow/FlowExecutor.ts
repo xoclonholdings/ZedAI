@@ -6,7 +6,7 @@ import { executeProviderChat } from "../../core/providers/provider-executor";
 import { OperationsAgent } from "../../agents/operations/OperationsAgent";
 import { IntelligenceAgent } from "../../agents/intelligence/IntelligenceAgent";
 import { BusinessManagerAgent } from "../../agents/business-manager/BusinessManagerAgent";
-import { FinanceAgent } from "../../agents/finance/FinanceAgent";
+import { invokeCapital } from "../capital/CapitalGateway";
 import { formatBrief } from "../../orchestrator/manager-agent/format";
 import { AgentApprovalAdapter } from "../approval/AgentApprovalAdapter";
 import { ApprovalDecisionHandler } from "../approval/ApprovalDecisionHandler";
@@ -157,8 +157,7 @@ export async function executeAgentStage(opts: {
   }
 
   if (agent === "finance") {
-    const response = await FinanceAgent.process({
-      userId: run.userId,
+    const response = await invokeCapital<any>(run.userId, {
       task: prompt,
       conversationId: run.conversationId,
     });
@@ -166,7 +165,7 @@ export async function executeAgentStage(opts: {
       stageId: stage.id,
       stageExecutionType: "agent",
       agentInvoked: "FinanceAgent",
-      servicesInvoked: ["FinanceAgent.process"],
+      servicesInvoked: ["CapitalGateway.invokeCapital"],
       output: response.message,
       metadata: response,
     };

@@ -1,5 +1,4 @@
 import type { ZarErrorDetail } from "../../shared/error-contract";
-import type { TradingGovernanceChecklistItem } from "../../shared/trading-types";
 
 function clean(value: unknown): string {
   return String(value ?? "").trim();
@@ -92,35 +91,5 @@ export function classifyChatError(error: unknown, context: {
     exactReason: safeRaw,
     action: "Review the exact error and retry after correcting the failing dependency.",
     technicalDetails: { provider: context.provider, target: context.target },
-  };
-}
-
-export function classifyGovernanceError(checklist: TradingGovernanceChecklistItem[] | undefined): ZarErrorDetail {
-  const failures = (checklist || []).filter(
-    (item) => item.critical && (item.result === "FAIL" || item.result === "UNKNOWN"),
-  );
-  const exact = failures.length
-    ? failures
-        .map((item) => `${item.label} ${item.result}: ${item.evidence}`)
-        .join(" | ")
-    : "No critical checklist failure details were returned by governance.";
-  const missing = failures.flatMap((item) => item.missingInformation || []);
-  return {
-    code: "TRADE_GOVERNANCE_DENIED",
-    userMessage: "ZAR could not approve this paper trade because governance checks failed.",
-    exactReason: exact,
-    action: missing.length
-      ? `Provide or correct: ${Array.from(new Set(missing)).join(", ")}.`
-      : "Open the governance decision details and correct the failed checklist item.",
-    technicalDetails: {
-      failedChecks: failures.map((item) => ({
-        key: item.key,
-        label: item.label,
-        result: item.result,
-        critical: item.critical,
-        evidence: item.evidence,
-        missingInformation: item.missingInformation,
-      })),
-    },
   };
 }

@@ -269,15 +269,6 @@ app.use((req, res, next) => {
       log("[WARNING] Failed to start knowledge curation scheduler:", String(error));
     }
 
-    try {
-      const { startTradeResolverScheduler } = await import(
-        "./zcos/trading/TradeResolverScheduler"
-      );
-      startTradeResolverScheduler((msg) => log(msg));
-    } catch (error) {
-      log("[WARNING] Failed to start trade resolver scheduler:", String(error));
-    }
-
     // Lightning connectivity smoke check. Surfaces a misconfigured
     // provider (missing LIGHTNING_BASE_URL / LIGHTNING_API_KEY, wrong
     // endpoint, 401) as one clear line in the deploy log instead of a

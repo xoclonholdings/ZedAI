@@ -4,7 +4,6 @@ import {
   Briefcase,
   GraduationCap,
   LayoutDashboard,
-  LineChart,
   MessageSquare,
   Search,
   Wallet,
@@ -51,32 +50,14 @@ interface WorkspaceConfig {
   subspaces?: Subspace[];
 }
 
-const FINANCE: WorkspaceConfig = {
+const CAPITAL: WorkspaceConfig = {
   canonicalSlug: "finance",
-  label: "Finance",
+  label: "ZILLION Prosper",
   purpose:
-    "Budget, banking, credit, trading, and investments in one place. Budget Management organizes every deposit; Trading stays separate.",
+    "Open the Capital Desk for budgeting, investing research, market intelligence, and governed trading.",
   icon: Wallet,
-  categories: ["finance"],
-  empty: "Open Budget Management to allocate deposits, or Trading Intelligence for market work.",
-  subspaces: [
-    {
-      label: "Budget Management",
-      description:
-        "Allocate every deposit across savings, taxes, personal payroll, and the business treasury — the Dual Reserve Strategy.",
-      href: "/budget",
-      icon: Wallet,
-      accent: "cyan",
-    },
-    {
-      label: "Trading Intelligence",
-      description:
-        "Theses, journals, paper trades, and performance. Kept separate — treasury never auto-funds trading.",
-      href: "/trading",
-      icon: LineChart,
-      accent: "fuchsia",
-    },
-  ],
+  categories: [],
+  empty: "Capital is owned by ZILLION Prosper.",
 };
 
 /**
@@ -129,9 +110,9 @@ const WORKSPACES: Record<string, WorkspaceConfig> = {
   operations: OPERATIONS,
   // `marketing` stays as an alias so old links keep working — see note above.
   marketing: OPERATIONS,
-  finance: FINANCE,
+  finance: CAPITAL,
   // `trading` stays as an alias so old links keep working.
-  trading: FINANCE,
+  trading: CAPITAL,
   education: {
     canonicalSlug: "education",
     label: "Education",
@@ -174,7 +155,7 @@ function WorkspaceIndex() {
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-white">Full Dashboard</div>
           <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">
-            Discovery feed, projects, budget, trading, and approvals in one view.
+            Discovery feed, projects, knowledge, and approvals in one view.
           </p>
         </div>
       </button>

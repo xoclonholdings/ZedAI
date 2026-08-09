@@ -6,6 +6,8 @@
 **Role:** Canonical repository authority  
 **State:** Migration required; a locked requirement is not automatically active or certified
 
+> **Capital cutover update (August 9, 2026):** Finance and Trading runtime ownership has moved to `xoclonholdings/Zillion-prosper`. Any later legacy inventory in this document that names ZAR Budget/Trading pages, routes, stores, broker bridges, or schedulers is historical evidence, not current ownership. ZAR retains only authenticated launch, intent coordination, and typed owner-bound ZCOS capabilities. Reusable flows remain ZYLO Automate-owned. Live trading is still blocked pending separate certification. See `docs/ZILLION_CAPITAL_BOUNDARY.md`.
+
 ## 1. Authority and Status
 
 This file combines the locked ZCOS architecture and ZAR contract with dated evidence about the current repository. The locked target governs whenever legacy implementation conflicts with it. Existing code remains migration evidence until safely adapted, replaced, or retired.

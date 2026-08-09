@@ -31,7 +31,6 @@ const RULES: GapRule[] = [
   { categoryId: "crm", label: "CRM", keywords: ["hubspot", "salesforce", "update the crm", "crm pipeline"], signupUrl: "https://www.hubspot.com/products/get-started" },
   { categoryId: "accounting", label: "Accounting", keywords: ["quickbooks", "xero", "bookkeeping"], signupUrl: "https://quickbooks.intuit.com/signup" },
   { categoryId: "cloudStorage", label: "Cloud Storage", keywords: ["upload to dropbox", "upload to drive", "save to onedrive"], signupUrl: "https://www.dropbox.com/register" },
-  { categoryId: "marketData", label: "Market Data", keywords: ["market data feed", "stock price api"], signupUrl: "https://polygon.io/pricing" },
   { categoryId: "telephony", label: "Telephony", keywords: ["send a text", "send an sms", "make a phone call", "text message"], signupUrl: "https://www.twilio.com/try-twilio" },
   { categoryId: "businessOperations", label: "Business Operations", keywords: ["shopify", "dropshipping order", "ecommerce order"], signupUrl: "https://www.shopify.com/signup" },
   { categoryId: "gusto", label: "Payroll", keywords: ["run payroll", "gusto"], signupUrl: "https://gusto.com/get-started" },

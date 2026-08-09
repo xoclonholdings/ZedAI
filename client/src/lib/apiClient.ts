@@ -7,7 +7,7 @@ function getApiBaseUrl() {
   return rawBaseUrl.replace(/\/$/, "");
 }
 
-function buildApiUrl(path: string) {
+export function buildApiUrl(path: string) {
   if (/^https?:\/\//i.test(path)) return path;
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const apiBaseUrl = getApiBaseUrl();

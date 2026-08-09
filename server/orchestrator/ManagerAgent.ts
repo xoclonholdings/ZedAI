@@ -1,7 +1,7 @@
 import { OperationsAgent, type AgentRequest, type AgentResponse } from "../agents/operations/OperationsAgent";
 import { IntelligenceAgent, type ResearchRequest } from "../agents/intelligence/IntelligenceAgent";
 import { BusinessManagerAgent } from "../agents/business-manager/BusinessManagerAgent";
-import { FinanceAgent } from "../agents/finance/FinanceAgent";
+import { invokeCapital } from "../services/capital/CapitalGateway";
 import { KnowledgeService } from "../services/KnowledgeService";
 import { ZarPrincipleEngine } from "../services/ZarPrincipleEngine";
 import { ZarStrategicReasoningEngine } from "../services/ZarStrategicReasoningEngine";
@@ -222,8 +222,7 @@ export class ManagerAgent {
       }
 
       case "FinanceAgent": {
-        const resp = await FinanceAgent.process({
-          userId: request.userId,
+        const resp = await invokeCapital<any>(request.userId, {
           task: request.message,
           conversationId: request.conversationId,
           memoryContext: agentContext,
@@ -242,10 +241,9 @@ export class ManagerAgent {
           metadata: {
             ...baseMetadata,
             actionType: (resp as any).tradingAction ? "trading_action" : "finance_analysis",
-            executedServices: ["FinanceAgent.process"],
+            executedServices: ["ZILLION Prosper /api/capital/agent"],
             servicesInvoked: [
-              "FinanceAgent.process",
-              ...(resp as any).tradingAction ? ["TradingStore.openPaperTrade"] : ["WebSearchService.webSearch", "TradingStore.getPerformance"],
+              "CapitalGateway.invokeCapital",
             ],
             capabilities: resp.capabilities,
             tradingAction: (resp as any).tradingAction,

@@ -336,6 +336,19 @@ function pushPrivyChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
     : { name: "PRIVY_APP_SECRET", severity: "error", message: "Required so ZAR can verify Privy access tokens server-side." });
 }
 
+function pushCapitalChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
+  const apiUrl = checkUrl(env, "ZILLION_PROSPER_API_URL");
+  checks.push(apiUrl || {
+    name: "ZILLION_PROSPER_API_URL",
+    severity: "error",
+    message: "Required for Capital launch and Finance capability routing.",
+  });
+  const secret = trimmed(env, "ZILLION_CAPABILITY_SECRET");
+  checks.push(secret.length >= 32
+    ? { name: "ZILLION_CAPABILITY_SECRET", severity: "ok", message: "Set with sufficient length for signed Capital grants." }
+    : { name: "ZILLION_CAPABILITY_SECRET", severity: "error", message: "Required and must contain at least 32 random characters." });
+}
+
 export function validateEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): EnvValidationResult {
@@ -385,6 +398,7 @@ export function validateEnv(
   pushDatabaseCheck(env, checks);
   pushAdminAuthChecks(env, checks);
   pushPrivyChecks(env, checks);
+  pushCapitalChecks(env, checks);
   pushSmsChecks(env, checks);
 
   const frontendUrlCheck = checkUrl(env, "FRONTEND_URL");

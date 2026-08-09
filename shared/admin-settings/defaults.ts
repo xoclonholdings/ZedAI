@@ -70,10 +70,10 @@ export const defaultAgentDefinitions: AgentDefinition[] = [
   },
   {
     key: "FinanceAgent",
-    label: "Finance Agent",
+    label: "ZILLION Prosper",
     status: "active",
-    description: "Crypto, forex, trading setups, wealth strategy. Action-gated by approval.",
-    entryPoint: "server/agents/finance/FinanceAgent.ts",
+    description: "External Capital capability for budgeting, investing, and governed trading.",
+    entryPoint: "server/services/capital/CapitalGateway.ts",
   },
 ];
 

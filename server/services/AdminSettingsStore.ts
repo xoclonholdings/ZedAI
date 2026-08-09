@@ -239,25 +239,12 @@ export async function updateIntegrationSettings(
       },
       tradingView: {
         ...current.integrations.tradingView,
-        ...(nextIntegrations.tradingView || {}),
-        alertWebhookSecret: preserveSecret(
-          current.integrations.tradingView,
-          nextIntegrations.tradingView,
-          "alertWebhookSecret",
-        ),
       },
       marketData: {
         ...current.integrations.marketData,
-        ...(nextIntegrations.marketData || {}),
-        accounts: mergeSecretAccounts(
-          current.integrations.marketData.accounts || [],
-          nextIntegrations.marketData?.accounts,
-          ["apiKey"],
-        ),
       },
       kalshi: {
         ...current.integrations.kalshi,
-        ...(nextIntegrations.kalshi || {}),
       },
       voiceTranscription: {
         ...current.integrations.voiceTranscription,

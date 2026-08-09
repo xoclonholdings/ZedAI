@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Inbox as InboxIcon, LineChart, Link2, Lock } from "lucide-react";
+import { ChevronRight, Inbox as InboxIcon, Landmark, Link2, Lock } from "lucide-react";
 
 import { apiRequest } from "@/lib/queryClient";
 import { IntegrationGapCard, type IntegrationGap } from "@/components/connect/IntegrationGapCard";
 import { SecretsVault } from "@/components/connect/SecretsVault";
-import type {
-  IntegrationProvider,
-  IntegrationProviderInfo,
-  TradingIntegration,
-} from "@shared/trading-training-types";
+import { buildApiUrl } from "@/lib/apiClient";
 
 interface ConnectCategorySummary {
   id: string;
@@ -22,67 +18,21 @@ interface ConnectCategorySummary {
 
 const STATUS_CLS: Record<string, string> = {
   connected: "bg-emerald-400/15 text-emerald-300",
-  configured: "bg-cyan-400/15 text-cyan-300",
-  error: "bg-red-400/15 text-red-300",
   disconnected: "bg-white/10 text-white/40",
 };
 
-// The only accounts a regular user connects directly, per-user, are
-// trading/market-data (TradingIntegrationsStore, /api/trading/integrations).
-// Everything else (email, social, CRM, payments, ...) is configured once,
-// admin-wide, in Settings > Advanced > Integrations - shown below as
-// read-only status via /api/connect/categories, with editing left to
-// whoever has admin access.
-const CATEGORIES: Array<{ label: string; providers: IntegrationProvider[] }> = [
-  { label: "Trading Brokers", providers: ["lucid", "tradovate", "webull"] },
-  { label: "Prediction Markets", providers: ["kalshi", "polymarket"] },
-  { label: "Other Accounts", providers: ["custom"] },
-];
-
-/**
- * The real Connect surface, reachable from Nexys's "Connect" domain.
- *
- * Combines two real backends: the per-user trading/market-data accounts
- * (/api/trading/integrations, the only accounts an individual user connects
- * directly) and a read-only summary of the admin-wide integrations
- * (/api/connect/categories) - email, social publishing, CRM, payments,
- * accounting, cloud storage, deployment, telephony, firewall, business
- * operations - so this page reflects everything ZAR can actually act
- * through, not just trading accounts.
- */
 export default function ConnectPage() {
   const [, navigate] = useLocation();
-  const [providers, setProviders] = useState<IntegrationProviderInfo[]>([]);
-  const [integrations, setIntegrations] = useState<TradingIntegration[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch("/api/trading/integrations", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setProviders(data.providers || []);
-        setIntegrations(data.integrations || []);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const { data: connectCategories } = useQuery<{ categories: ConnectCategorySummary[]; isAdmin: boolean }>({
-    queryKey: ["/api/connect/categories"],
-  });
-
   const queryClient = useQueryClient();
+  const [secretsPrefill, setSecretsPrefill] = useState<string | undefined>();
+
+  const { data: connectCategories } = useQuery<{
+    categories: ConnectCategorySummary[];
+    isAdmin: boolean;
+  }>({ queryKey: ["/api/connect/categories"] });
   const { data: gapsData } = useQuery<{ gaps: IntegrationGap[] }>({
     queryKey: ["/api/connect/gaps"],
   });
-  const gaps = gapsData?.gaps ?? [];
-  const [secretsPrefill, setSecretsPrefill] = useState<string | undefined>(undefined);
 
   const dismissGap = useMutation({
     mutationFn: async (id: string) => {
@@ -91,302 +41,95 @@ export default function ConnectPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/connect/gaps"] }),
   });
 
-  function openSecretsForGap(gap: IntegrationGap) {
-    setSecretsPrefill(`${gap.label} access`);
-    document.getElementById("secrets-vault")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  const connectedCount = integrations.filter((i) => i.status !== "disconnected").length;
-
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-10">
-        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md shadow-[0_0_40px_rgba(139,0,255,0.15)]">
-          <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
-            <Link2 size={18} className="text-cyan-300" />
-            Connect
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Give ZAR access to accounts it can act in for you. Credentials stay server-side and are never shown again.
+      <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-black p-5 backdrop-blur-md">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-white">
+          <Link2 size={18} className="text-cyan-300" />
+          Connect
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Business and platform credentials remain managed by ZCOS. Broker and market-data connections are owned by ZILLION Prosper.
+        </p>
+      </section>
+
+      <a
+        href={buildApiUrl("/api/capital/launch?path=%2Ftrading")}
+        className="zar-glass flex w-full items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(217,70,239,0.25)]"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/15 text-fuchsia-300">
+          <Landmark size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-white">Capital connections</div>
+          <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
+            Open brokers, market data, paper trading, and governed execution in ZILLION Prosper.
           </p>
-          {connectedCount > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="zar-glass rounded-full border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-white/70">
-                {connectedCount} connected
-              </span>
-            </div>
-          )}
-        </section>
+        </div>
+        <ChevronRight size={16} className="shrink-0 text-white/40" />
+      </a>
 
-        <button
-          type="button"
-          onClick={() => navigate("/trading")}
-          className="zar-glass flex w-full items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(217,70,239,0.25)] active:scale-[0.99]"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/15 text-fuchsia-300">
-            <LineChart size={18} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-semibold text-white">Trading Intelligence</div>
-            <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
-              Theses, journals, paper trades, and performance built on these connections.
-            </p>
-          </div>
-          <ChevronRight size={16} className="shrink-0 text-white/40" />
-        </button>
+      <button
+        type="button"
+        onClick={() => navigate("/inbox")}
+        className="zar-glass flex w-full items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)]"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-300">
+          <InboxIcon size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-white">Email Inbox</div>
+          <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
+            Read incoming messages and what ZAR flagged for attention.
+          </p>
+        </div>
+        <ChevronRight size={16} className="shrink-0 text-white/40" />
+      </button>
 
-        <button
-          type="button"
-          onClick={() => navigate("/inbox")}
-          className="zar-glass flex w-full items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[0_0_22px_rgba(103,232,249,0.25)] active:scale-[0.99]"
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/15 text-cyan-300">
-            <InboxIcon size={18} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-semibold text-white">Email Inbox</div>
-            <p className="mt-0.5 text-[12.5px] leading-snug text-muted-foreground">
-              Read what's come in and see what ZAR flagged for attention.
-            </p>
-          </div>
-          <ChevronRight size={16} className="shrink-0 text-white/40" />
-        </button>
+      {(gapsData?.gaps || []).map((gap) => (
+        <IntegrationGapCard
+          key={gap.id}
+          gap={gap}
+          isAdmin={Boolean(connectCategories?.isAdmin)}
+          onManage={() => navigate("/admin")}
+          onAddCredentials={() => {
+            setSecretsPrefill(`${gap.label} access`);
+            document.getElementById("secrets-vault")?.scrollIntoView({ behavior: "smooth" });
+          }}
+          onDismiss={() => dismissGap.mutate(gap.id)}
+        />
+      ))}
 
-        {gaps.length > 0 && (
-          <div className="space-y-2.5">
-            {gaps.map((gap) => (
-              <IntegrationGapCard
-                key={gap.id}
-                gap={gap}
-                isAdmin={Boolean(connectCategories?.isAdmin)}
-                onManage={() => navigate("/admin")}
-                onAddCredentials={() => openSecretsForGap(gap)}
-                onDismiss={() => dismissGap.mutate(gap.id)}
-              />
+      {connectCategories && connectCategories.categories.length > 0 && (
+        <section>
+          <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Business &amp; Platform Integrations
+          </div>
+          <div className="space-y-2">
+            {connectCategories.categories.map((category) => (
+              <div key={category.id} className="zar-glass flex items-center justify-between gap-2 rounded-xl p-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-white">{category.label}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[9.5px] uppercase ${category.connected ? STATUS_CLS.connected : STATUS_CLS.disconnected}`}>
+                    {category.connected ? `connected${category.accountCount > 1 ? ` (${category.accountCount})` : ""}` : category.status}
+                  </span>
+                </div>
+                {connectCategories.isAdmin ? (
+                  <button className="zar-button rounded-lg px-2.5 py-1 text-[11.5px]" onClick={() => navigate("/admin")}>
+                    Manage
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1 text-[10.5px] text-white/35">
+                    <Lock size={11} /> Admin-managed
+                  </span>
+                )}
+              </div>
             ))}
           </div>
-        )}
-
-        {loading ? (
-          <div className="py-12 text-center text-sm text-muted-foreground">Loading…</div>
-        ) : (
-          <div className="space-y-6">
-            {CATEGORIES.map((category) => {
-              const categoryProviders = category.providers
-                .map((id) => providers.find((p) => p.provider === id))
-                .filter((p): p is IntegrationProviderInfo => Boolean(p));
-              if (categoryProviders.length === 0) return null;
-              return (
-                <section key={category.label}>
-                  <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    {category.label}
-                  </div>
-                  <div className="space-y-2.5">
-                    {categoryProviders.map((info) => (
-                      <ProviderCard
-                        key={info.provider}
-                        info={info}
-                        integration={integrations.find((i) => i.provider === info.provider)}
-                        onChanged={load}
-                      />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        )}
-
-        {connectCategories && connectCategories.categories.length > 0 && (
-          <section>
-            <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              Business &amp; Platform Integrations
-            </div>
-            <div className="space-y-2">
-              {connectCategories.categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="zar-glass flex items-center justify-between gap-2 rounded-xl p-3"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-medium text-white">{category.label}</span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[9.5px] uppercase tracking-[0.06em] ${
-                          category.connected ? STATUS_CLS.connected : STATUS_CLS.disconnected
-                        }`}
-                      >
-                        {category.connected ? `connected${category.accountCount > 1 ? ` (${category.accountCount})` : ""}` : category.status}
-                      </span>
-                    </div>
-                  </div>
-                  {connectCategories.isAdmin ? (
-                    <button
-                      type="button"
-                      onClick={() => navigate("/admin")}
-                      className="zar-button shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] text-white/70 hover:text-white"
-                    >
-                      Manage
-                    </button>
-                  ) : (
-                    <span className="flex shrink-0 items-center gap-1 text-[10.5px] text-white/35">
-                      <Lock size={11} />
-                      Admin-managed
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <SecretsVault prefillLabel={secretsPrefill} />
-    </div>
-  );
-}
-
-function ProviderCard({
-  info,
-  integration,
-  onChanged,
-}: {
-  info: IntegrationProviderInfo;
-  integration?: TradingIntegration;
-  onChanged: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const status = integration?.status || "disconnected";
-  const connected = status !== "disconnected";
-
-  const save = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/trading/integrations/${info.provider}`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
-      setValues({});
-      setOpen(false);
-      onChanged();
-    } catch (err: any) {
-      setError(err?.message || "Failed to save");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const test = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/trading/integrations/${info.provider}/test`, {
-        method: "POST",
-        credentials: "include",
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);
-      onChanged();
-    } catch (err: any) {
-      setError(err?.message || "Test failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const disconnect = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fetch(`/api/trading/integrations/${info.provider}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      onChanged();
-    } catch (err: any) {
-      setError(err?.message || "Failed to disconnect");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="zar-glass rounded-2xl p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Link2 size={13} className="shrink-0 text-cyan-300" />
-            <span className="text-[13.5px] font-semibold text-white">{info.label}</span>
-            <span className={`rounded-full px-2 py-0.5 text-[9.5px] uppercase tracking-[0.06em] ${STATUS_CLS[status]}`}>
-              {status}
-            </span>
-          </div>
-          <p className="mt-1 text-[11.5px] leading-snug text-white/50">{info.purpose}</p>
-          {integration?.lastResult && (
-            <p className="mt-1 text-[11px] text-white/55">{integration.lastResult}</p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="zar-button shrink-0 rounded-lg px-2.5 py-1 text-[11.5px] text-white/70 hover:text-white"
-        >
-          {open ? "Close" : connected ? "Edit" : "Connect"}
-        </button>
-      </div>
-
-      {connected && !open && (
-        <div className="mt-2.5 flex gap-2">
-          <button
-            type="button"
-            onClick={() => void test()}
-            disabled={busy}
-            className="zar-button rounded-lg px-2.5 py-1 text-[11.5px] font-medium text-white/80 disabled:opacity-50"
-          >
-            {busy ? "Testing…" : "Test"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void disconnect()}
-            disabled={busy}
-            className="zar-button rounded-lg px-2.5 py-1 text-[11.5px] text-white/70 hover:text-red-300 disabled:opacity-50"
-          >
-            Disconnect
-          </button>
-        </div>
+        </section>
       )}
 
-      {open && (
-        <div className="mt-3 space-y-2 border-t border-white/[0.06] pt-3">
-          {info.fields.map((field) => (
-            <input
-              key={field.key}
-              type={field.secret ? "password" : "text"}
-              value={values[field.key] || ""}
-              onChange={(e) => setValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-              placeholder={`${field.label}${field.optional ? " (optional)" : ""}`}
-              autoComplete={field.secret ? "new-password" : "off"}
-              className="zar-input w-full min-w-0 rounded-lg px-3 py-2 text-[13px] text-white placeholder:text-white/30 focus:outline-none"
-            />
-          ))}
-          {error && <p className="text-[12px] text-red-300">{error}</p>}
-          <button
-            type="button"
-            onClick={() => void save()}
-            disabled={busy}
-            className="zar-gradient w-full rounded-lg px-3 py-1.5 text-[13px] font-medium text-white disabled:opacity-40"
-          >
-            {busy ? "Saving…" : "Save"}
-          </button>
-        </div>
-      )}
+      <SecretsVault prefillLabel={secretsPrefill} />
     </div>
   );
 }

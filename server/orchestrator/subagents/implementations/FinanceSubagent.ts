@@ -1,6 +1,5 @@
 /**
- * FinanceSubagent: Trading Intelligence phase
- * Inherits FinanceAgent rules and autonomously decides to activate on finance/trading requests.
+ * Compatibility lane detector. Finance execution is delegated to ZILLION Prosper.
  */
 
 import { SubagentBase } from "../SubagentBase";
@@ -10,6 +9,7 @@ import type {
   SubagentResult,
   CapabilityLevel,
 } from "../SubagentTypes";
+import { invokeCapital } from "../../../services/capital/CapitalGateway";
 
 const FINANCE_KEYWORDS = [
   "crypto", "bitcoin", "btc", "ethereum", "eth", "solana", "sol", "token", "altcoin", "defi", "web3", "nft", "on-chain", "wallet",
@@ -88,20 +88,23 @@ export class FinanceSubagent extends SubagentBase {
     laneDecision: SubagentLaneDecision,
     capabilities: CapabilityLevel[]
   ): Promise<SubagentResult> {
-    const responseText = `Finance Analysis:\n- Trading Intelligence phase active\n- Market context analysis enabled\n- Risk management validation active\n- Paper trading mode (no live execution)\n\nRequest analyzed for: ${capabilities.join(", ")}`;
+    const response = await invokeCapital<any>(context.userId, {
+      conversationId: context.conversationId,
+      task: context.message,
+    });
 
     return {
       subagentName: this.name,
       laneName: "finance",
       activated: true,
-      responseText,
-      reasoning: "FinanceSubagent evaluated trading/finance context and determined analysis scope.",
-      actionItems: capabilities.includes("action")
+      responseText: response.message,
+      reasoning: "Finance was delegated to the ZILLION Prosper Capital capability.",
+      actionItems: response.requiresApproval
         ? [
             {
-              type: "paper_trade_thesis",
-              description: "Generate and validate trade thesis with risk analysis",
-              requiresApproval: false,
+              type: "capital_approval",
+              description: "Review the ZILLION Prosper Capital proposal",
+              requiresApproval: true,
             },
           ]
         : [],
@@ -119,7 +122,7 @@ export class FinanceSubagent extends SubagentBase {
         laneDecision,
         capabilities,
         actionsRequested: [],
-        servicesInvoked: ["FinanceAgent"],
+        servicesInvoked: ["ZILLION Prosper Capital"],
         toolsInvoked: [],
         status: "success",
       },

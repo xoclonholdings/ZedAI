@@ -26,8 +26,7 @@ import ProjectsPage from "@/pages/projects";
 import { DecisionsListPage, DecisionDetailPage } from "@/pages/decisions";
 import TimelinePage from "@/pages/timeline";
 import DiscoveryPage from "@/pages/discovery";
-import TradingPage from "@/pages/trading";
-import BudgetPage from "@/pages/budget";
+import CapitalRedirect from "@/pages/CapitalRedirect";
 import WorkspacePage from "@/pages/workspace";
 import HistoryPage from "@/pages/history";
 import InboxPage from "@/pages/inbox";
@@ -138,31 +137,19 @@ function Router() {
       </Route>
 
       <Route path="/trading">
-        {isAuthenticated ? (
-          <ConsoleWorkspaceFrame label="Trading Intelligence" accent="#22d3ee">
-            <TradingPage />
-          </ConsoleWorkspaceFrame>
-        ) : (
-          <Login />
-        )}
+        {isAuthenticated ? <CapitalRedirect path="/trading" /> : <Login />}
       </Route>
 
       <Route path="/trading/">
-        {isAuthenticated ? (
-          <ConsoleWorkspaceFrame label="Trading Intelligence" accent="#22d3ee">
-            <TradingPage />
-          </ConsoleWorkspaceFrame>
-        ) : (
-          <Login />
-        )}
+        {isAuthenticated ? <CapitalRedirect path="/trading" /> : <Login />}
       </Route>
 
       <Route path="/budget">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><BudgetPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <CapitalRedirect path="/budget" /> : <Login />}
       </Route>
 
       <Route path="/budget/">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><BudgetPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <CapitalRedirect path="/budget" /> : <Login />}
       </Route>
 
       <Route path="/workspaces/:workspace/tools/:id">
@@ -171,6 +158,14 @@ function Router() {
 
       <Route path="/workspace">
         {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><WorkspacePage /></ConsoleWorkspaceFrame> : <Login />}
+      </Route>
+
+      <Route path="/workspaces/finance">
+        {isAuthenticated ? <CapitalRedirect path="/" /> : <Login />}
+      </Route>
+
+      <Route path="/workspaces/trading">
+        {isAuthenticated ? <CapitalRedirect path="/trading" /> : <Login />}
       </Route>
 
       <Route path="/workspaces/:workspace">

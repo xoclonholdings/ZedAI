@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: [
-      "server/zcos/trading/**/*.test.ts",
+      "server/services/capital/**/*.test.ts",
       "server/services/fileProcessor.test.ts",
       "server/services/auth/**/*.test.ts",
       "server/services/intake/**/*.test.ts",

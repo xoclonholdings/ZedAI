@@ -70,6 +70,22 @@ export async function runMigrations(): Promise<void> {
       ON auth_identities (user_id, provider, updated_at DESC);
     `);
 
+    // Replay guard and audit receipt for signed cross-galaxy capabilities.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS capability_message_receipts (
+        message_id varchar PRIMARY KEY,
+        owner_user_id varchar NOT NULL REFERENCES users(id),
+        path varchar NOT NULL,
+        capability varchar NOT NULL,
+        received_at timestamptz NOT NULL DEFAULT now(),
+        expires_at timestamptz NOT NULL
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_capability_receipts_expires
+      ON capability_message_receipts (expires_at);
+    `);
+
     // Conversations
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS conversations (
@@ -178,19 +194,6 @@ export async function runMigrations(): Promise<void> {
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_scratchpad_memory_conversation
       ON scratchpad_memory (conversation_id);
-    `);
-
-    // Trading state (durable JSONB blobs for the Trading module:
-    // learned knowledge, stage progression, theses, paper trades,
-    // governance history, TradingView records).
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS trading_state (
-        scope varchar NOT NULL,
-        key varchar NOT NULL,
-        data jsonb NOT NULL,
-        updated_at timestamp DEFAULT now(),
-        PRIMARY KEY (scope, key)
-      );
     `);
 
     // Learning Studio state. Each learning object is stored separately

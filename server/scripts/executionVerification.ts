@@ -8,7 +8,7 @@ import { DigitalExecutionService } from "../services/execution/DigitalExecutionS
 import { AgentApprovalAdapter } from "../services/approval/AgentApprovalAdapter";
 import { TaskLifecycleManager } from "../services/execution/TaskLifecycleManager";
 import { executeAgentStage } from "../services/flow/FlowExecutor";
-import { FinanceAgent } from "../agents/finance/FinanceAgent";
+import { invokeCapital } from "../services/capital/CapitalGateway";
 import { fetchWebTargetsFromText } from "../services/WebContentService";
 import { selectAgentWithTrace } from "../orchestrator/manager-agent/agent-selection";
 import { buildZarAdminContext } from "../services/ZarContextBuilder";
@@ -20,7 +20,7 @@ import {
 } from "../services/ProjectFilingStore";
 import { storage } from "../storage/databaseStorage";
 import { isAdmin } from "../local-auth/middleware";
-import { HUB_CONFIG_DIR, HUB_DIR, HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
+import { HUB_CONFIG_DIR, HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
 import type { FlowDefinition, FlowRun, FlowStage } from "../../shared/flow-types";
 
 type Backup = { existed: boolean; content?: string };
@@ -140,18 +140,38 @@ async function testDigitalProviderDisabled() {
   }
 }
 
-async function testFinanceTradingWrite() {
-  const tradingFile = path.resolve(HUB_DIR, "trading/paper-trades.json");
-  await withBackups([tradingFile], async () => {
-    const response = await FinanceAgent.process({
-      userId: "verify-user",
-      task: "Log a paper trade: AAPL long entry 190 stop 185 target 200 thesis breakout",
+async function withCapitalMock<T>(fn: () => Promise<T>): Promise<T> {
+  const oldUrl = process.env.ZILLION_PROSPER_API_URL;
+  const oldSecret = process.env.ZILLION_CAPABILITY_SECRET;
+  const oldFetch = globalThis.fetch;
+  process.env.ZILLION_PROSPER_API_URL = "https://capital.example";
+  process.env.ZILLION_CAPABILITY_SECRET = "verification-capability-secret-with-32-characters";
+  globalThis.fetch = async (_input, init) => {
+    assert.match(String((init?.headers as Record<string, string>)?.Authorization), /^Bearer /);
+    return new Response(JSON.stringify({
+      agent: "FinanceAgent",
+      message: "Delegated to ZILLION Prosper.",
+      requiresApproval: false,
+      capabilities: ["capital-analysis"],
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+  try {
+    return await fn();
+  } finally {
+    globalThis.fetch = oldFetch;
+    if (oldUrl === undefined) delete process.env.ZILLION_PROSPER_API_URL;
+    else process.env.ZILLION_PROSPER_API_URL = oldUrl;
+    if (oldSecret === undefined) delete process.env.ZILLION_CAPABILITY_SECRET;
+    else process.env.ZILLION_CAPABILITY_SECRET = oldSecret;
+  }
+}
+
+async function testCapitalDelegation() {
+  await withCapitalMock(async () => {
+    const response = await invokeCapital<any>("verify-user", {
+      task: "Review an AAPL paper-trade thesis",
     });
-    assert.equal(response.tradingAction, "log_paper_trade");
-    assert(response.recordId);
-    const raw = await fs.readFile(tradingFile, "utf8");
-    const records = JSON.parse(raw);
-    assert(records.some((trade: any) => trade.id === response.recordId && trade.symbol === "AAPL"));
+    assert.equal(response.message, "Delegated to ZILLION Prosper.");
   });
 }
 
@@ -322,8 +342,7 @@ async function testApprovalDispatchPayload() {
 }
 
 async function testFlowFinanceAgentStage() {
-  const tradingFile = path.resolve(HUB_DIR, "trading/paper-trades.json");
-  await withBackups([tradingFile], async () => {
+  await withCapitalMock(async () => {
     const flow: FlowDefinition = {
       id: "verify-flow",
       slug: "verify-flow",
@@ -376,7 +395,7 @@ async function testFlowFinanceAgentStage() {
     });
     assert.equal(output?.stageExecutionType, "agent");
     assert.equal(output?.agentInvoked, "FinanceAgent");
-    assert((output?.servicesInvoked as string[]).includes("FinanceAgent.process"));
+    assert((output?.servicesInvoked as string[]).includes("CapitalGateway.invokeCapital"));
   });
 }
 
@@ -411,7 +430,7 @@ async function main() {
     ["route selection metadata", testRouteSelection],
     ["web URL fetch and prior reference", testWebFetchAndPriorReference],
     ["digital provider disabled failure", testDigitalProviderDisabled],
-    ["finance paper trade write", testFinanceTradingWrite],
+    ["capital capability delegation", testCapitalDelegation],
     ["project context injection", testProjectContext],
     ["chat trace and file context", testChatTraceAndFileContext],
     ["operation approval dispatch payload", testApprovalDispatchPayload],

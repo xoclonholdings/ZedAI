@@ -22,15 +22,11 @@ services:
         sync: false
       - key: PRIVY_APP_SECRET
         sync: false
+      - key: ZILLION_PROSPER_API_URL
+        sync: false
+      - key: ZILLION_CAPABILITY_SECRET
+        sync: false
       - key: LIGHTNING_API_KEY
         sync: false
       - key: LIGHTNING_BASE_URL
         sync: false
-      - key: WEBULL_APP_KEY
-        sync: false
-      - key: WEBULL_APP_SECRET
-        sync: false
-      - key: WEBULL_API_ENDPOINT
-        value: "api.sandbox.webull.com"
-      - key: WEBULL_ENVIRONMENT
-        value: "sandbox"

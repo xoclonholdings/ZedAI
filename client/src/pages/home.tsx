@@ -14,7 +14,6 @@ import {
   Gavel,
   GraduationCap,
   HelpCircle,
-  LineChart,
   MessageSquare,
   Plus,
   RefreshCw,
@@ -31,10 +30,6 @@ import {
   WORKSPACE_LABEL,
   type WorkspaceSlug,
 } from "@/lib/workspaceContext";
-import {
-  TRADING_STAGES,
-  type TradingProgression,
-} from "@shared/trading-progression";
 import type {
   AnyMemoryObject,
   ObjectGraph,
@@ -62,12 +57,6 @@ interface ProjectSummary {
   updatedAt?: string;
   createdAt?: string;
   conversationIds?: string[];
-}
-
-interface BudgetSummary {
-  totals?: { reserves?: number; ytdIncome?: number; lastDepositAt?: string | null };
-  treasury?: { balance?: number; milestone?: { label?: string } };
-  pendingAllocation?: number;
 }
 
 const WORKSPACE_LAUNCHERS: Array<{
@@ -118,12 +107,6 @@ function friendlyTime(t: string): string {
   }
 }
 
-function money(v?: number): string {
-  if (v === undefined || v === null || !Number.isFinite(v)) return "—";
-  const sign = v > 0 ? "+" : v < 0 ? "-" : "";
-  return `${sign}$${Math.abs(v).toFixed(2)}`;
-}
-
 const LOW_CONFIDENCE = 0.5;
 
 export default function HomePage() {
@@ -131,11 +114,9 @@ export default function HomePage() {
   const [, navigate] = useLocation();
   const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin;
 
-  const [progression, setProgression] = useState<TradingProgression | null>(null);
   const [approvalsCount, setApprovalsCount] = useState<number>(0);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [memory, setMemory] = useState<ObjectGraph | null>(null);
-  const [budget, setBudget] = useState<BudgetSummary | null>(null);
   const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceSlug | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -149,15 +130,12 @@ export default function HomePage() {
       fetch(url, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
         .catch(() => null);
-    const [progRes, projectsRes, memoryRes, budgetRes, approvalsRes] = await Promise.all([
-      getJson("/api/trading/progression"),
+    const [projectsRes, memoryRes, approvalsRes] = await Promise.all([
       getJson("/api/projects"),
       getJson("/api/me/memory/graph"),
-      getJson("/api/budget"),
       isAdmin ? getJson("/api/admin/approval-queue") : Promise.resolve(null),
     ]);
 
-    setProgression(progRes?.progression || null);
     const projectList: ProjectSummary[] = Array.isArray(projectsRes?.projects)
       ? projectsRes.projects
       : [];
@@ -168,7 +146,6 @@ export default function HomePage() {
     });
     setProjects(projectList);
     setMemory(memoryRes || null);
-    setBudget(budgetRes || null);
     setApprovalsCount(
       Array.isArray(approvalsRes?.entries)
         ? approvalsRes.entries.filter((e: ApprovalEntry) => e.status === "pending").length
@@ -180,11 +157,6 @@ export default function HomePage() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  const currentStageDef = useMemo(() => {
-    if (!progression) return null;
-    return TRADING_STAGES.find((s) => s.id === progression.currentStage) || null;
-  }, [progression]);
 
   const displayName =
     user?.displayName ||
@@ -270,10 +242,6 @@ export default function HomePage() {
       ].filter((d) => d.count > 0),
     [conflictsCount, openQuestionsCount, lowConfidenceCount, duplicateSuspects],
   );
-
-  const treasuryBalance = budget?.treasury?.balance ?? 0;
-  const treasuryLabel = budget?.treasury?.milestone?.label;
-  const pendingAllocation = budget?.pendingAllocation ?? 0;
 
   return (
     <>
@@ -503,38 +471,18 @@ export default function HomePage() {
           </section>
         )}
 
-        {/* Current work — compact domain signals; details live on their pages */}
-        {(currentStageDef || budget) && (
-          <section className="zar-glass rounded-2xl p-4 md:p-5">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50 mb-3">
-              Current work
-            </div>
-            <div className="space-y-2">
-              {currentStageDef && (
-                <CurrentWorkRow
-                  icon={LineChart}
-                  eyebrow={`Trading · stage ${currentStageDef.order}/${TRADING_STAGES.length}`}
-                  title={currentStageDef.label}
-                  detail={currentStageDef.purpose}
-                  href="/trading"
-                />
-              )}
-              {budget && (
-                <CurrentWorkRow
-                  icon={Wallet}
-                  eyebrow="Finance · treasury"
-                  title={`${money(treasuryBalance)} · ${treasuryLabel || (treasuryBalance > 0 ? "Building" : "Not started")}`}
-                  detail={
-                    pendingAllocation
-                      ? `${money(pendingAllocation)} waiting to allocate`
-                      : "No pending allocation"
-                  }
-                  href="/budget"
-                />
-              )}
-            </div>
-          </section>
-        )}
+        <section className="zar-glass rounded-2xl p-4 md:p-5">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50 mb-3">
+            Capital
+          </div>
+          <CurrentWorkRow
+            icon={Wallet}
+            eyebrow="ZILLION Prosper · Capital Desk"
+            title="Budgeting, investing, and trading"
+            detail="Open the canonical Capital workspace."
+            href="/workspaces/finance"
+          />
+        </section>
 
         <div className="pt-2 text-center text-[11.5px] text-white/30">
           <BookOpen size={11} className="inline mr-1 opacity-60" />

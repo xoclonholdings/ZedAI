@@ -27,7 +27,6 @@ const CATEGORY_LABELS: Partial<Record<keyof IntegrationsSettings, string>> = {
   crm: "CRM",
   accounting: "Accounting",
   cloudStorage: "Cloud Storage",
-  marketData: "Market Data",
   telephony: "Telephony",
   firewall: "Firewall / VPN",
   businessOperations: "Business Operations",

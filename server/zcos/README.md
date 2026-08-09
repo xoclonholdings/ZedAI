@@ -9,7 +9,11 @@ This directory is the extraction boundary for services that will eventually move
 - Flows: `server/zcos/flows/ZcosFlowEngine.ts`
 - Flow persistence: `server/services/FlowStore.ts`
 - Flow execution compatibility layer: `server/services/flow/FlowExecutor.ts`
-- Trading Intelligence Phase 1: `server/zcos/trading/*`
+- Capital capability boundary: `server/services/capital/*` and `server/routes-modules/capabilities.ts`
+
+Budgeting, investing, market research, and trading implementations are owned by
+`xoclonholdings/zillion-prosper`. ZAR retains only the authenticated launch,
+owner-bound capability gateway, shared ZCOS services, and approval authority.
 - Approvals: `server/services/approval/*`
 - Tasks: `server/services/execution/TaskLifecycleManager.ts`
 - Provider execution: `server/core/providers/*`
@@ -17,19 +21,19 @@ This directory is the extraction boundary for services that will eventually move
 
 ## Boundary Rule
 
-ZAR routes and UI may launch flows, display runs, approve/reject gates, show reports, and expose trading intelligence endpoints.
+ZAR routes and UI may launch flows, display runs, approve/reject gates, show reports, and coordinate Capital work through the typed ZILLION capability.
 
-ZCOS services create runs, execute stages, dispatch model/agent work, create approvals, write memory, track errors, generate reports, store trading knowledge, evaluate scanner observations, create trade theses, manage paper trades, and calculate simulation performance.
+ZCOS services create runs, execute stages, dispatch model/agent work, create approvals, write shared memory, track errors, and generate reports. ZILLION stores trading knowledge, evaluates scanners, creates trade theses, manages paper trades, and calculates Capital performance.
 
-## Trading Phase 1 Rule
+## Capital Certification Rule
 
-Trading Intelligence is education, analysis, simulation, paper trading, journaling, and strategy validation only.
+ZILLION supports education, analysis, simulation, paper trading, journaling, and strategy validation.
 
-There are no broker connections, live orders, real-money execution, or capital movement in Phase 1.
+Live orders, real-money execution, and capital movement remain blocked pending separate certification.
 
 ## Current Extraction Path
 
-1. Keep existing ZAR routes stable.
-2. Move service imports behind `server/zcos/*` boundaries.
-3. Keep hub-backed persistence file-based until ZCOS has its own storage layer.
-4. Extract ZCOS services later without changing ZAR UI contracts.
+1. Preserve legacy ZAR URLs as authenticated redirects.
+2. Delegate Finance intent through `server/services/capital/CapitalGateway.ts`.
+3. Expose only signed, owner-bound shared capabilities to ZILLION.
+4. Keep Finance and Trading writers out of the ZAR runtime.
