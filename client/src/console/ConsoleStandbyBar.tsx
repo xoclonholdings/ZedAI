@@ -10,7 +10,7 @@ import { communicationModeViews } from "@/nexys/viewport/NexysViewportModel";
  * The console's standby face: one line of the six tool icons, one line of a
  * compact composer. Tapping a tool powers the console on already showing
  * that tool; typing and sending goes straight to chat without powering on,
- * exactly like the expanded dock's own "text" mode does today.
+ * through the existing chat surface.
  */
 export function ConsoleStandbyBar({
   onActivate,
@@ -25,7 +25,7 @@ export function ConsoleStandbyBar({
   const modes = useMemo(() => communicationModeViews(communicationLayer), [communicationLayer]);
 
   function handleModeTap(modeId: string) {
-    if (modeId === "text") {
+    if (modeId === "chat") {
       navigate("/chat");
       return;
     }

@@ -10,7 +10,7 @@ const POWER_TRANSITION = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
  * The console's persistent operating surface - attached to every console
  * screen, in every galaxy. Standby is the compact two-line face; powering on
  * expands it into the full workspace of tools (unchanged from the existing
- * dock's Talk/Image/Draw/Doc/Upload/History behavior).
+ * dock's Text/Talk/Image/Chat/Doc/Upload behavior).
  */
 export function ConsoleDock({
   powered,

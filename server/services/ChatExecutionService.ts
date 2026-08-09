@@ -319,6 +319,12 @@ export class ChatExecutionService {
         ? await storage.getMessagesByConversation(input.conversationId).catch(() => [])
         : [];
       const effectiveMessage = resolveReferencedWebpageForTest(input.message, history);
+      const channelPermissions = input.context?.channelPermissions as
+        | { memory?: boolean; knowledge?: boolean; projects?: boolean }
+        | undefined;
+      const memoryAllowed = channelPermissions?.memory !== false;
+      const knowledgeAllowed = channelPermissions?.knowledge !== false;
+      const projectsAllowed = channelPermissions?.projects !== false;
       const webLookupIntent = isWebLookupIntent(effectiveMessage) || isWebLookupIntent(input.message);
       trace.detectedIntent = webLookupIntent ? "web_research" : "manager";
 
@@ -341,14 +347,16 @@ export class ChatExecutionService {
       // 'X') that the lexicon doesn't recognize become low-confidence
       // candidates with this turn as evidence. Never promoted on one
       // occurrence — see LexiconAuthorityService.registerCandidate.
-      for (const term of lexiconResolution.unresolvedSignals.slice(0, 3)) {
-        LexiconAuthorityService.registerCandidate({
-          term,
-          evidenceExcerpt: effectiveMessage.slice(0, 480),
-          sourceLabel: "chat_unresolved_signal",
-          userId: input.userId,
-          conversationId: input.conversationId,
-        }).catch(() => null);
+      if (memoryAllowed) {
+        for (const term of lexiconResolution.unresolvedSignals.slice(0, 3)) {
+          LexiconAuthorityService.registerCandidate({
+            term,
+            evidenceExcerpt: effectiveMessage.slice(0, 480),
+            sourceLabel: input.route === "sms" ? "sms_unresolved_signal" : "chat_unresolved_signal",
+            userId: input.userId,
+            conversationId: input.conversationId,
+          }).catch(() => null);
+        }
       }
 
       let contextInquiryPrompt = "";
@@ -366,7 +374,7 @@ export class ChatExecutionService {
         assessment: any;
       } | null = null;
 
-      if (!webLookupIntent) {
+      if (memoryAllowed && !webLookupIntent) {
         try {
           trace.servicesInvoked.push("ContextInquiryEngine.assess");
           const contextAssessmentResult = hooks.contextAssessment
@@ -480,12 +488,14 @@ export class ChatExecutionService {
         };
       }
 
-      const injectedMemory = hooks.injectedMemory
-        ? await hooks.injectedMemory()
-        : await injectMemory("ManagerAgent", {
-            includeFoundation: Boolean(input.isAdmin),
-            userId: input.userId,
-          }).catch(() => ({ formatted: "" }));
+      const injectedMemory = !memoryAllowed
+        ? { formatted: "" }
+        : hooks.injectedMemory
+          ? await hooks.injectedMemory()
+          : await injectMemory("ManagerAgent", {
+              includeFoundation: Boolean(input.isAdmin),
+              userId: input.userId,
+            }).catch(() => ({ formatted: "" }));
       if (injectedMemory.formatted) trace.memorySources.push("MemoryInjector");
 
       // Workspace memory FIRST: whenever a request comes from a workspace,
@@ -493,44 +503,52 @@ export class ChatExecutionService {
       const workspaceSlug = String(
         input.workspaceId || input.context?.workspaceId || "",
       ).trim();
-      const workspaceMemory = await buildWorkspaceMemoryContext(
-        workspaceSlug,
-        effectiveMessage,
-        input.userId,
-        Boolean(input.isAdmin),
-      ).catch(() => ({ prompt: "", count: 0, used: false }));
+      const workspaceMemory = !memoryAllowed || !projectsAllowed
+        ? { prompt: "", count: 0, used: false }
+        : await buildWorkspaceMemoryContext(
+            workspaceSlug,
+            effectiveMessage,
+            input.userId,
+            Boolean(input.isAdmin),
+          ).catch(() => ({ prompt: "", count: 0, used: false }));
       if (workspaceMemory.used) trace.memorySources.push("WorkspaceMemory");
 
-      trace.servicesInvoked.push("KnowledgeService.buildContext");
-      const knowledge = hooks.knowledgeContext
-        ? await hooks.knowledgeContext()
-        : await KnowledgeService.buildContext({
-            userId: input.userId,
-            query: effectiveMessage,
-            conversationId: input.conversationId,
-            lane: "manager",
-            injectedMemory: injectedMemory.formatted,
-            includeAdminFoundation: Boolean(input.isAdmin),
-          });
+      if (knowledgeAllowed) trace.servicesInvoked.push("KnowledgeService.buildContext");
+      const knowledge = !knowledgeAllowed
+        ? { prompt: "", retrievalMode: "channel_permission_disabled" }
+        : hooks.knowledgeContext
+          ? await hooks.knowledgeContext()
+          : await KnowledgeService.buildContext({
+              userId: input.userId,
+              query: effectiveMessage,
+              conversationId: input.conversationId,
+              lane: "manager",
+              injectedMemory: injectedMemory.formatted,
+              includeAdminFoundation: Boolean(input.isAdmin),
+            });
       trace.retrievalMode = (knowledge as any).retrievalMode || "knowledge_context";
       if (knowledge.prompt) trace.memorySources.push("KnowledgeService");
 
-      trace.servicesInvoked.push("buildZarAdminContext");
-      const adminContext = hooks.adminContext
-        ? await hooks.adminContext()
-        : await buildZarAdminContext({
-            userId: input.userId,
-            conversationId: input.conversationId,
-            projectId: input.projectId || input.context?.projectId,
-            workspaceId: input.workspaceId || input.context?.workspaceId,
-          } as any);
+      if (projectsAllowed) trace.servicesInvoked.push("buildZarAdminContext");
+      const adminContext = !projectsAllowed
+        ? { text: "", meta: { projectInstructions: false, projectSourceCount: 0 } }
+        : hooks.adminContext
+          ? await hooks.adminContext()
+          : await buildZarAdminContext({
+              userId: input.userId,
+              conversationId: input.conversationId,
+              projectId: input.projectId || input.context?.projectId,
+              workspaceId: input.workspaceId || input.context?.workspaceId,
+            } as any);
       trace.projectContextUsed = Boolean(adminContext.meta.projectInstructions || adminContext.meta.projectSourceCount);
       trace.projectSources = adminContext.meta.projectSourceCount ? ["ProjectFilingStore"] : [];
       trace.sourceCount = adminContext.meta.projectSourceCount || 0;
 
-      const fileContext = hooks.fileContext
-        ? await hooks.fileContext()
-        : await buildFileContext(input.conversationId);
+      const fileContext = !knowledgeAllowed
+        ? { prompt: "", filesReferenced: [], failedFiles: [], imageBlocks: [] }
+        : hooks.fileContext
+          ? await hooks.fileContext()
+          : await buildFileContext(input.conversationId);
       trace.filesReferenced = fileContext.filesReferenced;
       trace.fileContextUsed = Boolean(fileContext.prompt);
       if (fileContext.prompt) trace.memorySources.push("conversation_files");
@@ -548,7 +566,7 @@ export class ChatExecutionService {
         typeof input.context?.lessonId === "string"
           ? input.context.lessonId
           : undefined;
-      if (learningPathId) {
+      if (knowledgeAllowed && learningPathId) {
         trace.servicesInvoked.push("LearningContextBuilder.buildLearningTutorContext");
         learningContext = await buildLearningTutorContext({
           userId: input.userId,
@@ -588,10 +606,12 @@ export class ChatExecutionService {
       // Document Intelligence — surface knowledge extracted from uploaded
       // and previously-ingested documents (connected in the knowledge
       // graph) with source attribution. Best-effort; never blocks a reply.
-      trace.servicesInvoked.push("DocumentIntelligenceService.retrieveForQuery");
-      const documentKnowledge = await DocumentIntelligenceService.retrieveForQuery(
-        effectiveMessage,
-      ).catch(() => ({ block: "", objectIds: [], citations: [], conflictCount: 0 }));
+      if (knowledgeAllowed) trace.servicesInvoked.push("DocumentIntelligenceService.retrieveForQuery");
+      const documentKnowledge = !knowledgeAllowed
+        ? { block: "", objectIds: [], citations: [], conflictCount: 0 }
+        : await DocumentIntelligenceService.retrieveForQuery(
+            effectiveMessage,
+          ).catch(() => ({ block: "", objectIds: [], citations: [], conflictCount: 0 }));
       if (documentKnowledge.objectIds.length > 0) {
         trace.memorySources.push("DocumentKnowledgeGraph");
         trace.documentCitations = documentKnowledge.citations;
@@ -754,24 +774,26 @@ export class ChatExecutionService {
         ...metadata,
       });
 
-      await (hooks.reflect || ZarReflectionEngine.reflectAfterReply)({
-        userId: input.userId,
-        conversationId: input.conversationId,
-        userMessage: input.message,
-        assistantReply: presented.content,
-        route: "orchestrate",
-        strategic: strategicReasoning.active,
-        requiresApproval: response.requiresApproval,
-        tags: ["orchestrate", "cognitive-core", trace.selectedAgent || "unknown-agent"],
-      }).catch((error) => {
-        void (hooks.log || logRuntimeEvent)({
-          level: "warn",
-          source: "server",
-          event: "reflection.failed",
-          detail: error?.message || String(error),
-          context: { traceId: trace.traceId, conversationId: input.conversationId },
+      if (memoryAllowed) {
+        await (hooks.reflect || ZarReflectionEngine.reflectAfterReply)({
+          userId: input.userId,
+          conversationId: input.conversationId,
+          userMessage: input.message,
+          assistantReply: presented.content,
+          route: "orchestrate",
+          strategic: strategicReasoning.active,
+          requiresApproval: response.requiresApproval,
+          tags: [input.route === "sms" ? "sms" : "orchestrate", "cognitive-core", trace.selectedAgent || "unknown-agent"],
+        }).catch((error) => {
+          void (hooks.log || logRuntimeEvent)({
+            level: "warn",
+            source: "server",
+            event: "reflection.failed",
+            detail: error?.message || String(error),
+            context: { traceId: trace.traceId, conversationId: input.conversationId },
+          });
         });
-      });
+      }
 
       auditTrace(trace as any);
       await (hooks.log || logRuntimeEvent)({

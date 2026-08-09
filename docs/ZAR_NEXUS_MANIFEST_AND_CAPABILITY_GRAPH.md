@@ -51,7 +51,7 @@ The approved modes are:
 - Text
 - Talk
 - Image
-- Draw
+- Chat
 - Doc
 - Upload
 
@@ -64,7 +64,7 @@ Communication modes are not:
 - workspace nodes
 - application shells
 
-They remain globally available regardless of the active root node. The current implementation points to Nexus-native communication primitives for text, browser dictation, and file upload. Draw is represented as a scaffolded communication capability only; this slice does not implement drawing UI.
+They remain globally available regardless of the active root node. Text manages ZAR by Text/SMS access, Chat opens the existing written conversation, and the remaining modes point to Nexus-native communication primitives for browser dictation and file upload.
 
 The persistent communication layer now consumes the existing conversation system directly through the Nexus-owned communication surface. Text prompts, conversation creation, direct conversation loading, message dispatch, file upload, browser dictation, assistant responses, errors, aborts, and cache invalidation remain backed by the existing chat APIs and reusable operational chat utilities.
 

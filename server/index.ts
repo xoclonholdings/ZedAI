@@ -33,7 +33,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, _res, buffer) => {
+    (req as any).rawBody = buffer.toString("utf8");
+  },
+}));
 app.use(express.urlencoded({ extended: false }));
 
 app.get("/health", (_req, res) => {

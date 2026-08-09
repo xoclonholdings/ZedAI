@@ -101,7 +101,7 @@ test("persistent communication layer exposes the six approved modes", () => {
   );
   assert.deepEqual(
     PERSISTENT_COMMUNICATION_MANIFEST.modes.map((mode) => mode.label),
-    ["Text", "Talk", "Image", "Draw", "Doc", "Upload"],
+    ["Text", "Talk", "Image", "Chat", "Doc", "Upload"],
   );
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.modes.every((mode) => mode.surfacePath !== "/nexys/create"), true);
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.capabilities.length, 6);

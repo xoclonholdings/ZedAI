@@ -185,18 +185,6 @@ export function registerIntakeRoutes(app: Express): void {
     }
   });
 
-  app.post("/api/intake/sms", verifySignedIntakeRequest, async (req: Request, res: Response) => {
-    try {
-      const { from, body } = req.body || {};
-      if (!from || !body) {
-        return res.status(400).json({ error: "from and body are required" });
-      }
-      return acknowledgeUnboundExternalMessage(req, res, "sms");
-    } catch (err: any) {
-      res.status(500).json({ error: err?.message || "sms intake failed" });
-    }
-  });
-
   app.post("/api/intake/messaging", verifySignedIntakeRequest, async (req: Request, res: Response) => {
     try {
       const { target, from, body } = req.body || {};

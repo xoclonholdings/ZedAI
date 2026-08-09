@@ -191,6 +191,96 @@ export async function runMigrations(): Promise<void> {
       ON learning_state (user_id, object_type, updated_at DESC);
     `);
 
+    // ZAR by Text. Phone numbers and message bodies are encrypted before
+    // persistence; deterministic phone hashes support identity resolution
+    // without making a phone number an account identity.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_phone_connections (
+        id varchar PRIMARY KEY,
+        user_id varchar NOT NULL REFERENCES users(id),
+        phone_hash text NOT NULL UNIQUE,
+        phone_ciphertext text NOT NULL,
+        phone_last_four varchar(4) NOT NULL,
+        status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','disabled','revoked')),
+        permissions jsonb NOT NULL DEFAULT '{"memory":true,"knowledge":true,"projects":true,"reminders":true,"commands":false}'::jsonb,
+        conversation_id varchar REFERENCES conversations(id) ON DELETE SET NULL,
+        consented_at timestamptz NOT NULL,
+        policy_version text NOT NULL,
+        revoked_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_sms_connections_user_status
+      ON sms_phone_connections (user_id, status, updated_at DESC);
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_verification_challenges (
+        id varchar PRIMARY KEY,
+        user_id varchar NOT NULL REFERENCES users(id),
+        phone_hash text NOT NULL,
+        phone_ciphertext text NOT NULL,
+        phone_last_four varchar(4) NOT NULL,
+        code_hash text NOT NULL,
+        permissions jsonb NOT NULL,
+        expires_at timestamptz NOT NULL,
+        attempts integer NOT NULL DEFAULT 0,
+        max_attempts integer NOT NULL DEFAULT 5,
+        consumed_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_sms_challenges_user_created
+      ON sms_verification_challenges (user_id, created_at DESC);
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_message_envelopes (
+        id varchar PRIMARY KEY,
+        direction text NOT NULL CHECK (direction IN ('inbound','outbound')),
+        provider text NOT NULL,
+        provider_message_id text,
+        idempotency_key text NOT NULL,
+        phone_hash text NOT NULL,
+        connection_id varchar REFERENCES sms_phone_connections(id) ON DELETE SET NULL,
+        body_ciphertext text NOT NULL,
+        segment_index integer NOT NULL DEFAULT 1,
+        segment_count integer NOT NULL DEFAULT 1,
+        delivery_state text NOT NULL,
+        received_at timestamptz,
+        redacted_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        UNIQUE (provider, provider_message_id),
+        UNIQUE (provider, idempotency_key)
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_sms_envelopes_connection_created
+      ON sms_message_envelopes (connection_id, created_at DESC);
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sms_security_events (
+        id varchar PRIMARY KEY,
+        user_id varchar REFERENCES users(id) ON DELETE SET NULL,
+        connection_id varchar REFERENCES sms_phone_connections(id) ON DELETE SET NULL,
+        event_type text NOT NULL,
+        phone_last_four varchar(4),
+        ip_hash text,
+        user_agent_hash text,
+        metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_sms_security_user_created
+      ON sms_security_events (user_id, created_at DESC);
+    `);
+
     console.log('[MIGRATIONS] Database setup completed successfully');
   } catch (error) {
     console.error('[MIGRATIONS] Failed to run migrations:', error);

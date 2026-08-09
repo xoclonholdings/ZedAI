@@ -17,7 +17,7 @@ export const NEXYS_COMMUNICATION_MODE_IDS = [
   "text",
   "talk",
   "image",
-  "draw",
+  "chat",
   "doc",
   "upload",
 ] as const satisfies readonly NexysCommunicationModeId[];
@@ -28,8 +28,8 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
   route: "/chat",
   stateNamespace: "nexys.communication",
   modes: [
-    mode("text", "Text", "create.text", "available", "/chat", [
-      "client/src/nexys/components/communication/NexysMessageComposer.tsx",
+    mode("text", "Text", "access.sms", "available", "/nexys", [
+      "client/src/nexys/components/communication/NexysSmsSettings.tsx",
     ]),
     mode("talk", "Talk", "create.talk", "available", "/chat", [
       "client/src/nexys/components/communication/NexysVoiceDock.tsx",
@@ -38,8 +38,8 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
     mode("image", "Image", "create.image", "available", "/chat", [
       "client/src/nexys/components/communication/NexysFileUpload.tsx",
     ]),
-    mode("draw", "Draw", "create.draw", "available", "/chat", [
-      "client/src/nexys/components/communication/NexysDrawCanvas.tsx",
+    mode("chat", "Chat", "create.text", "available", "/chat", [
+      "client/src/nexys/components/communication/NexysMessageComposer.tsx",
     ]),
     mode("doc", "Doc", "create.document", "available", "/chat", [
       "client/src/components/research/ResearchDocuments.tsx",
@@ -49,12 +49,11 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
     ]),
   ],
   capabilities: [
-    communicationCapability("text", "create.text", "Text Communication", "Send text through the existing chat composer.", {
+    communicationCapability("text", "access.sms", "ZAR by Text", "Connect and manage secure SMS access to the existing ZAR relationship.", {
       actionKind: "write",
-      actionRoute: "/chat",
-      dependencies: coreCreationDependencies(),
-      terms: ["create", "text", "message", "chat", "conversation"],
-      replacesCapabilityIds: ["create.conversation"],
+      actionRoute: "/nexys",
+      dependencies: [dependency("identity.current-principal", "Phone access must belong to the authenticated user.")],
+      terms: ["text", "sms", "phone", "connect", "message"],
     }),
     communicationCapability("talk", "create.talk", "Talk Communication", "Dictate spoken input into the existing chat composer where browser support exists.", {
       actionKind: "write",
@@ -68,11 +67,12 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       dependencies: [dependency("create.upload", "Image communication uses the upload surface.")],
       terms: ["create", "image", "picture", "visual", "attach"],
     }),
-    communicationCapability("draw", "create.draw", "Draw Communication", "Sketch quick markup and send it as a real attachment through the existing upload surface.", {
-      actionKind: "upload",
+    communicationCapability("chat", "create.text", "Chat Communication", "Send written messages through the existing ZAR conversation surface.", {
+      actionKind: "write",
       actionRoute: "/chat",
-      dependencies: [dependency("create.image", "Drawing output behaves as visual input.")],
-      terms: ["create", "draw", "sketch", "canvas", "markup"],
+      dependencies: coreCreationDependencies(),
+      terms: ["create", "text", "message", "chat", "conversation"],
+      replacesCapabilityIds: ["create.conversation"],
     }),
     communicationCapability("doc", "create.document", "Document Communication", "Write up and file a new document through the existing research document authoring surface.", {
       actionKind: "write",

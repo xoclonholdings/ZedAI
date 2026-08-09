@@ -8,6 +8,7 @@ export default defineConfig({
       "server/services/fileProcessor.test.ts",
       "server/services/auth/**/*.test.ts",
       "server/services/intake/**/*.test.ts",
+      "server/services/sms/**/*.test.ts",
       "shared/**/*.test.ts",
       "client/src/lib/uploadRequest.test.ts",
       "client/src/zebulon/**/*.test.ts",

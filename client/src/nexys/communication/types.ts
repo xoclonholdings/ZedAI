@@ -6,7 +6,7 @@ export type NexysCommunicationModeId =
   | "text"
   | "talk"
   | "image"
-  | "draw"
+  | "chat"
   | "doc"
   | "upload";
 

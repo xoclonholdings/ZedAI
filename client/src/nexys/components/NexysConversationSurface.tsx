@@ -1,17 +1,17 @@
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, FileText, Globe, Image, MessageCircle, Mic, PenTool, Upload } from "lucide-react";
+import { Clock, FileText, Globe, Image, MessageCircle, Mic, Smartphone, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@shared/schema";
 import { useNexysChatSession } from "../communication/useNexysChatSession";
 import { useNexysDictation } from "../communication/useNexysDictation";
-import { NexysDrawCanvas } from "./communication/NexysDrawCanvas";
 import { NexysFileUpload } from "./communication/NexysFileUpload";
 import { NexysLiveBrowser } from "./communication/NexysLiveBrowser";
 import { NexysMemoryUpload } from "./communication/NexysMemoryUpload";
 import { NexysVoiceDock } from "./communication/NexysVoiceDock";
+import { NexysSmsSettings } from "./communication/NexysSmsSettings";
 import ResearchDocuments from "@/components/research/ResearchDocuments";
 import { useNexys } from "../state/NexysProvider";
 import {
@@ -21,16 +21,15 @@ import {
 
 /**
  * What's showing in the console's one content slot, where the mic sits by
- * default - Talk/Image/Doc/Upload/History all swap this slot's content.
+ * default - Text/Talk/Image/Doc/Upload/History all swap this slot's content.
  * Browse swaps in just its compact address bar here (NexysLiveBrowser); the
  * fetched page itself renders full-size in the console's main content
  * region instead (ConsoleBrowserFullPage), the same place every workspace
- * renders. Text opens the real chat page instead of a slot (interim, per
- * the redesign note), so it isn't a slot mode here. The dock around the
+ * renders. Chat opens the real chat page instead of a slot. The dock around the
  * slot (status row, mode row, this slot, footer row) never changes shape or
  * grows - only the slot's content changes.
  */
-export type NexysDockMode = "talk" | "image" | "draw" | "doc" | "upload" | "history" | "browse";
+export type NexysDockMode = "text" | "talk" | "image" | "chat" | "doc" | "upload" | "history" | "browse";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const IMAGE_ACCEPT = "image/*";
@@ -67,21 +66,19 @@ export function NexysConversationSurface({
 
   // Owned here (not inside NexysVoiceDock) so the "Talk" mode button below
   // can trigger the exact same dictation toggle as the persistent mic button.
-  // A finished dictation hands its transcript to the real chat page (as a
-  // draft, via query param) rather than an inline composer, since Text no
-  // longer has one.
+  // A finished dictation hands its transcript to the real chat page as a draft.
   const dictation = useNexysDictation((text) => {
     goToChat();
     navigate(`/chat?draft=${encodeURIComponent(text)}`, { replace: true });
   });
 
-  // Each mode button performs the real action it names. Text leaves the
-  // dock entirely for the real chat page; the rest use the console's own
+  // Each mode button performs the real action it names. Chat leaves the
+  // dock for the existing chat page; the rest use the console's own
   // one content slot, since the dock is a persistent overlay, not a page.
   function handleModeSelect(modeId: string) {
     switch (modeId) {
       case "text":
-        goToChat(activeConversationId);
+        setActiveMode("text");
         return;
       case "talk":
         dictation.toggle();
@@ -98,8 +95,8 @@ export function NexysConversationSurface({
       case "doc":
         setActiveMode("doc");
         return;
-      case "draw":
-        setActiveMode("draw");
+      case "chat":
+        goToChat(activeConversationId);
         return;
       default:
         setStatus(`${modeId} is not available yet`);
@@ -161,6 +158,8 @@ export function NexysConversationSurface({
         own bounded content or pushes the rows around it.
       */}
       <div className="mb-3 flex min-h-[101px] flex-col justify-center">
+        {activeMode === "text" && <NexysSmsSettings />}
+
         {activeMode === "talk" && (
           <NexysVoiceDock dictation={dictation} isResponding={conversationController.isStreaming} />
         )}
@@ -185,16 +184,6 @@ export function NexysConversationSurface({
         {activeMode === "upload" && <NexysMemoryUpload onDone={() => setActiveMode("talk")} />}
 
         {activeMode === "doc" && <ResearchDocuments />}
-
-        {activeMode === "draw" && (
-          <NexysDrawCanvas
-            ensureConversationId={conversationController.ensureUploadConversation}
-            onSent={(result) => {
-              conversationController.handleFileUpload(undefined, result);
-              setActiveMode("talk");
-            }}
-          />
-        )}
 
         {activeMode === "browse" && <NexysLiveBrowser />}
 
@@ -293,13 +282,14 @@ export function iconForMode(modeId: string) {
       return Mic;
     case "image":
       return Image;
-    case "draw":
-      return PenTool;
+    case "chat":
+      return MessageCircle;
     case "doc":
       return FileText;
     case "upload":
       return Upload;
     case "text":
+      return Smartphone;
     default:
       return MessageCircle;
   }

@@ -294,6 +294,36 @@ function pushAdminAuthChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
   }
 }
 
+function pushSmsChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
+  const configured = ["TELNYX_API_KEY", "TELNYX_PUBLIC_KEY", "TELNYX_PHONE_NUMBER", "SMS_ENCRYPTION_KEY"]
+    .some((key) => present(env, key));
+  if (!configured) {
+    checks.push({
+      name: "ZAR by Text",
+      severity: "warn",
+      message: "Not configured. SMS access remains unavailable until Telnyx and encryption settings are supplied.",
+    });
+    return;
+  }
+  for (const key of ["TELNYX_API_KEY", "TELNYX_PUBLIC_KEY", "TELNYX_PHONE_NUMBER"] as const) {
+    checks.push(present(env, key)
+      ? { name: key, severity: "ok", message: "Set for ZAR by Text." }
+      : { name: key, severity: "error", message: "Required when ZAR by Text is enabled." });
+  }
+  const encryptionKey = trimmed(env, "SMS_ENCRYPTION_KEY");
+  checks.push(encryptionKey.length >= 32
+    ? { name: "SMS_ENCRYPTION_KEY", severity: "ok", message: "Set with sufficient length." }
+    : { name: "SMS_ENCRYPTION_KEY", severity: "error", message: "Required and must contain at least 32 random characters." });
+  try {
+    const phone = trimmed(env, "TELNYX_PHONE_NUMBER");
+    if (phone && !/^\+[1-9]\d{7,14}$/.test(phone)) {
+      checks.push({ name: "TELNYX_PHONE_NUMBER format", severity: "error", message: "Must use E.164 format, such as +19375550100." });
+    }
+  } catch {
+    // The explicit format check above is deterministic and cannot throw.
+  }
+}
+
 export function validateEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): EnvValidationResult {
@@ -342,6 +372,7 @@ export function validateEnv(
   pushSessionSecretCheck(env, checks);
   pushDatabaseCheck(env, checks);
   pushAdminAuthChecks(env, checks);
+  pushSmsChecks(env, checks);
 
   const frontendUrlCheck = checkUrl(env, "FRONTEND_URL");
   if (frontendUrlCheck) checks.push(frontendUrlCheck);
