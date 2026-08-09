@@ -16,8 +16,8 @@ export const PERSISTENT_COMMUNICATION_LAYER_ID = "persistent-communication";
 export const NEXYS_COMMUNICATION_MODE_IDS = [
   "text",
   "talk",
-  "image",
   "chat",
+  "image",
   "doc",
   "upload",
 ] as const satisfies readonly NexysCommunicationModeId[];
@@ -35,11 +35,11 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       "client/src/nexys/components/communication/NexysVoiceDock.tsx",
       "client/src/nexys/communication/useNexysDictation.ts",
     ]),
-    mode("image", "Image", "create.image", "available", "/chat", [
-      "client/src/nexys/components/communication/NexysFileUpload.tsx",
-    ]),
     mode("chat", "Chat", "create.text", "available", "/chat", [
       "client/src/nexys/components/communication/NexysMessageComposer.tsx",
+    ]),
+    mode("image", "Image", "create.image", "available", "/chat", [
+      "client/src/nexys/components/communication/NexysFileUpload.tsx",
     ]),
     mode("doc", "Doc", "create.document", "available", "/chat", [
       "client/src/components/research/ResearchDocuments.tsx",
@@ -55,17 +55,11 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       dependencies: [dependency("identity.current-principal", "Phone access must belong to the authenticated user.")],
       terms: ["text", "sms", "phone", "connect", "message"],
     }),
-    communicationCapability("talk", "create.talk", "Talk Communication", "Dictate spoken input into the existing chat composer where browser support exists.", {
+    communicationCapability("talk", "create.talk", "Talk Communication", "Activate foreground ZAR voice and submit spoken commands through the existing conversation runtime where browser support exists.", {
       actionKind: "write",
       actionRoute: "/chat",
-      dependencies: [dependency("create.text", "Dictation writes into the text composer.")],
-      terms: ["create", "talk", "voice", "dictation", "speech"],
-    }),
-    communicationCapability("image", "create.image", "Image Communication", "Attach image files through the existing conversation upload surface.", {
-      actionKind: "upload",
-      actionRoute: "/chat",
-      dependencies: [dependency("create.upload", "Image communication uses the upload surface.")],
-      terms: ["create", "image", "picture", "visual", "attach"],
+      dependencies: [dependency("create.text", "Voice commands use the authenticated written-conversation path.")],
+      terms: ["create", "talk", "voice", "foreground", "wake", "speech", "dictation"],
     }),
     communicationCapability("chat", "create.text", "Chat Communication", "Send written messages through the existing ZAR conversation surface.", {
       actionKind: "write",
@@ -73,6 +67,12 @@ export const PERSISTENT_COMMUNICATION_MANIFEST: PersistentCommunicationManifest 
       dependencies: coreCreationDependencies(),
       terms: ["create", "text", "message", "chat", "conversation"],
       replacesCapabilityIds: ["create.conversation"],
+    }),
+    communicationCapability("image", "create.image", "Image Communication", "Attach image files through the existing conversation upload surface.", {
+      actionKind: "upload",
+      actionRoute: "/chat",
+      dependencies: [dependency("create.upload", "Image communication uses the upload surface.")],
+      terms: ["create", "image", "picture", "visual", "attach"],
     }),
     communicationCapability("doc", "create.document", "Document Communication", "Write up and file a new document through the existing research document authoring surface.", {
       actionKind: "write",

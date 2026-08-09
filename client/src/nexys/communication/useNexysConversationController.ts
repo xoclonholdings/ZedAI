@@ -41,7 +41,7 @@ export interface NexysConversationController {
   readonly runtimeError: string | null;
   readonly messagesEndRef: React.RefObject<HTMLDivElement>;
   readonly setComposerValue: (value: string) => void;
-  readonly sendMessage: (message: string) => Promise<void>;
+  readonly sendMessage: (message: string) => Promise<NexysConversationSendResult>;
   readonly abort: () => void;
   readonly openFileUpload: () => Promise<void>;
   readonly ensureUploadConversation: () => Promise<string | undefined>;
@@ -51,6 +51,12 @@ export interface NexysConversationController {
   readonly copyMessage: (message: Message) => Promise<void>;
   readonly editMessage: (message: Message) => void;
   readonly cancelEdit: () => void;
+}
+
+export interface NexysConversationSendResult {
+  readonly status: "completed" | "failed" | "aborted" | "handled" | "ignored";
+  readonly responseText: string | null;
+  readonly conversationId?: string;
 }
 
 export function useNexysConversationController({
@@ -143,14 +149,16 @@ export function useNexysConversationController({
     return newConversationId;
   }
 
-  async function sendMessage(message: string) {
+  async function sendMessage(message: string): Promise<NexysConversationSendResult> {
     const trimmed = message.trim();
-    if (!trimmed || isStreaming) return;
+    if (!trimmed || isStreaming) {
+      return { status: "ignored", responseText: null, conversationId };
+    }
 
     const handled = await onBeforeSend?.(trimmed);
     if (handled) {
       setComposerValue("");
-      return;
+      return { status: "handled", responseText: null, conversationId };
     }
 
     setRuntimeError(null);
@@ -167,7 +175,7 @@ export function useNexysConversationController({
       } catch (error) {
         console.error("Failed to create conversation:", error);
         setRuntimeError("Could not start a conversation. Try again.");
-        return;
+        return { status: "failed", responseText: null };
       }
     }
 
@@ -175,7 +183,7 @@ export function useNexysConversationController({
     setEditingMessageId(null);
     setComposerValue("");
 
-    await sendAgentMessage({
+    const result = await sendAgentMessage({
       message: trimmed,
       convId: activeConversationId,
       agentTarget: workspaceContext,
@@ -190,6 +198,11 @@ export function useNexysConversationController({
       queryClient,
       onResponse: onAgentResponse,
     });
+    return {
+      status: result.status,
+      responseText: result.responseText,
+      conversationId: activeConversationId,
+    };
   }
 
   async function archiveConversation() {

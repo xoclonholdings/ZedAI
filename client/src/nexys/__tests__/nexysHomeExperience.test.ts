@@ -128,7 +128,7 @@ test("persistent communication modes are derived from the communication manifest
   const modes = communicationModeViews(PERSISTENT_COMMUNICATION_MANIFEST);
 
   assert.deepEqual(modes.map((mode) => mode.id), [...NEXYS_COMMUNICATION_MODE_IDS]);
-  assert.deepEqual(modes.map((mode) => mode.label), ["Text", "Talk", "Image", "Chat", "Doc", "Upload"]);
+  assert.deepEqual(modes.map((mode) => mode.label), ["Text", "Talk", "Chat", "Image", "Doc", "Upload"]);
   assert.equal(modes.some((mode) => mode.id === "chat" && mode.enabled), true);
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.route, "/chat");
 });

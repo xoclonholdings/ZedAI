@@ -6,7 +6,8 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@shared/schema";
 import { useNexysChatSession } from "../communication/useNexysChatSession";
-import { useNexysDictation } from "../communication/useNexysDictation";
+import { submitVoiceCommandThroughConversation } from "../communication/foregroundVoice";
+import { useNexysForegroundVoice } from "../communication/useNexysDictation";
 import { NexysFileUpload } from "./communication/NexysFileUpload";
 import { NexysLiveBrowser } from "./communication/NexysLiveBrowser";
 import { NexysMemoryUpload } from "./communication/NexysMemoryUpload";
@@ -64,12 +65,12 @@ export function NexysConversationSurface({
     refetchInterval: 30000,
   });
 
-  // Owned here (not inside NexysVoiceDock) so the "Talk" mode button below
-  // can trigger the exact same dictation toggle as the persistent mic button.
-  // A finished dictation hands its transcript to the real chat page as a draft.
-  const dictation = useNexysDictation((text) => {
-    goToChat();
-    navigate(`/chat?draft=${encodeURIComponent(text)}`, { replace: true });
+  // Owned here (not inside NexysVoiceDock) so the Talk mode and microphone
+  // control one foreground voice session. Every recognized command uses the
+  // exact authenticated conversation controller used by written Nexys chat.
+  const voice = useNexysForegroundVoice({
+    submitCommand: (command) => submitVoiceCommandThroughConversation(conversationController, command),
+    cancelSubmission: conversationController.abort,
   });
 
   // Each mode button performs the real action it names. Chat leaves the
@@ -81,7 +82,7 @@ export function NexysConversationSurface({
         setActiveMode("text");
         return;
       case "talk":
-        dictation.toggle();
+        voice.toggle();
         setActiveMode("talk");
         return;
       case "image":
@@ -161,7 +162,7 @@ export function NexysConversationSurface({
         {activeMode === "text" && <NexysSmsSettings />}
 
         {activeMode === "talk" && (
-          <NexysVoiceDock dictation={dictation} isResponding={conversationController.isStreaming} />
+          <NexysVoiceDock voice={voice} />
         )}
 
         {activeMode === "image" && (

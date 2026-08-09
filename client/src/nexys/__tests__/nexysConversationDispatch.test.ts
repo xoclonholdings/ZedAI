@@ -26,7 +26,7 @@ test("Nexys communication dispatch preserves prompts and exposes structured clie
   }) as typeof fetch;
 
   try {
-    await sendAgentMessage({
+    const result = await sendAgentMessage({
       message: "Take me to Memory and show me what you retained from yesterday.",
       convId: "conversation-1",
       setIsStreaming: (value) => {
@@ -39,6 +39,11 @@ test("Nexys communication dispatch preserves prompts and exposes structured clie
         invalidateQueries: () => undefined,
       } as any,
       onResponse: (data) => responses.push(data),
+    });
+    assert.deepEqual(result, {
+      status: "completed",
+      responseText: "I can take you there and keep this conversation open.",
+      data: responses[0],
     });
   } finally {
     globalThis.fetch = originalFetch;

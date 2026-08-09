@@ -11,7 +11,7 @@ function normalizeConversationId(value: string | null | undefined): string | und
 }
 
 /**
- * The real chat page ZAR's "Text" mode opens to. Reuses the same session
+ * The real chat page ZAR's "Chat" mode opens to. Reuses the same session
  * logic (useNexysChatSession) and runtime UI the console's inline composer
  * was built on, so workspace/learning context and ZAR-driven navigation
  * behave identically here and in the dock. Rendered inside
@@ -36,8 +36,7 @@ export default function ChatPage() {
     }
   }, [controller.conversationId, conversationId, navigate]);
 
-  // A dictated draft from the console's Talk mode arrives as ?draft=... -
-  // picked up once, then left alone so retyping doesn't keep resetting it.
+  // Legacy dictated drafts remain supported for compatible deep links.
   const draftApplied = useRef(false);
   useEffect(() => {
     if (draftApplied.current) return;

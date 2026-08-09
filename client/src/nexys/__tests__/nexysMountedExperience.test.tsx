@@ -45,7 +45,7 @@ test("mounted Nexys communication surface is NEXYS-facing, defaults to the mic s
   assert.match(html, /NEXYS/, "the dock carries the NEXYS console label");
   assert.match(html, /Online/, "the connectivity indicator's Online status reads exactly as approved");
   assert.match(html, /data-nexys-voice=/, "the mic slot is the default content");
-  assert.match(html, /Voice input unavailable|Talk to ZAR/);
+  assert.match(html, /Foreground voice unavailable|Activate ZAR voice/);
   assert.doesNotMatch(html, /Ask ZAR/, "no composer/empty-state text shows in the dock");
   assert.match(html, /History/);
   assert.doesNotMatch(html, /Memory Context/, "Memory Context was removed - Memory is its own Nexys planet");

@@ -11,6 +11,7 @@ export default defineConfig({
       "server/services/sms/**/*.test.ts",
       "shared/**/*.test.ts",
       "client/src/lib/uploadRequest.test.ts",
+      "client/src/nexys/communication/foregroundVoice.test.ts",
       "client/src/zebulon/**/*.test.ts",
     ],
     testTimeout: 15000,
