@@ -2,6 +2,7 @@ import type { Express } from "express";
 
 import { getSessionMiddleware } from "./local-auth/session-middleware";
 import { registerLoginRoutes } from "./local-auth/routes-login";
+import { registerPrivyAuthRoutes } from "./local-auth/routes-privy";
 import { registerAdminOtpRoutes } from "./local-auth/routes-admin-otp";
 import { registerCredentialRoutes } from "./local-auth/routes-credentials";
 import { registerSecuritySettingsRoutes } from "./local-auth/routes-security-settings";
@@ -39,6 +40,7 @@ export {
 export async function setupLocalAuth(app: Express): Promise<void> {
   app.use(await getSessionMiddleware());
 
+  registerPrivyAuthRoutes(app);
   registerLoginRoutes(app);
   registerAdminOtpRoutes(app);
   registerCredentialRoutes(app);

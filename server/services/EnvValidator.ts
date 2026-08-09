@@ -324,6 +324,18 @@ function pushSmsChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
   }
 }
 
+function pushPrivyChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
+  const appId = trimmed(env, "VITE_PRIVY_APP_ID") || trimmed(env, "PRIVY_APP_ID");
+  const appSecret = trimmed(env, "PRIVY_APP_SECRET");
+
+  checks.push(appId
+    ? { name: "VITE_PRIVY_APP_ID", severity: "ok", message: "Set for Privy email sign-in." }
+    : { name: "VITE_PRIVY_APP_ID", severity: "error", message: "Required for the ZAR Privy login client." });
+  checks.push(appSecret
+    ? { name: "PRIVY_APP_SECRET", severity: "ok", message: "Set for server-side Privy token verification." }
+    : { name: "PRIVY_APP_SECRET", severity: "error", message: "Required so ZAR can verify Privy access tokens server-side." });
+}
+
 export function validateEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): EnvValidationResult {
@@ -372,6 +384,7 @@ export function validateEnv(
   pushSessionSecretCheck(env, checks);
   pushDatabaseCheck(env, checks);
   pushAdminAuthChecks(env, checks);
+  pushPrivyChecks(env, checks);
   pushSmsChecks(env, checks);
 
   const frontendUrlCheck = checkUrl(env, "FRONTEND_URL");

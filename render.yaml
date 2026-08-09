@@ -18,6 +18,10 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      - key: VITE_PRIVY_APP_ID
+        sync: false
+      - key: PRIVY_APP_SECRET
+        sync: false
       - key: LIGHTNING_API_KEY
         sync: false
       - key: LIGHTNING_BASE_URL

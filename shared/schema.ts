@@ -11,6 +11,16 @@ export type {
 } from "./UsersSchema";
 
 export {
+  authIdentities,
+  authIdentityRelations,
+} from "./AuthIdentitiesSchema";
+
+export type {
+  AuthIdentity,
+  InsertAuthIdentity,
+} from "./AuthIdentitiesSchema";
+
+export {
   conversations,
   modeSchema,
   insertConversationSchema,

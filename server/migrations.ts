@@ -49,6 +49,27 @@ export async function runMigrations(): Promise<void> {
       ON CONFLICT (id) DO NOTHING;
     `);
 
+    // External authentication identities map verified provider subjects to
+    // one internal ZCOS owner. Provider subjects are hashed before storage.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS auth_identities (
+        id varchar PRIMARY KEY,
+        user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        provider varchar NOT NULL,
+        issuer varchar NOT NULL,
+        subject_hash varchar NOT NULL,
+        verified_email varchar,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        last_authenticated_at timestamptz NOT NULL DEFAULT now(),
+        UNIQUE (provider, issuer, subject_hash)
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_auth_identities_user
+      ON auth_identities (user_id, provider, updated_at DESC);
+    `);
+
     // Conversations
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS conversations (

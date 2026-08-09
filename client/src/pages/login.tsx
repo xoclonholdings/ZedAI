@@ -1,15 +1,16 @@
 import { useState } from "react";
 
 import { useAuth } from "@/components/auth/UseAuth";
+import { isPrivyClientConfigured } from "@/components/auth/PrivyAuthRoot";
 import { Card, CardContent } from "@/components/ui/card";
 import { zarLogoSrc } from "@/lib/zarLogo";
 
 import { SecurePhraseForm } from "./login/SecurePhraseForm";
-import { UserLoginForm } from "./login/UserLoginForm";
+import { PrivyLoginForm } from "./login/PrivyLoginForm";
 
 export default function Login() {
   const [showPhraseFallback, setShowPhraseFallback] = useState(false);
-  const { refresh } = useAuth() as { refresh: () => Promise<void> };
+  const { refresh, authError } = useAuth();
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black p-4">
@@ -38,11 +39,19 @@ export default function Login() {
             <div className="space-y-1 text-center">
               <h1 className="text-lg font-semibold text-white">Sign in to ZAR</h1>
               <p className="text-sm text-muted-foreground">
-                Use your username and password.
+                Use the code sent to your email.
               </p>
             </div>
 
-            <UserLoginForm onSuccess={refresh} />
+            {isPrivyClientConfigured ? (
+              <PrivyLoginForm onSuccess={refresh} />
+            ) : (
+              <p className="text-sm text-amber-300">
+                Email sign-in is not configured on this deployment.
+              </p>
+            )}
+
+            {authError ? <p className="text-sm text-red-400">{authError}</p> : null}
 
             <div className="border-t border-white/10 pt-3">
               {!showPhraseFallback ? (

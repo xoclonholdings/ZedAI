@@ -6,7 +6,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/components/auth/UseAuth";
-import { AuthProvider } from "@/components/auth/AuthContext";
+import { PrivyAuthRoot } from "@/components/auth/PrivyAuthRoot";
 import { installApiFetchPatch } from "@/lib/apiClient";
 import { logClientRuntime } from "@/lib/runtimeLogger";
 import NotFound from "@/pages/not-found";
@@ -302,7 +302,7 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
+        <PrivyAuthRoot>
           <TooltipProvider>
             <NexysProvider>
               <GlobalErrorHooks />
@@ -310,7 +310,7 @@ function App() {
               <Router />
             </NexysProvider>
           </TooltipProvider>
-        </AuthProvider>
+        </PrivyAuthRoot>
       </QueryClientProvider>
     </ErrorBoundary>
   );
