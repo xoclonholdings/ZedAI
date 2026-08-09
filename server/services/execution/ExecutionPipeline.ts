@@ -34,6 +34,7 @@ import {
   TaskLifecycleManager,
   type TaskRecord,
 } from "./TaskLifecycleManager";
+import { assertOwnerContext, type OwnerContext } from "../auth/OwnerContext";
 
 export interface PreparedExecution {
   task: TaskRecord;
@@ -43,14 +44,16 @@ export interface PreparedExecution {
 
 export interface ApproveExecutionInput {
   task_id: string;
-  user_id: string;
+  actor: OwnerContext;
+  actor_role: "user" | "admin";
   approved: boolean;
-  approver_role?: "user" | "admin" | "system";
   notes?: string;
 }
 
 export interface DispatchInput {
   task_id: string;
+  actor: OwnerContext;
+  actor_role: "user" | "admin";
   action_type?: DigitalActionType;
   payload?: DigitalPayload;
   notes?: string;
@@ -83,15 +86,18 @@ export class ExecutionPipeline {
     approved: boolean;
     task: TaskRecord | null;
   }> {
-    const task = await TaskLifecycleManager.get(input.task_id);
+    assertOwnerContext(input.actor);
+    const task = input.actor_role === "admin"
+      ? await TaskLifecycleManager.get(input.task_id)
+      : await TaskLifecycleManager.getForOwner(input.task_id, input.actor);
     if (!task) return { approved: false, task: null };
 
     const result = await ExecutionApprovalHandler.record({
       task_id: task.id,
-      user_id: input.user_id,
+      user_id: input.actor.ownerUserId,
       plan: task.plan,
       approved: input.approved,
-      approver_role: input.approver_role,
+      approver_role: input.actor_role,
       notes: input.notes,
     });
 
@@ -100,11 +106,11 @@ export class ExecutionPipeline {
       {
         status: result.approved ? "approved" : "blocked",
         approval_status: result.approved ? "approved" : "rejected",
-        approval_role: input.approver_role || "user",
+        approval_role: input.actor_role,
         approval_reason: input.notes,
         approval_requested_at: task.approval_requested_at || new Date().toISOString(),
         approved_at: result.approved ? result.recorded_at : null,
-        approved_by: input.user_id,
+        approved_by: input.actor.ownerUserId,
       },
       result.approved ? "Approval granted" : "Approval rejected",
     );
@@ -113,7 +119,10 @@ export class ExecutionPipeline {
   }
 
   static async dispatch(input: DispatchInput): Promise<DispatchResult> {
-    const task = await TaskLifecycleManager.get(input.task_id);
+    assertOwnerContext(input.actor);
+    const task = input.actor_role === "admin"
+      ? await TaskLifecycleManager.get(input.task_id)
+      : await TaskLifecycleManager.getForOwner(input.task_id, input.actor);
     if (!task) return { routed_to: "manual", task: null };
 
     if (task.status !== "approved") {

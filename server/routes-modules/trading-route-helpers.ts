@@ -4,11 +4,12 @@ import type {
   PaperTradingGovernanceSettings,
 } from "../../shared/trading-types";
 import { TradingStore } from "../zcos/trading/TradingStore";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /** Shared by every trading-* route module — kept in one place instead of duplicated per file. */
 
 export function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
+  return ownerUserIdFromAuthenticatedRequest(req);
 }
 
 export function toNumber(value: unknown, fallback = 0): number {

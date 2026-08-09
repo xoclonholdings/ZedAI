@@ -13,6 +13,7 @@ import {
 } from "../services/object-memory/store";
 import type { ObjectGraph } from "../../shared/object-memory-types";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * User-facing memory upload - a single endpoint that takes what a
@@ -48,11 +49,7 @@ interface UploadResult {
 }
 
 function userIdFrom(req: any): string {
-  const userId = req.user?.claims?.sub || req.session?.userId;
-  if (typeof userId !== "string" || !userId.trim()) {
-    throw new Error("Memory upload requires an authenticated userId.");
-  }
-  return userId.trim();
+  return ownerUserIdFromAuthenticatedRequest(req);
 }
 
 function memoryScopeFrom(req: any): "admin" | "user" {

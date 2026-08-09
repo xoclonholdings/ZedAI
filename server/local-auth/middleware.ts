@@ -2,6 +2,10 @@ import type { NextFunction, Request, Response } from "express";
 
 import { loadAdminSettings } from "../services/AdminSettingsStore";
 import { logSecurityEvent } from "../services/SecurityAudit";
+import {
+  createOwnerContext,
+  OwnerContextError,
+} from "../services/auth/OwnerContext";
 
 import { getClientIp } from "./session-helpers";
 
@@ -24,6 +28,15 @@ async function ensureAuthenticatedSession(
 
   if (!session?.userId || !session?.user) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    createOwnerContext(session.userId);
+  } catch (error) {
+    if (error instanceof OwnerContextError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    throw error;
   }
 
   const settings = await loadAdminSettings();

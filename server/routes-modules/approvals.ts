@@ -7,6 +7,10 @@ import { storage } from "../storage/databaseStorage";
 import { HUB_SHARED_MEMORY_DIR } from "../utils/repoPaths";
 import { insertMessageSchema } from "../../shared/schema";
 import { logSecurityEvent } from "../services/SecurityAudit";
+import {
+  ownerContextFromAuthenticatedRequest,
+  ownerUserIdFromAuthenticatedRequest,
+} from "../services/auth/OwnerContext";
 
 const WORKING_MEMORY_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "working/current-tasks.md");
 
@@ -106,7 +110,7 @@ export function registerApprovalRoutes(app: Express): void {
       );
       const result = await ApprovalDecisionHandler.decide({
         task_id: id,
-        decided_by: req.user?.claims?.sub || "admin",
+        decided_by: ownerUserIdFromAuthenticatedRequest(req),
         decider_role: "admin",
         action: "approve",
       });
@@ -121,6 +125,8 @@ export function registerApprovalRoutes(app: Express): void {
         const { ExecutionPipeline } = await import("../services/execution/ExecutionPipeline");
         dispatchResult = await ExecutionPipeline.dispatch({
           task_id: result.task.id,
+          actor: ownerContextFromAuthenticatedRequest(req),
+          actor_role: "admin",
           action_type: dispatch.action_type,
           payload: dispatch.payload,
           notes: "Dispatched after admin approval.",
@@ -157,7 +163,7 @@ export function registerApprovalRoutes(app: Express): void {
       );
       const result = await ApprovalDecisionHandler.decide({
         task_id: id,
-        decided_by: req.user?.claims?.sub || "admin",
+        decided_by: ownerUserIdFromAuthenticatedRequest(req),
         decider_role: "admin",
         action: "reject",
         reason: reason || "Rejected by admin",

@@ -7,10 +7,7 @@ import {
   dismissFlowSuggestion,
 } from "../services/FlowSuggestionEngine";
 import type { FlowCategory } from "../../shared/flow-types";
-
-function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
-}
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * ZAR noticing a pattern in what you keep asking for, and offering to save
@@ -20,7 +17,7 @@ function userIdFrom(req: any): string {
 export function registerFlowSuggestionRoutes(app: Express): void {
   app.get("/api/flows/suggestions", isAuthenticated, async (req: any, res) => {
     try {
-      const suggestions = await computeFlowSuggestions(userIdFrom(req));
+      const suggestions = await computeFlowSuggestions(ownerUserIdFromAuthenticatedRequest(req));
       res.json({ suggestions });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to compute suggestions" });
@@ -29,7 +26,7 @@ export function registerFlowSuggestionRoutes(app: Express): void {
 
   app.post("/api/flows/suggestions/:id/accept", isAuthenticated, async (req: any, res) => {
     try {
-      const flow = await acceptFlowSuggestion(userIdFrom(req), String(req.params.id), {
+      const flow = await acceptFlowSuggestion(ownerUserIdFromAuthenticatedRequest(req), String(req.params.id), {
         name: req.body?.name ? String(req.body.name) : undefined,
         category: req.body?.category ? (String(req.body.category) as FlowCategory) : undefined,
         blurb: req.body?.blurb ? String(req.body.blurb) : undefined,
@@ -42,7 +39,7 @@ export function registerFlowSuggestionRoutes(app: Express): void {
 
   app.post("/api/flows/suggestions/:id/dismiss", isAuthenticated, async (req: any, res) => {
     try {
-      await dismissFlowSuggestion(userIdFrom(req), String(req.params.id));
+      await dismissFlowSuggestion(ownerUserIdFromAuthenticatedRequest(req), String(req.params.id));
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to dismiss" });

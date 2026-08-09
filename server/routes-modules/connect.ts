@@ -3,10 +3,7 @@ import type { Express } from "express";
 import { isAuthenticated } from "../localAuth";
 import { getConnectCategorySummary } from "../services/admin-settings/connectSummary";
 import { computeIntegrationGaps, dismissIntegrationGap } from "../services/IntegrationGapEngine";
-
-function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
-}
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * Read-only summary of the admin-wide integrations for the user-facing
@@ -29,7 +26,7 @@ export function registerConnectRoutes(app: Express): void {
 
   app.get("/api/connect/gaps", isAuthenticated, async (req: any, res) => {
     try {
-      const gaps = await computeIntegrationGaps(userIdFrom(req));
+      const gaps = await computeIntegrationGaps(ownerUserIdFromAuthenticatedRequest(req));
       res.json({ gaps });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to compute integration gaps" });
@@ -38,7 +35,7 @@ export function registerConnectRoutes(app: Express): void {
 
   app.post("/api/connect/gaps/:id/dismiss", isAuthenticated, async (req: any, res) => {
     try {
-      await dismissIntegrationGap(userIdFrom(req), String(req.params.id));
+      await dismissIntegrationGap(ownerUserIdFromAuthenticatedRequest(req), String(req.params.id));
       res.json({ ok: true });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to dismiss" });

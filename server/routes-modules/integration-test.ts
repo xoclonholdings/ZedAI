@@ -4,6 +4,7 @@ import { isAdmin } from "../localAuth";
 import { DigitalExecutionService } from "../services/execution/DigitalExecutionService";
 import { loadAdminSettings } from "../services/AdminSettingsStore";
 import { logRuntimeEvent } from "../services/RuntimeLogger";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * Test endpoints that let the user verify a connection actually
@@ -51,7 +52,7 @@ export function registerIntegrationTestRoutes(app: Express): void {
 
       const result = await DigitalExecutionService.execute({
         task_id: `email-test-${Date.now()}`,
-        user_id: req.user?.claims?.sub || "admin",
+        user_id: ownerUserIdFromAuthenticatedRequest(req),
         approved: true,
         execution_mode: "digital",
         action_type: "email",

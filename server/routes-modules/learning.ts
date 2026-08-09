@@ -5,6 +5,7 @@ import { cleanupFile, processFile, upload } from "../services/fileProcessor";
 import { LearningStudioService } from "../services/learning/LearningStudioService";
 import { ensureSessionUserInDatabase } from "./conversations-crud";
 import type { LearningBlueprint } from "../../shared/learning-types";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * `isAuthenticated` (server/local-auth/middleware.ts) always sets
@@ -15,9 +16,7 @@ import type { LearningBlueprint } from "../../shared/learning-types";
  * contaminate learning data, so this fails the request instead.
  */
 function userIdFrom(req: any): string {
-  const userId = req.user?.claims?.sub;
-  if (!userId) throw new Error("Authenticated user id is missing.");
-  return userId;
+  return ownerUserIdFromAuthenticatedRequest(req);
 }
 
 function isAdminFrom(req: any): boolean {

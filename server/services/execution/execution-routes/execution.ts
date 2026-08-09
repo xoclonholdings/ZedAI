@@ -6,7 +6,7 @@ import { ExecutionPipeline } from "../ExecutionPipeline";
 import { TaskExecutionEngine } from "../TaskExecutionEngine";
 import { TaskLifecycleManager } from "../TaskLifecycleManager";
 
-import { userIdFrom } from "./shared";
+import { ownerContextFrom, userIdFrom } from "./shared";
 
 /**
  * Core execution endpoints — prepare → preview → approve → dispatch
@@ -22,7 +22,6 @@ export function registerExecutionEndpoints(app: Express): void {
         return res.status(400).json({ error: "user_request is required" });
       }
       const user_id = userIdFrom(req);
-      if (!user_id) return res.status(401).json({ error: "Unauthenticated" });
       const prepared = await ExecutionPipeline.prepare(
         user_id,
         { user_request, context },
@@ -56,17 +55,15 @@ export function registerExecutionEndpoints(app: Express): void {
 
   app.post("/api/execution/approve", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const { task_id, approved, approver_role, notes } = req.body || {};
+      const { task_id, approved, notes } = req.body || {};
       if (!task_id || typeof approved !== "boolean") {
         return res.status(400).json({ error: "task_id and approved are required" });
       }
-      const user_id = userIdFrom(req);
-      if (!user_id) return res.status(401).json({ error: "Unauthenticated" });
       const result = await ExecutionPipeline.approve({
         task_id,
-        user_id,
+        actor: ownerContextFrom(req),
+        actor_role: req.user?.claims?.isAdmin ? "admin" : "user",
         approved,
-        approver_role: approver_role || "user",
         notes,
       });
       res.json(result);
@@ -81,6 +78,8 @@ export function registerExecutionEndpoints(app: Express): void {
       if (!task_id) return res.status(400).json({ error: "task_id is required" });
       const result = await ExecutionPipeline.dispatch({
         task_id,
+        actor: ownerContextFrom(req),
+        actor_role: req.user?.claims?.isAdmin ? "admin" : "user",
         action_type,
         payload,
         notes,
@@ -93,8 +92,7 @@ export function registerExecutionEndpoints(app: Express): void {
 
   app.get("/api/execution/tasks", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const user_id = userIdFrom(req);
-      const tasks = await TaskLifecycleManager.list({ user_id: user_id || undefined });
+      const tasks = await TaskLifecycleManager.listForOwner(ownerContextFrom(req));
       res.json({ tasks });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "list failed" });
@@ -103,7 +101,10 @@ export function registerExecutionEndpoints(app: Express): void {
 
   app.get("/api/execution/tasks/:id", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const task = await TaskLifecycleManager.get(req.params.id);
+      const task = await TaskLifecycleManager.getForOwner(
+        req.params.id,
+        ownerContextFrom(req),
+      );
       if (!task) return res.status(404).json({ error: "task not found" });
       res.json({ task });
     } catch (err: any) {

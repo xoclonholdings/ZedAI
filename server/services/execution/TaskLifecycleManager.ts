@@ -23,6 +23,7 @@ import { randomUUID } from "crypto";
 import { HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
 import { logRuntimeEvent } from "../RuntimeLogger";
 import type { TaskExecutionPlan } from "./TaskExecutionEngine";
+import { assertOwnerContext, type OwnerContext } from "../auth/OwnerContext";
 
 const TASK_STORE_PATH = path.resolve(
   HUB_SHARED_MEMORY_DIR,
@@ -145,6 +146,19 @@ export class TaskLifecycleManager {
     return store.tasks.find((t) => t.id === task_id) || null;
   }
 
+  static belongsToOwner(task: TaskRecord, owner: OwnerContext): boolean {
+    assertOwnerContext(owner);
+    return task.user_id === owner.ownerUserId;
+  }
+
+  static async getForOwner(
+    task_id: string,
+    owner: OwnerContext,
+  ): Promise<TaskRecord | null> {
+    const task = await this.get(task_id);
+    return task && this.belongsToOwner(task, owner) ? task : null;
+  }
+
   static async list(filter?: {
     status?: TaskStatus | TaskStatus[];
     user_id?: string;
@@ -157,6 +171,14 @@ export class TaskLifecycleManager {
       tasks = tasks.filter((t) => wanted.includes(t.status));
     }
     return tasks.slice().reverse();
+  }
+
+  static async listForOwner(
+    owner: OwnerContext,
+    filter?: { status?: TaskStatus | TaskStatus[] },
+  ): Promise<TaskRecord[]> {
+    assertOwnerContext(owner);
+    return this.list({ ...filter, user_id: owner.ownerUserId });
   }
 
   static async update(task_id: string, patch: TaskUpdateInput, log_message?: string): Promise<TaskRecord | null> {

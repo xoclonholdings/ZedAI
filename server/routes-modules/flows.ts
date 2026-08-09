@@ -9,6 +9,10 @@ import {
   rejectCurrentStage,
   retryFlowRun,
 } from "../zcos/flows/ZcosFlowEngine";
+import {
+  ownerContextFromAuthenticatedRequest,
+  ownerUserIdFromAuthenticatedRequest,
+} from "../services/auth/OwnerContext";
 
 /**
  * Registers all /api/admin/flows* and /api/flows* endpoints.
@@ -81,20 +85,26 @@ export function registerFlowRoutes(app: Express): void {
 
   app.get("/api/flows/runs", isAuthenticated, async (req: any, res) => {
     const runs = await FlowStore.listRuns({
-      userId: req.user?.claims?.sub,
+      userId: ownerUserIdFromAuthenticatedRequest(req),
       limit: 50,
     });
     res.json({ runs });
   });
 
   app.get("/api/flows/runs/:runId", isAuthenticated, async (req: any, res) => {
-    const run = await FlowStore.getRun(req.params.runId);
+    const run = await FlowStore.getRunForOwner(
+      req.params.runId,
+      ownerContextFromAuthenticatedRequest(req),
+    );
     if (!run) return res.status(404).json({ error: "Not found" });
     res.json(run);
   });
 
   app.get("/api/flows/runs/:runId/report", isAuthenticated, async (req: any, res) => {
-    const run = await FlowStore.getRun(req.params.runId);
+    const run = await FlowStore.getRunForOwner(
+      req.params.runId,
+      ownerContextFromAuthenticatedRequest(req),
+    );
     if (!run) return res.status(404).json({ error: "Not found" });
     if (!run.report) return res.status(404).json({ error: "Report not generated yet" });
     res.json(run.report);
@@ -115,7 +125,7 @@ export function registerFlowRoutes(app: Express): void {
     }
     const run = await FlowStore.startRun({
       flow,
-      userId: req.user?.claims?.sub || "anonymous",
+      userId: ownerUserIdFromAuthenticatedRequest(req),
       conversationId: req.body?.conversationId,
       context: req.body?.context,
     });
@@ -124,10 +134,15 @@ export function registerFlowRoutes(app: Express): void {
   });
 
   app.post("/api/flows/runs/:runId/approve", isAuthenticated, async (req: any, res) => {
+    const ownedRun = await FlowStore.getRunForOwner(
+      req.params.runId,
+      ownerContextFromAuthenticatedRequest(req),
+    );
+    if (!ownedRun) return res.status(404).json({ error: "Run not found" });
     const run = await approveCurrentStage(
       req.params.runId,
       req.body?.note,
-      req.user?.claims?.sub || "user",
+      ownerUserIdFromAuthenticatedRequest(req),
       req.user?.claims?.isAdmin ? "admin" : "user",
     );
     if (!run) {
@@ -137,10 +152,15 @@ export function registerFlowRoutes(app: Express): void {
   });
 
   app.post("/api/flows/runs/:runId/reject", isAuthenticated, async (req: any, res) => {
+    const ownedRun = await FlowStore.getRunForOwner(
+      req.params.runId,
+      ownerContextFromAuthenticatedRequest(req),
+    );
+    if (!ownedRun) return res.status(404).json({ error: "Run not found" });
     const run = await rejectCurrentStage(
       req.params.runId,
       req.body?.reason,
-      req.user?.claims?.sub || "user",
+      ownerUserIdFromAuthenticatedRequest(req),
       req.user?.claims?.isAdmin ? "admin" : "user",
     );
     if (!run) {
@@ -150,19 +170,32 @@ export function registerFlowRoutes(app: Express): void {
   });
 
   app.post("/api/flows/runs/:runId/resume", isAuthenticated, async (req: any, res) => {
-    const run = await FlowStore.getRun(req.params.runId);
+    const run = await FlowStore.getRunForOwner(
+      req.params.runId,
+      ownerContextFromAuthenticatedRequest(req),
+    );
     if (!run) return res.status(404).json({ error: "Not found" });
     void executeFlowRun(req.params.runId);
     res.json({ ok: true, runId: req.params.runId });
   });
 
   app.post("/api/flows/runs/:runId/retry", isAuthenticated, async (req: any, res) => {
+    const ownedRun = await FlowStore.getRunForOwner(
+      req.params.runId,
+      ownerContextFromAuthenticatedRequest(req),
+    );
+    if (!ownedRun) return res.status(404).json({ error: "Run not found" });
     const run = await retryFlowRun(req.params.runId);
     if (!run) return res.status(404).json({ error: "Run not found" });
     res.json(run);
   });
 
   app.post("/api/flows/runs/:runId/cancel", isAuthenticated, async (req: any, res) => {
+    const ownedRun = await FlowStore.getRunForOwner(
+      req.params.runId,
+      ownerContextFromAuthenticatedRequest(req),
+    );
+    if (!ownedRun) return res.status(404).json({ error: "Run not found" });
     const run = await cancelFlowRun(req.params.runId, req.body?.reason);
     if (!run) return res.status(404).json({ error: "Run not found" });
     res.json(run);

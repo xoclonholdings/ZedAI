@@ -3,6 +3,7 @@ import type { Express } from "express";
 import { isAuthenticated } from "../localAuth";
 import { BrowserSessionStore } from "../services/BrowserSessionStore";
 import { fetchSingleUrl } from "../services/WebContentService";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * The console's live browser. Both the user (via the "Go" action) and ZAR
@@ -11,14 +12,10 @@ import { fetchSingleUrl } from "../services/WebContentService";
  * so either side's browsing shows up here.
  */
 
-function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
-}
-
 export function registerBrowserRoutes(app: Express): void {
   app.get("/api/browser/session", isAuthenticated, async (req: any, res) => {
     try {
-      const session = await BrowserSessionStore.getSession(userIdFrom(req));
+      const session = await BrowserSessionStore.getSession(ownerUserIdFromAuthenticatedRequest(req));
       res.json(session);
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to load browser session" });
@@ -29,7 +26,7 @@ export function registerBrowserRoutes(app: Express): void {
     const url = String(req.body?.url || "").trim();
     if (!url) return res.status(400).json({ error: "url is required" });
 
-    const userId = userIdFrom(req);
+    const userId = ownerUserIdFromAuthenticatedRequest(req);
     try {
       const page = await fetchSingleUrl(url);
       const visit = await BrowserSessionStore.recordVisit(userId, {

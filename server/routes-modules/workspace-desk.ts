@@ -7,15 +7,12 @@ import {
   generateDeskEntry,
   listDeskEntries,
 } from "../services/workspace-desk/WorkspaceDeskEngine";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * Workspace desk routes — the working surface for Education, Operations,
  * and Marketing. Each entry is memory-grounded and saved durably.
  */
-
-function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
-}
 
 export function registerWorkspaceDeskRoutes(app: Express): void {
   app.get("/api/workspaces/:workspace/desk", isAuthenticated, async (req: any, res) => {
@@ -24,7 +21,7 @@ export function registerWorkspaceDeskRoutes(app: Express): void {
       return res.status(404).json({ error: "No desk for this workspace" });
     }
     try {
-      const entries = await listDeskEntries(workspace, userIdFrom(req));
+      const entries = await listDeskEntries(workspace, ownerUserIdFromAuthenticatedRequest(req));
       res.json({ spec: WORKSPACE_DESK_SPECS[workspace], entries });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to load desk" });
@@ -41,7 +38,7 @@ export function registerWorkspaceDeskRoutes(app: Express): void {
     try {
       const entry = await generateDeskEntry({
         workspace,
-        userId: userIdFrom(req),
+        userId: ownerUserIdFromAuthenticatedRequest(req),
         isAdmin: Boolean(req.user?.claims?.isAdmin),
         topic,
         sources: req.body?.sources ? String(req.body.sources) : undefined,
@@ -58,7 +55,11 @@ export function registerWorkspaceDeskRoutes(app: Express): void {
       return res.status(404).json({ error: "No desk for this workspace" });
     }
     try {
-      const entries = await deleteDeskEntry(workspace, userIdFrom(req), String(req.params.id));
+      const entries = await deleteDeskEntry(
+        workspace,
+        ownerUserIdFromAuthenticatedRequest(req),
+        String(req.params.id),
+      );
       res.json({ entries });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to delete" });

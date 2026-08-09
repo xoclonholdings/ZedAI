@@ -16,6 +16,7 @@ import {
 } from "../services/research/ResearchEngine";
 import { processFile, upload } from "../services/fileProcessor";
 import { getWebSearchStatus, webSearch } from "../services/WebSearchService";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * Research workspace routes.
@@ -23,10 +24,6 @@ import { getWebSearchStatus, webSearch } from "../services/WebSearchService";
  * Search is the front door. After a search, ZAR can summarize, verify, or
  * save the result — or do whatever the user types under "other".
  */
-
-function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
-}
 
 function toResults(value: unknown): ResearchResult[] {
   if (!Array.isArray(value)) return [];
@@ -65,7 +62,7 @@ export function registerResearchRoutes(app: Express): void {
     }
     try {
       const result = await runResearchAction({
-        userId: userIdFrom(req),
+        userId: ownerUserIdFromAuthenticatedRequest(req),
         action,
         query: String(req.body?.query || ""),
         results: toResults(req.body?.results),
@@ -87,7 +84,7 @@ export function registerResearchRoutes(app: Express): void {
   app.post("/api/research/document", isAuthenticated, async (req: any, res) => {
     try {
       const draft = await createResearchDocument({
-        userId: userIdFrom(req),
+        userId: ownerUserIdFromAuthenticatedRequest(req),
         instruction: String(req.body?.instruction || ""),
         title: req.body?.title ? String(req.body.title) : undefined,
         sources: req.body?.sources ? String(req.body.sources) : undefined,
@@ -108,7 +105,7 @@ export function registerResearchRoutes(app: Express): void {
   // documents until the user connects iCloud / Google Drive).
   app.get("/api/research/documents", isAuthenticated, async (req: any, res) => {
     try {
-      res.json({ documents: await listResearchDocuments(userIdFrom(req)) });
+      res.json({ documents: await listResearchDocuments(ownerUserIdFromAuthenticatedRequest(req)) });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to load documents" });
     }
@@ -119,7 +116,7 @@ export function registerResearchRoutes(app: Express): void {
     if (!content) return res.status(400).json({ error: "content is required" });
     try {
       const document = await saveResearchDocument({
-        userId: userIdFrom(req),
+        userId: ownerUserIdFromAuthenticatedRequest(req),
         title: String(req.body?.title || "Untitled document"),
         content,
       });
@@ -142,7 +139,7 @@ export function registerResearchRoutes(app: Express): void {
         return res.status(400).json({ error: "Attach at least one file." });
       }
       try {
-        const userId = userIdFrom(req);
+        const userId = ownerUserIdFromAuthenticatedRequest(req);
         const documents = [];
         for (const file of files) {
           const processed = await processFile(file.path, file.mimetype, file.originalname).catch((err) => ({
@@ -172,7 +169,10 @@ export function registerResearchRoutes(app: Express): void {
 
   app.delete("/api/research/documents/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const documents = await deleteResearchDocument(userIdFrom(req), String(req.params.id));
+      const documents = await deleteResearchDocument(
+        ownerUserIdFromAuthenticatedRequest(req),
+        String(req.params.id),
+      );
       res.json({ documents });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to delete" });
@@ -182,7 +182,7 @@ export function registerResearchRoutes(app: Express): void {
   // Save this for later.
   app.get("/api/research/saved", isAuthenticated, async (req: any, res) => {
     try {
-      const items = await listSavedResearch(userIdFrom(req));
+      const items = await listSavedResearch(ownerUserIdFromAuthenticatedRequest(req));
       res.json({ items });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to load saved items" });
@@ -192,7 +192,7 @@ export function registerResearchRoutes(app: Express): void {
   app.post("/api/research/saved", isAuthenticated, async (req: any, res) => {
     try {
       const item = await saveResearchItem({
-        userId: userIdFrom(req),
+        userId: ownerUserIdFromAuthenticatedRequest(req),
         query: String(req.body?.query || ""),
         note: req.body?.note ? String(req.body.note) : undefined,
         results: toResults(req.body?.results),
@@ -205,7 +205,10 @@ export function registerResearchRoutes(app: Express): void {
 
   app.delete("/api/research/saved/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const items = await deleteSavedResearch(userIdFrom(req), String(req.params.id));
+      const items = await deleteSavedResearch(
+        ownerUserIdFromAuthenticatedRequest(req),
+        String(req.params.id),
+      );
       res.json({ items });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "Failed to delete" });

@@ -7,11 +7,9 @@ import {
   getActiveProviderName,
   getResolvedTargetName,
 } from "../core/providers/provider-executor";
-import {
-  getPublicAdminSettings,
-  loadAdminSettings,
-} from "../services/AdminSettingsStore";
+import { getPublicAdminSettings } from "../services/AdminSettingsStore";
 import { ChatExecutionService } from "../services/ChatExecutionService";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 
 /**
  * Orchestrator + a handful of small one-shot endpoints. They live
@@ -33,7 +31,7 @@ export function registerOrchestrateAndMiscRoutes(
   app.post("/api/orchestrate", isAuthenticated, async (req: any, res) => {
     const { message, conversationId, targetAgent, context, projectId, workspaceId } = req.body || {};
     const result = await ChatExecutionService.execute({
-      userId: req.user.claims.sub,
+      userId: ownerUserIdFromAuthenticatedRequest(req),
       message,
       conversationId,
       route: "/api/orchestrate",
@@ -81,10 +79,9 @@ export function registerOrchestrateAndMiscRoutes(
     });
   });
 
-  app.get("/api/admin/knowledge/overview", isAdmin, async (_req, res) => {
+  app.get("/api/admin/knowledge/overview", isAdmin, async (req, res) => {
     try {
-      const settings = await loadAdminSettings();
-      const defaultUserId = settings.users?.[0]?.id || "admin-user";
+      const defaultUserId = ownerUserIdFromAuthenticatedRequest(req);
       const { MemoryService } = await import("../services/memoryService");
       const [core, project, scratchpad, curation] = await Promise.all([
         MemoryService.getAllCoreMemory(),

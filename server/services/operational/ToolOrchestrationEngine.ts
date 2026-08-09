@@ -17,6 +17,8 @@
 import { randomUUID } from "crypto";
 import { logRuntimeEvent } from "../RuntimeLogger";
 import { DigitalExecutionService, type DigitalActionType, type DigitalPayload } from "../execution/DigitalExecutionService";
+import { TaskLifecycleManager } from "../execution/TaskLifecycleManager";
+import { createOwnerContext } from "../auth/OwnerContext";
 
 export type ToolType =
   | "email"
@@ -65,17 +67,24 @@ export interface OrchestrationResult {
 
 export class ToolOrchestrationEngine {
   static async run(input: OrchestrationInput): Promise<OrchestrationResult> {
+    const owner = createOwnerContext(input.user_id);
+    const task = await TaskLifecycleManager.getForOwner(input.task_id, owner);
+    if (!task) throw new Error("Task not found");
+    const verifiedInput: OrchestrationInput = {
+      ...input,
+      approved: task.status === "approved" && task.approval_status === "approved",
+    };
     const orchestration_id = `orch-${randomUUID()}`;
     const execution_steps: OrchestrationStepResult[] = [];
     const tools_used = new Set<ToolType>();
     let approval_required = false;
     let failed = false;
 
-    for (const step of input.steps) {
+    for (const step of verifiedInput.steps) {
       const step_id = step.step_id || `step-${randomUUID()}`;
       tools_used.add(step.tool);
 
-      if (step.requires_approval && !input.approved) {
+      if (step.requires_approval && !verifiedInput.approved) {
         execution_steps.push({
           step_id,
           tool: step.tool,
@@ -95,7 +104,7 @@ export class ToolOrchestrationEngine {
       }
 
       try {
-        const result = await this.runStep(input, step);
+        const result = await this.runStep(verifiedInput, step);
         execution_steps.push({
           step_id,
           tool: step.tool,
@@ -124,7 +133,7 @@ export class ToolOrchestrationEngine {
       ? "failed"
       : approval_required
         ? "blocked_pending_approval"
-        : execution_steps.length === input.steps.length
+        : execution_steps.length === verifiedInput.steps.length
           ? "complete"
           : "partial";
 

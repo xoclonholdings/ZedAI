@@ -18,6 +18,7 @@ import { HUB_SHARED_MEMORY_DIR } from "../../utils/repoPaths";
 import { logRuntimeEvent } from "../RuntimeLogger";
 import { AdminAlertSender } from "../auth/AdminAlertSender";
 import { TaskLifecycleManager } from "../execution/TaskLifecycleManager";
+import { assertOwnerContext, type OwnerContext } from "../auth/OwnerContext";
 
 const NOTIFICATION_STORE_PATH = path.resolve(
   HUB_SHARED_MEMORY_DIR,
@@ -149,6 +150,24 @@ export class ApprovalNotificationService {
   static async markRead(id: string): Promise<boolean> {
     const store = await this.read();
     const idx = store.notifications.findIndex((n) => n.id === id);
+    if (idx < 0) return false;
+    store.notifications[idx].read = true;
+    await this.write(store);
+    return true;
+  }
+
+  static async markReadForOwner(
+    id: string,
+    owner: OwnerContext,
+    isAdmin: boolean,
+  ): Promise<boolean> {
+    assertOwnerContext(owner);
+    const store = await this.read();
+    const idx = store.notifications.findIndex((notification) => {
+      if (notification.id !== id) return false;
+      if (notification.recipient_role === "admin") return isAdmin;
+      return notification.recipient_id === owner.ownerUserId;
+    });
     if (idx < 0) return false;
     store.notifications[idx].read = true;
     await this.write(store);

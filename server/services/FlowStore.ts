@@ -9,6 +9,7 @@ import type {
   FlowRun,
   FlowStageRun,
 } from "../../shared/flow-types";
+import { assertOwnerContext, type OwnerContext } from "./auth/OwnerContext";
 
 /**
  * ZCOS-owned file-backed flow store.
@@ -218,6 +219,12 @@ export const FlowStore = {
   async getRun(runId: string): Promise<FlowRun | null> {
     const run = await readJson<FlowRun>(path.resolve(RUNS_DIR, `${runId}.json`));
     return run ? hydrateRun(run) : null;
+  },
+
+  async getRunForOwner(runId: string, owner: OwnerContext): Promise<FlowRun | null> {
+    assertOwnerContext(owner);
+    const run = await this.getRun(runId);
+    return run?.userId === owner.ownerUserId ? run : null;
   },
 
   async startRun(input: {

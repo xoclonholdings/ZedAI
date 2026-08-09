@@ -21,15 +21,12 @@ import {
   type IntegrationProvider,
   type MaterialIngestResult,
 } from "../../shared/trading-training-types";
+import { userIdFrom } from "./trading-route-helpers";
 
 /**
  * Training routes: feed ZAR material, test ZAR (stage assessment),
  * advance a stage once ZAR passes, and manage provider integrations.
  */
-
-function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
-}
 
 function isStage(id: string): id is TradingStageId {
   return TRADING_STAGES.some((s) => s.id === id);

@@ -25,7 +25,7 @@ export function registerHumanBridgeEndpoints(app: Express): void {
     isAdmin,
     async (req: any, res: Response) => {
       try {
-        const claimed_by = req.body?.claimed_by || userIdFrom(req) || "admin";
+        const claimed_by = userIdFrom(req);
         const record = await HumanExecutionBridge.claim(
           req.params.id,
           claimed_by,

@@ -5,8 +5,9 @@ import { AutonomousFollowUpEngine } from "../../operational/AutonomousFollowUpEn
 import { DeferredActionScheduler } from "../../operational/DeferredActionScheduler";
 import { OmnichannelMemoryService } from "../../operational/OmnichannelMemoryService";
 import { ToolOrchestrationEngine } from "../../operational/ToolOrchestrationEngine";
+import { TaskLifecycleManager } from "../TaskLifecycleManager";
 
-import { userIdFrom } from "./shared";
+import { ownerContextFrom, userIdFrom } from "./shared";
 
 /**
  * Operational layer (Newo-style) — append/search omnichannel
@@ -22,7 +23,7 @@ export function registerOperationalEndpoints(app: Express): void {
       const user_id = userIdFrom(req);
       const entry = await OmnichannelMemoryService.append({
         ...req.body,
-        user_id: req.body?.user_id ?? user_id ?? null,
+        user_id,
       });
       res.json({ entry });
     } catch (err: any) {
@@ -32,7 +33,7 @@ export function registerOperationalEndpoints(app: Express): void {
 
   app.get("/api/operational/memory", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const user_id = userIdFrom(req) || undefined;
+      const user_id = userIdFrom(req);
       const items = await OmnichannelMemoryService.search({
         text: typeof req.query.q === "string" ? req.query.q : undefined,
         channel:
@@ -61,6 +62,11 @@ export function registerOperationalEndpoints(app: Express): void {
             .status(400)
             .json({ error: "task_id, follow_up_type, scheduled_for are required" });
         }
+        const task = await TaskLifecycleManager.getForOwner(
+          String(task_id),
+          ownerContextFrom(req),
+        );
+        if (!task) return res.status(404).json({ error: "task not found" });
         const action = await AutonomousFollowUpEngine.schedule({
           task_id,
           follow_up_type,
@@ -88,17 +94,21 @@ export function registerOperationalEndpoints(app: Express): void {
     isAuthenticated,
     async (req: any, res: Response) => {
       try {
-        const { task_id, steps, approved } = req.body || {};
+        const { task_id, steps } = req.body || {};
         const user_id = userIdFrom(req);
         if (!task_id || !Array.isArray(steps)) {
           return res.status(400).json({ error: "task_id and steps[] are required" });
         }
-        if (!user_id) return res.status(401).json({ error: "Unauthenticated" });
+        const task = await TaskLifecycleManager.getForOwner(
+          String(task_id),
+          ownerContextFrom(req),
+        );
+        if (!task) return res.status(404).json({ error: "task not found" });
         const result = await ToolOrchestrationEngine.run({
           task_id,
           user_id,
           steps,
-          approved: !!approved,
+          approved: task.status === "approved" && task.approval_status === "approved",
         });
         res.json(result);
       } catch (err: any) {
@@ -112,7 +122,14 @@ export function registerOperationalEndpoints(app: Express): void {
     isAuthenticated,
     async (req: Request, res: Response) => {
       try {
-        const action = await DeferredActionScheduler.schedule(req.body || {});
+        const taskId = typeof req.body?.task_id === "string" ? req.body.task_id : "";
+        if (!taskId) return res.status(400).json({ error: "task_id is required" });
+        const task = await TaskLifecycleManager.getForOwner(taskId, ownerContextFrom(req));
+        if (!task) return res.status(404).json({ error: "task not found" });
+        const action = await DeferredActionScheduler.schedule({
+          ...req.body,
+          task_id: task.id,
+        });
         res.json({ action });
       } catch (err: any) {
         res.status(500).json({ error: err?.message || "defer failed" });
@@ -122,11 +139,19 @@ export function registerOperationalEndpoints(app: Express): void {
 
   app.get("/api/operational/defer", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const items = await DeferredActionScheduler.list({
-        task_id: typeof req.query.task_id === "string" ? req.query.task_id : undefined,
+      const owner = ownerContextFrom(req);
+      const requestedTaskId = typeof req.query.task_id === "string" ? req.query.task_id : undefined;
+      if (requestedTaskId) {
+        const task = await TaskLifecycleManager.getForOwner(requestedTaskId, owner);
+        if (!task) return res.status(404).json({ error: "task not found" });
+      }
+      const ownedTasks = await TaskLifecycleManager.listForOwner(owner);
+      const ownedTaskIds = new Set(ownedTasks.map((task) => task.id));
+      const items = (await DeferredActionScheduler.list({
+        task_id: requestedTaskId,
         kind: typeof req.query.kind === "string" ? (req.query.kind as any) : undefined,
         include_completed: req.query.include_completed === "true",
-      });
+      })).filter((action) => action.task_id && ownedTaskIds.has(action.task_id));
       res.json({ actions: items });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "list failed" });

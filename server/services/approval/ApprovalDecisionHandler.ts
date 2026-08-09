@@ -17,6 +17,7 @@ import {
 import { ExecutionApprovalHandler } from "../execution/ExecutionApprovalHandler";
 import { ApprovalNotificationService } from "./ApprovalNotificationService";
 import { logRuntimeEvent } from "../RuntimeLogger";
+import { createOwnerContext } from "../auth/OwnerContext";
 
 export type ApprovalAction = "approve" | "reject" | "manual_handle";
 
@@ -37,8 +38,12 @@ export interface DecisionResult {
 
 export class ApprovalDecisionHandler {
   static async decide(input: DecisionInput): Promise<DecisionResult> {
+    const actor = createOwnerContext(input.decided_by);
     const task = await TaskLifecycleManager.get(input.task_id);
     if (!task) {
+      return { ok: false, task: null, message: `Task ${input.task_id} not found.` };
+    }
+    if (input.decider_role !== "admin" && task.user_id !== actor.ownerUserId) {
       return { ok: false, task: null, message: `Task ${input.task_id} not found.` };
     }
 

@@ -2,6 +2,7 @@ import type { Express } from "express";
 
 import { isAuthenticated } from "../localAuth";
 import { BudgetStore } from "../services/budget/BudgetStore";
+import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
 import {
   TREASURY_STAGES,
   allocateDeposit,
@@ -21,10 +22,6 @@ import {
  */
 
 const INCOME_SOURCES: IncomeSource[] = ["employer", "doordash", "instacart", "manual", "other"];
-
-function userIdFrom(req: any): string {
-  return req.user?.claims?.sub || "unknown";
-}
 
 function toNumber(value: unknown, fallback = 0): number {
   const parsed = Number(value);
@@ -47,7 +44,7 @@ function ruleFromBody(body: any): AllocationRule {
 
 export function registerBudgetRoutes(app: Express): void {
   app.get("/api/budget/state", isAuthenticated, async (req: any, res) => {
-    const state = await BudgetStore.loadState(userIdFrom(req));
+    const state = await BudgetStore.loadState(ownerUserIdFromAuthenticatedRequest(req));
     const readiness = evaluateTreasuryReadiness(
       state.balances.treasuryBalance,
       state.targets.operatingReserveTarget,
@@ -63,7 +60,7 @@ export function registerBudgetRoutes(app: Express): void {
     const amount = toNumber(req.body?.amount);
     if (amount <= 0) return res.status(400).json({ error: "amount must be greater than 0" });
 
-    const state = await BudgetStore.loadState(userIdFrom(req));
+    const state = await BudgetStore.loadState(ownerUserIdFromAuthenticatedRequest(req));
     const breakdown = allocateDeposit(amount, state.rule);
     const readiness = evaluateTreasuryReadiness(
       state.balances.treasuryBalance,
@@ -79,7 +76,7 @@ export function registerBudgetRoutes(app: Express): void {
   });
 
   app.get("/api/budget/deposits", isAuthenticated, async (req: any, res) => {
-    const deposits = await BudgetStore.listDeposits(userIdFrom(req));
+    const deposits = await BudgetStore.listDeposits(ownerUserIdFromAuthenticatedRequest(req));
     res.json({ deposits });
   });
 
@@ -88,7 +85,7 @@ export function registerBudgetRoutes(app: Express): void {
     if (amount <= 0) return res.status(400).json({ error: "amount must be greater than 0" });
 
     const { deposit, state } = await BudgetStore.recordDeposit({
-      userId: userIdFrom(req),
+      userId: ownerUserIdFromAuthenticatedRequest(req),
       amount,
       source: normalizeSource(req.body?.source),
       sourceLabel: req.body?.sourceLabel ? String(req.body.sourceLabel) : undefined,
@@ -109,7 +106,7 @@ export function registerBudgetRoutes(app: Express): void {
         .status(400)
         .json({ error: "Allocation percentages must be non-negative and total exactly 100." });
     }
-    const state = await BudgetStore.updateRule(userIdFrom(req), rule);
+    const state = await BudgetStore.updateRule(ownerUserIdFromAuthenticatedRequest(req), rule);
     res.json({ state });
   });
 
@@ -120,7 +117,7 @@ export function registerBudgetRoutes(app: Express): void {
     if (body.emergencyFundTarget !== undefined) patch.emergencyFundTarget = toNumber(body.emergencyFundTarget);
     if (body.operatingReserveTarget !== undefined) patch.operatingReserveTarget = toNumber(body.operatingReserveTarget);
     if (typeof body.retirementNote === "string") patch.retirementNote = body.retirementNote;
-    const state = await BudgetStore.updateTargets(userIdFrom(req), patch);
+    const state = await BudgetStore.updateTargets(ownerUserIdFromAuthenticatedRequest(req), patch);
     res.json({ state });
   });
 
@@ -130,7 +127,7 @@ export function registerBudgetRoutes(app: Express): void {
     if (body.savingsBalance !== undefined) patch.savingsBalance = toNumber(body.savingsBalance);
     if (body.emergencyFundBalance !== undefined) patch.emergencyFundBalance = toNumber(body.emergencyFundBalance);
     if (body.treasuryBalance !== undefined) patch.treasuryBalance = toNumber(body.treasuryBalance);
-    const state = await BudgetStore.updateBalances(userIdFrom(req), patch);
+    const state = await BudgetStore.updateBalances(ownerUserIdFromAuthenticatedRequest(req), patch);
     const readiness = evaluateTreasuryReadiness(
       state.balances.treasuryBalance,
       state.targets.operatingReserveTarget,
@@ -148,12 +145,12 @@ export function registerBudgetRoutes(app: Express): void {
     if (Array.isArray(body.payrollPath)) {
       patch.payrollPath = body.payrollPath.map((step: unknown) => String(step)).filter(Boolean);
     }
-    const state = await BudgetStore.updateSettings(userIdFrom(req), patch);
+    const state = await BudgetStore.updateSettings(ownerUserIdFromAuthenticatedRequest(req), patch);
     res.json({ state });
   });
 
   app.get("/api/budget/report", isAuthenticated, async (req: any, res) => {
-    const report = await BudgetStore.buildReport(userIdFrom(req));
+    const report = await BudgetStore.buildReport(ownerUserIdFromAuthenticatedRequest(req));
     res.json({ report });
   });
 }

@@ -47,7 +47,7 @@ export function registerWorkflowEndpoints(app: Express): void {
 
   app.post("/api/workflow/draft", isAuthenticated, async (req: any, res: Response) => {
     try {
-      const user_id = userIdFrom(req) || "anonymous";
+      const user_id = userIdFrom(req);
       const { thread_summary, desired_intent, voice_samples, context } = req.body || {};
       if (!thread_summary || !desired_intent) {
         return res
@@ -72,7 +72,7 @@ export function registerWorkflowEndpoints(app: Express): void {
     isAuthenticated,
     async (req: any, res: Response) => {
       try {
-        const user_id = userIdFrom(req) || "anonymous";
+        const user_id = userIdFrom(req);
         const { preferred_duration_minutes, message_excerpt, availability, timezone } =
           req.body || {};
         const draft = SchedulingAssistant.prepare({
@@ -94,7 +94,7 @@ export function registerWorkflowEndpoints(app: Express): void {
     isAuthenticated,
     async (req: any, res: Response) => {
       try {
-        const user_id = userIdFrom(req) || "anonymous";
+        const user_id = userIdFrom(req);
         const { meeting_title, participants, notes_or_transcript, occurred_at } =
           req.body || {};
         if (!meeting_title || !notes_or_transcript) {

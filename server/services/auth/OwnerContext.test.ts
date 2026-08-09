@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  assertOwnedBy,
+  OwnerAccessError,
   OwnerContextError,
   createOwnerContext,
   ownerContextFromAuthenticatedRequest,
@@ -27,5 +29,11 @@ describe("OwnerContext", () => {
       user: { claims: { sub: "account-123" } },
     } as any;
     expect(ownerContextFromAuthenticatedRequest(request).ownerUserId).toBe("account-123");
+  });
+
+  it("accepts an owned record and rejects a cross-user record", () => {
+    const owner = createOwnerContext("account-123");
+    expect(() => assertOwnedBy(owner, "account-123")).not.toThrow();
+    expect(() => assertOwnedBy(owner, "account-456")).toThrow(OwnerAccessError);
   });
 });
