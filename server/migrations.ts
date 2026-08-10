@@ -45,8 +45,14 @@ export async function runMigrations(): Promise<void> {
     // Seed the canonical Admin user so FK constraints are satisfied.
     await db.execute(sql`
       INSERT INTO users (id, email, first_name, last_name)
-      VALUES ('user_admin', 'admin@zed-ai.online', 'ZAR', 'Admin')
+      VALUES ('user_admin', 'admin@zar-ai.online', 'ZAR', 'Admin')
       ON CONFLICT (id) DO NOTHING;
+    `);
+    await db.execute(sql`
+      UPDATE users
+      SET email = 'admin@zar-ai.online', updated_at = now()
+      WHERE id = 'user_admin'
+        AND email IS DISTINCT FROM 'admin@zar-ai.online';
     `);
 
     // External authentication identities map verified provider subjects to

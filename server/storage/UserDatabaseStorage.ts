@@ -3,7 +3,7 @@ import type { User, UpsertUser } from "../../shared/UsersSchema.js";
 const ADMIN_USER: User = {
   id: "user_001",
   username: "Admin",
-  email: "admin@zed-ai.online",
+  email: "admin@zar-ai.online",
   firstName: "ZAR",
   lastName: "Admin",
   profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",

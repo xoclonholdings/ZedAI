@@ -265,7 +265,7 @@ async function fetchOnePage(target: WebTarget): Promise<WebPageResult> {
         redirect: "manual",
         signal: controller.signal,
         headers: {
-          "User-Agent": "ZAR-AI/1.0 (+https://zed-ai.online)",
+          "User-Agent": "ZAR-AI/1.0 (+https://zar-ai.online)",
           Accept: "text/html,application/xhtml+xml,application/xml,text/plain;q=0.9,*/*;q=0.8",
         },
       });

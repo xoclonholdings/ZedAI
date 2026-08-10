@@ -15,11 +15,11 @@ The old generic `/api/intake/sms` placeholder is removed. Provider-specific beha
 - `TELNYX_API_KEY`: Telnyx Messaging API key.
 - `TELNYX_PUBLIC_KEY`: Telnyx webhook Ed25519 public key, PEM or base64 DER.
 - `TELNYX_PHONE_NUMBER`: ZAR's E.164 Telnyx number.
-- `FRONTEND_URL`: HTTPS ZAR origin used for secure connection and continuation links.
+- `FRONTEND_URL`: `https://zar-ai.online`, the HTTPS ZAR origin used for secure connection and continuation links.
 - `SMS_WEBHOOK_MAX_AGE_SECONDS`: optional; defaults to 300.
 - `TELNYX_API_BASE_URL`: optional; defaults to `https://api.telnyx.com/v2`.
 
-Configure the Telnyx messaging webhook as `POST <server-origin>/api/sms/webhooks/telnyx` and enable message-received plus delivery-status events.
+Configure the Telnyx messaging webhook as `POST https://api.zar-ai.online/api/sms/webhooks/telnyx` and enable message-received plus delivery-status events.
 
 ## Local verification
 

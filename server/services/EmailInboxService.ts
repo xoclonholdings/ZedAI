@@ -28,7 +28,7 @@ interface StoredEmailMessage extends InboxMessage {
   source: "intake" | "gmail";
 }
 
-const DEFAULT_INBOX_ADDRESS = "zed@zed-ai.online";
+const DEFAULT_INBOX_ADDRESS = "zar@zar-ai.online";
 const INBOX_DIR = path.resolve(HUB_SHARED_MEMORY_DIR, "email-inbox");
 const INBOX_MESSAGES_PATH = path.resolve(INBOX_DIR, "messages.json");
 

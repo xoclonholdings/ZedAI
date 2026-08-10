@@ -38,7 +38,7 @@ export default function AccountSecuritySettings() {
   const isAdmin =
     !!user?.isAdmin ||
     !!user?.claims?.isAdmin ||
-    user?.email === "admin@zed-ai.online";
+    user?.email === "admin@zar-ai.online";
 
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [newUsername, setNewUsername] = useState("");

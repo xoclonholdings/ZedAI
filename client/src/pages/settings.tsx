@@ -33,7 +33,7 @@ export default function SettingsPage() {
   const [section, setSection] = useState("main");
   const { appSettings, setAppSettings } = useAppSettings();
   const compact = !!user?.personalization?.compactMessages;
-  const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zed-ai.online";
+  const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zar-ai.online";
 
   function handleNavigate(next: string) {
     if (next === "admin") {

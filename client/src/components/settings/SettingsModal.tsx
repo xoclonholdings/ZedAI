@@ -45,7 +45,7 @@ export default function SettingsModal() {
   const fontSize = (user?.personalization?.fontSize as "small" | "medium" | "large" | undefined) || "medium";
   const titleClass = fontSize === "small" ? "text-base" : fontSize === "large" ? "text-xl" : "text-lg";
   const descriptionClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-sm" : "text-sm";
-  const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zed-ai.online";
+  const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zar-ai.online";
 
   function handleMainMenuNavigate(section: string) {
     if (section === "admin") {

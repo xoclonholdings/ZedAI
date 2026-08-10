@@ -3,7 +3,7 @@
  *
  * Email + OTP login for the single admin account.
  *
- * - The admin email is hardcoded (admin@zed-ai.online).
+ * - The admin email is hardcoded (admin@zar-ai.online).
  * - OTPs are 6-digit numeric, single-use, 10-minute TTL.
  * - Codes are persisted to hub/shared-memory/auth/admin-magic-links.json
  *   so a backend restart doesn't invalidate a code that just got mailed.
@@ -22,7 +22,7 @@ import { logRuntimeEvent } from "../RuntimeLogger";
 import { logSecurityEvent } from "../SecurityAudit";
 import { AdminEmailSender } from "./AdminEmailSender";
 
-export const ADMIN_EMAIL = "admin@zed-ai.online";
+export const ADMIN_EMAIL = "admin@zar-ai.online";
 
 const STORE_PATH = path.resolve(HUB_SHARED_MEMORY_DIR, "auth/admin-magic-links.json");
 const TTL_MS = 10 * 60 * 1000;

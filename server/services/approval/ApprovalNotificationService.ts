@@ -97,7 +97,7 @@ export class ApprovalNotificationService {
     await this.write(store);
 
     // Email the admin for any approval/manual-handling notification, regardless
-    // of recipient_role — admin@zed-ai.online is the supervisory mailbox even
+    // of recipient_role — admin@zar-ai.online is the supervisory mailbox even
     // for user-side approvals. We only skip on review-only notifications.
     if (
       input.action_type !== "review_only" &&

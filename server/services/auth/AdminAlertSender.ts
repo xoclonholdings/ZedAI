@@ -1,11 +1,11 @@
 /**
  * AdminAlertSender
  *
- * Emails the admin (admin@zed-ai.online) about approval requests, task
+ * Emails the admin (admin@zar-ai.online) about approval requests, task
  * completions, task failures/blocked, and error-level runtime events.
  *
  * Sender identity is whatever EmailIntegrationSettings.fromAddress is
- * set to (canonically zed@zed-ai.online). When SMTP isn't configured
+ * set to (canonically zar@zar-ai.online). When SMTP isn't configured
  * the alert is written to stdout + the runtime log so nothing is lost.
  *
  * Rate-limiting:

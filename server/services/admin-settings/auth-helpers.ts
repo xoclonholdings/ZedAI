@@ -56,7 +56,7 @@ export function createDefaultAdminUser(auth: AuthSettings): ManagedUser {
   return {
     id: "user_admin",
     username: auth.adminUsername,
-    email: "admin@zed-ai.online",
+    email: "admin@zar-ai.online",
     firstName: "ZAR",
     lastName: "Admin",
     profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=zar-admin",
@@ -77,7 +77,7 @@ export function sanitizeUser(user: ManagedUser): PublicManagedUser {
 /**
  * Ensures the admin user exists, syncs the admin's username to the
  * current auth setting, and migrates older email values forward to
- * the canonical admin@zed-ai.online.
+ * the canonical admin@zar-ai.online.
  */
 export function normalizeUsers(
   auth: AuthSettings,
@@ -91,7 +91,7 @@ export function normalizeUsers(
     username: auth.adminUsername,
     // Canonical email — older settings files (admin@zed-ai.local) get
     // migrated forward without a separate migration script.
-    email: "admin@zed-ai.online",
+    email: "admin@zar-ai.online",
     updatedAt: admin.updatedAt || nowIso(),
   };
 

@@ -122,7 +122,7 @@ export function AdminEmailForm({ onSuccess }: { onSuccess: () => Promise<void> }
           <div className="relative">
             <Input
               type="email"
-              placeholder={emailHint || "admin@zed-ai.online"}
+              placeholder={emailHint || "admin@zar-ai.online"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="zar-input pl-10"
