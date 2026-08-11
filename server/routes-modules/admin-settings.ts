@@ -2,7 +2,6 @@ import type { Express } from "express";
 
 import { isAdmin } from "../localAuth";
 import {
-  createManagedUser,
   getPublicAdminSettings,
   listManagedUsers,
   resetApprovalSettings,
@@ -132,14 +131,6 @@ export function registerAdminSettingsRoutes(app: Express): void {
   // ── Managed users ─────────────────────────────────────────────────
   app.get("/api/admin/users", isAdmin, async (_req, res) => {
     res.json({ users: await listManagedUsers() });
-  });
-
-  app.post("/api/admin/users", isAdmin, async (req, res) => {
-    try {
-      res.json({ users: await createManagedUser(req.body || {}) });
-    } catch (error: any) {
-      res.status(400).json({ error: error.message || "Failed to create user" });
-    }
   });
 
   app.patch("/api/admin/users/:id", isAdmin, async (req: any, res) => {

@@ -126,7 +126,8 @@ export function registerDiagnosticsRoutes(
       github,
       firewall,
       auth: {
-        adminUsername: settings.auth.adminUsername,
+        userMethod: "privy-email-code",
+        adminFallback: "secure-phrase",
         requireSecureCookies: settings.auth.requireSecureCookies,
       },
     });

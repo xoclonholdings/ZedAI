@@ -1,11 +1,5 @@
-import fs from "fs/promises";
-import path from "path";
-
-import { createManagedUser, loadAdminSettings } from "../services/AdminSettingsStore";
+import { loadAdminSettings } from "../services/AdminSettingsStore";
 import { fetchWebTargetsFromText } from "../services/WebContentService";
-import { HUB_CONFIG_DIR } from "../utils/repoPaths";
-
-const SETTINGS_PATH = path.join(HUB_CONFIG_DIR, "admin-settings.json");
 
 type CheckResult = {
   name: string;
@@ -177,7 +171,6 @@ async function requestJson(
 async function verifyLiveHttp(baseUrl: string): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
   const normalizedBase = baseUrl.replace(/\/+$/, "");
-  const settingsRaw = await fs.readFile(SETTINGS_PATH, "utf8").catch(() => "");
   const settings = await loadAdminSettings();
 
   const anonymous = await requestJson(normalizedBase, "/api/admin/settings");
@@ -205,95 +198,76 @@ async function verifyLiveHttp(baseUrl: string): Promise<CheckResult[]> {
     detail: `admin login HTTP ${adminLogin.response.status}; settings HTTP ${adminSettings.response.status}.`,
   });
 
-  try {
-    const normalPassword = `LiveVerify-${Date.now()}!`;
-    await createManagedUser({
-      username: `live_verify_${Date.now()}`,
-      password: normalPassword,
-      email: "live-verify@zed-ai.test",
-      firstName: "Live",
-      lastName: "Verify",
-    });
-    const updated = await loadAdminSettings();
-    const tempUser = [...updated.users].reverse().find((user) => user.email === "live-verify@zed-ai.test");
-    const normalJar = makeCookieJar();
-    const normalLogin = await requestJson(
-      normalizedBase,
-      "/api/login",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ username: tempUser?.username, password: normalPassword }),
-      },
-      normalJar,
-    );
-    const normalSettings = await requestJson(normalizedBase, "/api/admin/settings", {}, normalJar);
-    results.push({
-      name: "http_normal_user_admin_denied",
-      status: normalLogin.response.ok && normalSettings.response.status === 403 ? "PASS" : "FAIL",
-      detail: `normal login HTTP ${normalLogin.response.status}; settings HTTP ${normalSettings.response.status}.`,
-    });
+  const legacyLogin = await requestJson(
+    normalizedBase,
+    "/api/login",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "legacy-user", password: "legacy-password" }),
+    },
+  );
+  results.push({
+    name: "http_legacy_password_login_rejected",
+    status: legacyLogin.response.status === 401 ? "PASS" : "FAIL",
+    detail: `legacy username/password login returned HTTP ${legacyLogin.response.status}.`,
+  });
 
-    const chat = await requestJson(
-      normalizedBase,
-      "/api/orchestrate",
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          message: "Visit https://zwap.online and tell me what you see.",
-          conversationId: undefined,
-        }),
-      },
-      normalJar,
-    );
-    const trace = chat.body?.metadata?.executionTrace || chat.body?.trace;
-    const tracePresent = Boolean(trace?.traceId && trace?.route === "/api/orchestrate");
-    results.push({
-      name: "http_orchestrate_trace",
-      status: tracePresent ? "PASS" : "FAIL",
-      detail: `POST /api/orchestrate returned HTTP ${chat.response.status}.`,
-      metadata: trace
-        ? {
-            traceId: trace.traceId,
-            route: trace.route,
-            selectedAgent: trace.selectedAgent,
-            detectedIntent: trace.detectedIntent,
-            executionStatus: trace.executionStatus,
-            failureReason: trace.failureReason,
-            servicesInvoked: trace.servicesInvoked,
-            externalCalls: trace.externalCalls,
-          }
-        : {
-            bodyKeys: chat.body && typeof chat.body === "object" ? Object.keys(chat.body) : [],
-            error: chat.body?.error,
-            replyPreview: typeof chat.body?.reply === "string" ? chat.body.reply.slice(0, 240) : undefined,
-            agent: chat.body?.agent,
-            contentType: chat.response.headers.get("content-type"),
-          },
-    });
-    if (tracePresent) {
-      results.push({
-        name: "http_orchestrate_runtime_result",
-        status: trace.executionStatus === "success" ? "PASS" : "PARTIAL",
-        detail:
-          trace.executionStatus === "success"
-            ? "Chat request completed successfully."
-            : `Chat route traced correctly but execution ended ${trace.executionStatus}: ${trace.failureReason || "unknown"}.`,
-        metadata: {
+  const chat = await requestJson(
+    normalizedBase,
+    "/api/orchestrate",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        message: "Visit https://zwap.online and tell me what you see.",
+        conversationId: undefined,
+      }),
+    },
+    adminJar,
+  );
+  const trace = chat.body?.metadata?.executionTrace || chat.body?.trace;
+  const tracePresent = Boolean(trace?.traceId && trace?.route === "/api/orchestrate");
+  results.push({
+    name: "http_orchestrate_trace",
+    status: tracePresent ? "PASS" : "FAIL",
+    detail: `POST /api/orchestrate returned HTTP ${chat.response.status}.`,
+    metadata: trace
+      ? {
+          traceId: trace.traceId,
+          route: trace.route,
           selectedAgent: trace.selectedAgent,
           detectedIntent: trace.detectedIntent,
           executionStatus: trace.executionStatus,
           failureReason: trace.failureReason,
-          providerUsed: trace.providerUsed,
-          providerTarget: trace.providerTarget,
+          servicesInvoked: trace.servicesInvoked,
+          externalCalls: trace.externalCalls,
+        }
+      : {
+          bodyKeys: chat.body && typeof chat.body === "object" ? Object.keys(chat.body) : [],
+          error: chat.body?.error,
+          replyPreview: typeof chat.body?.reply === "string" ? chat.body.reply.slice(0, 240) : undefined,
+          agent: chat.body?.agent,
+          contentType: chat.response.headers.get("content-type"),
         },
-      });
-    }
-  } finally {
-    if (settingsRaw) {
-      await fs.writeFile(SETTINGS_PATH, settingsRaw, "utf8");
-    }
+  });
+  if (tracePresent) {
+    results.push({
+      name: "http_orchestrate_runtime_result",
+      status: trace.executionStatus === "success" ? "PASS" : "PARTIAL",
+      detail:
+        trace.executionStatus === "success"
+          ? "Chat request completed successfully."
+          : `Chat route traced correctly but execution ended ${trace.executionStatus}: ${trace.failureReason || "unknown"}.`,
+      metadata: {
+        selectedAgent: trace.selectedAgent,
+        detectedIntent: trace.detectedIntent,
+        executionStatus: trace.executionStatus,
+        failureReason: trace.failureReason,
+        providerUsed: trace.providerUsed,
+        providerTarget: trace.providerTarget,
+      },
+    });
   }
 
   return results;
@@ -311,14 +285,14 @@ async function main() {
     await verifyExternalWebFetch(),
   ];
 
-  const baseUrl = process.env.LIVE_ZED_BASE_URL?.trim();
+  const baseUrl = process.env.LIVE_ZAR_BASE_URL?.trim();
   if (baseUrl) {
     results.push(...await verifyLiveHttp(baseUrl));
   } else {
     results.push({
       name: "live_http_checks",
       status: "SKIP",
-      detail: "Set LIVE_ZED_BASE_URL to run live server auth and chat trace checks.",
+      detail: "Set LIVE_ZAR_BASE_URL to run live server auth and chat trace checks.",
     });
   }
 

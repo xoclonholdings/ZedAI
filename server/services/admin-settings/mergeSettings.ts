@@ -98,9 +98,11 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
 
 function normalizeAuthSettings(rawAuth: Partial<AdminSettings["auth"]> | undefined) {
   const defaults = defaultAuthSettings();
+  const { adminUsername: _legacyAdminUsername, ...supportedAuth } = (rawAuth || {}) as
+    Partial<AdminSettings["auth"]> & { adminUsername?: string };
   const auth = {
     ...defaults,
-    ...(rawAuth || {}),
+    ...supportedAuth,
   };
 
   // Migrate the old dev defaults that caused long local lockouts.

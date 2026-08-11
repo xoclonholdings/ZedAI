@@ -254,42 +254,24 @@ function pushDatabaseCheck(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
 }
 
 function pushAdminAuthChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
-  if (!present(env, "ZED_ADMIN_USERNAME")) {
+  if (!present(env, "ZAR_ADMIN_SECURE_PHRASE")) {
     checks.push({
-      name: "ZED_ADMIN_USERNAME",
+      name: "ZAR_ADMIN_SECURE_PHRASE",
       severity: "error",
-      message: "Not set. Admin login form will reject every attempt.",
+      message: "Not set. The admin secure-phrase fallback is unavailable.",
     });
-  } else {
+  } else if (trimmed(env, "ZAR_ADMIN_SECURE_PHRASE").length < 16) {
     checks.push({
-      name: "ZED_ADMIN_USERNAME",
-      severity: "ok",
-      message: `Set to "${trimmed(env, "ZED_ADMIN_USERNAME")}".`,
-    });
-  }
-
-  if (!present(env, "ZED_ADMIN_PASSWORD") && !present(env, "ZED_ADMIN_SECURE_PHRASE")) {
-    checks.push({
-      name: "ZED_ADMIN_PASSWORD",
-      severity: "error",
-      message:
-        "Neither ZED_ADMIN_PASSWORD nor ZED_ADMIN_SECURE_PHRASE is set. Admin login is impossible.",
-    });
-  } else if (
-    present(env, "ZED_ADMIN_PASSWORD") &&
-    trimmed(env, "ZED_ADMIN_PASSWORD").length < 10
-  ) {
-    checks.push({
-      name: "ZED_ADMIN_PASSWORD",
+      name: "ZAR_ADMIN_SECURE_PHRASE",
       severity: "warn",
-      message: `Only ${trimmed(env, "ZED_ADMIN_PASSWORD").length} characters — short.`,
+      message: `Only ${trimmed(env, "ZAR_ADMIN_SECURE_PHRASE").length} characters — short.`,
       hint: "Use 16+ characters for a public deploy.",
     });
   } else {
     checks.push({
-      name: "ZED_ADMIN_PASSWORD",
+      name: "ZAR_ADMIN_SECURE_PHRASE",
       severity: "ok",
-      message: "Set with reasonable length.",
+      message: "Configured for the admin fallback.",
     });
   }
 }

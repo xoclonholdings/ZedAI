@@ -26,7 +26,6 @@ export function registerSecuritySettingsRoutes(app: Express): void {
       const settings = await getPublicAdminSettings();
       const hostedCrossOrigin = Boolean(process.env.FRONTEND_URL?.trim());
       res.json({
-        adminUsername: settings.auth.adminUsername,
         securePhraseConfigured: Boolean(settings.auth.securePhrase),
         sessionTimeoutMinutes: settings.auth.sessionTimeoutMinutes,
         maxFailedAttempts: settings.auth.maxFailedAttempts,
@@ -43,7 +42,6 @@ export function registerSecuritySettingsRoutes(app: Express): void {
     async (req: Request, res: Response) => {
       try {
         const {
-          adminUsername,
           newSecurePhrase,
           sessionTimeoutMinutes,
           maxFailedAttempts,
@@ -65,7 +63,6 @@ export function registerSecuritySettingsRoutes(app: Express): void {
         }
 
         const auth = await updateAuthSettings({
-          adminUsername: adminUsername?.trim(),
           securePhrase: newSecurePhrase?.trim(),
           sessionTimeoutMinutes,
           maxFailedAttempts,
@@ -77,7 +74,6 @@ export function registerSecuritySettingsRoutes(app: Express): void {
           success: true,
           message: "Security settings updated successfully",
           settings: {
-            adminUsername: auth.adminUsername,
             securePhraseConfigured: Boolean(auth.securePhrase),
             sessionTimeoutMinutes: auth.sessionTimeoutMinutes,
             maxFailedAttempts: auth.maxFailedAttempts,

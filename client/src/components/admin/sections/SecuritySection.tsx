@@ -18,7 +18,7 @@ import {
  *
  * Behind the scenes it still hits the same endpoints:
  *   GET/POST  /api/admin/security-settings
- *   GET/POST  /api/admin/users
+ *   GET        /api/admin/users
  *   GET       /api/admin/security-log
  * Nothing functional was removed — only the visual language changed.
  */
@@ -41,7 +41,6 @@ interface SecurityEvent {
 }
 
 interface SecuritySettings {
-  adminUsername: string;
   sessionTimeoutMinutes: number;
   maxFailedAttempts: number;
   lockoutDurationMinutes: number;
@@ -49,7 +48,6 @@ interface SecuritySettings {
 }
 
 const DEFAULTS: SecuritySettings = {
-  adminUsername: "Admin",
   sessionTimeoutMinutes: 45,
   maxFailedAttempts: 10,
   lockoutDurationMinutes: 1,
@@ -93,9 +91,6 @@ export default function SecuritySection() {
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const [loadError, setLoadError] = useState<boolean>(false);
-  const [addUserOpen, setAddUserOpen] = useState<boolean>(false);
-  const [newUser, setNewUser] = useState({ username: "", password: "" });
-
   const load = useCallback(async () => {
     try {
       const [settingsRes, usersRes, logRes] = await Promise.all([
@@ -110,7 +105,6 @@ export default function SecuritySection() {
 
       const auth = settingsData?.auth || {};
       setSettings({
-        adminUsername: auth.adminUsername || "Admin",
         sessionTimeoutMinutes: auth.sessionTimeoutMinutes ?? 45,
         maxFailedAttempts: auth.maxFailedAttempts ?? 10,
         lockoutDurationMinutes: auth.lockoutDurationMinutes ?? 1,
@@ -153,32 +147,6 @@ export default function SecuritySection() {
     },
     [],
   );
-
-  const addUser = useCallback(async () => {
-    if (!newUser.username.trim() || newUser.password.length < 8) return;
-    setStatus("saving");
-    setErrorMessage(undefined);
-    try {
-      const res = await fetch("/api/admin/users", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        throw new Error(body?.error || `Add user failed (${res.status})`);
-      }
-      setNewUser({ username: "", password: "" });
-      setAddUserOpen(false);
-      await load();
-      setStatus("saved");
-      window.setTimeout(() => setStatus("idle"), 1500);
-    } catch (err: any) {
-      setErrorMessage(err?.message);
-      setStatus("error");
-    }
-  }, [newUser, load]);
 
   const header = useMemo(
     () => (
@@ -279,59 +247,12 @@ export default function SecuritySection() {
             </span>
           </SettingRow>
         ))}
-        {addUserOpen ? (
-          <SettingRow
-            label="Add another user"
-            description="Give them a username and a starting password. They can change it later."
-            stack
-          >
-            <div className="flex flex-col gap-2 w-full">
-              <input
-                type="text"
-                value={newUser.username}
-                onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                placeholder="Username"
-                className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
-              />
-              <input
-                type="password"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                placeholder="Starting password (at least 8 characters)"
-                className="w-full text-[13.5px] text-white bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40"
-              />
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void addUser()}
-                  className="rounded-lg bg-cyan-400 text-black font-medium px-3.5 py-1.5 text-[13px] hover:bg-cyan-300 transition-colors"
-                >
-                  Add
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAddUserOpen(false);
-                    setNewUser({ username: "", password: "" });
-                  }}
-                  className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/70 hover:text-white"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </SettingRow>
-        ) : (
-          <SettingRow label="Add another user" description="You can also let someone else sign in.">
-            <button
-              type="button"
-              onClick={() => setAddUserOpen(true)}
-              className="inline-flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[13px] text-white/70 hover:text-white/90 transition-colors active:opacity-80"
-            >
-              + Add user
-            </button>
-          </SettingRow>
-        )}
+        <SettingRow
+          label="User access"
+          description="New users are created only after Privy verifies their email."
+        >
+          <span className="text-[12.5px] text-white/50">Privy</span>
+        </SettingRow>
       </SettingGroup>
 
       <SettingGroup

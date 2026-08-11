@@ -22,6 +22,8 @@ services:
         sync: false
       - key: SESSION_SECRET
         sync: false
+      - key: ZAR_ADMIN_SECURE_PHRASE
+        sync: false
       - key: VITE_PRIVY_APP_ID
         sync: false
       - key: PRIVY_APP_SECRET

@@ -36,12 +36,10 @@ import { loadAdminSettings, updateAdminSettings } from "./admin-settings/io";
 export { loadAdminSettings, updateAdminSettings };
 export { getPublicAdminSettings } from "./admin-settings/publicMasking";
 export {
-  authenticateManagedUser,
-  createManagedUser,
+  authenticateAdminPassphrase,
   findAdminUser,
   listManagedUsers,
   updateAuthSettings,
-  updateCurrentUserCredentials,
   updateManagedUser,
 } from "./admin-settings/userCrud";
 

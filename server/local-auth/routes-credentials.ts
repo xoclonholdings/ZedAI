@@ -2,15 +2,11 @@ import type { Express, Request, Response } from "express";
 
 import {
   loadAdminSettings,
-  updateCurrentUserCredentials,
 } from "../services/AdminSettingsStore";
 
-import { isAuthenticated } from "./middleware";
 import {
-  attachUser,
   clearAttemptsForIp,
   getClientIp,
-  sessionUser,
 } from "./session-helpers";
 
 /**
@@ -19,11 +15,8 @@ import {
  *   POST /api/admin/verify-challenge   Admin recovery from lockout —
  *                                      a valid secure phrase clears the
  *                                      IP's attempt counters.
- *   POST /api/auth/update-credentials  Logged-in user changes their
- *                                      own username/password.
- *   GET  /api/auth/current-credentials Light reflection used by the
- *                                      settings UI to render the
- *                                      current username.
+ * Username/password credential routes were retired. Regular users use
+ * Privy email verification; admin recovery uses the secure phrase.
  */
 export function registerCredentialRoutes(app: Express): void {
   app.post("/api/admin/verify-challenge", async (req: Request, res: Response) => {
@@ -47,65 +40,4 @@ export function registerCredentialRoutes(app: Express): void {
       res.status(500).json({ error: "Challenge verification failed" });
     }
   });
-
-  app.post(
-    "/api/auth/update-credentials",
-    isAuthenticated,
-    async (req: Request, res: Response) => {
-      try {
-        const { newUsername, newPassword } = req.body || {};
-        const currentUser = sessionUser(req);
-
-        if (!currentUser) {
-          return res.status(401).json({ error: "Unauthorized" });
-        }
-
-        if (!newUsername && !newPassword) {
-          return res.status(400).json({ error: "Provide a username, password, or both" });
-        }
-
-        const updated = await updateCurrentUserCredentials(currentUser.id, {
-          username: newUsername,
-          password: newPassword,
-        });
-
-        if (!updated) {
-          return res.status(404).json({ error: "User not found" });
-        }
-
-        attachUser(req, updated);
-
-        res.json({
-          success: true,
-          message: "Credentials updated successfully",
-          user: {
-            username: updated.username,
-            firstName: updated.firstName,
-            lastName: updated.lastName,
-          },
-        });
-      } catch (error: any) {
-        console.error("Update credentials error:", error);
-        res
-          .status(400)
-          .json({ error: error.message || "Failed to update credentials" });
-      }
-    },
-  );
-
-  app.get(
-    "/api/auth/current-credentials",
-    isAuthenticated,
-    async (req: Request, res: Response) => {
-      const currentUser = sessionUser(req);
-      if (!currentUser) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      res.json({
-        username: currentUser.username,
-        isAdmin: currentUser.isAdmin,
-      });
-    },
-  );
 }

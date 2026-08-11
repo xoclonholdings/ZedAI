@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
+import { randomBytes } from "crypto";
 
 import type {
   AuthSettings,
@@ -15,9 +15,8 @@ import {
 /** Defaults for the auth section, pulled from env in production. */
 export function defaultAuthSettings(): AuthSettings {
   return {
-    adminUsername: getEnvOrDevelopmentDefault("ZED_ADMIN_USERNAME", "LocalAdmin"),
     securePhrase: getEnvOrDevelopmentDefault(
-      "ZED_ADMIN_SECURE_PHRASE",
+      "ZAR_ADMIN_SECURE_PHRASE",
       "LOCAL-DEV-SECURE-PHRASE",
     ),
     sessionTimeoutMinutes: 45,
@@ -30,39 +29,18 @@ export function defaultAuthSettings(): AuthSettings {
   };
 }
 
-export function hashPassword(password: string, salt = randomBytes(16).toString("hex")) {
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return { passwordHash: hash, passwordSalt: salt };
-}
-
-export function verifyPassword(
-  password: string,
-  passwordHash?: string,
-  passwordSalt?: string,
-) {
-  if (!passwordHash || !passwordSalt) return false;
-  const incoming = scryptSync(password, passwordSalt, 64);
-  const stored = Buffer.from(passwordHash, "hex");
-  return incoming.length === stored.length && timingSafeEqual(incoming, stored);
-}
-
-/** Constructs the bootstrap admin user with a password from env in production. */
-export function createDefaultAdminUser(auth: AuthSettings): ManagedUser {
+/** Constructs the stable bootstrap owner used by the secure-phrase fallback. */
+export function createDefaultAdminUser(): ManagedUser {
   const timestamp = nowIso();
-  const bootstrapPassword = getEnvOrDevelopmentDefault(
-    "ZED_ADMIN_PASSWORD",
-    "LocalDevPassword!234",
-  );
   return {
     id: "user_admin",
-    username: auth.adminUsername,
+    username: "ZAR Admin",
     email: "admin@zar-ai.online",
     firstName: "ZAR",
     lastName: "Admin",
     profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=zar-admin",
     isAdmin: true,
     isActive: true,
-    ...hashPassword(bootstrapPassword),
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -75,23 +53,25 @@ export function sanitizeUser(user: ManagedUser): PublicManagedUser {
 }
 
 /**
- * Ensures the admin user exists, syncs the admin's username to the
- * current auth setting, and migrates older email values forward to
- * the canonical admin@zar-ai.online.
+ * Ensures the stable admin owner exists and migrates older display and
+ * email values forward. The username is an internal display label, not
+ * a sign-in credential.
  */
 export function normalizeUsers(
   auth: AuthSettings,
   users: ManagedUser[] | undefined,
 ): ManagedUser[] {
   const existing = Array.isArray(users) ? users : [];
-  const admin = existing.find((user) => user.isAdmin) || createDefaultAdminUser(auth);
+  const admin = existing.find((user) => user.isAdmin) || createDefaultAdminUser();
 
   const adminUpdated = {
     ...admin,
-    username: auth.adminUsername,
+    username: "ZAR Admin",
     // Canonical email — older settings files (admin@zed-ai.local) get
     // migrated forward without a separate migration script.
     email: "admin@zar-ai.online",
+    passwordHash: undefined,
+    passwordSalt: undefined,
     updatedAt: admin.updatedAt || nowIso(),
   };
 

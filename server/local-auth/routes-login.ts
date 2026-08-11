@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 
 import {
-  authenticateManagedUser,
+  authenticateAdminPassphrase,
   loadAdminSettings,
 } from "../services/AdminSettingsStore";
 import { logSecurityEvent } from "../services/SecurityAudit";
@@ -15,16 +15,14 @@ import {
 } from "./session-helpers";
 
 /**
- * POST /api/login + /api/logout. Login supports both
- * username/password and the admin secure-phrase fallback — both flow
- * through authenticateManagedUser, which returns null on any failure
- * (the route does the rate-limit accounting outside the auth call).
+ * POST /api/login + /api/logout. /api/login is the admin secure-phrase
+ * fallback only; regular users establish sessions through Privy.
  */
 export function registerLoginRoutes(app: Express): void {
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
       const ip = getClientIp(req);
-      const { username, password, passphrase } = req.body || {};
+      const { passphrase } = req.body || {};
       const settings = await loadAdminSettings();
       const attemptKey = `login:${ip}`;
       const attempts =
@@ -43,7 +41,7 @@ export function registerLoginRoutes(app: Express): void {
         });
       }
 
-      const user = await authenticateManagedUser({ username, password, passphrase });
+      const user = await authenticateAdminPassphrase(passphrase);
 
       if (!user) {
         const newCount = attempts.count + 1;
