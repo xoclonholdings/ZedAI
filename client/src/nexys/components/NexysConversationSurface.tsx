@@ -1,60 +1,65 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, FileText, Globe, Image, MessageCircle, Mic, Smartphone, Upload } from "lucide-react";
+import { CheckSquare, Clock, File, FileText, Image, Lightbulb, MessageCircle, Mic, Search, Smartphone, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@shared/schema";
+import {
+  EXTRACTABLE_UPLOAD_ACCEPT,
+  EXTRACTABLE_UPLOAD_MIME_TYPES,
+  IMAGE_UPLOAD_ACCEPT,
+  IMAGE_UPLOAD_MIME_TYPES,
+} from "@shared/upload-policy";
+import {
+  NEXYS_DOCK_CONTROLS,
+  type NexysDockControlDefinition,
+  type NexysDockControlId,
+} from "../dock/nexysDock";
 import { useNexysChatSession } from "../communication/useNexysChatSession";
 import { submitVoiceCommandThroughConversation } from "../communication/foregroundVoice";
 import { useNexysForegroundVoice } from "../communication/useNexysDictation";
 import { NexysFileUpload } from "./communication/NexysFileUpload";
-import { NexysLiveBrowser } from "./communication/NexysLiveBrowser";
-import { NexysMemoryUpload } from "./communication/NexysMemoryUpload";
 import { NexysVoiceDock } from "./communication/NexysVoiceDock";
 import { NexysSmsSettings } from "./communication/NexysSmsSettings";
-import ResearchDocuments from "@/components/research/ResearchDocuments";
 import { useNexys } from "../state/NexysProvider";
-import {
-  communicationModeViews,
-  type NexysCommunicationModeView,
-} from "../viewport/NexysViewportModel";
 
 /**
- * What's showing in the console's one content slot, where the mic sits by
- * default - Text/Talk/Image/Doc/Upload/History all swap this slot's content.
- * Browse swaps in just its compact address bar here (NexysLiveBrowser); the
- * fetched page itself renders full-size in the console's main content
- * region instead (ConsoleBrowserFullPage), the same place every workspace
- * renders. Chat opens the real chat page instead of a slot. The dock around the
- * slot (status row, mode row, this slot, footer row) never changes shape or
- * grows - only the slot's content changes.
+ * The five approved NEXYS controls. Chat and Upload open branching choices
+ * inside the existing fixed content slot; Ideas, Task, and Search enter their
+ * real Operate surfaces. History remains a Console option outside this count.
  */
-export type NexysDockMode = "text" | "talk" | "image" | "chat" | "doc" | "upload" | "history" | "browse";
+export type NexysDockMode = NexysDockControlId;
+type NexysDockSlot = NexysDockMode | "talk" | "sms" | "attachment" | "history";
+type UploadKind = "image" | "document" | "file";
 
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-const IMAGE_ACCEPT = "image/*";
+const DOCUMENT_UPLOAD_ACCEPT = ".txt,.md,.pdf,.docx";
+const DOCUMENT_UPLOAD_MIME_TYPES = [
+  "text/plain",
+  "text/markdown",
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+] as const;
 
 export function NexysConversationSurface({
   initialMode,
 }: {
-  /** Which slot to open with - set by the console dock when a specific tool icon requested power-on. */
+  /** Which control to open with when the compact Console dock powers on. */
   readonly initialMode?: NexysDockMode;
 } = {}) {
   const [, navigate] = useLocation();
-  const { viewportSnapshot, communicationLayer } = useNexys();
-  const [status, setStatus] = useState("Ready");
-  const [activeMode, setActiveMode] = useState<NexysDockMode>(initialMode ?? "talk");
+  const { viewportSnapshot } = useNexys();
+  const [activeMode, setActiveMode] = useState<NexysDockSlot>(initialMode ?? "chat");
+  const [uploadKind, setUploadKind] = useState<UploadKind | null>(null);
 
   const goToChat = useCallback((conversationId?: string) => {
     navigate(conversationId ? `/chat/${conversationId}` : "/chat");
   }, [navigate]);
 
-  const { controller: conversationController, activeConversationId } = useNexysChatSession(undefined, {
+  const { controller: conversationController, activeConversationId, status } = useNexysChatSession(undefined, {
     onModeAction: (modeId) => handleModeSelect(modeId),
   });
 
-  const modes = useMemo(() => communicationModeViews(communicationLayer), [communicationLayer]);
   const focusedLabel = viewportSnapshot.focusedNode?.label ?? "Nexys";
   // Workspace selection subtly tints the console's accent (spec: "may influence
   // accent colors ... contextual controls"); the surface itself stays persistent.
@@ -73,35 +78,56 @@ export function NexysConversationSurface({
     cancelSubmission: conversationController.abort,
   });
 
-  // Each mode button performs the real action it names. Chat leaves the
-  // dock for the existing chat page; the rest use the console's own
-  // one content slot, since the dock is a persistent overlay, not a page.
   function handleModeSelect(modeId: string) {
-    switch (modeId) {
-      case "text":
-        setActiveMode("text");
-        return;
-      case "talk":
-        voice.toggle();
-        setActiveMode("talk");
-        return;
-      case "image":
-        setActiveMode("image");
-        void conversationController.openFileUpload();
-        return;
-      case "upload":
-        // A memory upload isn't a chat attachment - no conversation needed.
-        setActiveMode("upload");
-        return;
-      case "doc":
-        setActiveMode("doc");
-        return;
-      case "chat":
-        goToChat(activeConversationId);
-        return;
-      default:
-        setStatus(`${modeId} is not available yet`);
+    if (modeId === "talk") {
+      openTalk();
+      return;
     }
+    if (modeId === "text") {
+      openSms();
+      return;
+    }
+    if (modeId === "image" || modeId === "doc") {
+      openUpload(modeId === "image" ? "image" : "document");
+      return;
+    }
+
+    const control = NEXYS_DOCK_CONTROLS.find((candidate) => candidate.id === modeId);
+    if (!control) return;
+
+    if (modeId === "chat") {
+      conversationController.closeFileUpload();
+      setActiveMode("chat");
+      return;
+    }
+    if (modeId === "upload") {
+      conversationController.closeFileUpload();
+      setUploadKind(null);
+      setActiveMode("upload");
+      return;
+    }
+    if (control.route) navigate(control.route);
+  }
+
+  function openTalk() {
+    setActiveMode("talk");
+    voice.toggle();
+  }
+
+  function openSms() {
+    setActiveMode("sms");
+  }
+
+  function openUpload(kind: UploadKind) {
+    setUploadKind(kind);
+    setActiveMode("attachment");
+    void conversationController.openFileUpload();
+  }
+
+  function closeAttachment() {
+    conversationController.closeFileUpload();
+    setUploadKind(null);
+    setActiveMode("upload");
   }
 
   return (
@@ -141,39 +167,55 @@ export function NexysConversationSurface({
       </div>
 
       <div className="mb-3 rounded-xl border border-white/10 bg-black/40 px-2 py-1.5">
-        <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} communication modes`}>
-          {modes.map((mode) => (
-            <CommunicationModeButton
-              key={mode.id}
-              mode={mode}
-              active={activeMode === mode.id}
-              onSelect={() => handleModeSelect(mode.id)}
+        <div className="flex items-center justify-around gap-1" aria-label={`${focusedLabel} dock controls`}>
+          {NEXYS_DOCK_CONTROLS.map((control) => (
+            <DockControlButton
+              key={control.id}
+              control={control}
+              active={activeMode === control.id}
+              onSelect={() => handleModeSelect(control.id)}
             />
           ))}
         </div>
       </div>
 
       {/*
-        The one content slot - exactly one of these is shown at a time,
-        swapped by whichever tab is active. Nothing here ever grows past its
-        own bounded content or pushes the rows around it.
+        The one content slot. Chat contains ZAR's communication modes and
+        Upload contains the approved intake split. The fixed Console layout
+        remains unchanged around it.
       */}
       <div className="mb-3 flex min-h-[101px] flex-col justify-center">
-        {activeMode === "text" && <NexysSmsSettings />}
+        {activeMode === "chat" && (
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 bg-black/40 p-3">
+            <SlotChoice icon={MessageCircle} label="Chat" onSelect={() => goToChat(activeConversationId)} />
+            <SlotChoice icon={Mic} label="Talk" onSelect={openTalk} />
+            <SlotChoice icon={Smartphone} label="SMS" onSelect={openSms} />
+          </div>
+        )}
+
+        {activeMode === "sms" && <NexysSmsSettings />}
 
         {activeMode === "talk" && (
           <NexysVoiceDock voice={voice} />
         )}
 
-        {activeMode === "image" && (
+        {activeMode === "upload" && (
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 bg-black/40 p-3">
+            <SlotChoice icon={Image} label="Image" onSelect={() => openUpload("image")} />
+            <SlotChoice icon={FileText} label="Document" onSelect={() => openUpload("document")} />
+            <SlotChoice icon={File} label="File" onSelect={() => openUpload("file")} />
+          </div>
+        )}
+
+        {activeMode === "attachment" && uploadKind && (
           conversationController.showFileUpload && conversationController.activeUploadConversationId ? (
             <NexysFileUpload
               conversationId={conversationController.activeUploadConversationId}
               onUpload={conversationController.handleFileUpload}
-              onClose={() => setActiveMode("talk")}
-              accept={IMAGE_ACCEPT}
-              allowedTypes={IMAGE_TYPES}
-              label="Tap to upload an image"
+              onClose={closeAttachment}
+              accept={uploadAcceptFor(uploadKind)}
+              allowedTypes={uploadTypesFor(uploadKind)}
+              label={`Tap to upload ${uploadKind === "file" ? "a file" : `a${uploadKind === "image" ? "n" : ""} ${uploadKind}`}`}
             />
           ) : (
             <div className="flex h-[104px] items-center justify-center rounded-xl border border-white/10 bg-black/40 text-[12px] text-white/45">
@@ -181,12 +223,6 @@ export function NexysConversationSurface({
             </div>
           )
         )}
-
-        {activeMode === "upload" && <NexysMemoryUpload onDone={() => setActiveMode("talk")} />}
-
-        {activeMode === "doc" && <ResearchDocuments />}
-
-        {activeMode === "browse" && <NexysLiveBrowser />}
 
         {activeMode === "history" && (
           <div className="max-h-[220px] overflow-y-auto rounded-xl border border-white/10 bg-black/40 p-2">
@@ -215,23 +251,10 @@ export function NexysConversationSurface({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-end gap-2">
         <button
           type="button"
-          onClick={() => setActiveMode((value) => (value === "browse" ? "talk" : "browse"))}
-          aria-pressed={activeMode === "browse"}
-          className={cn(
-            "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
-            activeMode === "browse"
-              ? "border-cyan-200/35 bg-cyan-200/[0.1] text-cyan-50"
-              : "border-white/10 bg-black/40 text-white/70 hover:bg-white/5",
-          )}
-        >
-          <Globe size={14} /> Browse
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMode((value) => (value === "history" ? "talk" : "history"))}
+          onClick={() => setActiveMode((value) => (value === "history" ? "chat" : "history"))}
           aria-pressed={activeMode === "history"}
           className={cn(
             "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[11px] transition",
@@ -247,50 +270,79 @@ export function NexysConversationSurface({
   );
 }
 
-function CommunicationModeButton({
-  mode,
+function DockControlButton({
+  control,
   active,
   onSelect,
 }: {
-  readonly mode: NexysCommunicationModeView;
+  readonly control: NexysDockControlDefinition;
   readonly active: boolean;
   readonly onSelect: () => void;
 }) {
-  const Icon = iconForMode(mode.id);
+  const Icon = iconForMode(control.id);
   return (
     <button
       type="button"
       onClick={onSelect}
-      disabled={!mode.enabled}
       aria-pressed={active}
       className={cn(
         "flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1 text-white/58 transition hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 motion-reduce:transition-none",
-        active && mode.enabled && "text-cyan-200",
-        !mode.enabled && "cursor-not-allowed opacity-35 hover:text-white/58",
+        active && "text-cyan-200",
       )}
-      title={mode.label}
-      aria-label={`${mode.label} communication`}
+      title={control.label}
+      aria-label={control.label}
     >
       <Icon size={17} />
-      <span className="max-w-[52px] truncate text-[9px] font-medium">{mode.label}</span>
+      <span className="max-w-[52px] truncate text-[9px] font-medium">{control.label}</span>
     </button>
   );
 }
 
+function SlotChoice({
+  icon: Icon,
+  label,
+  onSelect,
+}: {
+  readonly icon: typeof MessageCircle;
+  readonly label: string;
+  readonly onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="flex min-h-[74px] flex-col items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 text-[11px] font-medium text-white/70 transition hover:border-cyan-200/25 hover:bg-white/5 hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
+    >
+      <Icon size={18} />
+      {label}
+    </button>
+  );
+}
+
+function uploadAcceptFor(kind: UploadKind): string {
+  if (kind === "image") return IMAGE_UPLOAD_ACCEPT;
+  if (kind === "document") return DOCUMENT_UPLOAD_ACCEPT;
+  return EXTRACTABLE_UPLOAD_ACCEPT;
+}
+
+function uploadTypesFor(kind: UploadKind): readonly string[] {
+  if (kind === "image") return IMAGE_UPLOAD_MIME_TYPES;
+  if (kind === "document") return DOCUMENT_UPLOAD_MIME_TYPES;
+  return EXTRACTABLE_UPLOAD_MIME_TYPES;
+}
+
 export function iconForMode(modeId: string) {
   switch (modeId) {
-    case "talk":
-      return Mic;
-    case "image":
-      return Image;
     case "chat":
       return MessageCircle;
-    case "doc":
-      return FileText;
     case "upload":
       return Upload;
-    case "text":
-      return Smartphone;
+    case "ideas":
+      return Lightbulb;
+    case "task":
+      return CheckSquare;
+    case "search":
+      return Search;
     default:
       return MessageCircle;
   }

@@ -35,17 +35,17 @@ function renderNexysCommunication() {
   );
 }
 
-test("mounted Nexys communication surface is NEXYS-facing, defaults to the mic slot, and omits the legacy shell", () => {
-  // The dock's one content slot defaults to the mic (Talk) - Text opens the
-  // real chat page instead of an inline composer, and there's no separate
-  // Memory Context layer (Memory is its own Nexys planet).
+test("mounted Nexys dock is NEXYS-facing, exposes five controls, and keeps History outside them", () => {
   const html = renderNexysCommunication();
 
   assert.match(html, /Persistent NEXYS communication/);
   assert.match(html, /NEXYS/, "the dock carries the NEXYS console label");
   assert.match(html, /Online/, "the connectivity indicator's Online status reads exactly as approved");
-  assert.match(html, /data-nexys-voice=/, "the mic slot is the default content");
-  assert.match(html, /Foreground voice unavailable|Activate ZAR voice/);
+  for (const label of ["Chat", "Upload", "Ideas", "Task", "Search"]) {
+    assert.match(html, new RegExp(`aria-label="${label}"`), `${label} is a primary Dock control`);
+  }
+  assert.doesNotMatch(html, /aria-label="Image"/, "Image branches from Upload instead of occupying the Dock");
+  assert.doesNotMatch(html, /aria-label="Document"/, "Document branches from Upload instead of occupying the Dock");
   assert.doesNotMatch(html, /Ask ZAR/, "no composer/empty-state text shows in the dock");
   assert.match(html, /History/);
   assert.doesNotMatch(html, /Memory Context/, "Memory Context was removed - Memory is its own Nexys planet");

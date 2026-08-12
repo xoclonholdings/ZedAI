@@ -1,13 +1,12 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Send } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { iconForMode } from "@/nexys/components/NexysConversationSurface";
-import { useNexys } from "@/nexys/state/NexysProvider";
-import { communicationModeViews } from "@/nexys/viewport/NexysViewportModel";
+import { NEXYS_DOCK_CONTROLS } from "@/nexys/dock/nexysDock";
 
 /**
- * The console's standby face: one line of the six tool icons, one line of a
+ * The console's standby face: one line of the five Dock controls, one line of a
  * compact composer. Tapping a tool powers the console on already showing
  * that tool; typing and sending goes straight to chat without powering on,
  * through the existing chat surface.
@@ -20,15 +19,9 @@ export function ConsoleStandbyBar({
   readonly accent: string;
 }) {
   const [, navigate] = useLocation();
-  const { communicationLayer } = useNexys();
   const [draft, setDraft] = useState("");
-  const modes = useMemo(() => communicationModeViews(communicationLayer), [communicationLayer]);
 
   function handleModeTap(modeId: string) {
-    if (modeId === "chat") {
-      navigate("/chat");
-      return;
-    }
     onActivate(modeId);
   }
 
@@ -45,17 +38,16 @@ export function ConsoleStandbyBar({
       style={{ borderColor: `${accent}30` }}
     >
       <div className="flex items-center justify-around gap-1 pb-2" aria-label="Console tools">
-        {modes.map((mode) => {
-          const Icon = iconForMode(mode.id);
+        {NEXYS_DOCK_CONTROLS.map((control) => {
+          const Icon = iconForMode(control.id);
           return (
             <button
-              key={mode.id}
+              key={control.id}
               type="button"
-              onClick={() => handleModeTap(mode.id)}
-              disabled={!mode.enabled}
+              onClick={() => handleModeTap(control.id)}
               className="flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-1 text-white/55 transition hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label={mode.label}
-              title={mode.label}
+              aria-label={control.label}
+              title={control.label}
             >
               <Icon size={16} />
             </button>

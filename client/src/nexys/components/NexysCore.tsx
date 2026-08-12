@@ -1615,10 +1615,9 @@ export function NexysCoreScene({
   onFocusedTap,
   focusedDomainId = null,
 }: NexysCoreSceneProps) {
-  // The system always starts facing Workspaces, never wherever a domain
-  // happens to hash-land - falls back to the first domain if Workspaces
-  // isn't present (defensive; production manifests always include it).
-  const initialActiveIndex = Math.max(0, domains.findIndex((d) => d.id === "workspaces"));
+  // The system starts facing ZAR's specialized Desk, never wherever a domain
+  // happens to hash-land - falls back to the first domain if Desk is absent.
+  const initialActiveIndex = Math.max(0, domains.findIndex((d) => d.id === "desk"));
   const interaction = useRef<InteractionState>({
     active: false,
     lastX: 0,

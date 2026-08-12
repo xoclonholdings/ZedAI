@@ -10,13 +10,13 @@ import { ConsoleShell } from "./ConsoleShell";
 import { ZAR_NEXYS_CONSOLE } from "./consoleIdentity";
 
 /**
- * Wraps one of the 8 root-node routes (identity, memory, knowledge,
- * workspaces, projects, tools, connect, settings) so its existing page
+ * Wraps one of the seven shared domain routes (Identity, Memory, Knowledge,
+ * Apps, Desk, Settings, Portal) so its existing page
  * content renders as workspace content inside the console instead of as a
  * bare standalone page. The route, its data fetching, and its business logic
  * are untouched - only the presentation chrome around it changes.
  *
- * Some routes (Trading Intelligence) aren't one of the 8 galaxy domains and
+ * Some legacy routes aren't one of the seven shared galaxy domains and
  * have no NexysRootNodeId to look a label/accent up from - `label`/`accent`
  * let those pages use the same frame anyway, without inventing a fake root
  * node for them.

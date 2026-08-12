@@ -101,13 +101,13 @@ test("Nexys home is a fixed one-screen shell, not a scrolling page", () => {
   );
 });
 
-test("the official scene is fed all eight real manifest nodes, never a hardcoded prototype domain list", () => {
+test("the official scene is fed all seven shared domain nodes, never a hardcoded prototype list", () => {
   const domains = nexysDomainsFromRootNodes(NEXYS_ROOT_NODES);
 
-  assert.equal(domains.length, 8);
+  assert.equal(domains.length, 7);
   assert.deepEqual(
     domains.map((d) => d.id).sort(),
-    ["connect", "identity", "knowledge", "memory", "projects", "settings", "tools", "workspaces"],
+    ["apps", "desk", "identity", "knowledge", "memory", "portal", "settings"],
   );
   for (const domain of domains) {
     assert.ok(domain.color.startsWith("#"), `${domain.id} should carry its real manifest color`);

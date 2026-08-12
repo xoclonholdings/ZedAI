@@ -9,6 +9,7 @@ import {
   NEXYS_COMMUNICATION_MODE_IDS,
   PERSISTENT_COMMUNICATION_MANIFEST,
 } from "../communication/persistentCommunication";
+import { NEXYS_DOCK_CONTROLS } from "../dock/nexysDock";
 import {
   extractNexysClientActions,
   parseNexysClientActions,
@@ -48,7 +49,7 @@ test("Nexys home viewport derives root nodes from the manifest-backed graph", ()
     graph.rootNodes.map((node) => node.id),
     NEXYS_ROOT_MANIFESTS.map((manifest) => manifest.id),
   );
-  assert.equal(graph.rootNodes.length, 8);
+  assert.equal(graph.rootNodes.length, 7);
   assert.equal(viewportSnapshot.focusedNode?.id, NEXYS_ROOT_NODE_IDS[0]);
   assert.ok(viewportSnapshot.visibleNodes.every((entry) => graph.rootNodes.some((node) => node.id === entry.node.id)));
 });
@@ -70,12 +71,12 @@ test("visible nodes update when focus changes", () => {
   const graph = engine.snapshot(engine.createInitialState());
   const identityVisible = getNexysViewportSnapshot(graph, createNexysViewportState("identity"))
     .visibleNodes.map((entry) => entry.node.id);
-  const projectsVisible = getNexysViewportSnapshot(graph, createNexysViewportState("projects"))
+  const deskVisible = getNexysViewportSnapshot(graph, createNexysViewportState("desk"))
     .visibleNodes.map((entry) => entry.node.id);
 
-  assert.notDeepEqual(identityVisible, projectsVisible);
-  assert.equal(projectsVisible[0], "projects");
-  assert.ok(projectsVisible.includes("tools"));
+  assert.notDeepEqual(identityVisible, deskVisible);
+  assert.equal(deskVisible[0], "desk");
+  assert.ok(deskVisible.includes("apps"));
 });
 
 test("touch or programmatic focus can select a node without changing route data", () => {
@@ -119,7 +120,7 @@ test("focused-node routes and adjacent focus use the existing graph order", () =
   const previous = getAdjacentNexysNode(graph, "identity", "previous");
 
   assert.equal(next?.id, "memory");
-  assert.equal(previous?.id, "settings");
+  assert.equal(previous?.id, "portal");
   assert.equal(routeForNexysNode(next?.id ?? ""), "/nexys/memory");
   assert.equal(routeForNexysNode("unknown"), "/nexys");
 });
@@ -131,6 +132,13 @@ test("persistent communication modes are derived from the communication manifest
   assert.deepEqual(modes.map((mode) => mode.label), ["Text", "Talk", "Chat", "Image", "Doc", "Upload"]);
   assert.equal(modes.some((mode) => mode.id === "chat" && mode.enabled), true);
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.route, "/chat");
+});
+
+test("visible NEXYS dock follows the five-control Operate contract", () => {
+  assert.deepEqual(
+    NEXYS_DOCK_CONTROLS.map((control) => control.label),
+    ["Chat", "Upload", "Ideas", "Task", "Search"],
+  );
 });
 
 test("normal focused-node presentation excludes developer metadata", () => {
@@ -199,7 +207,7 @@ test("typed Nexys client actions validate and resolve against Nexys authorities"
       nexysClientActions: [
         { type: "focus-node", nodeId: "memory" },
         { type: "navigate-route", route: "https://example.test" },
-        { type: "open-capability", capabilityId: "connect.channels" },
+        { type: "open-capability", capabilityId: "desk.execution-policy" },
       ],
     },
   });
@@ -220,34 +228,34 @@ test("typed Nexys client actions validate and resolve against Nexys authorities"
 });
 
 test("capability status controls user-facing focused-node actions", () => {
-  const channels = nexysCapabilityRegistry.get("connect.channels");
-  const projectNavigation = nexysCapabilityRegistry.get("projects.navigation");
-  assert.ok(channels);
-  assert.ok(projectNavigation);
+  const executionPolicy = nexysCapabilityRegistry.get("desk.execution-policy");
+  const task = nexysCapabilityRegistry.get("desk.tasks");
+  assert.ok(executionPolicy);
+  assert.ok(task);
 
-  assert.equal(isNexysCapabilityActionAvailable(channels), false);
-  assert.equal(isNexysCapabilityActionAvailable(projectNavigation), true);
+  assert.equal(isNexysCapabilityActionAvailable(executionPolicy), false);
+  assert.equal(isNexysCapabilityActionAvailable(task), true);
 
   const engine = new NexysConstellationEngine(NEXYS_ROOT_NODES, NEXYS_ROOT_CONNECTIONS);
-  const graph = engine.snapshot(engine.createInitialState("connect"));
+  const graph = engine.snapshot(engine.createInitialState("desk"));
   const view = createFocusedNodeView(graph.activeNode!, nexysCapabilityRegistry);
 
-  assert.equal(view.actions.some((action) => action.label === "Connection Channels"), false);
-  assert.equal(view.actions.some((action) => action.label === "Provider Accounts"), true);
+  assert.equal(view.actions.some((action) => action.label === "Execution Policy"), false);
+  assert.equal(view.actions.some((action) => action.label === "Task"), true);
 });
 
 test("invalid action payloads are ignored during parsing", () => {
   const parsed = parseNexysClientActions([
     { type: "focus-node", nodeId: "identity" },
     { type: "focus-node" },
-    { type: "navigate-route", route: "/nexys/projects" },
+    { type: "navigate-route", route: "/nexys/desk" },
     { type: "navigate-route", route: 1 },
     { type: "unknown", nodeId: "memory" },
   ]);
 
   assert.deepEqual(parsed, [
     { type: "focus-node", nodeId: "identity" },
-    { type: "navigate-route", route: "/nexys/projects" },
+    { type: "navigate-route", route: "/nexys/desk" },
   ]);
 });
 

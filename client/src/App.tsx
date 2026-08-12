@@ -36,6 +36,10 @@ import ConnectPage from "@/pages/connect";
 import IdentityPage from "@/pages/identity";
 import ChatPage from "@/pages/chat";
 import KnowledgePage from "@/pages/knowledge";
+import AppsPage from "@/pages/apps";
+import MemoryPage from "@/pages/memory";
+import OperateDeskPage from "@/pages/operate";
+import ResearchDesk from "@/pages/ResearchDesk";
 
 installApiFetchPatch();
 
@@ -124,6 +128,32 @@ function Router() {
         {isAuthenticated ? <NexysRootPage /> : <Login />}
       </Route>
 
+      <Route path="/memory">
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="memory"><MemoryPage /></ConsoleWorkspaceFrame> : <Login />}
+      </Route>
+
+      <Route path="/apps">
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="apps"><AppsPage /></ConsoleWorkspaceFrame> : <Login />}
+      </Route>
+
+      <Route path="/desk/ideas">
+        {isAuthenticated ? (
+          <ConsoleWorkspaceFrame nodeId="desk" label="Ideas" flush>
+            <ChatPage />
+          </ConsoleWorkspaceFrame>
+        ) : (
+          <Login />
+        )}
+      </Route>
+
+      <Route path="/desk/search">
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Search"><ResearchDesk /></ConsoleWorkspaceFrame> : <Login />}
+      </Route>
+
+      <Route path="/desk">
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk"><OperateDeskPage /></ConsoleWorkspaceFrame> : <Login />}
+      </Route>
+
       <Route path="/galaxy/:id">
         {isAuthenticated ? <GalaxyWorkspacePage /> : <Login />}
       </Route>
@@ -153,11 +183,11 @@ function Router() {
       </Route>
 
       <Route path="/workspaces/:workspace/tools/:id">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><FlowDetailPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk"><FlowDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/workspace">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><WorkspacePage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk"><WorkspacePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/workspaces/finance">
@@ -169,27 +199,27 @@ function Router() {
       </Route>
 
       <Route path="/workspaces/:workspace">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="workspaces"><WorkspacePage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk"><WorkspacePage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/history/:runId">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><RunDetailPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame label="History"><RunDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/history">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><HistoryPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame label="History"><HistoryPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/inbox">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="connect"><InboxPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="settings" label="Inbox"><InboxPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/flows">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><FlowsPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame label="Flows"><FlowsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/flows/:id">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="tools"><FlowDetailPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame label="Flows"><FlowDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       {/* /runs merged into /history — same flow-run data, one real page instead of two. */}
@@ -202,7 +232,7 @@ function Router() {
       </Route>
 
       <Route path="/projects">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="projects"><ProjectsPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Task"><ProjectsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/settings">
@@ -210,7 +240,7 @@ function Router() {
       </Route>
 
       <Route path="/connect">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="connect"><ConnectPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="settings" label="Integrations"><ConnectPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/identity">
@@ -222,7 +252,7 @@ function Router() {
       </Route>
 
       <Route path="/projects/:id">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="projects"><ProjectDetailPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Task"><ProjectDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/learning/studio">

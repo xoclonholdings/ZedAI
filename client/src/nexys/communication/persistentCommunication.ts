@@ -182,7 +182,7 @@ function coreCreationDependencies(): readonly NexysCapabilityDependency[] {
     dependency("identity.collaboration-context", "Confirmed collaboration context guides creation."),
     dependency("memory.relevant-context", "Relevant retained memory can support continuity."),
     dependency("knowledge.relevant-sources", "Source-backed knowledge can support grounded creation."),
-    dependency("tools.execution-policy", "Execution policy governs tool-capable creation."),
+    dependency("desk.execution-policy", "Execution policy governs tool-capable creation."),
   ];
 }
 

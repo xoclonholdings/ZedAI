@@ -12,6 +12,7 @@ import {
   PERSISTENT_COMMUNICATION_LAYER_ID,
   PERSISTENT_COMMUNICATION_MANIFEST,
 } from "../communication/persistentCommunication";
+import { NEXYS_DOCK_CONTROLS, NEXYS_DOCK_CONTROL_IDS } from "../dock/nexysDock";
 import { NexysConstellationEngine } from "../graph/NexysConstellationEngine";
 import {
   NEXYS_ROOT_CONNECTIONS,
@@ -28,7 +29,7 @@ import {
 } from "../manifests/rootManifests";
 import type { NexysNodeManifest } from "../manifests/types";
 
-test("root node manifests cover the eight permanent Nexys roots without Create", () => {
+test("root node manifests cover the seven shared Nexys domains without legacy roots", () => {
   assert.deepEqual(
     NEXYS_ROOT_MANIFESTS.map((manifest) => manifest.id),
     [...NEXYS_ROOT_NODE_IDS],
@@ -37,14 +38,16 @@ test("root node manifests cover the eight permanent Nexys roots without Create",
     "identity",
     "memory",
     "knowledge",
-    "workspaces",
-    "projects",
-    "tools",
-    "connect",
+    "apps",
+    "desk",
     "settings",
+    "portal",
   ]);
-  assert.equal(NEXYS_ROOT_MANIFESTS.length, 8);
+  assert.equal(NEXYS_ROOT_MANIFESTS.length, 7);
   assert.equal(isNexysRootNodeId("create"), false);
+  for (const legacyId of ["workspaces", "projects", "tools", "connect"]) {
+    assert.equal(isNexysRootNodeId(legacyId), false);
+  }
 
   for (const manifest of NEXYS_ROOT_MANIFESTS) {
     assert.equal(manifest.kind, "root");
@@ -69,7 +72,7 @@ test("Create is absent from navigation graph, root application discovery, and ro
   const engine = new NexysConstellationEngine(NEXYS_ROOT_NODES, NEXYS_ROOT_CONNECTIONS);
   const snapshot = engine.snapshot(engine.createInitialState());
 
-  assert.equal(snapshot.rootNodes.length, 8);
+  assert.equal(snapshot.rootNodes.length, 7);
   assert.equal(engine.getNode("create"), null);
   assert.equal(snapshot.connections.some((connection) => connection.sourceId === "create" || connection.targetId === "create"), false);
   assert.equal(NEXYS_ROOT_APPLICATIONS.some((app) => app.nodeId === "create"), false);
@@ -77,13 +80,13 @@ test("Create is absent from navigation graph, root application discovery, and ro
   assert.equal(routeForNexysNode("create"), "/nexys");
 });
 
-test("manifest registry discovers eight navigation nodes and node-owned capabilities", () => {
+test("manifest registry discovers seven navigation nodes and node-owned capabilities", () => {
   const registry = new NexysManifestRegistry(NEXYS_ROOT_MANIFESTS);
   const navigationNodes = registry.toNavigationNodes(testVisualMetadata);
   const identityNode = navigationNodes.find((node) => node.id === "identity");
   const identityCapability = registry.capabilities().get("identity.current-principal");
 
-  assert.equal(navigationNodes.length, 8);
+  assert.equal(navigationNodes.length, 7);
   assert.equal(identityNode?.metadata.route, "/nexys/identity");
   assert.equal(identityNode?.metadata.stateNamespace, "nexys.identity");
   assert.equal(identityNode?.metadata.consumesZarCore, true);
@@ -92,7 +95,7 @@ test("manifest registry discovers eight navigation nodes and node-owned capabili
   assert.equal(registry.capabilitiesForNode("create").length, 0);
 });
 
-test("persistent communication layer exposes the six approved modes", () => {
+test("persistent communication layer retains ZAR's internal communication channels", () => {
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.id, PERSISTENT_COMMUNICATION_LAYER_ID);
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.metadata.navigationalNode, false);
   assert.deepEqual(
@@ -105,6 +108,17 @@ test("persistent communication layer exposes the six approved modes", () => {
   );
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.modes.every((mode) => mode.surfacePath !== "/nexys/create"), true);
   assert.equal(PERSISTENT_COMMUNICATION_MANIFEST.capabilities.length, 6);
+});
+
+test("NEXYS dock exposes exactly the approved five controls in order", () => {
+  assert.deepEqual(NEXYS_DOCK_CONTROLS.map((control) => control.id), [...NEXYS_DOCK_CONTROL_IDS]);
+  assert.deepEqual(
+    NEXYS_DOCK_CONTROLS.map((control) => control.label),
+    ["Chat", "Upload", "Ideas", "Task", "Search"],
+  );
+  assert.equal(NEXYS_DOCK_CONTROLS.length, 5);
+  assert.equal(NEXYS_DOCK_CONTROLS.some((control) => control.label === "History"), false);
+  assert.equal(NEXYS_DOCK_CONTROLS.some((control) => ["Image", "Document", "Doc"].includes(control.label)), false);
 });
 
 test("creation capabilities remain discoverable but independent of root navigation", () => {

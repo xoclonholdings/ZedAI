@@ -14,11 +14,10 @@ export const NEXYS_ROOT_NODE_IDS = [
   "identity",
   "memory",
   "knowledge",
-  "workspaces",
-  "projects",
-  "tools",
-  "connect",
+  "apps",
+  "desk",
   "settings",
+  "portal",
 ] as const;
 
 export type NexysRootNodeId = (typeof NEXYS_ROOT_NODE_IDS)[number];
@@ -62,18 +61,13 @@ export const NEXYS_ROOT_MANIFESTS: readonly NexysNodeManifest[] = [
     summary: "The governed retention policy for what ZAR keeps, revises, and forgets.",
     icon: "Brain",
     color: "#a78bfa",
-    // No dedicated page yet — the object browser this used to point at
-    // (/learning) was a duplicate of the Knowledge hub's own page and has
-    // been merged there (see knowledge.tsx). Memory's real, distinct job is
-    // retention/privacy policy, which isn't built yet; this stays null
-    // rather than pointing at a page it doesn't actually own.
-    currentSurfacePath: null,
+    currentSurfacePath: "/memory",
     consumes: ["memory_policy", "retained_memory", "evidence"],
     tags: ["memory", "retention", "evidence"],
     capabilities: [
       capability("memory", "policy", "Memory Policy", "Represent user-controlled retention rules from ZAR Core.", {
         actionKind: "configure",
-        actionRoute: "/nexys/memory",
+        actionRoute: "/memory",
         dependencies: [dependency("identity.current-principal", "Memory policy belongs to the current user.")],
         terms: ["memory", "policy", "privacy", "retention"],
       }),
@@ -113,108 +107,68 @@ export const NEXYS_ROOT_MANIFESTS: readonly NexysNodeManifest[] = [
     ],
   }),
   rootManifest({
-    id: "workspaces",
-    label: "Workspaces",
-    summary: "Domain operating spaces that receive ZAR Core context without owning it.",
+    id: "apps",
+    label: "Apps",
+    summary: "The universal access layer for Extensions installed to the unified Identity.",
     icon: "PanelsTopLeft",
     color: "#2dd4bf",
-    currentSurfacePath: "/workspace",
-    consumes: ["relationship_contract", "scope"],
-    tags: ["domains", "scope", "operating-spaces"],
+    currentSurfacePath: "/apps",
+    consumes: ["identity", "extensions", "permissions"],
+    tags: ["apps", "extensions", "installed-capabilities"],
     capabilities: [
-      capability("workspaces", "scope", "Workspace Scope", "Hold the active domain scope for contextual navigation.", {
+      capability("apps", "extensions", "Extensions", "Open the Extensions available to the unified Identity.", {
         actionKind: "read",
-        actionRoute: "/workspace",
-        dependencies: [dependency("identity.collaboration-context", "Workspace behavior consumes confirmed relationship context.")],
-        terms: ["workspace", "domain", "scope", "mode"],
-      }),
-      capability("workspaces", "switcher", "Workspace Switcher", "List and navigate between every domain operating space.", {
-        actionKind: "navigate",
-        actionRoute: "/workspace",
-        dependencies: [dependency("workspaces.scope", "Switching operates over workspace scope.")],
-        terms: ["workspace", "switch", "domain", "navigation"],
+        actionRoute: "/apps",
+        dependencies: [
+          dependency("identity.current-principal", "Extensions are installed for the unified Identity."),
+          dependency("settings.permissions", "Extension access must honor user permissions."),
+        ],
+        terms: ["apps", "extensions", "installed", "capabilities"],
       }),
     ],
   }),
   rootManifest({
-    id: "projects",
-    label: "Projects",
-    summary: "User-owned project context, evidence, and execution continuity.",
+    id: "desk",
+    label: "Desk",
+    summary: "Operate: turn conversation into ideas, authorized tasks, and evidence-backed search.",
     icon: "FolderKanban",
     color: "#3b82f6",
-    currentSurfacePath: "/projects",
-    consumes: ["ownership", "project_context"],
-    tags: ["projects", "execution", "context"],
+    currentSurfacePath: "/desk",
+    consumes: ["project_context", "research_context", "execution_context"],
+    tags: ["desk", "operate", "ideas", "tasks", "search"],
     capabilities: [
-      capability("projects", "current-context", "Current Project Context", "Expose selected user-owned project context to Nexys consumers.", {
-        actionKind: "read",
-        actionRoute: "/projects",
-        dependencies: [
-          dependency("identity.current-principal", "Projects are user-owned."),
-          dependency("workspaces.scope", "Projects may be scoped by workspace."),
-        ],
-        terms: ["project", "context", "ownership", "continuity"],
-      }),
-      capability("projects", "navigation", "Project Navigation", "Navigate existing project surfaces without moving project authority.", {
+      capability("desk", "operate", "Operate", "Open ZAR's specialized working domain.", {
         actionKind: "navigate",
-        actionRoute: "/projects",
-        dependencies: [dependency("projects.current-context", "Project navigation uses the project context boundary.")],
-        terms: ["project", "navigate", "execution", "detail"],
+        actionRoute: "/desk",
+        dependencies: [dependency("identity.collaboration-context", "Operate consumes confirmed relationship context.")],
+        terms: ["desk", "operate", "work", "project"],
       }),
-    ],
-  }),
-  rootManifest({
-    id: "tools",
-    label: "Tools",
-    summary: "Capability and workflow entry points governed by permissions and execution policy.",
-    icon: "Wrench",
-    color: "#fb923c",
-    currentSurfacePath: "/flows",
-    consumes: ["permissions", "execution_context"],
-    tags: ["tools", "automation", "workflow"],
-    capabilities: [
-      capability("tools", "execution-policy", "Execution Policy", "Represent permission-aware tool execution boundaries.", {
+      capability("desk", "ideas", "Ideas", "Generate and develop possibilities within the active context.", {
+        actionKind: "navigate",
+        actionRoute: "/desk/ideas",
+        dependencies: [dependency("identity.collaboration-context", "Ideas use confirmed relationship context.")],
+        terms: ["ideas", "brainstorm", "possibilities", "develop"],
+      }),
+      capability("desk", "tasks", "Task", "Plan, execute, verify, and track authorized work.", {
+        actionKind: "execute",
+        actionRoute: "/projects",
+        dependencies: [dependency("identity.current-principal", "Tasks and Projects belong to the current user.")],
+        terms: ["task", "tasks", "implement", "execute", "verify", "track"],
+      }),
+      capability("desk", "search", "Search", "Search authorized web and ZCOS sources for evidence, records, and prior context.", {
+        actionKind: "read",
+        actionRoute: "/desk/search",
+        dependencies: [dependency("knowledge.relevant-sources", "Search uses source-backed Knowledge context when available.")],
+        terms: ["search", "research", "evidence", "sources", "records"],
+      }),
+      capability("desk", "execution-policy", "Execution Policy", "Apply permission and approval boundaries to authorized work.", {
         actionKind: "execute",
         actionRoute: null,
         dependencies: [
-          dependency("identity.current-principal", "Tool execution must be tied to a trusted user."),
+          dependency("identity.current-principal", "Execution must be tied to a trusted user."),
           dependency("settings.permissions", "Execution depends on permission settings."),
         ],
-        terms: ["tools", "execution", "permission", "policy"],
-      }),
-      capability("tools", "workflow-catalog", "Workflow Catalog", "Navigate current workflow and flow surfaces through the Tools root.", {
-        actionKind: "navigate",
-        actionRoute: "/flows",
-        dependencies: [dependency("tools.execution-policy", "Workflow actions require execution policy.")],
-        terms: ["tools", "flows", "workflow", "automation"],
-      }),
-    ],
-  }),
-  rootManifest({
-    id: "connect",
-    label: "Connect",
-    summary: "External accounts and providers ZAR can act in on your behalf.",
-    icon: "Cable",
-    color: "#e879f9",
-    currentSurfacePath: "/connect",
-    consumes: ["authorization", "provider_context"],
-    tags: ["providers", "channels", "integration"],
-    capabilities: [
-      capability("connect", "provider-accounts", "Provider Accounts", "Connect and manage external accounts through the real per-user integrations surface.", {
-        actionKind: "connect",
-        actionRoute: "/connect",
-        dependencies: [
-          dependency("identity.current-principal", "Connections belong to the current user."),
-          dependency("settings.permissions", "Provider access must honor user permissions."),
-        ],
-        terms: ["connect", "provider", "account", "authorization"],
-      }),
-      capability("connect", "channels", "Connection Channels", "Reserve channel routing for future ecosystem communication surfaces.", {
-        actionKind: "connect",
-        actionRoute: null,
-        dependencies: [dependency("connect.provider-accounts", "Channels depend on authorized provider accounts.")],
-        status: "scaffolded",
-        terms: ["connect", "channel", "integration", "external"],
+        terms: ["execution", "permission", "approval", "policy"],
       }),
     ],
   }),
@@ -239,6 +193,24 @@ export const NEXYS_ROOT_MANIFESTS: readonly NexysNodeManifest[] = [
         actionRoute: "/settings",
         dependencies: [dependency("identity.current-principal", "Permission settings are owned by the current user.")],
         terms: ["settings", "permissions", "authorization", "access"],
+      }),
+    ],
+  }),
+  rootManifest({
+    id: "portal",
+    label: "Portal",
+    summary: "Transport from ZAR to the ZCOS constellation and other authorized destinations.",
+    icon: "Cable",
+    color: "#e879f9",
+    currentSurfacePath: "/",
+    consumes: ["identity", "authorization", "transport"],
+    tags: ["portal", "transport", "constellation", "galaxies", "command"],
+    capabilities: [
+      capability("portal", "constellation", "Open Constellation", "Leave ZAR Nexys and open the ZCOS constellation without moving destination content into Portal.", {
+        actionKind: "navigate",
+        actionRoute: "/",
+        dependencies: [dependency("identity.current-principal", "Portal preserves the unified Identity during movement.")],
+        terms: ["portal", "constellation", "galaxy", "transport", "command"],
       }),
     ],
   }),
@@ -299,7 +271,7 @@ function application(
     routePattern: `/nexys/${nodeId}/:view?`,
     stateNamespace: `nexys.${nodeId}`,
     ownsState: true,
-    status: "scaffolded",
+    status: currentSurfacePath ? "active" : "scaffolded",
     consumes: ["zar-core", ...consumes],
     currentSurfacePath,
     notes: [
