@@ -72,6 +72,12 @@ export interface TaskRecord {
 
   /** Any final or intermediate result data the executor returned. */
   last_result?: Record<string, unknown> | null;
+
+  /** User-facing shared to-do metadata. */
+  origin?: "user" | "zar";
+  assignee?: "user" | "zar" | "both";
+  scheduled_for?: string | null;
+  acceptance_status?: "proposed" | "accepted" | "denied";
 }
 
 export interface CreateTaskInput {
@@ -79,6 +85,10 @@ export interface CreateTaskInput {
   conversation_id?: string | null;
   plan: TaskExecutionPlan;
   initial_status?: TaskStatus;
+  origin?: TaskRecord["origin"];
+  assignee?: TaskRecord["assignee"];
+  scheduled_for?: string | null;
+  acceptance_status?: TaskRecord["acceptance_status"];
 }
 
 export interface TaskUpdateInput {
@@ -90,6 +100,7 @@ export interface TaskUpdateInput {
   approved_at?: string | null;
   approved_by?: string | null;
   last_result?: Record<string, unknown> | null;
+  acceptance_status?: TaskRecord["acceptance_status"];
 }
 
 interface TaskStoreFile {
@@ -124,6 +135,10 @@ export class TaskLifecycleManager {
       approved_at: null,
       approved_by: null,
       last_result: null,
+      origin: input.origin ?? "user",
+      assignee: input.assignee ?? "user",
+      scheduled_for: input.scheduled_for ?? null,
+      acceptance_status: input.acceptance_status ?? "accepted",
     };
 
     const store = await this.read();

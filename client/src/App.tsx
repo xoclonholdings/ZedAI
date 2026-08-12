@@ -17,6 +17,8 @@ import NexysRootPage from "@/nexys/pages/NexysRootPage";
 import ZebulonConstellationPage from "@/zebulon/ZebulonConstellationPage";
 import GalaxyWorkspacePage from "@/zebulon/GalaxyWorkspacePage";
 import { NexysProvider } from "@/nexys";
+import { NexysConsoleChatProvider } from "@/nexys/communication/NexysConsoleChatContext";
+import { NexysDockAttentionProvider } from "@/nexys/notifications/NexysDockAttentionContext";
 import { ConsoleWorkspaceFrame } from "@/console/ConsoleWorkspaceFrame";
 import FlowsPage from "@/pages/flows";
 import FlowDetailPage from "@/pages/flow-detail";
@@ -39,7 +41,9 @@ import KnowledgePage from "@/pages/knowledge";
 import AppsPage from "@/pages/apps";
 import MemoryPage from "@/pages/memory";
 import OperateDeskPage from "@/pages/operate";
-import ResearchDesk from "@/pages/ResearchDesk";
+import IdeasPage from "@/pages/ideas";
+import TasksPage from "@/pages/tasks";
+import SearchPage from "@/pages/search";
 
 installApiFetchPatch();
 
@@ -139,7 +143,17 @@ function Router() {
       <Route path="/desk/ideas">
         {isAuthenticated ? (
           <ConsoleWorkspaceFrame nodeId="desk" label="Ideas" flush>
-            <ChatPage />
+            <IdeasPage />
+          </ConsoleWorkspaceFrame>
+        ) : (
+          <Login />
+        )}
+      </Route>
+
+      <Route path="/desk/task">
+        {isAuthenticated ? (
+          <ConsoleWorkspaceFrame nodeId="desk" label="Task">
+            <TasksPage />
           </ConsoleWorkspaceFrame>
         ) : (
           <Login />
@@ -147,7 +161,7 @@ function Router() {
       </Route>
 
       <Route path="/desk/search">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Search"><ResearchDesk /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Search"><SearchPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/desk">
@@ -232,7 +246,7 @@ function Router() {
       </Route>
 
       <Route path="/projects">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Task"><ProjectsPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Projects"><ProjectsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/settings">
@@ -252,7 +266,7 @@ function Router() {
       </Route>
 
       <Route path="/projects/:id">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Task"><ProjectDetailPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Projects"><ProjectDetailPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
       <Route path="/learning/studio">
@@ -330,9 +344,13 @@ function App() {
         <PrivyAuthRoot>
           <TooltipProvider>
             <NexysProvider>
-              <GlobalErrorHooks />
-              <Toaster />
-              <Router />
+              <NexysDockAttentionProvider>
+                <NexysConsoleChatProvider>
+                  <GlobalErrorHooks />
+                  <Toaster />
+                  <Router />
+                </NexysConsoleChatProvider>
+              </NexysDockAttentionProvider>
             </NexysProvider>
           </TooltipProvider>
         </PrivyAuthRoot>

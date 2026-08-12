@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 
 import { isAuthenticated } from "../../../localAuth";
 import { ApprovalWatchdog } from "../../approval/ApprovalWatchdog";
+import { ApprovalNotificationService } from "../../approval/ApprovalNotificationService";
+import { DeferredActionScheduler } from "../../operational/DeferredActionScheduler";
 import { ExecutionPipeline } from "../ExecutionPipeline";
 import { TaskExecutionEngine } from "../TaskExecutionEngine";
 import { TaskLifecycleManager } from "../TaskLifecycleManager";
@@ -30,6 +32,18 @@ export function registerExecutionEndpoints(app: Express): void {
       // Run the watchdog so approval state is set before the client
       // renders the task.
       await ApprovalWatchdog.evaluate(prepared.task);
+      await ApprovalNotificationService.notify({
+        recipient_role: "user",
+        recipient_id: user_id,
+        task_id: prepared.task.id,
+        title: "ZAR suggested a task",
+        message: prepared.task.plan.summary,
+        action_type: "approve",
+        approval_required: true,
+        target_surface: "task",
+        category: "suggestion",
+        dedupe_key: `suggestion:${prepared.task.id}`,
+      });
       const refreshed = await TaskLifecycleManager.get(prepared.task.id);
       res.json({ ...prepared, task: refreshed });
     } catch (err: any) {
@@ -96,6 +110,81 @@ export function registerExecutionEndpoints(app: Express): void {
       res.json({ tasks });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || "list failed" });
+    }
+  });
+
+  app.post("/api/execution/tasks", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+      const assignee = req.body?.assignee;
+      const scheduledFor = req.body?.scheduled_for || null;
+      if (!text) return res.status(400).json({ error: "text is required" });
+      if (!["user", "zar", "both"].includes(assignee)) {
+        return res.status(400).json({ error: "assignee must be user, zar, or both" });
+      }
+      if (scheduledFor && Number.isNaN(new Date(scheduledFor).getTime())) {
+        return res.status(400).json({ error: "scheduled_for must be a valid date" });
+      }
+
+      const user_id = userIdFrom(req);
+      const task = await TaskLifecycleManager.create({
+        user_id,
+        plan: TaskExecutionEngine.prepare({ user_request: text }),
+        initial_status: "approved",
+        origin: "user",
+        assignee,
+        scheduled_for: scheduledFor,
+        acceptance_status: "accepted",
+      });
+
+      if (scheduledFor) {
+        await DeferredActionScheduler.schedule({
+          task_id: task.id,
+          kind: "reminder",
+          scheduled_for: scheduledFor,
+          notes: assignee === "user"
+            ? "This task is scheduled for you."
+            : "This scheduled task is ready for review or approved execution.",
+        });
+      }
+
+      res.json({ task });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "create failed" });
+    }
+  });
+
+  app.post("/api/execution/tasks/:id/acceptance", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const task = await TaskLifecycleManager.getForOwner(req.params.id, ownerContextFrom(req));
+      if (!task) return res.status(404).json({ error: "task not found" });
+      const accepted = req.body?.accepted;
+      if (typeof accepted !== "boolean") {
+        return res.status(400).json({ error: "accepted is required" });
+      }
+      const updated = await TaskLifecycleManager.update(
+        task.id,
+        {
+          acceptance_status: accepted ? "accepted" : "denied",
+          ...(accepted ? {} : { status: "blocked", approval_status: "rejected" as const }),
+        },
+        accepted ? "ZAR suggestion accepted" : "ZAR suggestion denied",
+      );
+      await ApprovalNotificationService.markTaskCategoryRead(task.id, "suggestion");
+      res.json({ task: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "acceptance failed" });
+    }
+  });
+
+  app.post("/api/execution/tasks/:id/complete", isAuthenticated, async (req: any, res: Response) => {
+    try {
+      const task = await TaskLifecycleManager.getForOwner(req.params.id, ownerContextFrom(req));
+      if (!task) return res.status(404).json({ error: "task not found" });
+      const updated = await TaskLifecycleManager.update(task.id, { status: "complete" }, "Task completed");
+      res.json({ task: updated });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || "completion failed" });
     }
   });
 

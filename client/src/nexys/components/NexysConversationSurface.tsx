@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CheckSquare, Clock, File, FileText, Image, Lightbulb, MessageCircle, Mic, Search, Smartphone, Upload } from "lucide-react";
+import { BookOpen, CheckSquare, Clock, File, FileText, Image, Lightbulb, MessageCircle, Mic, Search, Smartphone, Upload } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { cn } from "@/lib/utils";
@@ -16,13 +16,17 @@ import {
   type NexysDockControlDefinition,
   type NexysDockControlId,
 } from "../dock/nexysDock";
-import { useNexysChatSession } from "../communication/useNexysChatSession";
+import { useNexysConsoleChat } from "../communication/NexysConsoleChatContext";
 import { submitVoiceCommandThroughConversation } from "../communication/foregroundVoice";
 import { useNexysForegroundVoice } from "../communication/useNexysDictation";
 import { NexysFileUpload } from "./communication/NexysFileUpload";
+import { NexysMessageComposer } from "./communication/NexysMessageComposer";
 import { NexysVoiceDock } from "./communication/NexysVoiceDock";
 import { NexysSmsSettings } from "./communication/NexysSmsSettings";
 import { useNexys } from "../state/NexysProvider";
+import { useNexysDockAttention } from "../notifications/NexysDockAttentionContext";
+import { useConsoleBrowser } from "@/console/ConsoleBrowserContext";
+import { NexysLiveBrowser } from "./communication/NexysLiveBrowser";
 
 /**
  * The five approved NEXYS controls. Chat and Upload open branching choices
@@ -49,16 +53,20 @@ export function NexysConversationSurface({
 } = {}) {
   const [, navigate] = useLocation();
   const { viewportSnapshot } = useNexys();
+  const { openFullPage } = useConsoleBrowser();
+  const { hasAttention, acknowledgeReviewOnly } = useNexysDockAttention();
   const [activeMode, setActiveMode] = useState<NexysDockSlot>(initialMode ?? "chat");
   const [uploadKind, setUploadKind] = useState<UploadKind | null>(null);
+  const {
+    controller: conversationController,
+    activeConversationId,
+    status,
+    registerModeAction,
+  } = useNexysConsoleChat();
 
   const goToChat = useCallback((conversationId?: string) => {
     navigate(conversationId ? `/chat/${conversationId}` : "/chat");
   }, [navigate]);
-
-  const { controller: conversationController, activeConversationId, status } = useNexysChatSession(undefined, {
-    onModeAction: (modeId) => handleModeSelect(modeId),
-  });
 
   const focusedLabel = viewportSnapshot.focusedNode?.label ?? "Nexys";
   // Workspace selection subtly tints the console's accent (spec: "may influence
@@ -94,6 +102,7 @@ export function NexysConversationSurface({
 
     const control = NEXYS_DOCK_CONTROLS.find((candidate) => candidate.id === modeId);
     if (!control) return;
+    void acknowledgeReviewOnly(control.id);
 
     if (modeId === "chat") {
       conversationController.closeFileUpload();
@@ -104,6 +113,12 @@ export function NexysConversationSurface({
       conversationController.closeFileUpload();
       setUploadKind(null);
       setActiveMode("upload");
+      return;
+    }
+    if (modeId === "search") {
+      conversationController.closeFileUpload();
+      setActiveMode("search");
+      openFullPage();
       return;
     }
     if (control.route) navigate(control.route);
@@ -129,6 +144,8 @@ export function NexysConversationSurface({
     setUploadKind(null);
     setActiveMode("upload");
   }
+
+  useEffect(() => registerModeAction(handleModeSelect));
 
   return (
     <section
@@ -173,6 +190,7 @@ export function NexysConversationSurface({
               key={control.id}
               control={control}
               active={activeMode === control.id}
+              attention={hasAttention(control.id)}
               onSelect={() => handleModeSelect(control.id)}
             />
           ))}
@@ -186,10 +204,23 @@ export function NexysConversationSurface({
       */}
       <div className="mb-3 flex min-h-[101px] flex-col justify-center">
         {activeMode === "chat" && (
-          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 bg-black/40 p-3">
-            <SlotChoice icon={MessageCircle} label="Chat" onSelect={() => goToChat(activeConversationId)} />
-            <SlotChoice icon={Mic} label="Talk" onSelect={openTalk} />
-            <SlotChoice icon={Smartphone} label="SMS" onSelect={openSms} />
+          <div className="rounded-xl border border-white/10 bg-black/40 p-3">
+            <NexysMessageComposer
+              value={conversationController.composerValue}
+              onValueChange={conversationController.setComposerValue}
+              onSend={(message) => void conversationController.sendMessage(message)}
+              onAbort={conversationController.abort}
+              isStreaming={conversationController.isStreaming}
+              onOpenFileUpload={() => handleModeSelect("upload")}
+              editModeLabel={conversationController.editingMessageId ? "Editing message draft" : null}
+              onCancelEdit={conversationController.editingMessageId ? conversationController.cancelEdit : undefined}
+              compact={conversationController.compactMessages}
+              fontSize={conversationController.fontSize}
+            />
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <SlotChoice icon={Mic} label="Talk" onSelect={openTalk} />
+              <SlotChoice icon={Smartphone} label="SMS" onSelect={openSms} />
+            </div>
           </div>
         )}
 
@@ -200,12 +231,15 @@ export function NexysConversationSurface({
         )}
 
         {activeMode === "upload" && (
-          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/10 bg-black/40 p-3">
+          <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-black/40 p-3">
             <SlotChoice icon={Image} label="Image" onSelect={() => openUpload("image")} />
             <SlotChoice icon={FileText} label="Document" onSelect={() => openUpload("document")} />
             <SlotChoice icon={File} label="File" onSelect={() => openUpload("file")} />
+            <SlotChoice icon={BookOpen} label="Add knowledge" onSelect={() => navigate("/knowledge?add=1")} />
           </div>
         )}
+
+        {activeMode === "search" && <NexysLiveBrowser />}
 
         {activeMode === "attachment" && uploadKind && (
           conversationController.showFileUpload && conversationController.activeUploadConversationId ? (
@@ -273,10 +307,12 @@ export function NexysConversationSurface({
 function DockControlButton({
   control,
   active,
+  attention,
   onSelect,
 }: {
   readonly control: NexysDockControlDefinition;
   readonly active: boolean;
+  readonly attention: boolean;
   readonly onSelect: () => void;
 }) {
   const Icon = iconForMode(control.id);
@@ -292,7 +328,15 @@ function DockControlButton({
       title={control.label}
       aria-label={control.label}
     >
-      <Icon size={17} />
+      <span className="relative">
+        <Icon size={17} />
+        {attention ? (
+          <span
+            className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_7px_rgba(252,211,77,0.9)]"
+            aria-label={`${control.label} needs attention`}
+          />
+        ) : null}
+      </span>
       <span className="max-w-[52px] truncate text-[9px] font-medium">{control.label}</span>
     </button>
   );

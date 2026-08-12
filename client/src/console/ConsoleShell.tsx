@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import type { ConsoleIdentity } from "./consoleIdentity";
@@ -10,8 +10,8 @@ import { CONSOLE_CONTENT_REGION_CLASS } from "./ConsoleGlassPanel";
 
 /**
  * The ZEBULON Console Framework shell - the one composition every console
- * screen shares, regardless of galaxy: a full-viewport backdrop/content
- * layer (`children`), a floating header, and the Console Activator sitting
+ * screen shares, regardless of galaxy: a dock-aware backdrop/content layer
+ * (`children`), a floating header, and the Console Activator sitting
  * directly above the persistent ConsoleDock at the bottom - the activator
  * powers the dock, so it lives right next to what it controls rather than
  * off in the header. Callers supply the backdrop/main content and both
@@ -54,28 +54,57 @@ function ConsoleShellBody({
 }) {
   const { fullPageOpen } = useConsoleBrowser();
   const reducedMotion = useReducedMotion();
+  const dockRegionRef = useRef<HTMLDivElement>(null);
+  const [dockHeight, setDockHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const dockRegion = dockRegionRef.current;
+    if (!dockRegion) return;
+
+    const measureDock = () => {
+      setDockHeight(Math.ceil(dockRegion.getBoundingClientRect().height));
+    };
+
+    measureDock();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measureDock);
+      return () => window.removeEventListener("resize", measureDock);
+    }
+
+    const observer = new ResizeObserver(measureDock);
+    observer.observe(dockRegion);
+    return () => observer.disconnect();
+  }, []);
+
+  const contentBottom = dockHeight > 0 ? dockHeight + 8 : 132;
 
   return (
     <div className="relative h-[100dvh] w-full overflow-hidden bg-[radial-gradient(ellipse_90%_70%_at_50%_35%,#0b0620_0%,#050211_55%,#010005_100%)] text-white">
-      {children}
+      <main
+        className="absolute inset-x-0 top-0 overflow-hidden transition-[bottom] duration-400 motion-reduce:transition-none"
+        style={{ bottom: contentBottom }}
+        data-console-region="adaptive-viewport"
+      >
+        {children}
 
-      <AnimatePresence>
-        {fullPageOpen && (
-          <motion.div
-            key="console-browser-full-page"
-            className={`${CONSOLE_CONTENT_REGION_CLASS} pb-3`}
-            data-console-region="browser"
-            initial={reducedMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
-            transition={{ duration: reducedMotion ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <div className="mx-auto h-full max-w-3xl">
-              <ConsoleBrowserFullPage />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <AnimatePresence>
+          {fullPageOpen && (
+            <motion.div
+              key="console-browser-full-page"
+              className={`${CONSOLE_CONTENT_REGION_CLASS} pb-3`}
+              data-console-region="browser"
+              initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
+              transition={{ duration: reducedMotion ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div className="mx-auto h-full max-w-3xl">
+                <ConsoleBrowserFullPage />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
 
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-4 pt-safe-sm sm:px-6 sm:pt-5">
         <div className="pointer-events-auto min-w-0">{headerLeft}</div>
@@ -85,7 +114,8 @@ function ConsoleShellBody({
       </header>
 
       <div
-        className="absolute inset-x-0 bottom-0 flex justify-center px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+        ref={dockRegionRef}
+        className="absolute inset-x-0 bottom-0 flex max-h-[calc(100dvh-11rem)] justify-center overflow-y-auto overscroll-contain px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
         data-console-region="dock"
         data-nexys-region="communication"
       >

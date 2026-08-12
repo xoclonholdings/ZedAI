@@ -143,19 +143,19 @@ export const NEXYS_ROOT_MANIFESTS: readonly NexysNodeManifest[] = [
         dependencies: [dependency("identity.collaboration-context", "Operate consumes confirmed relationship context.")],
         terms: ["desk", "operate", "work", "project"],
       }),
-      capability("desk", "ideas", "Ideas", "Generate and develop possibilities within the active context.", {
+      capability("desk", "ideas", "Ideas", "Capture short ideas in the user's persistent scratchpad.", {
         actionKind: "navigate",
         actionRoute: "/desk/ideas",
         dependencies: [dependency("identity.collaboration-context", "Ideas use confirmed relationship context.")],
         terms: ["ideas", "brainstorm", "possibilities", "develop"],
       }),
-      capability("desk", "tasks", "Task", "Plan, execute, verify, and track authorized work.", {
+      capability("desk", "tasks", "Task", "Keep a shared user and ZAR to-do list with suggestions, assignments, timing, and approvals.", {
         actionKind: "execute",
-        actionRoute: "/projects",
-        dependencies: [dependency("identity.current-principal", "Tasks and Projects belong to the current user.")],
+        actionRoute: "/desk/task",
+        dependencies: [dependency("identity.current-principal", "Tasks belong to the current user.")],
         terms: ["task", "tasks", "implement", "execute", "verify", "track"],
       }),
-      capability("desk", "search", "Search", "Search authorized web and ZCOS sources for evidence, records, and prior context.", {
+      capability("desk", "search", "Search", "Open the in-app browser for authorized web search and navigation.", {
         actionKind: "read",
         actionRoute: "/desk/search",
         dependencies: [dependency("knowledge.relevant-sources", "Search uses source-backed Knowledge context when available.")],

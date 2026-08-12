@@ -20,6 +20,7 @@ export interface UseNexysConversationControllerArgs {
   readonly onBeforeSend?: (message: string) => boolean | Promise<boolean>;
   readonly onAgentResponse?: (data: unknown) => void;
   readonly onConversationIdChange?: (conversationId: string) => void;
+  readonly onConversationStart?: (conversationId: string) => void;
 }
 
 export interface NexysConversationController {
@@ -72,6 +73,7 @@ export function useNexysConversationController({
   onBeforeSend,
   onAgentResponse,
   onConversationIdChange,
+  onConversationStart,
 }: UseNexysConversationControllerArgs): NexysConversationController {
   const { user } = useAuth();
   const [showFileUpload, setShowFileUpload] = useState(false);
@@ -168,9 +170,9 @@ export function useNexysConversationController({
     let activeConversationId = conversationId;
     if (!activeConversationId) {
       try {
-        // Never navigate away for this either - the console is a persistent
-        // overlay on top of Nexys, not a page of its own; changing route
-        // would remount the whole universe scene under it.
+        // Conversation routing is owned by the persistent Console provider.
+        // Keep creation itself navigation-free so the controller survives
+        // the transition and can render the in-flight request on screen.
         activeConversationId = await createConversation(trimmed, { navigateToChat: false });
       } catch (error) {
         console.error("Failed to create conversation:", error);
@@ -182,6 +184,7 @@ export function useNexysConversationController({
     await ensureConversationTitle(activeConversationId, trimmed);
     setEditingMessageId(null);
     setComposerValue("");
+    onConversationStart?.(activeConversationId);
 
     const result = await sendAgentMessage({
       message: trimmed,

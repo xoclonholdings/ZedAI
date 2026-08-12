@@ -12,6 +12,8 @@ import type { NexysCapabilityDefinition } from "../capabilities/types";
 import { NEXYS_ROOT_NODES } from "../graph/rootConstellation";
 import { nexysDomainsFromRootNodes } from "../scene/nexysDomainAdapter";
 import { NexysProvider } from "../state/NexysProvider";
+import { NexysConsoleChatProvider } from "../communication/NexysConsoleChatContext";
+import { NexysDockAttentionProvider } from "../notifications/NexysDockAttentionContext";
 import NexysRootPage from "../pages/NexysRootPage";
 
 function renderNexysHome(pathname = "/nexys") {
@@ -36,14 +38,18 @@ function renderNexysHome(pathname = "/nexys") {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <NexysProvider>
-          <Switch>
-            <Route path="/nexys">
-              <NexysRootPage />
-            </Route>
-            <Route path="/nexys/:nodeId/:view?">
-              <NexysRootPage />
-            </Route>
-          </Switch>
+          <NexysDockAttentionProvider>
+            <NexysConsoleChatProvider>
+              <Switch>
+                <Route path="/nexys">
+                  <NexysRootPage />
+                </Route>
+                <Route path="/nexys/:nodeId/:view?">
+                  <NexysRootPage />
+                </Route>
+              </Switch>
+            </NexysConsoleChatProvider>
+          </NexysDockAttentionProvider>
         </NexysProvider>
       </AuthProvider>
     </QueryClientProvider>,

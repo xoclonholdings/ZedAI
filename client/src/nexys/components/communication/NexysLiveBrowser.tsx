@@ -27,7 +27,7 @@ function normalizeInputUrl(value: string): string {
 }
 
 /**
- * The dock's Browse slot - just the address bar and recent visits. The
+ * The dock's Search slot - just the address bar and recent visits. The
  * actual fetched page renders full-size in the console's main content
  * region (ConsoleBrowserFullPage), the same place every other workspace
  * renders, not cramped inside the dock. "Go" (or picking a recent visit)

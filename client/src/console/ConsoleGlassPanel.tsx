@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 /** Shared by every workspace and the live browser's full-page view. */
-export const CONSOLE_CONTENT_REGION_CLASS = "absolute inset-x-0 bottom-[132px] top-[86px] px-4 sm:px-6";
+export const CONSOLE_CONTENT_REGION_CLASS = "absolute inset-x-0 bottom-0 top-[86px] px-4 sm:px-6";
 
 /**
  * The console's shared "glass" content surface - translucent and blurred

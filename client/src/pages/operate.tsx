@@ -4,19 +4,19 @@ import { useLocation } from "wouter";
 const OPERATE_CONTROLS = [
   {
     label: "Ideas",
-    description: "Generate and develop possibilities with ZAR in the active context.",
+    description: "Capture short ideas in a lightweight scratchpad.",
     route: "/desk/ideas",
     icon: Lightbulb,
   },
   {
     label: "Task",
-    description: "Plan, execute, verify, and track authorized work.",
-    route: "/projects",
+    description: "Keep a shared to-do list with ZAR suggestions, timing, and approvals.",
+    route: "/desk/task",
     icon: CheckSquare,
   },
   {
     label: "Search",
-    description: "Search authorized web and ZCOS sources for evidence and prior context.",
+    description: "Open the in-app browser.",
     route: "/desk/search",
     icon: Search,
   },

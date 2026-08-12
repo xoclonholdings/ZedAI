@@ -35,7 +35,13 @@ function normalizeConversationId(value: string | null | undefined): string | und
  * chat page so neither has to duplicate this, and so agent-driven actions
  * behave identically in both places.
  */
-export function useNexysChatSession(conversationId?: string | null, options?: { onModeAction?: (modeId: string) => void }) {
+export function useNexysChatSession(
+  conversationId?: string | null,
+  options?: {
+    onModeAction?: (modeId: string) => void;
+    onConversationStart?: (conversationId: string) => void;
+  },
+) {
   const [, navigate] = useLocation();
   const { capabilityRegistry, communicationLayer, navigateToNode, snapshot } = useNexys();
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>(
@@ -141,6 +147,7 @@ export function useNexysChatSession(conversationId?: string | null, options?: { 
     onBeforeSend: handleBeforeSend,
     onAgentResponse: handleAgentResponse,
     onConversationIdChange: setActiveConversationId,
+    onConversationStart: options?.onConversationStart,
   });
 
   return { controller, activeConversationId, setActiveConversationId, status };

@@ -20,6 +20,7 @@ import {
 } from "../execution/TaskExecutionEngine";
 import { TaskLifecycleManager } from "../execution/TaskLifecycleManager";
 import { ApprovalWatchdog } from "./ApprovalWatchdog";
+import { ApprovalNotificationService } from "./ApprovalNotificationService";
 import { logSecurityEvent } from "../SecurityAudit";
 
 export type AgentSource =
@@ -72,6 +73,9 @@ export class AgentApprovalAdapter {
       user_id: input.user_id,
       conversation_id: input.conversation_id ?? null,
       plan,
+      origin: "zar",
+      assignee: "zar",
+      acceptance_status: "proposed",
     });
 
     await TaskLifecycleManager.appendLog(
@@ -82,6 +86,18 @@ export class AgentApprovalAdapter {
     );
 
     const verdict = await ApprovalWatchdog.evaluate(task);
+    await ApprovalNotificationService.notify({
+      recipient_role: "user",
+      recipient_id: input.user_id,
+      task_id: task.id,
+      title: "ZAR suggested a task",
+      message: task.plan.summary,
+      action_type: "approve",
+      approval_required: true,
+      target_surface: "task",
+      category: "suggestion",
+      dedupe_key: `suggestion:${task.id}`,
+    });
 
     await logSecurityEvent({
       type: "approval.queued",

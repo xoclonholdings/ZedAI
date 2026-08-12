@@ -100,6 +100,9 @@ export class ExternalCommandGateway {
       user_id,
       conversation_id: input.conversation_id ?? null,
       plan,
+      origin: "user",
+      assignee: "zar",
+      acceptance_status: "accepted",
     });
 
     // 5. Capture cross-channel context.

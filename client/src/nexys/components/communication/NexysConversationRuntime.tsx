@@ -7,8 +7,11 @@ import { NexysMessageList } from "./NexysMessageList";
 
 export function NexysConversationRuntime({
   controller,
+  showInputControls = true,
 }: {
   readonly controller: NexysConversationController;
+  /** False when the Console Dock owns all user input for this screen. */
+  readonly showInputControls?: boolean;
 }) {
   return (
     <div
@@ -43,7 +46,7 @@ export function NexysConversationRuntime({
           </div>
         ) : null}
 
-        {controller.showFileUpload && controller.activeUploadConversationId ? (
+        {showInputControls && controller.showFileUpload && controller.activeUploadConversationId ? (
           <NexysFileUpload
             conversationId={controller.activeUploadConversationId}
             onUpload={controller.handleFileUpload}
@@ -53,22 +56,24 @@ export function NexysConversationRuntime({
 
         <NexysAttachmentTray files={controller.files} />
 
-        <div className="z-10 flex-shrink-0 border-t border-white/[0.06] px-3 pb-safe pt-3 md:px-4 md:pt-4">
-          <div className="mx-auto max-w-4xl">
-            <NexysMessageComposer
-              value={controller.composerValue}
-              onValueChange={controller.setComposerValue}
-              onSend={(message) => void controller.sendMessage(message)}
-              onAbort={controller.abort}
-              isStreaming={controller.isStreaming}
-              onOpenFileUpload={() => void controller.openFileUpload()}
-              editModeLabel={controller.editingMessageId ? "Editing message draft" : null}
-              onCancelEdit={controller.editingMessageId ? controller.cancelEdit : undefined}
-              compact={controller.compactMessages}
-              fontSize={controller.fontSize}
-            />
+        {showInputControls ? (
+          <div className="z-10 flex-shrink-0 border-t border-white/[0.06] px-3 pb-safe pt-3 md:px-4 md:pt-4">
+            <div className="mx-auto max-w-4xl">
+              <NexysMessageComposer
+                value={controller.composerValue}
+                onValueChange={controller.setComposerValue}
+                onSend={(message) => void controller.sendMessage(message)}
+                onAbort={controller.abort}
+                isStreaming={controller.isStreaming}
+                onOpenFileUpload={() => void controller.openFileUpload()}
+                editModeLabel={controller.editingMessageId ? "Editing message draft" : null}
+                onCancelEdit={controller.editingMessageId ? controller.cancelEdit : undefined}
+                compact={controller.compactMessages}
+                fontSize={controller.fontSize}
+              />
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
     </div>
   );

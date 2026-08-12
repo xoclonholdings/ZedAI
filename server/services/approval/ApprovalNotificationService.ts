@@ -26,6 +26,14 @@ const NOTIFICATION_STORE_PATH = path.resolve(
 );
 
 export type RecipientRole = "user" | "admin";
+export type DockAttentionTarget = "chat" | "upload" | "ideas" | "task" | "search";
+export type NotificationCategory =
+  | "suggestion"
+  | "approval"
+  | "reminder"
+  | "response"
+  | "upload"
+  | "system";
 export type NotificationActionType =
   | "approve"
   | "reject"
@@ -43,6 +51,8 @@ export interface ApprovalNotification {
   action_type: NotificationActionType;
   created_at: string;
   read: boolean;
+  target_surface: DockAttentionTarget;
+  category: NotificationCategory;
   /** Stable signature so duplicates can be suppressed. */
   dedupe_key: string;
 }
@@ -60,6 +70,8 @@ export interface NotifyInput {
   message: string;
   action_type: NotificationActionType;
   approval_required?: boolean;
+  target_surface?: DockAttentionTarget;
+  category?: NotificationCategory;
   /** Override or augment the dedupe key. */
   dedupe_key?: string;
 }
@@ -90,6 +102,8 @@ export class ApprovalNotificationService {
       action_type: input.action_type,
       created_at: new Date().toISOString(),
       read: false,
+      target_surface: input.target_surface ?? "task",
+      category: input.category ?? "approval",
       dedupe_key,
     };
 
@@ -180,6 +194,26 @@ export class ApprovalNotificationService {
     for (const n of store.notifications) {
       if (n.task_id === task_id && !n.read) {
         n.read = true;
+        count++;
+      }
+    }
+    if (count > 0) await this.write(store);
+    return count;
+  }
+
+  static async markTaskCategoryRead(
+    task_id: string,
+    category: NotificationCategory,
+  ): Promise<number> {
+    const store = await this.read();
+    let count = 0;
+    for (const notification of store.notifications) {
+      if (
+        notification.task_id === task_id &&
+        (notification.category ?? "approval") === category &&
+        !notification.read
+      ) {
+        notification.read = true;
         count++;
       }
     }

@@ -35,7 +35,7 @@ export function ConsoleWorkspaceFrame({
   readonly children: ReactNode;
 }) {
   const [, navigate] = useLocation();
-  const [dockPowered, setDockPowered] = useState(false);
+  const [dockPowered, setDockPowered] = useState(labelOverride === "Chat");
   const reducedMotion = useReducedMotion();
 
   const manifest = nodeId ? nexysRootManifestRegistry.getManifest(nodeId) : undefined;

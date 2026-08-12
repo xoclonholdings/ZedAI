@@ -77,6 +77,9 @@ export class ExecutionPipeline {
       user_id,
       conversation_id,
       plan,
+      origin: "zar",
+      assignee: "zar",
+      acceptance_status: "proposed",
     });
     const approval = ExecutionApprovalHandler.present(task.id, plan);
     return { task, plan, approval };

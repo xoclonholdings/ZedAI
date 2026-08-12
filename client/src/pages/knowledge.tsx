@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cleanSummary, cleanTitle, friendlySource } from "@/lib/text";
 import { uploadRequest } from "@/lib/uploadRequest";
 import type { AnyMemoryObject, BaseObject, ObjectGraph } from "@shared/object-memory-types";
+import { useLocationSearch } from "@/lib/useLocationSearch";
 
 interface UploadResponse {
   totals: {
@@ -41,12 +42,15 @@ function friendlyRel(t: string): string {
  */
 export default function KnowledgePage() {
   const [, navigate] = useLocation();
+  const locationSearch = useLocationSearch();
   const [graph, setGraph] = useState<ObjectGraph | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(() => new URLSearchParams(
+    locationSearch.startsWith("?") ? locationSearch.slice(1) : locationSearch,
+  ).get("add") === "1");
   const [form, setForm] = useState(EMPTY_FORM);
   const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);

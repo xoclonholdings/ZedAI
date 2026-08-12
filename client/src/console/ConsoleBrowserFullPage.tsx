@@ -120,7 +120,7 @@ export function ConsoleBrowserFullPage() {
           </p>
         ) : (
           <p className="flex h-[240px] items-center justify-center text-center text-[13px] text-white/40">
-            Nothing browsed yet - type a URL in the dock's Browse bar, or ask ZAR to look something up.
+            Nothing browsed yet - type a URL in the dock's Search bar, or ask ZAR to look something up.
           </p>
         )}
       </div>

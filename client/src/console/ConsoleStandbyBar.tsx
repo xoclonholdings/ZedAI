@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Send } from "lucide-react";
-import { useLocation } from "wouter";
 
 import { iconForMode } from "@/nexys/components/NexysConversationSurface";
+import { useNexysConsoleChat } from "@/nexys/communication/NexysConsoleChatContext";
 import { NEXYS_DOCK_CONTROLS } from "@/nexys/dock/nexysDock";
+import { useNexysDockAttention } from "@/nexys/notifications/NexysDockAttentionContext";
 
 /**
  * The console's standby face: one line of the five Dock controls, one line of a
@@ -18,18 +18,19 @@ export function ConsoleStandbyBar({
   readonly onActivate: (modeId: string) => void;
   readonly accent: string;
 }) {
-  const [, navigate] = useLocation();
-  const [draft, setDraft] = useState("");
+  const { controller } = useNexysConsoleChat();
+  const { hasAttention, acknowledgeReviewOnly } = useNexysDockAttention();
 
   function handleModeTap(modeId: string) {
+    void acknowledgeReviewOnly(modeId as (typeof NEXYS_DOCK_CONTROLS)[number]["id"]);
     onActivate(modeId);
   }
 
   function submitDraft() {
-    const text = draft.trim();
+    const text = controller.composerValue.trim();
     if (!text) return;
-    navigate(`/chat?draft=${encodeURIComponent(text)}`);
-    setDraft("");
+    onActivate("chat");
+    void controller.sendMessage(text);
   }
 
   return (
@@ -49,7 +50,15 @@ export function ConsoleStandbyBar({
               aria-label={control.label}
               title={control.label}
             >
-              <Icon size={16} />
+              <span className="relative">
+                <Icon size={16} />
+                {hasAttention(control.id) ? (
+                  <span
+                    className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_7px_rgba(252,211,77,0.9)]"
+                    aria-label={`${control.label} needs attention`}
+                  />
+                ) : null}
+              </span>
             </button>
           );
         })}
@@ -57,8 +66,8 @@ export function ConsoleStandbyBar({
       <div className="flex items-end gap-2 rounded-xl border border-white/10 bg-black/30 px-2 py-1.5">
         <textarea
           rows={2}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          value={controller.composerValue}
+          onChange={(event) => controller.setComposerValue(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
@@ -67,12 +76,14 @@ export function ConsoleStandbyBar({
           }}
           placeholder="Ask ZAR anything..."
           className="min-h-[40px] flex-1 resize-none bg-transparent text-[13px] leading-snug text-white placeholder:text-white/35 focus:outline-none"
+          disabled={controller.isStreaming}
         />
         <button
           type="button"
           onClick={submitDraft}
           aria-label="Send"
-          className="mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-cyan-100 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-200/50"
+          disabled={!controller.composerValue.trim() || controller.isStreaming}
+          className="mb-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-cyan-100 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-200/50 disabled:cursor-not-allowed disabled:opacity-30"
         >
           <Send size={16} />
         </button>
