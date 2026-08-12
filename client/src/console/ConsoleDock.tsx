@@ -15,13 +15,15 @@ export function ConsoleDock({
   powered,
   onPowerChange,
   accent,
+  initialMode,
 }: {
   readonly powered: boolean;
   readonly onPowerChange: (next: boolean) => void;
   readonly accent: string;
+  readonly initialMode?: NexysDockMode;
 }) {
   const reducedMotion = useReducedMotion();
-  const [pendingMode, setPendingMode] = useState<NexysDockMode | undefined>(undefined);
+  const [pendingMode, setPendingMode] = useState<NexysDockMode | undefined>(initialMode);
 
   function handleActivate(modeId: string) {
     setPendingMode(modeId as NexysDockMode);

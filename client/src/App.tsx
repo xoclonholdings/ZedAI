@@ -112,7 +112,7 @@ function Router() {
 
       <Route path="/chat/:id?">
         {isAuthenticated ? (
-          <ConsoleWorkspaceFrame label="Chat" accent="#c084fc" flush>
+          <ConsoleWorkspaceFrame label="Chat" accent="#c084fc" initialDockMode="chat" flush>
             <ChatPage />
           </ConsoleWorkspaceFrame>
         ) : (
@@ -142,7 +142,7 @@ function Router() {
 
       <Route path="/desk/ideas">
         {isAuthenticated ? (
-          <ConsoleWorkspaceFrame nodeId="desk" label="Ideas" flush>
+          <ConsoleWorkspaceFrame nodeId="desk" label="Ideas" initialDockMode="ideas" flush>
             <IdeasPage />
           </ConsoleWorkspaceFrame>
         ) : (
@@ -152,7 +152,7 @@ function Router() {
 
       <Route path="/desk/task">
         {isAuthenticated ? (
-          <ConsoleWorkspaceFrame nodeId="desk" label="Task">
+          <ConsoleWorkspaceFrame nodeId="desk" label="Task" initialDockMode="task" flush>
             <TasksPage />
           </ConsoleWorkspaceFrame>
         ) : (
@@ -161,7 +161,13 @@ function Router() {
       </Route>
 
       <Route path="/desk/search">
-        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Search"><SearchPage /></ConsoleWorkspaceFrame> : <Login />}
+        {isAuthenticated ? (
+          <ConsoleWorkspaceFrame nodeId="desk" label="Search" initialDockMode="search" flush>
+            <SearchPage />
+          </ConsoleWorkspaceFrame>
+        ) : (
+          <Login />
+        )}
       </Route>
 
       <Route path="/desk">

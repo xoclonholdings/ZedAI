@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
-import { Compass, History, Link as LinkIcon, Network, Plus, Scale, Upload, X } from "lucide-react";
+import { Compass, History, Link as LinkIcon, Network, Plus, Scale, Star, Upload, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,18 @@ interface UploadResponse {
     newRelationships: number;
     graphObjects: number;
     graphRelationships: number;
+  };
+}
+
+interface KnowledgeUgcWebsite {
+  id: string;
+  url: string;
+  title: string;
+  savedAt: string;
+  provenance: {
+    source: "live_browser";
+    selection: "explicit_user_save";
+    capturedAt: string;
   };
 }
 
@@ -44,6 +56,7 @@ export default function KnowledgePage() {
   const [, navigate] = useLocation();
   const locationSearch = useLocationSearch();
   const [graph, setGraph] = useState<ObjectGraph | null>(null);
+  const [ugcWebsites, setUgcWebsites] = useState<KnowledgeUgcWebsite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -58,9 +71,15 @@ export default function KnowledgePage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/me/memory/graph", { credentials: "include" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setGraph(await res.json());
+      const [graphResponse, ugcResponse] = await Promise.all([
+        fetch("/api/me/memory/graph", { credentials: "include" }),
+        fetch("/api/knowledge/ugc/websites", { credentials: "include" }),
+      ]);
+      if (!graphResponse.ok) throw new Error(`Knowledge graph HTTP ${graphResponse.status}`);
+      if (!ugcResponse.ok) throw new Error(`Knowledge UGC HTTP ${ugcResponse.status}`);
+      const ugcBody = await ugcResponse.json();
+      setGraph(await graphResponse.json());
+      setUgcWebsites(Array.isArray(ugcBody.items) ? ugcBody.items : []);
       setError(null);
     } catch (err: any) {
       setError(err?.message || "Failed to load the knowledge graph");
@@ -288,6 +307,30 @@ export default function KnowledgePage() {
             </div>
           </section>
         )}
+
+        <section className="zar-glass rounded-2xl p-4" data-knowledge-branch="ugc">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              <Star size={13} className="text-cyan-200" /> UGC
+            </div>
+            <span className="text-[11px] text-white/40">{ugcWebsites.length}</span>
+          </div>
+          {ugcWebsites.length === 0 ? (
+            <p className="py-3 text-sm text-white/40">Websites saved from Search will appear here.</p>
+          ) : (
+            <div className="divide-y divide-white/[0.08] border-y border-white/[0.08]">
+              {ugcWebsites.map((website) => (
+                <article key={website.id} className="py-3">
+                  <div className="text-[12.5px] font-medium text-white/85">{website.title || website.url}</div>
+                  <div className="mt-1 truncate text-[10.5px] text-cyan-100/45">{website.url}</div>
+                  <div className="mt-1 text-[10px] text-white/30">
+                    Saved {new Date(website.savedAt).toLocaleString()} · User-selected source
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
 
         <section className="space-y-3">
           <div>

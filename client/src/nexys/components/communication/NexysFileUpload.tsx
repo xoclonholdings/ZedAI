@@ -12,7 +12,8 @@ import {
 } from "@shared/upload-policy";
 
 interface NexysFileUploadProps {
-  readonly conversationId: string;
+  readonly conversationId?: string;
+  readonly ensureConversation?: (titleSeed?: string) => Promise<string | undefined>;
   readonly onUpload: (files: File[], result: { conversationId?: string; files?: unknown[] }) => void;
   readonly onClose: () => void;
   /** Restricts the native file picker. Defaults to every type this route accepts. */
@@ -32,6 +33,7 @@ const DEFAULT_ACCEPT = EXTRACTABLE_UPLOAD_ACCEPT;
  */
 export function NexysFileUpload({
   conversationId,
+  ensureConversation,
   onUpload,
   onClose,
   accept = DEFAULT_ACCEPT,
@@ -45,15 +47,21 @@ export function NexysFileUpload({
 
   const uploadMutation = useMutation({
     mutationFn: async (files: File[]) => {
+      const targetConversationId = conversationId || await ensureConversation?.(
+        files[0]?.name || "Attachment",
+      );
+      if (!targetConversationId) throw new Error("Could not start a conversation for this upload.");
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
 
-      return uploadRequest<{ conversationId?: string; files?: unknown[]; warnings?: Array<{ warning: string }> }>(
-        `/api/conversations/${conversationId}/upload`,
+      const data = await uploadRequest<{ conversationId?: string; files?: unknown[]; warnings?: Array<{ warning: string }> }>(
+        `/api/conversations/${targetConversationId}/upload`,
         formData,
       );
+      return { ...data, conversationId: data.conversationId || targetConversationId };
     },
     onSuccess: (data, files) => {
+      const uploadedConversationId = data.conversationId || conversationId;
       const uploadedCount = Array.isArray(data?.files) ? data.files.length : files.length;
       const oneFile = uploadedCount === 1;
       toast({
@@ -63,8 +71,10 @@ export function NexysFileUpload({
           : "Attached to this conversation.",
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "files"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId] });
+      if (uploadedConversationId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations", uploadedConversationId, "files"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations", uploadedConversationId] });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
 
       setUploadingCount(0);

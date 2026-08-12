@@ -19,6 +19,13 @@ const MAX_HISTORY = 20;
 export interface BrowserVisit {
   id: string;
   url: string;
+  kind?: "page" | "search";
+  query?: string;
+  searchResults?: Array<{
+    title: string;
+    url: string;
+    snippet: string;
+  }>;
   title?: string;
   text?: string;
   /** Sanitized, script-free reader-view HTML - see WebContentService.sanitizeReaderHtml. */

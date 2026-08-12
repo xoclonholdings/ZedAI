@@ -6,6 +6,7 @@ export default defineConfig({
     include: [
       "server/services/capital/**/*.test.ts",
       "server/services/fileProcessor.test.ts",
+      "server/services/KnowledgeUgcService.test.ts",
       "server/services/auth/**/*.test.ts",
       "server/services/intake/**/*.test.ts",
       "server/services/sms/**/*.test.ts",

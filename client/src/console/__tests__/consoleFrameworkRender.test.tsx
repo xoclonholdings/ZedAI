@@ -11,6 +11,8 @@ import { NexysConsoleChatProvider } from "../../nexys/communication/NexysConsole
 import { NexysDockAttentionProvider } from "../../nexys/notifications/NexysDockAttentionContext";
 import NexysRootPage from "../../nexys/pages/NexysRootPage";
 import ChatPage from "../../pages/chat";
+import IdeasPage from "../../pages/ideas";
+import TasksPage from "../../pages/tasks";
 import { ConsoleWorkspaceFrame } from "../ConsoleWorkspaceFrame";
 
 function queryClient() {
@@ -65,8 +67,64 @@ function renderChatFrame(pathname = "/chat/conversation-1") {
         <NexysProvider>
           <NexysDockAttentionProvider>
             <NexysConsoleChatProvider>
-              <ConsoleWorkspaceFrame label="Chat" accent="#c084fc" flush>
+              <ConsoleWorkspaceFrame label="Chat" accent="#c084fc" initialDockMode="chat" flush>
                 <ChatPage />
+              </ConsoleWorkspaceFrame>
+            </NexysConsoleChatProvider>
+          </NexysDockAttentionProvider>
+        </NexysProvider>
+      </AuthProvider>
+    </QueryClientProvider>,
+  );
+}
+
+function renderIdeasFrame(pathname = "/desk/ideas") {
+  (globalThis as any).location = { pathname, search: "", hash: "" };
+  const client = queryClient();
+  client.setQueryData(["/api/knowledge/scratchpad"], {
+    items: [{ id: "idea-1", content: "A saved idea", tags: ["idea"] }],
+  });
+
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>
+      <AuthProvider>
+        <NexysProvider>
+          <NexysDockAttentionProvider>
+            <NexysConsoleChatProvider>
+              <ConsoleWorkspaceFrame nodeId="desk" label="Ideas" initialDockMode="ideas" flush>
+                <IdeasPage />
+              </ConsoleWorkspaceFrame>
+            </NexysConsoleChatProvider>
+          </NexysDockAttentionProvider>
+        </NexysProvider>
+      </AuthProvider>
+    </QueryClientProvider>,
+  );
+}
+
+function renderTaskFrame(pathname = "/desk/task") {
+  (globalThis as any).location = { pathname, search: "", hash: "" };
+  const client = queryClient();
+  client.setQueryData(["/api/execution/tasks"], {
+    tasks: [{
+      id: "task-1",
+      status: "pending",
+      plan: { summary: "A saved task" },
+      acceptance_status: "accepted",
+      approval_status: "not_required",
+      assignee: "both",
+      scheduled_for: null,
+    }],
+  });
+
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>
+      <AuthProvider>
+        <NexysProvider>
+          <NexysDockAttentionProvider>
+            <NexysConsoleChatProvider>
+              <ConsoleWorkspaceFrame nodeId="desk" label="Task" initialDockMode="task" flush>
+                <TasksPage />
               </ConsoleWorkspaceFrame>
             </NexysConsoleChatProvider>
           </NexysDockAttentionProvider>
@@ -105,4 +163,27 @@ test("Chat renders one Dock composer and a display-only conversation screen", ()
     "the only Chat composer is inside the expanded Dock",
   );
   assert.match(html, /data-console-region="adaptive-viewport"/, "the conversation uses the dock-aware viewport");
+});
+
+test("Ideas workspace opens the Ideas composer in the Dock and keeps its screen output-only", () => {
+  const html = renderIdeasFrame();
+
+  assert.match(html, /aria-label="Idea input"/);
+  assert.match(html, /aria-label="Save idea"/);
+  assert.match(html, /data-ideas-screen="output-only"/);
+  assert.match(html, /A saved idea/);
+  assert.equal((html.match(/<textarea/g) || []).length, 1, "Ideas has one input and it belongs to the Dock");
+});
+
+test("Task workspace opens Task input in the Dock and keeps its screen as a row list", () => {
+  const html = renderTaskFrame();
+
+  assert.match(html, /aria-label="Task input"/);
+  assert.match(html, /aria-label="Task date and time"/);
+  assert.match(html, /aria-label="Save task"/);
+  assert.match(html, /data-task-screen="output-only"/);
+  assert.match(html, /data-list-presentation="rows"/);
+  assert.match(html, /A saved task/);
+  assert.equal((html.match(/aria-label="Task input"/g) || []).length, 1, "Task input belongs only to the Dock");
+  assert.doesNotMatch(html, /aria-label="Add task"/);
 });

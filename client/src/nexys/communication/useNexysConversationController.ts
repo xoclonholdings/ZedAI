@@ -44,8 +44,9 @@ export interface NexysConversationController {
   readonly setComposerValue: (value: string) => void;
   readonly sendMessage: (message: string) => Promise<NexysConversationSendResult>;
   readonly abort: () => void;
+  readonly startConversation: () => Promise<string | undefined>;
   readonly openFileUpload: () => Promise<void>;
-  readonly ensureUploadConversation: () => Promise<string | undefined>;
+  readonly ensureUploadConversation: (titleSeed?: string) => Promise<string | undefined>;
   readonly closeFileUpload: () => void;
   readonly handleFileUpload: (files?: File[], result?: { conversationId?: string }) => void;
   readonly archiveConversation: () => Promise<void>;
@@ -88,6 +89,7 @@ export function useNexysConversationController({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const conversationCreationRef = useRef<Promise<string> | null>(null);
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
   const { ensureConversationTitle } = useConversationMutations(conversation, conversationId);
@@ -112,7 +114,8 @@ export function useNexysConversationController({
   }, [messages, isStreaming]);
 
   useEffect(() => {
-    if (conversationId) setUploadConversationId(conversationId);
+    setUploadConversationId(conversationId || null);
+    if (!conversationId) setShowFileUpload(false);
   }, [conversationId]);
 
   const scrollToBottom = useCallback(() => {
@@ -124,31 +127,56 @@ export function useNexysConversationController({
   }, [localMessages, streamingMessage, scrollToBottom]);
 
   async function createConversation(titleSeed: string, options?: { navigateToChat?: boolean }) {
-    const response = await fetch("/api/conversations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        title: titleSeed.trim().slice(0, 50) || "Conversation",
-        mode: "chat",
-      }),
-    });
+    if (!conversationCreationRef.current) {
+      conversationCreationRef.current = (async () => {
+        const response = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            title: titleSeed.trim().slice(0, 50) || "Conversation",
+            mode: "chat",
+          }),
+        });
 
-    const newConversation = await response.json().catch(() => null);
-    if (!response.ok || !newConversation?.id) {
-      throw new Error("Conversation creation returned no id");
+        const newConversation = await response.json().catch(() => null);
+        if (!response.ok || !newConversation?.id) {
+          throw new Error("Conversation creation returned no id");
+        }
+
+        const newConversationId = newConversation.id as string;
+        onConversationIdChange?.(newConversationId);
+        queryClient.setQueryData<Conversation[]>(["/api/conversations"], (current = []) => [
+          newConversation as Conversation,
+          ...current.filter((item) => item.id !== newConversationId),
+        ]);
+        void queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+        return newConversationId;
+      })().finally(() => {
+        conversationCreationRef.current = null;
+      });
     }
 
-    const newConversationId = newConversation.id as string;
-    // /nexys and /chat/:id are different <Route>s in the same Switch, so
-    // navigating between them remounts this whole persistent console -
-    // fine for sendMessage (nothing pending survives that matters), but
-    // openFileUpload sets showFileUpload=true right after this call and
-    // needs that update to survive, so it skips the navigate entirely.
+    const newConversationId = await conversationCreationRef.current;
     if (options?.navigateToChat !== false) navigate(`/chat/${newConversationId}`);
-    onConversationIdChange?.(newConversationId);
-    queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     return newConversationId;
+  }
+
+  async function startConversation(): Promise<string | undefined> {
+    if (conversationId) {
+      onConversationStart?.(conversationId);
+      return conversationId;
+    }
+    try {
+      setRuntimeError(null);
+      const newConversationId = await createConversation("New Conversation", { navigateToChat: false });
+      onConversationStart?.(newConversationId);
+      return newConversationId;
+    } catch (error) {
+      console.error("Failed to start conversation:", error);
+      setRuntimeError("Could not start a conversation. Try again.");
+      return undefined;
+    }
   }
 
   async function sendMessage(message: string): Promise<NexysConversationSendResult> {
@@ -241,6 +269,7 @@ export function useNexysConversationController({
       });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       onConversationIdChange?.(uploadedConversationId);
+      onConversationStart?.(uploadedConversationId);
     }
     setShowFileUpload(false);
   }
@@ -272,10 +301,10 @@ export function useNexysConversationController({
    * immediately to POST an attachment, rather than waiting on a re-render
    * to see openFileUpload's state update.
    */
-  async function ensureUploadConversation(): Promise<string | undefined> {
-    if (activeUploadConversationId) return activeUploadConversationId;
+  async function ensureUploadConversation(titleSeed = "Attachment"): Promise<string | undefined> {
+    if (conversationId) return conversationId;
     try {
-      const newConversationId = await createConversation("Attachment", { navigateToChat: false });
+      const newConversationId = await createConversation(titleSeed, { navigateToChat: false });
       setUploadConversationId(newConversationId);
       return newConversationId;
     } catch (error) {
@@ -319,6 +348,7 @@ export function useNexysConversationController({
     setComposerValue,
     sendMessage,
     abort: () => abortRef.current?.abort(),
+    startConversation,
     openFileUpload,
     ensureUploadConversation,
     closeFileUpload: () => setShowFileUpload(false),

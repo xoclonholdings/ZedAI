@@ -4,6 +4,7 @@ import { retrieveFoundationMemoryWithTrace } from "./FoundationMemoryService";
 import { retrievePersonalizationForQuery } from "./UserPersonalizationCorpus";
 import { retrieveObjectMemoryForQuery } from "./object-memory/retrieval";
 import { resolveObjectMemoryUserId } from "./object-memory/store";
+import { searchKnowledgeUgcWebsites } from "./KnowledgeUgcService";
 
 import {
   dedupeRetrievedMemory,
@@ -98,6 +99,7 @@ export class KnowledgeService {
       foundationResult,
       personalizationResult,
       objectMemoryResult,
+      relevantUgc,
     ] = await Promise.all([
       MemoryService.getAllCoreMemory(),
       loadRulesetMemory(),
@@ -111,6 +113,7 @@ export class KnowledgeService {
       }),
       retrievePersonalizationForQuery(userId, params.query, 3),
       retrieveObjectMemoryForQuery(params.query, 5, objectMemoryUserId),
+      searchKnowledgeUgcWebsites(userId, params.query, 5),
     ]);
     const foundation = foundationResult.content;
     const foundationTrace = foundationResult.trace;
@@ -214,6 +217,14 @@ export class KnowledgeService {
         : "";
 
     const retrievedBlock = formatRetrievedMemory(retrievedEntries);
+    const ugcBlock = relevantUgc.length > 0
+      ? relevantUgc.map((item, index) => (
+          `### UGC Website ${index + 1}: ${item.title}\n` +
+          `URL: ${item.url}\n` +
+          `Status: User-selected source material; not independently verified.\n` +
+          safeExcerpt(item.text, 700)
+        )).join("\n\n")
+      : "";
 
     const sections = [
       `## Knowledge Use Policy\n${LANE_DIRECTIVES[lane]}`,
@@ -223,6 +234,7 @@ export class KnowledgeService {
       foundation ? `## Foundation Knowledge\n${foundation}` : "",
       objectMemoryBlock,
       personalization,
+      ugcBlock ? `## Knowledge Sources - UGC\n${ugcBlock}` : "",
       projectBlock ? `## Project Knowledge\n${projectBlock}` : "",
       scratchpadBlock ? `## Working Scratchpad\n${scratchpadBlock}` : "",
       retrievedBlock ? `## Retrieved Semantic / Episodic Memory\n${retrievedBlock}` : "",
@@ -236,12 +248,14 @@ export class KnowledgeService {
       personalizationTrace: personalizationResult.trace,
       core: coreBlock,
       ruleset: rulesetBlock,
+      ugc: ugcBlock,
       project: projectBlock,
       scratchpad: scratchpadBlock,
       retrieved: retrievedBlock,
       counts: {
         core: relevantCoreMemory.length,
         ruleset: rulesetMemory.length,
+        ugc: relevantUgc.length,
         project: mergedProjectMemory.length,
         scratchpad: relevantScratchpad.length,
         retrieved: retrievedEntries.length,
@@ -265,6 +279,7 @@ export class KnowledgeService {
 
     const projectMemory = await MemoryService.getProjectMemory(userId);
     const scratchpadMemory = await MemoryService.getScratchpadMemory(userId);
+    const ugc = await searchKnowledgeUgcWebsites(userId, params.query, 6);
     const retrievedEntries = await Promise.all([
       queryCollection("episodic", params.query, 3),
       queryCollection("semantic", params.query, 3),
@@ -276,6 +291,13 @@ export class KnowledgeService {
       foundation: context.foundation,
       foundationTrace: context.foundationTrace,
       core: [context.core, context.ruleset].filter(Boolean).join("\n\n"),
+      ugc: ugc.map((item) => ({
+        id: item.id,
+        title: item.title,
+        url: item.url,
+        excerpt: safeExcerpt(item.text, 220),
+        savedAt: item.savedAt,
+      })),
       project: projectMemory
         .map((entry) => ({
           id: entry.id,

@@ -1,12 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Globe, Loader2, Sparkles, User, X } from "lucide-react";
 
 import { useConsoleBrowser } from "./ConsoleBrowserContext";
 import { ConsoleGlassPanel } from "./ConsoleGlassPanel";
+import { apiRequest } from "@/lib/queryClient";
 
 interface BrowserVisit {
   id: string;
   url: string;
+  kind?: "page" | "search";
+  query?: string;
+  searchResults?: Array<{
+    title: string;
+    url: string;
+    snippet: string;
+  }>;
   title?: string;
   text?: string;
   sanitizedHtml?: string;
@@ -51,12 +59,25 @@ function buildReaderDocument(sanitizedHtml: string): string {
  * whatever ZAR looks up on its own (both write to the same session).
  */
 export function ConsoleBrowserFullPage() {
-  const { isLoading, closeFullPage } = useConsoleBrowser();
+  const { isLoading, closeFullPage, setLoading } = useConsoleBrowser();
+  const queryClient = useQueryClient();
   const { data: session } = useQuery<BrowserSession>({
     queryKey: SESSION_QUERY_KEY,
     refetchInterval: 5000,
   });
   const current = session?.current ?? null;
+  const navigateResult = useMutation({
+    mutationFn: async (url: string) => {
+      const response = await apiRequest("POST", "/api/browser/navigate", { url });
+      return response.json();
+    },
+    onMutate: () => setLoading(true),
+    onSettled: () => {
+      setLoading(false);
+      void queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
+    },
+  });
+  const externalUrl = current?.url && /^https?:\/\//i.test(current.url) ? current.url : null;
 
   return (
     <ConsoleGlassPanel>
@@ -72,11 +93,11 @@ export function ConsoleBrowserFullPage() {
           <div className="truncate text-[13px] font-medium text-white/90">
             {current?.title || current?.url || "Live Browser"}
           </div>
-          {current?.url && <div className="truncate text-[11px] text-white/40">{current.url}</div>}
+          {externalUrl && <div className="truncate text-[11px] text-white/40">{externalUrl}</div>}
         </div>
-        {current?.url && !current.error && (
+        {externalUrl && !current?.error && (
           <a
-            href={current.url}
+            href={externalUrl}
             target="_blank"
             rel="noreferrer"
             aria-label="Open in a new tab"
@@ -105,6 +126,23 @@ export function ConsoleBrowserFullPage() {
           <div className="flex items-start gap-2 rounded-xl border border-red-400/20 bg-red-400/[0.05] p-4 text-[13px] text-red-200">
             <AlertTriangle size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
             {current.error}
+          </div>
+        ) : current?.kind === "search" && current.searchResults?.length ? (
+          <div className="h-[calc(100dvh-320px)] min-h-[320px] overflow-y-auto divide-y divide-white/[0.08] border-y border-white/[0.08]">
+            {current.searchResults.map((result) => (
+              <button
+                key={result.url}
+                type="button"
+                onClick={() => navigateResult.mutate(result.url)}
+                className="block w-full py-3 text-left transition hover:bg-white/[0.03]"
+              >
+                <div className="text-[13px] font-medium text-cyan-100">{result.title || result.url}</div>
+                <div className="mt-0.5 truncate text-[10.5px] text-white/35">{result.url}</div>
+                {result.snippet ? (
+                  <p className="mt-1 text-[12px] leading-5 text-white/60">{result.snippet}</p>
+                ) : null}
+              </button>
+            ))}
           </div>
         ) : current?.sanitizedHtml ? (
           <iframe

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ExternalLink, Globe, Loader2, Send, Sparkles, User } from "lucide-react";
+import { Globe, Loader2, Send, Star } from "lucide-react";
 
 import { apiRequest } from "@/lib/queryClient";
 import { useConsoleBrowser } from "@/console/ConsoleBrowserContext";
@@ -8,9 +8,8 @@ import { useConsoleBrowser } from "@/console/ConsoleBrowserContext";
 interface BrowserVisit {
   id: string;
   url: string;
-  title?: string;
+  kind?: "page" | "search";
   error?: string;
-  source: "user" | "zar";
 }
 
 interface BrowserSession {
@@ -18,24 +17,34 @@ interface BrowserSession {
   history: BrowserVisit[];
 }
 
-const SESSION_QUERY_KEY = ["/api/browser/session"];
+interface UgcWebsitesResponse {
+  items: Array<{ id: string; url: string }>;
+}
 
-function normalizeInputUrl(value: string): string {
+const SESSION_QUERY_KEY = ["/api/browser/session"];
+const UGC_WEBSITES_QUERY_KEY = ["/api/knowledge/ugc/websites"];
+
+function looksLikeWebsite(value: string): boolean {
   const trimmed = value.trim();
-  if (!trimmed) return trimmed;
+  return /^https?:\/\//i.test(trimmed) || /^(?:localhost|(?:[a-z0-9-]+\.)+[a-z]{2,})(?::\d+)?(?:[/?#]|$)/i.test(trimmed);
+}
+
+function normalizeWebsiteUrl(value: string): string {
+  const trimmed = value.trim();
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-/**
- * The dock's Search slot - just the address bar and recent visits. The
- * actual fetched page renders full-size in the console's main content
- * region (ConsoleBrowserFullPage), the same place every other workspace
- * renders, not cramped inside the dock. "Go" (or picking a recent visit)
- * calls POST /api/browser/navigate, which safely fetches the page
- * server-side and records it; the session is polled the same way the dock
- * already polls conversations, so a page ZAR visits on its own (via
- * IntelligenceAgent's research lookups) shows up here too, live.
- */
+function comparableWebsiteUrl(value: string): string {
+  try {
+    const parsed = new URL(value);
+    parsed.hash = "";
+    return parsed.toString();
+  } catch {
+    return value;
+  }
+}
+
+/** Search/address input and UGC save action. Browser output stays in the console. */
 export function NexysLiveBrowser() {
   const [input, setInput] = useState("");
   const queryClient = useQueryClient();
@@ -45,11 +54,19 @@ export function NexysLiveBrowser() {
     queryKey: SESSION_QUERY_KEY,
     refetchInterval: 5000,
   });
+  const { data: ugcWebsites } = useQuery<UgcWebsitesResponse>({
+    queryKey: UGC_WEBSITES_QUERY_KEY,
+  });
 
-  const navigate = useMutation({
-    mutationFn: async (url: string) => {
-      const res = await apiRequest("POST", "/api/browser/navigate", { url });
-      return res.json();
+  const runSearch = useMutation({
+    mutationFn: async (value: string) => {
+      const website = looksLikeWebsite(value);
+      const response = await apiRequest(
+        "POST",
+        website ? "/api/browser/navigate" : "/api/browser/search",
+        website ? { url: normalizeWebsiteUrl(value) } : { query: value.trim() },
+      );
+      return response.json();
     },
     onSettled: () => {
       setLoading(false);
@@ -57,20 +74,35 @@ export function NexysLiveBrowser() {
     },
   });
 
-  function go(rawUrl?: string) {
-    const url = normalizeInputUrl(rawUrl ?? input);
-    if (!url || navigate.isPending) return;
+  const saveWebsite = useMutation({
+    mutationFn: async (visitId: string) => {
+      const response = await apiRequest("POST", "/api/knowledge/ugc/websites/from-browser", { visitId });
+      return response.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: UGC_WEBSITES_QUERY_KEY }),
+  });
+
+  function go() {
+    const value = input.trim();
+    if (!value || runSearch.isPending) return;
     setLoading(true);
     openFullPage();
-    navigate.mutate(url);
+    runSearch.mutate(value);
   }
 
   const current = session?.current ?? null;
-  const history = session?.history ?? [];
+  const canSaveCurrent = Boolean(
+    current && current.kind !== "search" && !current.error && /^https?:\/\//i.test(current.url),
+  );
+  const currentSaved = Boolean(
+    canSaveCurrent && current && ugcWebsites?.items.some(
+      (item) => comparableWebsiteUrl(item.url) === comparableWebsiteUrl(current.url),
+    ),
+  );
 
   return (
-    <div className="flex min-h-[101px] flex-col gap-2 rounded-xl border border-white/10 bg-black/40 p-3">
-      <div className="flex items-center gap-2">
+    <div className="flex min-h-[101px] items-center rounded-xl border border-white/10 bg-black/40 p-3">
+      <div className="flex w-full items-center gap-2">
         <div className="flex flex-1 items-center gap-2 rounded-lg border border-white/10 bg-black/50 px-2.5 py-1.5">
           <Globe size={12} className="shrink-0 text-white/40" aria-hidden="true" />
           <input
@@ -80,64 +112,35 @@ export function NexysLiveBrowser() {
             onKeyDown={(event) => {
               if (event.key === "Enter") go();
             }}
-            placeholder="Go to a website..."
-            aria-label="Browser address"
+            placeholder="Search or enter a website..."
+            aria-label="Search or website address"
             className="w-full bg-transparent text-[12.5px] text-white placeholder:text-white/35 focus:outline-none"
           />
         </div>
         <button
           type="button"
-          onClick={() => go()}
-          disabled={navigate.isPending || !input.trim()}
-          aria-label="Go"
+          onClick={go}
+          disabled={runSearch.isPending || !input.trim()}
+          aria-label="Search"
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-400 text-black transition hover:bg-cyan-300 disabled:opacity-40"
         >
-          {navigate.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+          {runSearch.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
         </button>
-      </div>
-
-      {current && (
         <button
           type="button"
-          onClick={openFullPage}
-          className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-left text-[12px] text-white/70 hover:bg-white/5"
+          onClick={() => current && saveWebsite.mutate(current.id)}
+          disabled={!canSaveCurrent || saveWebsite.isPending}
+          aria-label={currentSaved ? "Saved to Knowledge UGC" : "Save website to Knowledge UGC"}
+          aria-pressed={currentSaved}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/55 transition hover:border-cyan-200/30 hover:text-cyan-100 disabled:opacity-30"
         >
-          {current.error ? (
-            <AlertTriangle size={12} className="shrink-0 text-red-300" aria-hidden="true" />
-          ) : current.source === "zar" ? (
-            <Sparkles size={12} className="shrink-0 text-violet-300" aria-hidden="true" />
+          {saveWebsite.isPending ? (
+            <Loader2 size={14} className="animate-spin" />
           ) : (
-            <User size={12} className="shrink-0 text-cyan-300" aria-hidden="true" />
+            <Star size={14} fill={currentSaved ? "currentColor" : "none"} />
           )}
-          <span className="truncate">{current.error ? "Failed to load" : current.title || current.url}</span>
-          <ExternalLink size={11} className="ml-auto shrink-0 text-white/30" aria-hidden="true" />
         </button>
-      )}
-
-      {!current && (
-        <p className="rounded-lg border border-white/10 bg-black/30 p-2.5 text-center text-[12px] text-white/40">
-          Nothing browsed yet - type a URL above, or ask ZAR to look something up.
-        </p>
-      )}
-
-      {history.length > 1 && (
-        <div className="flex flex-wrap gap-1.5">
-          {history.slice(1, 6).map((visit) => (
-            <button
-              key={visit.id}
-              type="button"
-              onClick={() => {
-                setInput(visit.url);
-                go(visit.url);
-              }}
-              className="max-w-[140px] truncate rounded-full border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] text-white/50 hover:bg-white/5"
-              title={visit.url}
-            >
-              {visit.title || visit.url}
-            </button>
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

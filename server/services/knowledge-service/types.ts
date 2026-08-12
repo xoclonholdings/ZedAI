@@ -26,12 +26,14 @@ export type KnowledgeContext = {
   personalizationTrace: PersonalizationRetrievalTraceItem[];
   core: string;
   ruleset: string;
+  ugc: string;
   project: string;
   scratchpad: string;
   retrieved: string;
   counts: {
     core: number;
     ruleset: number;
+    ugc: number;
     project: number;
     scratchpad: number;
     retrieved: number;
@@ -51,6 +53,13 @@ export type KnowledgeSearchResult = {
   foundation: string;
   foundationTrace: FoundationTraceItem[];
   core: string;
+  ugc: Array<{
+    id: string;
+    title: string;
+    url: string;
+    excerpt: string;
+    savedAt: string;
+  }>;
   project: Array<{
     id: string;
     name: string;

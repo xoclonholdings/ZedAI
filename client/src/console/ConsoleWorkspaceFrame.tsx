@@ -8,6 +8,7 @@ import { ConsoleGlassPanel, CONSOLE_CONTENT_REGION_CLASS } from "./ConsoleGlassP
 import { ConsoleLogoutButton } from "./ConsoleLogoutButton";
 import { ConsoleShell } from "./ConsoleShell";
 import { ZAR_NEXYS_CONSOLE } from "./consoleIdentity";
+import type { NexysDockMode } from "@/nexys/components/NexysConversationSurface";
 
 /**
  * Wraps one of the seven shared domain routes (Identity, Memory, Knowledge,
@@ -26,16 +27,18 @@ export function ConsoleWorkspaceFrame({
   label: labelOverride,
   accent: accentOverride,
   flush,
+  initialDockMode,
   children,
 }: {
   readonly nodeId?: NexysRootNodeId;
   readonly label?: string;
   readonly accent?: string;
   readonly flush?: boolean;
+  readonly initialDockMode?: NexysDockMode;
   readonly children: ReactNode;
 }) {
   const [, navigate] = useLocation();
-  const [dockPowered, setDockPowered] = useState(labelOverride === "Chat");
+  const [dockPowered, setDockPowered] = useState(labelOverride === "Chat" || Boolean(initialDockMode));
   const reducedMotion = useReducedMotion();
 
   const manifest = nodeId ? nexysRootManifestRegistry.getManifest(nodeId) : undefined;
@@ -48,6 +51,7 @@ export function ConsoleWorkspaceFrame({
       identity={identity}
       dockPowered={dockPowered}
       onDockPowerChange={setDockPowered}
+      initialDockMode={initialDockMode}
       headerLeft={
         <div className="flex items-center gap-2">
           <button

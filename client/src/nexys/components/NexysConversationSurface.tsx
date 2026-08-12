@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { BookOpen, CheckSquare, Clock, File, FileText, Image, Lightbulb, MessageCircle, Mic, Search, Smartphone, Upload } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, CalendarClock, Check, CheckSquare, Clock, File, FileText, Image, Lightbulb, MessageCircle, Mic, Search, Send, Smartphone, Upload, User, X, Zap } from "lucide-react";
 import { useLocation } from "wouter";
 
+import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@shared/schema";
 import {
@@ -27,6 +28,12 @@ import { useNexys } from "../state/NexysProvider";
 import { useNexysDockAttention } from "../notifications/NexysDockAttentionContext";
 import { useConsoleBrowser } from "@/console/ConsoleBrowserContext";
 import { NexysLiveBrowser } from "./communication/NexysLiveBrowser";
+import {
+  TASKS_QUERY_KEY,
+  type Assignee,
+  type TaskRecord,
+  type TasksResponse,
+} from "@/pages/tasks";
 
 /**
  * The five approved NEXYS controls. Chat and Upload open branching choices
@@ -37,6 +44,8 @@ export type NexysDockMode = NexysDockControlId;
 type NexysDockSlot = NexysDockMode | "talk" | "sms" | "attachment" | "history";
 type UploadKind = "image" | "document" | "file";
 
+const IDEAS_QUERY_KEY = ["/api/knowledge/scratchpad"];
+const IDEA_LIMIT = 280;
 const DOCUMENT_UPLOAD_ACCEPT = ".txt,.md,.pdf,.docx";
 const DOCUMENT_UPLOAD_MIME_TYPES = [
   "text/plain",
@@ -53,9 +62,10 @@ export function NexysConversationSurface({
 } = {}) {
   const [, navigate] = useLocation();
   const { viewportSnapshot } = useNexys();
-  const { openFullPage } = useConsoleBrowser();
+  const { openFullPage, closeFullPage } = useConsoleBrowser();
   const { hasAttention, acknowledgeReviewOnly } = useNexysDockAttention();
   const [activeMode, setActiveMode] = useState<NexysDockSlot>(initialMode ?? "chat");
+  const initialModeHandled = useRef(false);
   const [uploadKind, setUploadKind] = useState<UploadKind | null>(null);
   const {
     controller: conversationController,
@@ -86,6 +96,12 @@ export function NexysConversationSurface({
     cancelSubmission: conversationController.abort,
   });
 
+  useEffect(() => {
+    if (initialModeHandled.current) return;
+    initialModeHandled.current = true;
+    if (initialMode === "chat") void conversationController.startConversation();
+  }, [conversationController, initialMode]);
+
   function handleModeSelect(modeId: string) {
     if (modeId === "talk") {
       openTalk();
@@ -107,6 +123,8 @@ export function NexysConversationSurface({
     if (modeId === "chat") {
       conversationController.closeFileUpload();
       setActiveMode("chat");
+      closeFullPage();
+      void conversationController.startConversation();
       return;
     }
     if (modeId === "upload") {
@@ -117,8 +135,26 @@ export function NexysConversationSurface({
     }
     if (modeId === "search") {
       conversationController.closeFileUpload();
+      setUploadKind(null);
       setActiveMode("search");
       openFullPage();
+      if (control.route) navigate(control.route);
+      return;
+    }
+    if (modeId === "ideas") {
+      conversationController.closeFileUpload();
+      setUploadKind(null);
+      setActiveMode("ideas");
+      closeFullPage();
+      if (control.route) navigate(control.route);
+      return;
+    }
+    if (modeId === "task") {
+      conversationController.closeFileUpload();
+      setUploadKind(null);
+      setActiveMode("task");
+      closeFullPage();
+      if (control.route) navigate(control.route);
       return;
     }
     if (control.route) navigate(control.route);
@@ -136,7 +172,6 @@ export function NexysConversationSurface({
   function openUpload(kind: UploadKind) {
     setUploadKind(kind);
     setActiveMode("attachment");
-    void conversationController.openFileUpload();
   }
 
   function closeAttachment() {
@@ -239,23 +274,22 @@ export function NexysConversationSurface({
           </div>
         )}
 
+        {activeMode === "ideas" && <NexysIdeaComposer />}
+
+        {activeMode === "task" && <NexysTaskComposer />}
+
         {activeMode === "search" && <NexysLiveBrowser />}
 
         {activeMode === "attachment" && uploadKind && (
-          conversationController.showFileUpload && conversationController.activeUploadConversationId ? (
-            <NexysFileUpload
-              conversationId={conversationController.activeUploadConversationId}
-              onUpload={conversationController.handleFileUpload}
-              onClose={closeAttachment}
-              accept={uploadAcceptFor(uploadKind)}
-              allowedTypes={uploadTypesFor(uploadKind)}
-              label={`Tap to upload ${uploadKind === "file" ? "a file" : `a${uploadKind === "image" ? "n" : ""} ${uploadKind}`}`}
-            />
-          ) : (
-            <div className="flex h-[104px] items-center justify-center rounded-xl border border-white/10 bg-black/40 text-[12px] text-white/45">
-              Preparing upload...
-            </div>
-          )
+          <NexysFileUpload
+            conversationId={conversationController.activeUploadConversationId}
+            ensureConversation={conversationController.ensureUploadConversation}
+            onUpload={conversationController.handleFileUpload}
+            onClose={closeAttachment}
+            accept={uploadAcceptFor(uploadKind)}
+            allowedTypes={uploadTypesFor(uploadKind)}
+            label={`Tap to upload ${uploadKind === "file" ? "a file" : `a${uploadKind === "image" ? "n" : ""} ${uploadKind}`}`}
+          />
         )}
 
         {activeMode === "history" && (
@@ -302,6 +336,239 @@ export function NexysConversationSurface({
       </div>
     </section>
   );
+}
+
+function NexysIdeaComposer() {
+  const [draft, setDraft] = useState("");
+  const queryClient = useQueryClient();
+  const createIdea = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/knowledge/scratchpad", {
+        content: draft.trim(),
+        tags: ["idea"],
+      });
+      return response.json();
+    },
+    onSuccess: async () => {
+      setDraft("");
+      await queryClient.invalidateQueries({ queryKey: IDEAS_QUERY_KEY });
+    },
+  });
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/40 p-3">
+      <textarea
+        value={draft}
+        onChange={(event) => setDraft(event.target.value.slice(0, IDEA_LIMIT))}
+        rows={3}
+        maxLength={IDEA_LIMIT}
+        placeholder="Drop an idea..."
+        aria-label="Idea input"
+        className="w-full resize-none bg-transparent text-sm leading-6 text-white placeholder:text-white/30 focus:outline-none"
+      />
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-[11px] text-white/35">{draft.length}/{IDEA_LIMIT}</span>
+        <button
+          type="button"
+          onClick={() => createIdea.mutate()}
+          disabled={!draft.trim() || createIdea.isPending}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-300 text-black transition hover:bg-cyan-200 disabled:opacity-35"
+          aria-label="Save idea"
+        >
+          <Send size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NexysTaskComposer() {
+  const [draft, setDraft] = useState("");
+  const [assignee, setAssignee] = useState<Assignee>("user");
+  const [scheduledFor, setScheduledFor] = useState("");
+  const queryClient = useQueryClient();
+  const { data } = useQuery<TasksResponse>({ queryKey: TASKS_QUERY_KEY, refetchInterval: 15_000 });
+
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: ["/api/approval/notifications?unread=true"] }),
+    ]);
+  };
+
+  const createTask = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/execution/tasks", {
+        text: draft.trim(),
+        assignee,
+        scheduled_for: scheduledFor ? new Date(scheduledFor).toISOString() : null,
+      });
+      return response.json();
+    },
+    onSuccess: async () => {
+      setDraft("");
+      setScheduledFor("");
+      await refresh();
+    },
+  });
+
+  const decideSuggestion = useMutation({
+    mutationFn: async ({ id, accepted }: { id: string; accepted: boolean }) => {
+      const response = await apiRequest("POST", `/api/execution/tasks/${id}/acceptance`, { accepted });
+      return response.json();
+    },
+    onSuccess: refresh,
+  });
+
+  const decideAction = useMutation({
+    mutationFn: async ({ id, approved }: { id: string; approved: boolean }) => {
+      const response = await apiRequest("POST", "/api/approval/decide", {
+        task_id: id,
+        action: approved ? "approve" : "reject",
+      });
+      return response.json();
+    },
+    onSuccess: refresh,
+  });
+
+  const completeTask = useMutation({
+    mutationFn: async (id: string) => apiRequest("POST", `/api/execution/tasks/${id}/complete`),
+    onSuccess: refresh,
+  });
+
+  const tasks = data?.tasks ?? [];
+  const reviewItems = tasks.filter((task) => task.acceptance_status === "proposed" || needsActionApproval(task));
+  const activeTasks = tasks.filter((task) => (
+    task.acceptance_status !== "proposed" &&
+    task.acceptance_status !== "denied" &&
+    task.status !== "complete" &&
+    task.approval_status !== "rejected" &&
+    !needsActionApproval(task)
+  ));
+  const mutationError = createTask.error || decideSuggestion.error || decideAction.error || completeTask.error;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/40 p-3" data-task-dock="input-and-actions">
+      <input
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        placeholder="What needs to be done?"
+        aria-label="Task input"
+        className="w-full border-b border-white/10 bg-transparent px-1 pb-2.5 text-sm text-white placeholder:text-white/30 focus:border-cyan-200/35 focus:outline-none"
+      />
+      <div className="mt-2 grid grid-cols-3 divide-x divide-white/10 border-y border-white/10">
+        {(["user", "zar", "both"] as const).map((value) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setAssignee(value)}
+            className={cn(
+              "px-2 py-2 text-[11px] transition",
+              assignee === value ? "bg-cyan-200/10 text-cyan-100" : "text-white/50 hover:text-white/75",
+            )}
+          >
+            {value === "user" ? "You" : value === "zar" ? "ZAR" : "Both"}
+          </button>
+        ))}
+      </div>
+      <label className="mt-2 flex items-center gap-2 border-b border-white/10 pb-2">
+        <CalendarClock size={13} className="shrink-0 text-white/35" />
+        <span className="sr-only">When - optional</span>
+        <input
+          type="datetime-local"
+          value={scheduledFor}
+          onChange={(event) => setScheduledFor(event.target.value)}
+          aria-label="Task date and time"
+          className="min-w-0 flex-1 bg-transparent text-[11px] text-white/65 focus:outline-none"
+        />
+      </label>
+      <div className="mt-2 flex justify-end">
+        <button
+          type="button"
+          onClick={() => createTask.mutate()}
+          disabled={!draft.trim() || createTask.isPending}
+          className="flex h-8 items-center gap-1.5 rounded-full bg-cyan-300 px-3 text-[11px] font-medium text-black transition hover:bg-cyan-200 disabled:opacity-35"
+          aria-label="Save task"
+        >
+          <Check size={13} /> Save
+        </button>
+      </div>
+
+      {mutationError ? (
+        <p className="mt-2 border-t border-red-300/20 pt-2 text-[11px] text-red-100">
+          {mutationError instanceof Error ? mutationError.message : "Task update failed. Try again."}
+        </p>
+      ) : null}
+
+      {reviewItems.length > 0 ? (
+        <div className="mt-3 max-h-40 overflow-y-auto border-t border-white/10">
+          {reviewItems.map((task) => (
+            <div key={task.id} className="flex items-start gap-2 border-b border-white/[0.08] py-2.5">
+              <Zap size={12} className="mt-1 shrink-0 text-violet-200/60" />
+              <p className="min-w-0 flex-1 text-[12px] leading-5 text-white/75">{task.plan.summary}</p>
+              <div className="flex shrink-0 gap-1">
+                <button
+                  type="button"
+                  onClick={() => task.acceptance_status === "proposed"
+                    ? decideSuggestion.mutate({ id: task.id, accepted: false })
+                    : decideAction.mutate({ id: task.id, approved: false })}
+                  className="p-1.5 text-red-200/80 hover:text-red-100"
+                  aria-label={task.acceptance_status === "proposed" ? "Deny suggestion" : "Deny action"}
+                >
+                  <X size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => task.acceptance_status === "proposed"
+                    ? decideSuggestion.mutate({ id: task.id, accepted: true })
+                    : decideAction.mutate({ id: task.id, approved: true })}
+                  className="p-1.5 text-emerald-100/80 hover:text-emerald-100"
+                  aria-label={task.acceptance_status === "proposed" ? "Approve suggestion" : "Approve action"}
+                >
+                  <Check size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {activeTasks.length > 0 ? (
+        <div className="mt-3 max-h-40 overflow-y-auto border-t border-white/10">
+          {activeTasks.map((task) => (
+            <div key={task.id} className="flex items-start gap-2 border-b border-white/[0.08] py-2.5">
+              <button
+                type="button"
+                onClick={() => completeTask.mutate(task.id)}
+                className="mt-0.5 shrink-0 p-1 text-white/35 hover:text-emerald-100"
+                aria-label="Complete task"
+              >
+                <CheckSquare size={14} />
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12px] leading-5 text-white/75">{task.plan.summary}</p>
+                <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-white/35">
+                  <User size={10} /> {taskAssigneeLabel(task.assignee)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function needsActionApproval(task: TaskRecord): boolean {
+  return task.acceptance_status === "accepted" && (
+    task.approval_status === "user_required" || task.approval_status === "admin_required"
+  );
+}
+
+function taskAssigneeLabel(assignee?: Assignee): string {
+  if (assignee === "zar") return "ZAR";
+  if (assignee === "both") return "You + ZAR";
+  return "You";
 }
 
 function DockControlButton({

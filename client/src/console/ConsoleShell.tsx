@@ -7,6 +7,7 @@ import { ConsoleBrowserFullPage } from "./ConsoleBrowserFullPage";
 import { ConsoleBrowserProvider, useConsoleBrowser } from "./ConsoleBrowserContext";
 import { ConsoleDock } from "./ConsoleDock";
 import { CONSOLE_CONTENT_REGION_CLASS } from "./ConsoleGlassPanel";
+import type { NexysDockMode } from "@/nexys/components/NexysConversationSurface";
 
 /**
  * The ZEBULON Console Framework shell - the one composition every console
@@ -25,6 +26,7 @@ export function ConsoleShell(props: {
   readonly headerRightExtra?: ReactNode;
   readonly dockPowered: boolean;
   readonly onDockPowerChange: (next: boolean) => void;
+  readonly initialDockMode?: NexysDockMode;
   readonly bottomBar?: ReactNode;
   readonly children: ReactNode;
 }) {
@@ -41,6 +43,7 @@ function ConsoleShellBody({
   headerRightExtra,
   dockPowered,
   onDockPowerChange,
+  initialDockMode,
   bottomBar,
   children,
 }: {
@@ -49,6 +52,7 @@ function ConsoleShellBody({
   readonly headerRightExtra?: ReactNode;
   readonly dockPowered: boolean;
   readonly onDockPowerChange: (next: boolean) => void;
+  readonly initialDockMode?: NexysDockMode;
   readonly bottomBar?: ReactNode;
   readonly children: ReactNode;
 }) {
@@ -124,7 +128,12 @@ function ConsoleShellBody({
             <>
               <ConsoleActivator active={dockPowered} onToggle={() => onDockPowerChange(!dockPowered)} accent={identity.accent} />
               <div className="w-full">
-                <ConsoleDock powered={dockPowered} onPowerChange={onDockPowerChange} accent={identity.accent} />
+                <ConsoleDock
+                  powered={dockPowered}
+                  onPowerChange={onDockPowerChange}
+                  accent={identity.accent}
+                  initialMode={initialDockMode}
+                />
               </div>
             </>
           )}

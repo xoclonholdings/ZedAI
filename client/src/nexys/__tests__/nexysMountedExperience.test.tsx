@@ -11,6 +11,8 @@ import { NexysProvider } from "../state/NexysProvider";
 import { NexysCommunicationDock } from "../components/NexysCommunicationDock";
 import { NexysConversationSurface, type NexysDockMode } from "../components/NexysConversationSurface";
 import { ConsoleBrowserProvider } from "../../console/ConsoleBrowserContext";
+import IdeasPage from "../../pages/ideas";
+import TasksPage from "../../pages/tasks";
 
 function renderNexysCommunication(initialMode?: NexysDockMode, withTaskAttention = false) {
   (globalThis as any).location = {
@@ -85,6 +87,86 @@ test("Upload owns document/file intake and Add knowledge without adding Dock but
     assert.match(html, new RegExp(`>${label}<`), `${label} is inside Upload`);
   }
   assert.equal((html.match(/aria-label="Upload"/g) || []).length, 1, "Upload remains one primary Dock control");
+});
+
+test("Ideas puts its input and Save action in the Dock", () => {
+  const html = renderNexysCommunication("ideas");
+
+  assert.match(html, /aria-label="Idea input"/);
+  assert.match(html, /aria-label="Save idea"/);
+  assert.match(html, /placeholder="Drop an idea..."/);
+  assert.doesNotMatch(html, /aria-label="Ask ZAR"/);
+});
+
+test("Ideas console screen displays saved blurbs without accepting input", () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { enabled: false, retry: false } },
+  });
+  queryClient.setQueryData(["/api/knowledge/scratchpad"], {
+    items: [{ id: "idea-1", content: "A saved idea", tags: ["idea"] }],
+  });
+
+  const html = renderToStaticMarkup(
+    <QueryClientProvider client={queryClient}>
+      <IdeasPage />
+    </QueryClientProvider>,
+  );
+
+  assert.match(html, /data-ideas-screen="output-only"/);
+  assert.match(html, /A saved idea/);
+  assert.doesNotMatch(html, /<textarea/);
+  assert.doesNotMatch(html, /Save idea/);
+  assert.doesNotMatch(html, /Delete idea/);
+});
+
+test("Task puts creation and task actions in the Dock", () => {
+  const html = renderNexysCommunication("task");
+
+  assert.match(html, /data-task-dock="input-and-actions"/);
+  assert.match(html, /aria-label="Task input"/);
+  assert.match(html, /aria-label="Task date and time"/);
+  assert.match(html, /aria-label="Save task"/);
+  assert.doesNotMatch(html, /aria-label="Ask ZAR"/);
+});
+
+test("Search keeps only its input and save action in the Dock", () => {
+  const html = renderNexysCommunication("search");
+
+  assert.match(html, /aria-label="Search or website address"/);
+  assert.match(html, /aria-label="Search"/);
+  assert.match(html, /aria-label="Save website to Knowledge UGC"/);
+  assert.doesNotMatch(html, /Nothing browsed yet/);
+  assert.doesNotMatch(html, /Failed to load/);
+  assert.equal((html.match(/<input/g) || []).length, 1, "Search has one input and it belongs to the Dock");
+});
+
+test("Task console displays a row list without accepting input", () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { enabled: false, retry: false } },
+  });
+  queryClient.setQueryData(["/api/execution/tasks"], {
+    tasks: [{
+      id: "task-1",
+      status: "pending",
+      plan: { summary: "A saved task" },
+      acceptance_status: "accepted",
+      approval_status: "not_required",
+      assignee: "user",
+    }],
+  });
+
+  const html = renderToStaticMarkup(
+    <QueryClientProvider client={queryClient}>
+      <TasksPage />
+    </QueryClientProvider>,
+  );
+
+  assert.match(html, /data-task-screen="output-only"/);
+  assert.match(html, /data-list-presentation="rows"/);
+  assert.match(html, /A saved task/);
+  assert.doesNotMatch(html, /<input/);
+  assert.doesNotMatch(html, /<button/);
+  assert.doesNotMatch(html, /aria-label="Add task"/);
 });
 
 test("an unread ZAR suggestion marks the Task control without creating a sixth button", () => {

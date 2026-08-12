@@ -121,7 +121,7 @@ test("NEXYS dock exposes exactly the approved five controls in order", () => {
   assert.equal(NEXYS_DOCK_CONTROLS.some((control) => ["Image", "Document", "Doc"].includes(control.label)), false);
   assert.equal(NEXYS_DOCK_CONTROLS.find((control) => control.id === "ideas")?.route, "/desk/ideas");
   assert.equal(NEXYS_DOCK_CONTROLS.find((control) => control.id === "task")?.route, "/desk/task");
-  assert.equal(NEXYS_DOCK_CONTROLS.find((control) => control.id === "search")?.route, null);
+  assert.equal(NEXYS_DOCK_CONTROLS.find((control) => control.id === "search")?.route, "/desk/search");
 });
 
 test("creation capabilities remain discoverable but independent of root navigation", () => {

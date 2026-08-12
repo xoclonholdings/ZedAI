@@ -25,7 +25,7 @@ export const NEXYS_DOCK_CONTROLS: readonly NexysDockControlDefinition[] = [
   { id: "upload", label: "Upload", route: null },
   { id: "ideas", label: "Ideas", route: "/desk/ideas" },
   { id: "task", label: "Task", route: "/desk/task" },
-  { id: "search", label: "Search", route: null },
+  { id: "search", label: "Search", route: "/desk/search" },
 ];
 
 export function getNexysDockControl(controlId: NexysDockControlId): NexysDockControlDefinition {

@@ -3,6 +3,7 @@ import type { Express } from "express";
 import { isAdmin, isAuthenticated } from "../localAuth";
 import { KnowledgeService } from "../services/KnowledgeService";
 import { KnowledgeCurationEngine } from "../services/KnowledgeCurationEngine";
+import { listKnowledgeUgcWebsites } from "../services/KnowledgeUgcService";
 import { injectMemory } from "../services/MemoryInjector";
 import {
   insertProjectMemorySchema,
@@ -77,6 +78,14 @@ async function ensureSessionUserInDatabase(req: any): Promise<void> {
 }
 
 export function registerKnowledgeRoutes(app: Express): void {
+  app.get("/api/knowledge/ugc/websites", isAuthenticated, async (req: any, res) => {
+    try {
+      res.json({ items: await listKnowledgeUgcWebsites(requireRequestUserId(req)) });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || "Failed to fetch Knowledge UGC websites" });
+    }
+  });
+
   app.get("/api/knowledge/context", isAuthenticated, async (req: any, res) => {
     try {
       const userId = requireRequestUserId(req);
