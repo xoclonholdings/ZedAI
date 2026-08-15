@@ -6,28 +6,11 @@ import { registerPrivyAuthRoutes } from "./local-auth/routes-privy";
 import { registerAdminOtpRoutes } from "./local-auth/routes-admin-otp";
 import { registerCredentialRoutes } from "./local-auth/routes-credentials";
 import { registerSecuritySettingsRoutes } from "./local-auth/routes-security-settings";
+import { registerZcosSsoRoutes } from "./local-auth/routes-zcos-sso";
 
 /**
- * Local auth entry point. Splits into focused modules under
- * ./local-auth/:
- *
- *   types.ts                       LocalUser shape
- *   session-helpers.ts             attempt-counter map, IP extractor,
- *                                  sessionUser/attachUser
- *   session-middleware.ts          express-session config from
- *                                  admin settings (cookie hardening
- *                                  for hosted deploys)
- *   middleware.ts                  ensureAuthenticatedSession +
- *                                  isAuthenticated / isAdmin /
- *                                  isLocalAuthenticated guards
- *   routes-login.ts                /api/login + /api/logout
- *   routes-admin-otp.ts            admin email OTP flow
- *   routes-credentials.ts          challenge unlock + self-service
- *                                  credential update
- *   routes-security-settings.ts    admin security settings GET + POST
- *
- * This file re-exports the middleware so existing route imports
- * (`from "./localAuth"` or `"../localAuth"`) keep working.
+ * Local auth entry point. ZCOS is the universal identity authority; this
+ * service keeps a local runtime session only as a projection of that identity.
  */
 
 export type { LocalUser } from "./local-auth/types";
@@ -40,6 +23,7 @@ export {
 export async function setupLocalAuth(app: Express): Promise<void> {
   app.use(await getSessionMiddleware());
 
+  registerZcosSsoRoutes(app);
   registerPrivyAuthRoutes(app);
   registerLoginRoutes(app);
   registerAdminOtpRoutes(app);
