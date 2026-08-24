@@ -15,11 +15,9 @@ services:
       - key: REQUIRE_DATABASE
         value: "true"
       - key: FRONTEND_URL
-        value: "https://zar-ai.online"
-      - key: VITE_API_BASE_URL
-        value: "https://api.zar-ai.online"
+        value: "https://zar-ai.onrender.com"
       - key: ZCOS_API_URL
-        value: "https://api.zcos.online"
+        value: "https://zcos.onrender.com"
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET
