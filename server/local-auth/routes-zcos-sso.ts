@@ -14,7 +14,11 @@ type ZcosIdentity = {
 };
 
 function zcosApiBase(): string {
-  return String(process.env.ZCOS_API_URL || "https://zcos.onrender.com").replace(/\/$/, "");
+  return String(process.env.ZCOS_API_URL || "https://api.zcos.online").replace(/\/$/, "");
+}
+
+function zarFrontendBase(): string {
+  return String(process.env.FRONTEND_URL || process.env.ZAR_APP_URL || "https://zar-ai.online").replace(/\/$/, "");
 }
 
 function asLocalUser(identity: ZcosIdentity): LocalUser {
@@ -44,20 +48,20 @@ export function registerZcosSsoRoutes(app: Express): void {
       const payload = await response.json() as { success?: boolean; user?: ZcosIdentity; error?: string };
       if (!response.ok || !payload.success || !payload.user?.id) {
         console.error("ZCOS SSO exchange failed:", payload.error || response.statusText);
-        return res.redirect("/?auth=zcos-failed");
+        return res.redirect(`${zarFrontendBase()}/?auth=zcos-failed`);
       }
 
       attachUser(req, asLocalUser(payload.user));
       req.session.save((error) => {
         if (error) {
           console.error("ZCOS session save failed:", error);
-          return res.redirect("/?auth=zcos-failed");
+          return res.redirect(`${zarFrontendBase()}/?auth=zcos-failed`);
         }
-        res.redirect("/");
+        res.redirect(`${zarFrontendBase()}/`);
       });
     } catch (error) {
       console.error("ZCOS SSO callback failed:", error);
-      res.redirect("/?auth=zcos-failed");
+      res.redirect(`${zarFrontendBase()}/?auth=zcos-failed`);
     }
   });
 }
