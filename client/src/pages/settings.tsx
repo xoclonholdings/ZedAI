@@ -36,6 +36,10 @@ export default function SettingsPage() {
   const isAdmin = !!user?.isAdmin || !!user?.claims?.isAdmin || user?.email === "admin@zar-ai.online";
 
   function handleNavigate(next: string) {
+    if (next === "integrations") {
+      navigate("/settings/integrations");
+      return;
+    }
     if (next === "admin") {
       navigate("/admin");
       return;

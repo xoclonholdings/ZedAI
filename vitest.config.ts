@@ -11,6 +11,7 @@ export default defineConfig({
       "server/services/intake/**/*.test.ts",
       "server/services/executive-operations/**/*.test.ts",
       "server/services/sms/**/*.test.ts",
+      "server/zcos/**/*.test.ts",
       "shared/**/*.test.ts",
       "client/src/lib/uploadRequest.test.ts",
       "client/src/components/auth/**/*.test.ts",

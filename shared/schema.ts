@@ -100,6 +100,15 @@ export type {
   LearningStateRow,
 } from "./LearningSchema";
 
+export {
+  zcosExecutionTraces,
+} from "./ZcosIntelligenceSchema";
+
+export type {
+  ZcosExecutionTraceRow,
+  InsertZcosExecutionTrace,
+} from "./ZcosIntelligenceSchema";
+
 export type {
   FileStorage,
   InsertFileStorage,

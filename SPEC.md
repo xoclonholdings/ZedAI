@@ -55,6 +55,8 @@ Relevant ZAR-facing dependencies are:
 - ZCOS is the universal identity/authentication authority. ZAR may maintain a local runtime session as a projection of the verified ZCOS identity.
 - ZAR must preserve authenticated ownership on every protected read, write, retrieval, action, approval, memory operation, and channel interaction.
 - ZAR may use system-level Memory, Knowledge, authorization, Portal, and cross-galaxy capabilities only through their approved ZCOS contracts.
+- ZAR submits authenticated, typed intent to ZCOS and receives governed context plus a typed execution plan. ZAR does not become the system reasoning, planning, source-validation, or policy authority.
+- External models and sources are advisory inputs to ZCOS. ZAR presents or acts only after ZCOS provenance, conflict, authorization, policy, and result verification.
 - ZAR must not create competing canonical authorities for capabilities owned by ZCOS or another galaxy.
 - If a ZAR task belongs to another specialized galaxy, ZAR remains the operator/coordinator rather than absorbing that galaxy's product ownership.
 
@@ -239,11 +241,11 @@ Constitution changes must be versioned, attributable, reviewable, and reversible
 
 The Constitution does not replace ordinary memory, knowledge, settings, or conversation history. It governs the relationship at a higher level.
 
-## 12. Subagent Orchestration
+## 12. Governed Capability Orchestration
 
-ZAR is moving away from a centralized single-lane router toward a subagent-based orchestration model.
+ZAR coordinates specialist capabilities from a ZCOS-authored typed execution plan. It does not create a Manager Agent, provider identity, or parallel planning authority.
 
-The current architecture uses a `SubagentOrchestrator` that can activate specialized subagents in parallel. Each subagent independently determines whether its capability is relevant, applies its lane rules and approval constraints, returns a typed result, and contributes to one synthesized ZAR response.
+The ZCOS Capability Registry resolves certified operations, permissions, required integrations, versioned ZYLO artifacts, approval state, and owning galaxy. Specialists execute only invocations present in that governed plan and return typed results to ZCOS verification before ZAR presents completion.
 
 Current implemented specialist families include:
 
@@ -254,9 +256,9 @@ Current implemented specialist families include:
 
 Specialists are internal capabilities, not separate personalities presented to the user. ZAR gives the order and ZAR delivers the unified result.
 
-Parallelism is used when multiple independent capability areas genuinely contribute to the same objective. It must not create unnecessary model calls or duplicate work.
+Parallelism is used only when dependencies are satisfied, capabilities are explicitly parallel-safe, and side-effect ordering cannot be violated. It must not create unnecessary model calls or duplicate work.
 
-The older ManagerAgent/lane-router architecture is legacy/fallback material and should not regain canonical authority.
+The older ManagerAgent/lane-router and canned subagent status paths are legacy material and must not regain canonical authority.
 
 ## 13. Tasks and Execution
 
@@ -371,7 +373,7 @@ The runtime must keep prepared, awaiting approval, approved, running, completed,
 - Runtime memory, personal exports, and uploaded user documents must not be committed to Git.
 - Legacy personal archives remain historical evidence until a separate verified migration is authorized.
 
-## 21. Current Implementation Direction - August 17, 2026
+## 21. Current Implementation Direction - August 22, 2026
 
 The following represents the current ZAR direction based on the repository and recent implementation work. It is not a blanket production certification.
 
@@ -383,8 +385,9 @@ The following represents the current ZAR direction based on the repository and r
 - Cognitive Core and response governance.
 - Lexicon Authority.
 - Context Inquiry and strategic reasoning services.
-- Intelligence Core planning/context/document components.
-- Subagent-based orchestration with parallel specialist dispatch.
+- ZCOS-owned reasoning depth, context assembly, source-confluence, capability planning, policy, and verification on the canonical chat path.
+- Typed, provider-neutral external-intelligence envelopes and a versioned capability registry with ZYLO artifact resolution.
+- Governed capability dispatch with dependency- and side-effect-aware parallel planning.
 - Conversation history and file-upload infrastructure.
 - Dock-aware Chat, Ideas, Tasks, Upload, and Search flows.
 - Search-result browsing and live browser surface.
@@ -457,6 +460,6 @@ ZAR should feel increasingly capable without feeling increasingly complicated.
 
 ---
 
-**Last updated:** August 17, 2026  
-**Canonical scope:** ZAR only  
+**Last updated:** August 24, 2026
+**Canonical scope:** ZAR only
 **Next review trigger:** material change to ZAR runtime, Nexys/Operate architecture, relationship learning, orchestration, channels, or ZAR-facing system contracts.

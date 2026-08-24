@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { ZCOS_INTELLIGENCE_SCHEMA_VERSION } from "../../shared/zcos-intelligence";
 
 import { isAdmin, isAuthenticated } from "../localAuth";
 import { KnowledgeCurationEngine } from "../services/KnowledgeCurationEngine";
@@ -10,6 +11,7 @@ import {
 import { getPublicAdminSettings } from "../services/AdminSettingsStore";
 import { ChatExecutionService } from "../services/ChatExecutionService";
 import { ownerUserIdFromAuthenticatedRequest } from "../services/auth/OwnerContext";
+import { zcosCapabilityRegistry } from "../zcos/capabilities/ZcosCapabilityRegistry";
 
 /**
  * Orchestrator + a handful of small one-shot endpoints. They live
@@ -63,12 +65,29 @@ export function registerOrchestrateAndMiscRoutes(
       return agent;
     });
     res.json({
-      orchestrator: "SubagentOrchestrator",
-      orchestrationMode: "parallel-subagent-dispatch",
+      orchestrator: "ZCOSCapabilityRuntime",
+      orchestrationMode: "governed-typed-capability-plan",
       active_agents: normalizedAgents.filter((a) => a.status === "active"),
       planned_agents: normalizedAgents.filter((a) => a.status === "planned"),
+      capabilities: zcosCapabilityRegistry.list().map((capability) => ({
+        id: capability.id,
+        ownerGalaxy: capability.ownerGalaxy,
+        operations: capability.operations,
+        requiredIntegrations: capability.requiredIntegrations,
+        certificationState: capability.certificationState,
+        approvalRequired: capability.approvalRequired,
+        version: capability.version,
+      })),
       integrations: settings.integrations,
       status: "operational",
+    });
+  });
+
+  app.get("/api/zcos/capabilities", isAuthenticated, (_req, res) => {
+    res.json({
+      schemaVersion: ZCOS_INTELLIGENCE_SCHEMA_VERSION,
+      settingsPath: "/settings/integrations",
+      capabilities: zcosCapabilityRegistry.list(),
     });
   });
 

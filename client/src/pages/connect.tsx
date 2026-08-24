@@ -16,6 +16,18 @@ interface ConnectCategorySummary {
   status: string;
 }
 
+interface CapabilityIntegrationSummary {
+  id: string;
+  connected: boolean;
+  requiredBy: string[];
+}
+
+const CAPABILITY_INTEGRATION_LABELS: Record<string, string> = {
+  model_provider: "Intelligence provider",
+  web_search: "Current-source search",
+  zillion_capital: "ZILLION Capital gateway",
+};
+
 const STATUS_CLS: Record<string, string> = {
   connected: "bg-emerald-400/15 text-emerald-300",
   disconnected: "bg-white/10 text-white/40",
@@ -32,6 +44,9 @@ export default function ConnectPage() {
   }>({ queryKey: ["/api/connect/categories"] });
   const { data: gapsData } = useQuery<{ gaps: IntegrationGap[] }>({
     queryKey: ["/api/connect/gaps"],
+  });
+  const { data: capabilityIntegrations } = useQuery<{ integrations: CapabilityIntegrationSummary[] }>({
+    queryKey: ["/api/connect/capabilities"],
   });
 
   const dismissGap = useMutation({
@@ -99,6 +114,31 @@ export default function ConnectPage() {
           onDismiss={() => dismissGap.mutate(gap.id)}
         />
       ))}
+
+      {capabilityIntegrations && capabilityIntegrations.integrations.length > 0 && (
+        <section>
+          <div className="mb-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            ZCOS Capability Requirements
+          </div>
+          <div className="space-y-2">
+            {capabilityIntegrations.integrations.map((integration) => (
+              <div key={integration.id} className="zar-glass flex items-center justify-between gap-3 rounded-xl p-3">
+                <div className="min-w-0">
+                  <div className="text-[13px] font-medium text-white">
+                    {CAPABILITY_INTEGRATION_LABELS[integration.id] || integration.id}
+                  </div>
+                  <div className="mt-0.5 truncate text-[10.5px] text-white/35">
+                    Required by {integration.requiredBy.join(", ")}
+                  </div>
+                </div>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9.5px] uppercase ${integration.connected ? STATUS_CLS.connected : STATUS_CLS.disconnected}`}>
+                  {integration.connected ? "connected" : "not connected"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {connectCategories && connectCategories.categories.length > 0 && (
         <section>

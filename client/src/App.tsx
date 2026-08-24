@@ -255,6 +255,10 @@ function Router() {
         {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="desk" label="Projects"><ProjectsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>
 
+      <Route path="/settings/integrations">
+        {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="settings" label="Integrations"><ConnectPage /></ConsoleWorkspaceFrame> : <Login />}
+      </Route>
+
       <Route path="/settings">
         {isAuthenticated ? <ConsoleWorkspaceFrame nodeId="settings"><SettingsPage /></ConsoleWorkspaceFrame> : <Login />}
       </Route>

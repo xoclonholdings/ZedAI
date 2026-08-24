@@ -2,6 +2,7 @@ import {
   Archive,
   ChevronRight,
   Lock,
+  Plug,
   SlidersHorizontal,
   User,
   Users,
@@ -46,6 +47,13 @@ const menuItems: MenuItem[] = [
     description: "Organize what ZAR's working on. Set project scope and privacy.",
     icon: SlidersHorizontal,
     color: "text-purple-400",
+  },
+  {
+    key: "integrations",
+    label: "Integrations",
+    description: "Connect the services required for ZCOS capabilities.",
+    icon: Plug,
+    color: "text-emerald-400",
   },
   {
     key: "security",

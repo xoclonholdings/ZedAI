@@ -1,6 +1,8 @@
-# ZCOS Boundary Inside ZAR
+# ZCOS Unified Intelligence Boundary Inside ZAR
 
-ZCOS owns execution logic. ZAR owns presentation and HTTP routing.
+ZCOS owns identity-bound context assembly, reasoning, planning, sourcing policy,
+capability resolution, verification, and execution trace. ZAR owns the user
+relationship, presentation, and assignment of work authorized by a ZCOS plan.
 
 This directory is the extraction boundary for services that will eventually move into standalone Zebulon Commander / ZCOS.
 
@@ -18,12 +20,20 @@ owner-bound capability gateway, shared ZCOS services, and approval authority.
 - Tasks: `server/services/execution/TaskLifecycleManager.ts`
 - Provider execution: `server/core/providers/*`
 - Memory/context: `server/services/KnowledgeService.ts` and `hub/shared-memory/`
+- Typed intelligence contracts: `shared/zcos-intelligence.ts`
+- Unified reasoning/governance runtime: `server/zcos/runtime/*`
+- Capability Registry and ZYLO resolution: `server/zcos/capabilities/*`
+- Provider-neutral external adapters: `server/zcos/external/*`
 
 ## Boundary Rule
 
-ZAR routes and UI may launch flows, display runs, approve/reject gates, show reports, and coordinate Capital work through the typed ZILLION capability.
+ZAR routes and UI may launch flows, display runs, approve/reject gates, show reports, and coordinate Capital work through the typed ZILLION capability. Every canonical chat turn submits a typed ZAR request to ZCOS and receives governed context plus a typed plan.
 
-ZCOS services create runs, execute stages, dispatch model/agent work, create approvals, write shared memory, track errors, and generate reports. ZILLION stores trading knowledge, evaluates scanners, creates trade theses, manages paper trades, and calculates Capital performance.
+ZCOS services create runs, execute stages, validate sources, resolve capabilities, create approvals, track errors, verify results, and generate reports. External providers return candidate-only envelopes and cannot write Memory, Knowledge, Projects, or execution state. ZILLION stores trading knowledge, evaluates scanners, creates trade theses, manages paper trades, and calculates Capital performance.
+
+PostgreSQL is authoritative for complete ZCOS execution traces. Prompt context,
+vectors, model responses, and external-source payloads are projections or
+candidates, never canonical storage.
 
 ## Capital Certification Rule
 

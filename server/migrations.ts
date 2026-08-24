@@ -92,6 +92,30 @@ export async function runMigrations(): Promise<void> {
       ON capability_message_receipts (expires_at);
     `);
 
+    // Complete, owner-scoped ZCOS intelligence and capability traces. The
+    // JSON document is the versioned execution envelope; PostgreSQL is the
+    // canonical store, never a prompt or vector projection.
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS zcos_execution_traces (
+        trace_id varchar PRIMARY KEY,
+        request_id varchar NOT NULL,
+        owner_user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        origin_galaxy varchar NOT NULL,
+        status varchar NOT NULL,
+        trace jsonb NOT NULL,
+        started_at timestamptz NOT NULL,
+        completed_at timestamptz
+      );
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_zcos_execution_traces_owner_started
+      ON zcos_execution_traces (owner_user_id, started_at);
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_zcos_execution_traces_request
+      ON zcos_execution_traces (request_id);
+    `);
+
     // Conversations
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS conversations (

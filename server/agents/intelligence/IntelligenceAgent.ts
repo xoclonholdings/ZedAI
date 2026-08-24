@@ -25,6 +25,8 @@ export interface ResearchRequest {
   memoryContext?: string;
   attachments?: ImageBlock[];
   reasoningEffort?: ReasoningEffort;
+  /** ZCOS adapters disable all derived writes until governed verification completes. */
+  persistArtifacts?: boolean;
 }
 
 export interface ResearchBrief {
@@ -104,15 +106,17 @@ export class IntelligenceAgent {
 
     // ZAR's own browsing shows up in the same live browser the user sees -
     // every page it actually fetched while researching gets recorded here.
-    for (const page of directWeb.pages) {
-      await BrowserSessionStore.recordVisit(request.userId, {
-        url: page.url,
-        title: page.title,
-        text: page.text,
-        sanitizedHtml: page.sanitizedHtml,
-        status: page.status,
-        source: "zar",
-      }).catch(() => {});
+    if (request.persistArtifacts !== false) {
+      for (const page of directWeb.pages) {
+        await BrowserSessionStore.recordVisit(request.userId, {
+          url: page.url,
+          title: page.title,
+          text: page.text,
+          sanitizedHtml: page.sanitizedHtml,
+          status: page.status,
+          source: "zar",
+        }).catch(() => {});
+      }
     }
     const expandedQueries = this.expandKeywords(request.query);
     const searchResponses = await Promise.all(expandedQueries.map((query) => webSearch(query, 4)));
@@ -142,11 +146,13 @@ export class IntelligenceAgent {
           errors: directWeb.errors,
         },
       };
-      await this.log(request, brief, expandedQueries, directWeb);
+      if (request.persistArtifacts !== false) await this.log(request, brief, expandedQueries, directWeb);
       return brief;
     }
 
-    const priorResearch = await querySimilarResearch(request.query, 2);
+    const priorResearch = request.persistArtifacts === false
+      ? ""
+      : await querySimilarResearch(request.query, 2);
     const priorBlock = priorResearch
       ? `\n\n## Prior context from memory\n${priorResearch}`
       : "";
@@ -185,8 +191,10 @@ NEXT_STEP: [specific thing to do next]`.trim();
 
     const brief = this.parseBrief(request.query, rawReply, primarySearch, directWeb);
 
-    await storeResearchBrief(brief);
-    await this.log(request, brief, expandedQueries, directWeb);
+    if (request.persistArtifacts !== false) {
+      await storeResearchBrief(brief);
+      await this.log(request, brief, expandedQueries, directWeb);
+    }
 
     return brief;
   }
