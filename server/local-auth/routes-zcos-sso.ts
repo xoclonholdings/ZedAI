@@ -14,7 +14,7 @@ type ZcosIdentity = {
 };
 
 function zcosApiBase(): string {
-  return String(process.env.ZCOS_API_URL || "https://api.zcos.online").replace(/\/$/, "");
+  return String(process.env.ZCOS_API_URL || "https://zcos.onrender.com").replace(/\/$/, "");
 }
 
 function zarFrontendBase(): string {
