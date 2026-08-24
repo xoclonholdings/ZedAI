@@ -18,6 +18,8 @@ services:
         value: "https://zar-ai.online"
       - key: VITE_API_BASE_URL
         value: "https://api.zar-ai.online"
+      - key: ZCOS_API_URL
+        value: "https://api.zcos.online"
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET
