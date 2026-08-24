@@ -28,6 +28,14 @@ export interface ClassificationInput {
     has_attachment?: boolean;
     thread_length?: number;
   };
+  priority_signals?: {
+    deadline?: string;
+    dependency_count?: number;
+    blocks_others?: boolean;
+    commitment?: boolean;
+    goal_alignment?: "none" | "supporting" | "direct";
+    user_priority?: Priority;
+  };
 }
 
 export interface ClassificationResult {
@@ -107,6 +115,25 @@ export class PriorityClassificationEngine {
     corpus: string,
     input: ClassificationInput,
   ): Priority {
+    const signals = input.priority_signals;
+    if (signals?.user_priority) return signals.user_priority;
+
+    if (signals?.deadline) {
+      const deadline = new Date(signals.deadline).getTime();
+      if (Number.isFinite(deadline)) {
+        const remaining = deadline - Date.now();
+        if (remaining <= 0) return "urgent";
+        if (remaining <= 24 * 60 * 60_000) return "urgent";
+        if (remaining <= 3 * 24 * 60 * 60_000) return "high";
+      }
+    }
+
+    if (signals?.blocks_others && signals.commitment) return "urgent";
+    if (signals?.blocks_others || signals?.commitment) return "high";
+    if ((signals?.dependency_count || 0) > 0 && signals?.goal_alignment === "direct") {
+      return "high";
+    }
+
     if (input.flags?.starred || input.flags?.important) {
       if (this.includesAny(corpus, URGENT_TOKENS)) return "urgent";
       return "high";
@@ -125,7 +152,10 @@ export class PriorityClassificationEngine {
     input: ClassificationInput,
   ): string {
     const sender = input.sender ? ` from ${input.sender}` : "";
-    return `Classified as ${category} with ${priority} priority based on subject/body signals${sender}.`;
+    const structuredSignals = input.priority_signals
+      ? " plus explicit deadline, dependency, commitment, goal, or user-priority signals"
+      : "";
+    return `Classified as ${category} with ${priority} priority based on subject/body signals${structuredSignals}${sender}.`;
   }
 
   private static recommendedAction(

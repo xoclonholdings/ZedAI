@@ -84,7 +84,7 @@ export function registerWorkflowEndpoints(app: Express): void {
         });
         res.json(draft);
       } catch (err: any) {
-        res.status(500).json({ error: err?.message || "scheduling failed" });
+        res.status(400).json({ error: err?.message || "scheduling failed" });
       }
     },
   );

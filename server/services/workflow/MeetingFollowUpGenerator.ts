@@ -16,11 +16,17 @@ export interface MeetingFollowUpInput {
   participants?: string[];
   notes_or_transcript: string;
   occurred_at?: string;
+  /** Explicit, already-resolved ownership supplied by the caller. */
+  explicit_action_owners?: Array<{
+    line_match: string;
+    recipient_id: string;
+  }>;
 }
 
 export interface ActionItem {
   description: string;
-  owner: string;
+  owner: string | null;
+  owner_resolution: "verified" | "unresolved";
   due?: string;
   source_excerpt: string;
 }
@@ -51,14 +57,16 @@ export class MeetingFollowUpGenerator {
     const summary = this.buildSummary(input, lines);
     const action_items = this.extractActionItems(lines, input);
     const follow_up_draft = this.buildFollowUpDraft(input, summary, action_items);
-    const task_seeds = action_items.map((item) => ({
-      user_request: item.description,
-      context: {
-        meeting_title: input.meeting_title,
-        participants: input.participants,
-        owner: item.owner,
-      },
-    }));
+    const task_seeds = action_items
+      .filter((item): item is ActionItem & { owner: string } => item.owner !== null)
+      .map((item) => ({
+        user_request: item.description,
+        context: {
+          meeting_title: input.meeting_title,
+          participants: input.participants,
+          owner: item.owner,
+        },
+      }));
 
     return { summary, action_items, follow_up_draft, task_seeds };
   }
@@ -87,22 +95,26 @@ export class MeetingFollowUpGenerator {
         lower.startsWith("to-do:");
       if (!verbHit && !explicit) continue;
 
-      const owner = this.guessOwner(line, input.participants) || input.user_id;
+      const owner = this.resolveExplicitOwner(line, input.explicit_action_owners);
       items.push({
         description: line.replace(/^(action:|ai:|todo:|to-do:|-\s*\[\s*\]\s*)/i, "").trim(),
         owner,
+        owner_resolution: owner ? "verified" : "unresolved",
         source_excerpt: line.slice(0, 200),
       });
     }
     return items;
   }
 
-  private static guessOwner(line: string, participants?: string[]): string | null {
-    if (!participants || participants.length === 0) return null;
-    for (const p of participants) {
-      const first = p.split(/\s+/)[0];
-      if (line.includes(p) || (first && line.includes(first))) {
-        return p;
+  private static resolveExplicitOwner(
+    line: string,
+    explicitOwners?: MeetingFollowUpInput["explicit_action_owners"],
+  ): string | null {
+    const normalized = line.toLowerCase();
+    for (const owner of explicitOwners || []) {
+      const match = owner.line_match.trim().toLowerCase();
+      if (match && normalized.includes(match) && owner.recipient_id.trim()) {
+        return owner.recipient_id.trim();
       }
     }
     return null;
@@ -114,7 +126,9 @@ export class MeetingFollowUpGenerator {
     actionItems: ActionItem[],
   ): string {
     const bullets = actionItems
-      .map((item) => `  • ${item.description} (owner: ${item.owner})`)
+      .map((item) =>
+        `  • ${item.description} (owner: ${item.owner || "unresolved - verification required"})`,
+      )
       .join("\n");
     return [
       `Hi all,`,

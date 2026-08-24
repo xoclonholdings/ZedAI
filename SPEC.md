@@ -346,6 +346,19 @@ Current boundaries relevant to ZAR include:
 
 Historical ZAR code for moved capabilities is migration evidence until safely adapted, transferred, or retired.
 
+### 19.1 Cross-Galaxy Executive Operations
+
+Executive-assistant behavior is a governed cross-galaxy capability coordinated by ZAR, not a separate agent or user-facing identity.
+
+- ZAR interprets the request, prioritizes, briefs, communicates, and assigns typed work.
+- ZCOS supplies Identity, Memory, Knowledge, Projects, permissions, reasoning, and execution governance.
+- ZENO Unite owns human communication and collaboration effects.
+- ZYLO Automate owns schedules, reminders, triggers, routines, and background workflows.
+- Settings -> Integrations owns calendar, email, messaging, CRM, and related connection controls.
+- ZENA enforces credentials, recipient verification, action-specific approval, scope revalidation, and audit.
+
+The runtime must keep prepared, awaiting approval, approved, running, completed, blocked, failed, partial, and cancelled states distinct. Sending, scheduling, rescheduling, cancelling, inviting, sharing, delegating, or changing a commitment requires exact recipient/destination scope and action-specific approval. Missing or owner-unbound integrations return a precise Settings connection requirement. No external effect is complete until provider evidence verifies the intended result.
+
 ## 20. Data, Security, and Failure Rules
 
 - Secrets must never enter prompts, logs, memory, knowledge, client payloads, or committed files.

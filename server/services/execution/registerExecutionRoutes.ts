@@ -2,6 +2,7 @@ import type { Express } from "express";
 
 import { registerApprovalEndpoints } from "./execution-routes/approval";
 import { registerExecutionEndpoints } from "./execution-routes/execution";
+import { registerExecutiveOperationsEndpoints } from "./execution-routes/executive-operations";
 import { registerHumanBridgeEndpoints } from "./execution-routes/human-bridge";
 import { registerOperationalEndpoints } from "./execution-routes/operational";
 import { registerWorkflowEndpoints } from "./execution-routes/workflow";
@@ -20,6 +21,7 @@ import { registerWorkflowEndpoints } from "./execution-routes/workflow";
  * Mobile-first: every payload is JSON only — no UI changes required.
  */
 export function registerExecutionRoutes(app: Express): void {
+  registerExecutiveOperationsEndpoints(app);
   registerExecutionEndpoints(app);
   registerHumanBridgeEndpoints(app);
   registerApprovalEndpoints(app);

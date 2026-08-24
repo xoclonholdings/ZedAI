@@ -9,6 +9,7 @@ export default defineConfig({
       "server/services/KnowledgeUgcService.test.ts",
       "server/services/auth/**/*.test.ts",
       "server/services/intake/**/*.test.ts",
+      "server/services/executive-operations/**/*.test.ts",
       "server/services/sms/**/*.test.ts",
       "shared/**/*.test.ts",
       "client/src/lib/uploadRequest.test.ts",

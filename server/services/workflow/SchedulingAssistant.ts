@@ -1,10 +1,9 @@
 /**
  * SchedulingAssistant
  *
- * Prepares scheduling responses. It can read user availability when a
- * calendar provider is wired in (currently optional), suggest windows,
- * draft a reply, and prepare a calendar invite payload — but it never
- * books or sends anything until explicit approval.
+ * Prepares scheduling responses from authorized availability supplied by a
+ * governed calendar adapter or the authenticated user. It never invents
+ * availability and never books or sends anything until explicit approval.
  */
 
 export interface Availability {
@@ -73,25 +72,26 @@ export class SchedulingAssistant {
     availability: Availability[] | undefined,
     duration: number,
   ): Availability[] {
-    if (availability && availability.length > 0) {
-      return availability.slice(0, 4);
+    if (!availability?.length) {
+      throw new Error(
+        "Verified calendar availability is required. Connect Calendar in Settings -> Integrations or provide authorized availability windows.",
+      );
     }
-    return this.suggestDefaultWindows(duration);
-  }
-
-  private static suggestDefaultWindows(duration: number): Availability[] {
-    const now = new Date();
-    const windows: Availability[] = [];
-    for (let day = 1; day <= 4; day++) {
-      const start = new Date(now);
-      start.setDate(start.getDate() + day);
-      start.setHours(10, 0, 0, 0);
-      const end = new Date(start.getTime() + duration * 60_000);
-      windows.push({
-        start: start.toISOString(),
-        end: end.toISOString(),
-        label: `${start.toDateString()} 10:00–${end.getHours()}:${String(end.getMinutes()).padStart(2, "0")}`,
-      });
+    if (!Number.isFinite(duration) || duration <= 0) {
+      throw new Error("preferred_duration_minutes must be greater than zero.");
+    }
+    const windows = availability.slice(0, 4);
+    for (const window of windows) {
+      const start = new Date(window.start).getTime();
+      const end = new Date(window.end).getTime();
+      if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+        throw new Error("Each availability window needs a valid start and end time.");
+      }
+      if (end - start < duration * 60_000) {
+        throw new Error(
+          "Each availability window must be at least as long as the requested meeting duration.",
+        );
+      }
     }
     return windows;
   }
