@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
-  "brand": "ZYNC",
-  "directoryType": "zync-build-runtime-capability-registry",
-  "futureExtractionTarget": "ZYNC Canvas Build runtime",
+  "brand": "Zync",
+  "directoryType": "core-memory-capability-registry",
+  "futureExtractionTarget": "Zync coding operator app",
   "loadedBy": "server/services/ZyncCodingOperatorService.ts",
   "capabilities": [
     {
@@ -13,12 +13,7 @@
       "route": "POST /api/admin/zync-coding-operator/repo-scan",
       "description": "Reads the live repository structure, git state, package scripts, and Zync registry state before work begins.",
       "inputs": [],
-      "outputs": [
-        "gitStatus",
-        "packageScripts",
-        "importantDirectories",
-        "memoryRegistry"
-      ]
+      "outputs": ["gitStatus", "packageScripts", "importantDirectories", "memoryRegistry"]
     },
     {
       "id": "relevant_code_search",
@@ -27,14 +22,8 @@
       "riskTier": "low",
       "route": "POST /api/admin/zync-coding-operator/code-search",
       "description": "Searches source files by filename and text with repository-safe ignore rules and bounded results.",
-      "inputs": [
-        "query",
-        "limit"
-      ],
-      "outputs": [
-        "matches",
-        "searchedFiles"
-      ]
+      "inputs": ["query", "limit"],
+      "outputs": ["matches", "searchedFiles"]
     },
     {
       "id": "change_impact_review",
@@ -43,16 +32,8 @@
       "riskTier": "low",
       "route": "POST /api/admin/zync-coding-operator/impact-review",
       "description": "Reviews selected paths or a search query, finds references, estimates blast radius, and suggests verification jobs.",
-      "inputs": [
-        "paths",
-        "query"
-      ],
-      "outputs": [
-        "targets",
-        "references",
-        "risk",
-        "verification"
-      ]
+      "inputs": ["paths", "query"],
+      "outputs": ["targets", "references", "risk", "verification"]
     },
     {
       "id": "verification_runner",
@@ -61,17 +42,8 @@
       "riskTier": "medium",
       "route": "POST /api/admin/zync-coding-operator/verify",
       "description": "Runs only allowlisted local verification jobs and returns stdout, stderr, exit code, and duration.",
-      "inputs": [
-        "job"
-      ],
-      "outputs": [
-        "job",
-        "command",
-        "exitCode",
-        "stdout",
-        "stderr",
-        "durationMs"
-      ]
+      "inputs": ["job"],
+      "outputs": ["job", "command", "exitCode", "stdout", "stderr", "durationMs"]
     },
     {
       "id": "github_branch_hygiene",
@@ -80,14 +52,8 @@
       "riskTier": "high",
       "route": "GET /api/admin/zync-coding-operator/github-branches; POST /api/admin/zync-coding-operator/github-backup/refresh",
       "description": "Checks remote branch heads and can refresh backup to current main after explicit admin confirmation.",
-      "inputs": [
-        "confirm"
-      ],
-      "outputs": [
-        "remoteHeads",
-        "policy",
-        "backupRefresh"
-      ]
+      "inputs": ["confirm"],
+      "outputs": ["remoteHeads", "policy", "backupRefresh"]
     }
   ]
 }
