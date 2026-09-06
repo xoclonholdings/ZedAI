@@ -1,5 +1,9 @@
 import { pool } from "../../db";
 import type { AdminSettings } from "../../../shared/adminSettings";
+import {
+  protectAdminSettingsForStorage,
+  revealStoredAdminSettings,
+} from "./secretProtection";
 
 /**
  * Durable persistence for admin settings (managed users, credentials,
@@ -21,6 +25,7 @@ const SETTINGS_ROW_ID = "admin-settings";
 /** Read the persisted settings from the database, or null if none/unavailable. */
 export async function loadSettingsFromDb(): Promise<AdminSettings | null> {
   if (!pool) return null;
+  let stored: AdminSettings | null = null;
   try {
     const result = await pool.query(
       "SELECT data FROM app_settings WHERE id = $1 LIMIT 1",
@@ -30,22 +35,29 @@ export async function loadSettingsFromDb(): Promise<AdminSettings | null> {
     if (!row?.data) return null;
     // jsonb comes back already parsed from node-postgres; tolerate a
     // string too in case a driver hands back raw text.
-    return typeof row.data === "string" ? JSON.parse(row.data) : (row.data as AdminSettings);
+    stored = typeof row.data === "string" ? JSON.parse(row.data) : (row.data as AdminSettings);
   } catch (error) {
     console.error("[admin-settings] loadSettingsFromDb failed:", (error as Error)?.message || error);
     return null;
   }
+  // Keep cryptographic failures outside the database-availability fallback.
+  // A missing/wrong key must stop the boot path rather than silently seeding
+  // over encrypted credentials with defaults.
+  return stored ? revealStoredAdminSettings(stored) : null;
 }
 
-/** Upsert the settings into the database. Best-effort; never throws. */
+/** Upsert the settings into the database. Database failures are best-effort. */
 export async function saveSettingsToDb(settings: AdminSettings): Promise<void> {
   if (!pool) return;
+  // Key/configuration failures must surface instead of silently storing
+  // or accepting an unprotected credential set.
+  const protectedSettings = protectAdminSettingsForStorage(settings);
   try {
     await pool.query(
       `INSERT INTO app_settings (id, data, updated_at)
        VALUES ($1, $2, now())
        ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
-      [SETTINGS_ROW_ID, JSON.stringify(settings)],
+      [SETTINGS_ROW_ID, JSON.stringify(protectedSettings)],
     );
   } catch (error) {
     console.error("[admin-settings] saveSettingsToDb failed:", (error as Error)?.message || error);

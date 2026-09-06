@@ -205,8 +205,8 @@ export async function updateIntegrationSettings(
         accounts: mergeSecretAccounts(
           current.integrations.socialPublishing.accounts || [],
           nextIntegrations.socialPublishing?.accounts,
-          ["accessToken", "password", "sessionState"],
-        ),
+          ["accessToken", "sessionState"],
+        ).map(({ password: _legacyPassword, ...account }) => account),
       },
       crm: {
         ...current.integrations.crm,

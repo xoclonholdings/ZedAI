@@ -267,17 +267,17 @@ export interface SocialPublishingAccount {
   label: string;
   platform: string;
   dashboardUrl?: string;
-  /** "token" = pasted API token (Twitter). "credentials" = ZAR signed
-   *  in with a username/password via a real browser, autofill-style,
-   *  and is holding the resulting session. */
+  /** "token" = pasted API token (Twitter). "credentials" = ZAR used
+   *  one-time credentials in a real browser and retained only the
+   *  resulting encrypted-at-rest session. */
   authMethod?: "token" | "credentials";
   accessToken: string;
   hasAccessToken?: boolean;
   /** Only set when authMethod is "credentials". */
   username?: string;
-  password?: string;
   /** Serialized Playwright storageState (cookies + local storage) so
-   *  ZAR can act as this account without signing in again each time. */
+   *  ZAR can act as this account without signing in again each time.
+   *  Persistence encrypts this value before writing it to disk or DB. */
   sessionState?: string;
 }
 

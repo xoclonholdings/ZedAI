@@ -146,8 +146,8 @@ export function CredentialSignInDialog({
         <h3 className="text-[16.5px] font-semibold text-white mb-1">Sign in to {label}</h3>
         <p className="mt-1 text-[12.5px] text-white/50 leading-snug mb-4">
           ZAR signs in the same way you would — it fills in your username and password on{" "}
-          {label}'s own login page. Your password is stored the same way as any other saved
-          credential and never leaves this account.
+          {label}'s own login page. Your password is used only for this attempt and is never
+          saved. The resulting browser session is encrypted before it is stored.
         </p>
 
         {step.kind === "credentials" && (

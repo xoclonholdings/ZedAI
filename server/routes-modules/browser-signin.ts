@@ -5,7 +5,7 @@ import { updateIntegrationSettings } from "../services/AdminSettingsStore";
 import {
   cancelPendingSignIn,
   finalizeAfterHandoff,
-  getPendingCredentials,
+  getPendingIdentity,
   startSignIn,
   submitVerificationCode,
 } from "../services/browserAuth/BrowserSignInService";
@@ -38,7 +38,6 @@ const SOCIAL_PLATFORMS: Record<string, string> = {
 async function persistSocialSession(
   provider: string,
   username: string,
-  password: string,
   sessionState: string,
 ) {
   const label = SOCIAL_PLATFORMS[provider];
@@ -53,7 +52,6 @@ async function persistSocialSession(
           authMethod: "credentials",
           accessToken: "",
           username,
-          password,
           sessionState,
         },
       ],
@@ -80,7 +78,7 @@ export function registerBrowserSignInRoutes(app: Express): void {
 
     const result = await startSignIn(provider, username, password);
     if (result.status === "success" && result.sessionState) {
-      await persistSocialSession(provider, username, password, result.sessionState);
+      await persistSocialSession(provider, username, result.sessionState);
     }
     res.json(stripSessionState(result));
   });
@@ -91,10 +89,10 @@ export function registerBrowserSignInRoutes(app: Express): void {
       return res.status(400).json({ error: "pendingId and code are both required." });
     }
 
-    const creds = getPendingCredentials(pendingId);
+    const identity = getPendingIdentity(pendingId);
     const result = await submitVerificationCode(pendingId, code);
-    if (result.status === "success" && result.sessionState && creds) {
-      await persistSocialSession(creds.provider, creds.username, creds.password, result.sessionState);
+    if (result.status === "success" && result.sessionState && identity) {
+      await persistSocialSession(identity.provider, identity.username, result.sessionState);
     }
     res.json(stripSessionState(result));
   });
@@ -116,10 +114,10 @@ export function registerBrowserSignInRoutes(app: Express): void {
     if (!pendingId) {
       return res.status(400).json({ error: "pendingId is required." });
     }
-    const creds = getPendingCredentials(pendingId);
+    const identity = getPendingIdentity(pendingId);
     const result = await finalizeAfterHandoff(pendingId);
-    if (result.status === "success" && result.sessionState && creds) {
-      await persistSocialSession(creds.provider, creds.username, creds.password, result.sessionState);
+    if (result.status === "success" && result.sessionState && identity) {
+      await persistSocialSession(identity.provider, identity.username, result.sessionState);
     }
     res.json(stripSessionState(result));
   });

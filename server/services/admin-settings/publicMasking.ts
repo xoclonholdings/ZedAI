@@ -2,7 +2,7 @@ import { sanitizeUser } from "./auth-helpers";
 import { loadAdminSettings } from "./io";
 
 /**
- * Returns settings with every secret blanked out and replaced by a
+ * Returns settings with every secret blanked or masked and replaced by a
  * boolean "has*" flag. This is the shape the admin UI receives —
  * clients should never see raw tokens, passwords, refresh tokens,
  * or API keys, even over an admin-authenticated channel.
@@ -16,6 +16,13 @@ export async function getPublicAdminSettings() {
   const settings = await loadAdminSettings();
   return {
     ...settings,
+    auth: {
+      ...settings.auth,
+      // Keep a truthy placeholder because the security-settings route uses
+      // presence to report whether a phrase is configured.
+      securePhrase: settings.auth.securePhrase ? "•••••• (set)" : "",
+      sessionSecret: "",
+    },
     integrations: {
       ...settings.integrations,
       github: {
@@ -91,13 +98,17 @@ export async function getPublicAdminSettings() {
         ...settings.integrations.socialPublishing,
         accessToken: "",
         hasAccessToken: !!settings.integrations.socialPublishing.accessToken,
-        accounts: (settings.integrations.socialPublishing.accounts || []).map((acc) => ({
-          ...acc,
-          accessToken: "",
-          password: "",
-          sessionState: "",
-          hasAccessToken: !!(acc.accessToken || acc.sessionState),
-        })),
+        accounts: (settings.integrations.socialPublishing.accounts || []).map((acc) => {
+          const { password: _legacyPassword, ...publicAccount } = acc as typeof acc & {
+            password?: string;
+          };
+          return {
+            ...publicAccount,
+            accessToken: "",
+            sessionState: "",
+            hasAccessToken: !!(acc.accessToken || acc.sessionState),
+          };
+        }),
       },
       crm: {
         ...settings.integrations.crm,

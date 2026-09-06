@@ -519,7 +519,7 @@ const GROUPS: ProviderGroup[] = [
         patch: () => ({
           socialPublishing: {
             accounts: [
-              { id: "social-tiktok", label: "TikTok", platform: "tiktok", accessToken: "", password: "", sessionState: "" },
+              { id: "social-tiktok", label: "TikTok", platform: "tiktok", accessToken: "", sessionState: "" },
             ],
           },
         }),
@@ -537,7 +537,7 @@ const GROUPS: ProviderGroup[] = [
         patch: () => ({
           socialPublishing: {
             accounts: [
-              { id: "social-instagram", label: "Instagram", platform: "instagram", accessToken: "", password: "", sessionState: "" },
+              { id: "social-instagram", label: "Instagram", platform: "instagram", accessToken: "", sessionState: "" },
             ],
           },
         }),
@@ -555,7 +555,7 @@ const GROUPS: ProviderGroup[] = [
         patch: () => ({
           socialPublishing: {
             accounts: [
-              { id: "social-facebook", label: "Facebook", platform: "facebook", accessToken: "", password: "", sessionState: "" },
+              { id: "social-facebook", label: "Facebook", platform: "facebook", accessToken: "", sessionState: "" },
             ],
           },
         }),
@@ -573,7 +573,7 @@ const GROUPS: ProviderGroup[] = [
         patch: () => ({
           socialPublishing: {
             accounts: [
-              { id: "social-linkedin", label: "LinkedIn", platform: "linkedin", accessToken: "", password: "", sessionState: "" },
+              { id: "social-linkedin", label: "LinkedIn", platform: "linkedin", accessToken: "", sessionState: "" },
             ],
           },
         }),

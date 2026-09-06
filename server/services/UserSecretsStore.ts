@@ -3,6 +3,11 @@ import path from "path";
 import { randomUUID } from "crypto";
 
 import { HUB_USER_MEMORY_DIR } from "../utils/repoPaths";
+import {
+  isProtectedSecret,
+  protectSecret,
+  revealSecret,
+} from "./admin-settings/secretProtection";
 
 /**
  * A per-user secrets vault - arbitrary named credentials (an API key, a
@@ -42,19 +47,40 @@ function fileFor(userId: string): string {
 }
 
 async function readAll(userId: string): Promise<UserSecret[]> {
+  let stored: UserSecret[];
   try {
     const raw = await fs.readFile(fileFor(userId), "utf8");
     const parsed = JSON.parse(raw) as { secrets?: UserSecret[] };
-    return Array.isArray(parsed.secrets) ? parsed.secrets : [];
-  } catch {
-    return [];
+    stored = Array.isArray(parsed.secrets) ? parsed.secrets : [];
+  } catch (error: any) {
+    if (error?.code === "ENOENT") return [];
+    // Corrupt data must fail closed. Returning [] here would allow a later
+    // write to silently erase credentials that might still be recoverable.
+    throw error;
   }
+
+  const revealed = stored.map((secret) => ({
+    ...secret,
+    value: revealSecret(secret.value),
+  }));
+  if (stored.some((secret) => secret.value && !isProtectedSecret(secret.value))) {
+    await writeAll(userId, revealed);
+  }
+  return revealed;
 }
 
 async function writeAll(userId: string, secrets: UserSecret[]): Promise<void> {
   const file = fileFor(userId);
   await fs.mkdir(path.dirname(file), { recursive: true });
-  await fs.writeFile(file, JSON.stringify({ secrets }, null, 2), "utf8");
+  const protectedSecrets = secrets.map((secret) => ({
+    ...secret,
+    value: protectSecret(secret.value),
+  }));
+  await fs.writeFile(file, JSON.stringify({ secrets: protectedSecrets }, null, 2), {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+  await fs.chmod(file, 0o600);
 }
 
 function mask(secret: UserSecret): PublicUserSecret {
@@ -62,6 +88,14 @@ function mask(secret: UserSecret): PublicUserSecret {
 }
 
 export const UserSecretsStore = {
+  /** Encrypt every legacy plaintext vault before the server accepts traffic. */
+  async migrateAll(): Promise<void> {
+    const entries = await fs.readdir(HUB_USER_MEMORY_DIR, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) await readAll(entry.name);
+    }
+  },
+
   async list(userId: string): Promise<PublicUserSecret[]> {
     return (await readAll(userId)).map(mask);
   },

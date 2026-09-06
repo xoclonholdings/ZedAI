@@ -32,7 +32,6 @@ interface PendingSignIn {
   id: string;
   provider: string;
   username: string;
-  password: string;
   browser: Browser;
   context: BrowserContext;
   page: Page;
@@ -172,7 +171,6 @@ export async function startSignIn(
         id: pendingId,
         provider,
         username,
-        password,
         browser,
         context,
         page,
@@ -199,7 +197,6 @@ export async function startSignIn(
       id: pendingId,
       provider,
       username,
-      password,
       browser,
       context,
       page,
@@ -266,9 +263,9 @@ export async function submitVerificationCode(pendingId: string, code: string): P
   }
 }
 
-export function getPendingCredentials(pendingId: string): { provider: string; username: string; password: string } | null {
+export function getPendingIdentity(pendingId: string): { provider: string; username: string } | null {
   const entry = pendingSignIns.get(pendingId);
-  return entry ? { provider: entry.provider, username: entry.username, password: entry.password } : null;
+  return entry ? { provider: entry.provider, username: entry.username } : null;
 }
 
 export function cancelPendingSignIn(pendingId: string): void {

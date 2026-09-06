@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection, gracefulShutdown, isDatabaseRequired } from "./db";
 import { runMigrations } from "./migrations";
 import { fallbackStorage } from "./services/fallbackStorage";
+import { UserSecretsStore } from "./services/UserSecretsStore";
 import { UPLOADS_DIR, ensureRuntimeDataReady } from "./utils/repoPaths";
 import { MAX_UPLOAD_FILE_SIZE_LABEL } from "../shared/upload-policy";
 
@@ -126,6 +127,7 @@ app.use((req, res, next) => {
 
 (async () => {
   await ensureRuntimeDataReady();
+  await UserSecretsStore.migrateAll();
   log(`Runtime data root ready at ${UPLOADS_DIR.replace(/\\uploads$/, "")}`);
 
   const databaseRequired = isDatabaseRequired();

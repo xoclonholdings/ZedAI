@@ -7,12 +7,22 @@ import { HUB_CONFIG_DIR } from "../../utils/repoPaths";
 import { assertProductionEnvConfiguration } from "./env";
 import { mergeSettings } from "./mergeSettings";
 import { loadSettingsFromDb, saveSettingsToDb } from "./dbPersistence";
+import {
+  protectAdminSettingsForStorage,
+  revealStoredAdminSettings,
+  storedAdminSettingsNeedProtection,
+} from "./secretProtection";
 
 const SETTINGS_PATH = path.join(HUB_CONFIG_DIR, "admin-settings.json");
 
 async function writeSettings(settings: AdminSettings) {
   await fs.mkdir(HUB_CONFIG_DIR, { recursive: true });
-  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2), "utf-8");
+  const protectedSettings = protectAdminSettingsForStorage(settings);
+  await fs.writeFile(SETTINGS_PATH, JSON.stringify(protectedSettings, null, 2), {
+    encoding: "utf-8",
+    mode: 0o600,
+  });
+  await fs.chmod(SETTINGS_PATH, 0o600);
 }
 
 /**
@@ -29,6 +39,7 @@ export async function hydrateAdminSettingsFromDb(): Promise<void> {
   if (fromDb) {
     const merged = mergeSettings(fromDb);
     await writeSettings(merged);
+    await saveSettingsToDb(merged);
     console.log("[admin-settings] hydrated from database (managed users + credentials restored)");
     return;
   }
@@ -50,18 +61,28 @@ export async function hydrateAdminSettingsFromDb(): Promise<void> {
  */
 export async function loadAdminSettings(): Promise<AdminSettings> {
   assertProductionEnvConfiguration();
+  let parsed: Partial<AdminSettings>;
   try {
     const raw = await fs.readFile(SETTINGS_PATH, "utf-8");
-    const settings = mergeSettings(JSON.parse(raw));
-    if (JSON.stringify(settings) !== JSON.stringify(JSON.parse(raw))) {
-      await writeSettings(settings);
-    }
-    return settings;
+    parsed = JSON.parse(raw);
   } catch {
     const settings = mergeSettings(undefined);
     await writeSettings(settings);
     return settings;
   }
+
+  // Decryption deliberately happens outside the fallback above. A wrong key
+  // must fail closed instead of overwriting recoverable encrypted credentials
+  // with empty defaults.
+  const revealed = revealStoredAdminSettings(parsed);
+  const settings = mergeSettings(revealed);
+  if (
+    JSON.stringify(settings) !== JSON.stringify(revealed) ||
+    storedAdminSettingsNeedProtection(parsed)
+  ) {
+    await writeSettings(settings);
+  }
+  return settings;
 }
 
 /**

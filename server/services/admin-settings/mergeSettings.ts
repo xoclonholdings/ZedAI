@@ -397,6 +397,10 @@ function mergeSocialPublishing(raw: Partial<AdminSettings> | null | undefined) {
   merged.platforms = Array.isArray(rawGroup?.platforms)
     ? rawGroup!.platforms
     : defaultIntegrations.socialPublishing.platforms;
+  // Older builds persisted social passwords alongside the reusable
+  // browser session. Passwords are now single-use and must not survive
+  // loading, migration, or a later settings update.
+  merged.accounts = merged.accounts.map(({ password: _legacyPassword, ...account }: any) => account);
   return merged;
 }
 
