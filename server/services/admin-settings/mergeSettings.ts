@@ -39,7 +39,9 @@ export function mergeSettings(raw: Partial<AdminSettings> | null | undefined): A
       ...defaultPersonalizationSettings,
       ...(raw?.personalization || {}),
     },
-    agents: raw?.agents?.length ? raw.agents : defaultAgentDefinitions,
+    // Lane-style agent records are legacy migration evidence. Persisted
+    // settings must not reactivate them as user-facing personalities.
+    agents: defaultAgentDefinitions,
     integrations: {
       ...defaultIntegrations,
       ...(raw?.integrations || {}),

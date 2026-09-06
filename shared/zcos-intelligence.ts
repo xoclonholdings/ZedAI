@@ -22,6 +22,30 @@ export type ZcosEngineId =
   | "verification";
 
 export type ZcosReasoningDepth = "direct" | "standard" | "deep" | "exhaustive";
+export type ZarResponseForm =
+  | "direct_answer"
+  | "research_result"
+  | "concise_rationale"
+  | "writing_artifact"
+  | "visual_explanation"
+  | "file"
+  | "approval_request"
+  | "implementation_task";
+export type ZcosAssignmentStatus =
+  | "prepared"
+  | "awaiting_approval"
+  | "running"
+  | "completed"
+  | "blocked"
+  | "failed"
+  | "partial"
+  | "cancelled";
+
+export interface ZarContextualQuestion {
+  prompt: string;
+  choices: string[];
+  allowFreeText: true;
+}
 export type ZcosCertificationState = "certified" | "provisional" | "blocked" | "planned" | "retired";
 export type ZcosPermission =
   | "identity:read"
@@ -75,6 +99,7 @@ export interface ZcosRequestEnvelope {
 
 export type ZcosSourceType =
   | "identity"
+  | "conversation_history"
   | "memory"
   | "knowledge"
   | "learning"
@@ -201,6 +226,19 @@ export interface ZcosExecutionPlan {
   sequentialOrder: string[];
   capabilityGaps: ZcosCapabilityGap[];
   approvalIds: string[];
+  responseForm: ZarResponseForm;
+  assignments: ZcosTaskAssignment[];
+}
+
+export interface ZcosTaskAssignment {
+  assignmentId: string;
+  requestId: string;
+  ownerGalaxy: ZcosGalaxyId;
+  capabilityId: string;
+  objective: string;
+  status: ZcosAssignmentStatus;
+  approvalRequired: boolean;
+  blocker?: string;
 }
 
 export interface ZcosConfluenceReport {

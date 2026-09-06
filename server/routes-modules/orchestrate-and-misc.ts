@@ -31,14 +31,13 @@ export function registerOrchestrateAndMiscRoutes(
   opts: { isDatabaseHealthy: () => boolean },
 ): void {
   app.post("/api/orchestrate", isAuthenticated, async (req: any, res) => {
-    const { message, conversationId, targetAgent, context, projectId, workspaceId } = req.body || {};
+    const { message, conversationId, context, projectId, workspaceId } = req.body || {};
     const result = await ChatExecutionService.execute({
       userId: ownerUserIdFromAuthenticatedRequest(req),
       message,
       conversationId,
       route: "/api/orchestrate",
       ip: req.ip || "",
-      targetAgent,
       isAdmin: Boolean(req.user?.claims?.isAdmin),
       context,
       projectId,
@@ -51,24 +50,12 @@ export function registerOrchestrateAndMiscRoutes(
 
   app.get("/api/orchestrate/status", async (_req, res) => {
     const settings = await getPublicAdminSettings();
-    const normalizedAgents = settings.agents.map((agent) => {
-      if (agent.key === "BusinessManagerAgent") {
-        const isBusinessReady = settings.integrations.businessOperations.enabled;
-        return {
-          ...agent,
-          status: (isBusinessReady ? "active" : "planned") as "active" | "planned",
-          description: isBusinessReady
-            ? "Business operations lane is enabled for commerce, property, credit, and planning workflows."
-            : agent.description,
-        };
-      }
-      return agent;
-    });
     res.json({
       orchestrator: "ZCOSCapabilityRuntime",
       orchestrationMode: "governed-typed-capability-plan",
-      active_agents: normalizedAgents.filter((a) => a.status === "active"),
-      planned_agents: normalizedAgents.filter((a) => a.status === "planned"),
+      operator: settings.agents[0],
+      active_agents: settings.agents,
+      planned_agents: [],
       capabilities: zcosCapabilityRegistry.list().map((capability) => ({
         id: capability.id,
         ownerGalaxy: capability.ownerGalaxy,

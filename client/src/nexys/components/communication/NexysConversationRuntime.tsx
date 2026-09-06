@@ -35,6 +35,7 @@ export function NexysConversationRuntime({
           messagesEndRef={controller.messagesEndRef}
           onCopyMessage={(message) => void controller.copyMessage(message)}
           onEditMessage={controller.editMessage}
+          onContextChoice={(choice) => void controller.sendMessage(choice)}
           compact={controller.compactMessages}
           fontSize={controller.fontSize}
           showTimestamps={controller.showTimestamps}

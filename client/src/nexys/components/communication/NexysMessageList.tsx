@@ -10,6 +10,7 @@ interface NexysMessageListProps {
   readonly messagesEndRef: React.RefObject<HTMLDivElement>;
   readonly onCopyMessage?: (message: Message) => void;
   readonly onEditMessage?: (message: Message) => void;
+  readonly onContextChoice?: (choice: string) => void;
   readonly compact?: boolean;
   readonly fontSize?: "small" | "medium" | "large";
   readonly showTimestamps?: boolean;
@@ -34,6 +35,7 @@ export function NexysMessageList({
   messagesEndRef,
   onCopyMessage,
   onEditMessage,
+  onContextChoice,
   compact = false,
   fontSize = "medium",
   showTimestamps = false,
@@ -55,12 +57,15 @@ export function NexysMessageList({
         </div>
       ) : (
         <div className={`mx-auto w-full max-w-4xl ${compact ? "space-y-1" : "space-y-2"}`}>
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <NexysMessageItem
               key={message.id}
               message={message}
               onCopy={onCopyMessage}
               onEdit={message.role === "user" ? onEditMessage : undefined}
+              onContextChoice={messages.slice(index + 1).some((item) => item.role === "user")
+                ? undefined
+                : onContextChoice}
               compact={compact}
               fontSize={fontSize}
               showTimestamp={showTimestamps}
@@ -72,6 +77,7 @@ export function NexysMessageList({
               <NexysMessageItem
                 message={streamMessage}
                 onCopy={onCopyMessage}
+                onContextChoice={onContextChoice}
                 compact={compact}
                 fontSize={fontSize}
                 showTimestamp={false}

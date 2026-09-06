@@ -26,9 +26,9 @@ export interface SendAgentMessageResult {
 
 /**
  * Primary ZAR dispatch: posts to /api/orchestrate and lets the server
- * select agents, tools, memory, approvals, and optional flow suggestions.
- * A legacy agentTarget can still be supplied by older surfaces, but the
- * main chat UI intentionally omits it so users talk to ZAR, not lanes.
+ * select typed capabilities, context, approvals, and optional flow suggestions.
+ * A legacy agentTarget may still arrive from older surfaces, but the canonical
+ * server path ignores lane selection so users always talk to one ZAR identity.
  */
 export async function sendAgentMessage({
   message,
@@ -110,7 +110,7 @@ export async function sendAgentMessage({
           role: "assistant" as const,
           content: replyContent,
           metadata: {
-            agent: data?.agent || "ManagerAgent",
+            agent: "ZAR",
             ...(data?.metadata || {}),
             trace: data?.trace,
           },
@@ -144,7 +144,7 @@ export async function sendAgentMessage({
           conversationId: convId,
           role: "assistant" as const,
           content: replyContent,
-          metadata: { agent: "ManagerAgent" },
+          metadata: { agent: "ZAR" },
           createdAt: new Date(),
         },
       ];

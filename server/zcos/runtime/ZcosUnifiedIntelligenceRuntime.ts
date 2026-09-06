@@ -10,8 +10,10 @@ import {
   type ZcosRequestEnvelope,
   type ZcosResultEnvelope,
   type ZcosSourceEnvelope,
+  type ZcosTaskAssignment,
   type ZcosUncertaintyEnvelope,
   type ZcosVerificationEnvelope,
+  type ZarResponseForm,
 } from "../../../shared/zcos-intelligence";
 import type { ReasoningEffort } from "../../core/providers/provider-interface";
 import { getProviderRuntimeConfig } from "../../core/providers/provider-config";
@@ -53,8 +55,14 @@ export interface ZcosPreparedRuntime {
 }
 
 const EXTERNAL_ACTION = /\b(send|email|publish|post|pay|invoice|deploy|delete|cancel|transfer|purchase|sign|book)\b/i;
-const TASK_PREPARATION = /\b(build|implement|fix|create|update|prepare|plan|draft|organize|set up)\b/i;
+const TASK_PREPARATION = /\b(build(?:ing)?|implement(?:ing|ation)?|fix(?:ing|es|ed)?|create|update|prepare|plan|draft|organize|set up|deploy(?:ing|ment)?|publish(?:ing)?|schedule|automate)\b/i;
 const CAPITAL = /\b(budget|trading|trade|invest(?:ment|ing|or)?|portfolio|capital|stock|crypto|forex|futures)\b/i;
+const ZYNC_WORK = /\b(code|coding|repository|repo|software|website|app|api|backend|frontend|database|typescript|javascript|react|build(?:ing)?|implement(?:ing|ation)?|fix(?:ing|es|ed)?|debug(?:ging)?|deploy(?:ing|ment)?|push(?:ing)?|commit(?:ting)?|design|publish(?:ing)?)\b/i;
+const ZYLO_WORK = /\b(automate|automation|workflow|trigger|recurring|schedule|remind|reminder|routine|loop)\b/i;
+const ZENA_WORK = /\b(security|secure|vulnerabilit|malware|firewall|integrity|credential|permission|authorization|audit log|diagnostic|monitoring)\b/i;
+const ZENO_WORK = /\b(email|message|meeting|calendar|invite|recipient|thread|room|team communication|collaborat)\b/i;
+const ZENITH_WORK = /\b(lesson|curriculum|learning studio|study plan|teach|course|scholar|library catalog)\b/i;
+const ZWAP_WORK = /\b(discover|discovery|news feed|journal|glow|explore)\b/i;
 const EXPLICIT_EXTERNAL = /\b(search the web|browse|look up|research online|visit|open (?:the )?(?:site|url|link)|https?:\/\/|www\.)\b/i;
 const DIRECT_URL = /\b(?:https?:\/\/|www\.)/i;
 
@@ -121,6 +129,57 @@ function sourcePriority(source: ZcosSourceEnvelope): number {
   if (source.originClass === "external_primary") return 0.85;
   if (source.originClass === "external_secondary") return 0.65;
   return 0.4;
+}
+
+function galaxyCapabilityFor(message: string): string | undefined {
+  if (CAPITAL.test(message)) return "zillion.capital.delegate";
+  if (ZENA_WORK.test(message)) return "zena.integrity.delegate";
+  if (ZYLO_WORK.test(message)) return "zylo.automate.delegate";
+  if (ZENO_WORK.test(message)) return "zeno.unite.delegate";
+  if (ZENITH_WORK.test(message)) return "zenith.scholar.delegate";
+  if (ZWAP_WORK.test(message)) return "zwap.discovery.delegate";
+  if (ZYNC_WORK.test(message)) return "zync.build.delegate";
+  return undefined;
+}
+
+function zarResponseForm(form: string, request: ZcosRequestEnvelope): ZarResponseForm {
+  if (form === "research_result") return "research_result";
+  if (form === "writing_artifact") return "writing_artifact";
+  if (form === "visual_explanation") return "visual_explanation";
+  if (form === "file") return "file";
+  if (form === "approval_request") return "approval_request";
+  if (form === "implementation_task" || form === "code") return "implementation_task";
+  if (request.intent.kind === "research") return "research_result";
+  if (request.intent.kind === "decision" || request.intent.kind === "analysis") return "concise_rationale";
+  return "direct_answer";
+}
+
+function assignmentsFor(
+  request: ZcosRequestEnvelope,
+  capabilityId: string | undefined,
+  invocations: ZcosExecutionPlan["invocations"],
+  gaps: ZcosCapabilityGap[],
+): ZcosTaskAssignment[] {
+  if (!capabilityId) return [];
+  const invocation = invocations.find((candidate) => candidate.capabilityId === capabilityId);
+  const gap = gaps.find((candidate) => candidate.capabilityId === capabilityId);
+  const status: ZcosTaskAssignment["status"] = gap || invocation?.status === "blocked"
+    ? "blocked"
+    : invocation?.approvalRequired
+      ? "awaiting_approval"
+      : invocation?.status === "completed"
+        ? "completed"
+        : "prepared";
+  return [{
+    assignmentId: invocation?.invocationId || randomUUID(),
+    requestId: request.requestId,
+    ownerGalaxy: invocation?.ownerGalaxy || zcosCapabilityRegistry.get(capabilityId)?.ownerGalaxy || "ZAR",
+    capabilityId,
+    objective: request.intent.objective,
+    status,
+    approvalRequired: Boolean(invocation?.approvalRequired),
+    blocker: gap?.message,
+  }];
 }
 
 export class ZcosUnifiedIntelligenceRuntime {
@@ -194,12 +253,15 @@ export class ZcosUnifiedIntelligenceRuntime {
       retrievalCapabilityId = DIRECT_URL.test(request.payload.message) ? "zcos.external.web_fetch" : "zcos.external.web_search";
       requestedCapabilities.add(retrievalCapabilityId);
     }
-    const capitalDelegation = CAPITAL.test(request.payload.message);
+    const galaxyCapabilityId = input.clarificationOnly
+      ? undefined
+      : galaxyCapabilityFor(request.payload.message);
+    const capitalDelegation = galaxyCapabilityId === "zillion.capital.delegate";
     if (!input.clarificationOnly) requestedCapabilities.add("zcos.external.model_synthesis");
     for (const capabilityId of request.payload.requestedCapabilityIds || []) requestedCapabilities.add(capabilityId);
     if (!input.clarificationOnly && TASK_PREPARATION.test(request.payload.message)) requestedCapabilities.add("zar.operate.tasks.prepare");
     if (!input.clarificationOnly && EXTERNAL_ACTION.test(request.payload.message)) requestedCapabilities.add("zar.external.action");
-    if (!input.clarificationOnly && capitalDelegation) requestedCapabilities.add("zillion.capital.delegate");
+    if (galaxyCapabilityId) requestedCapabilities.add(galaxyCapabilityId);
 
     const resolution = zcosCapabilityRegistry.resolve([...requestedCapabilities], {
       permissions: permissionsFor(request),
@@ -247,6 +309,8 @@ export class ZcosUnifiedIntelligenceRuntime {
       sequentialOrder: resolution.sequentialOrder,
       capabilityGaps: resolution.gaps,
       approvalIds: resolution.invocations.filter((invocation) => invocation.approvalRequired).map((invocation) => invocation.invocationId),
+      responseForm: zarResponseForm(intelligence.responseOrchestration.form, request),
+      assignments: assignmentsFor(request, galaxyCapabilityId, resolution.invocations, resolution.gaps),
     };
     trace.capabilityIds = executionPlan.invocations.map((invocation) => invocation.capabilityId);
     trace.approvalIds = [...executionPlan.approvalIds];

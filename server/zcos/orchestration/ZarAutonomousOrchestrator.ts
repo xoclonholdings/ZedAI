@@ -45,6 +45,10 @@ function setCapabilityStatus(
 ): void {
   const invocation = plan.invocations.find((candidate) => candidate.capabilityId === capabilityId);
   if (invocation) invocation.status = status;
+  const assignment = plan.assignments.find((candidate) => candidate.capabilityId === capabilityId);
+  if (assignment) {
+    assignment.status = status === "executing" ? "running" : status;
+  }
 }
 
 /**

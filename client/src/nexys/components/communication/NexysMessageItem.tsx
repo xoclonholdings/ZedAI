@@ -8,6 +8,7 @@ interface NexysMessageItemProps {
   readonly message: Message;
   readonly onCopy?: (message: Message) => void;
   readonly onEdit?: (message: Message) => void;
+  readonly onContextChoice?: (choice: string) => void;
   readonly compact?: boolean;
   readonly fontSize?: "small" | "medium" | "large";
   readonly showTimestamp?: boolean;
@@ -35,6 +36,7 @@ export function NexysMessageItem({
   message,
   onCopy,
   onEdit,
+  onContextChoice,
   compact = false,
   fontSize = "medium",
   showTimestamp = false,
@@ -52,6 +54,12 @@ export function NexysMessageItem({
     : "";
   const rowGap = compact ? "py-1.5" : "py-2.5";
   const isClarifying = Boolean((message.metadata as any)?.clarifyingQuestion);
+  const contextualQuestion = (message.metadata as any)?.contextualQuestion as
+    | { choices?: unknown }
+    | undefined;
+  const contextChoices = Array.isArray(contextualQuestion?.choices)
+    ? contextualQuestion.choices.map(String).filter(Boolean).slice(0, 4)
+    : [];
 
   if (isUser) {
     return (
@@ -130,6 +138,21 @@ export function NexysMessageItem({
           <article className={`min-w-0 max-w-none break-words text-white [overflow-wrap:anywhere] ${bodyClass}`}>
             <AssistantMarkdown content={message.content || ""} />
           </article>
+
+          {isClarifying && contextChoices.length >= 2 && onContextChoice ? (
+            <div className="mt-3 flex flex-wrap gap-2" aria-label="Suggested answers">
+              {contextChoices.map((choice) => (
+                <button
+                  key={choice}
+                  type="button"
+                  onClick={() => onContextChoice(choice)}
+                  className="rounded-full border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1.5 text-xs text-cyan-50 transition-colors hover:bg-cyan-300/[0.12] focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
+                >
+                  {choice}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div className="mt-1 flex items-center gap-2 text-[10.5px] text-white/40 opacity-0 transition-opacity group-hover:opacity-100">
             {showTimestamp && timestamp ? <span>{timestamp}</span> : null}

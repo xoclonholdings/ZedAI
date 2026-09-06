@@ -40,7 +40,14 @@ export type ResponseForm =
   | "comparison"
   | "report"
   | "executive_summary"
-  | "code";
+  | "code"
+  | "research_result"
+  | "concise_rationale"
+  | "writing_artifact"
+  | "visual_explanation"
+  | "file"
+  | "approval_request"
+  | "implementation_task";
 
 export type Verbosity = "terse" | "balanced" | "detailed";
 

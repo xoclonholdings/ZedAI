@@ -45,35 +45,11 @@ export const defaultPersonalizationSettings: PersonalizationSettings = {
 
 export const defaultAgentDefinitions: AgentDefinition[] = [
   {
-    key: "OperationsAgent",
-    label: "Operations Agent",
+    key: "ZAR",
+    label: "ZAR",
     status: "active",
-    description: "Handles operational tasks, approvals, and execution-oriented requests.",
-    entryPoint: "server/agents/operations/OperationsAgent.ts",
-  },
-  {
-    key: "IntelligenceAgent",
-    label: "R&D Agent",
-    status: "active",
-    description:
-      "Researches, synthesizes, and summarizes market, crypto, stock, and knowledge requests.",
-    entryPoint: "server/agents/intelligence/IntelligenceAgent.ts",
-  },
-  {
-    key: "BusinessManagerAgent",
-    label: "Business Manager Agent",
-    status: "active",
-    description:
-      "Business operations: payroll, contractors, ecommerce, real estate, business credit.",
-    integration: "Gusto",
-    entryPoint: "server/agents/business-manager/BusinessManagerAgent.ts",
-  },
-  {
-    key: "FinanceAgent",
-    label: "ZILLION Prosper",
-    status: "active",
-    description: "External Capital capability for budgeting, investing, and governed trading.",
-    entryPoint: "server/services/capital/CapitalGateway.ts",
+    description: "Singular relational operator that presents governed ZCOS plans and coordinates typed galaxy capabilities.",
+    entryPoint: "server/services/ChatExecutionService.ts",
   },
 ];
 

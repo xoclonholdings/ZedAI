@@ -21,9 +21,12 @@ async function main() {
     throw new Error("Admin user is missing from admin settings");
   }
 
-  const businessManager = settings.agents.find((agent) => agent.key === "BusinessManagerAgent");
-  if (!businessManager || businessManager.status !== "active") {
-    throw new Error("Business Manager Agent is missing or not marked as active");
+  const operator = settings.agents.find((agent) => agent.key === "ZAR");
+  if (!operator || operator.status !== "active") {
+    throw new Error("ZAR operator is missing or not marked as active");
+  }
+  if (settings.agents.some((agent) => agent.key !== "ZAR")) {
+    throw new Error("Legacy lane agents were reactivated in public settings");
   }
 
   if (!settings.integrations.gusto) {
@@ -38,7 +41,8 @@ async function main() {
         hubDir: HUB_DIR,
         adminOwnerId: admin.id,
         adminFallbackConfigured: Boolean(settings.auth.securePhrase),
-        businessManagerStatus: businessManager.status,
+        operatorStatus: operator.status,
+        publicOperatorCount: settings.agents.length,
         gustoIntegrationStatus: settings.integrations.gusto.status,
       },
       null,

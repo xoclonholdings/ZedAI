@@ -10,7 +10,7 @@ import { ZCOS_INTELLIGENCE_SCHEMA_VERSION } from "../../../shared/zcos-intellige
 const RESULT_TYPES = new Set(["context", "source_set", "execution", "verification", "error"]);
 const RESULT_STATUSES = new Set(["success", "partial", "blocked", "failed"]);
 const WRITE_DISPOSITIONS = new Set(["read_only", "candidate_only", "approved_mutation"]);
-const SOURCE_TYPES = new Set(["identity", "memory", "knowledge", "learning", "project", "file", "external_url", "external_search", "external_model"]);
+const SOURCE_TYPES = new Set(["identity", "conversation_history", "memory", "knowledge", "learning", "project", "file", "external_url", "external_search", "external_model"]);
 const SOURCE_AUTHORITIES = new Set(["canonical", "source", "candidate"]);
 const SOURCE_GALAXIES = new Set(["ZCOS", "ZAR", "ZYNC", "ZENA", "ZENO", "ZYLO", "ZWAP!", "ZENITH", "ZILLION"]);
 const SOURCE_ORIGINS = new Set(["internal_canonical", "user_supplied", "external_primary", "external_secondary", "model_synthesis"]);

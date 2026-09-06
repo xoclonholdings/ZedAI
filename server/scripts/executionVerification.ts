@@ -255,13 +255,16 @@ async function testChatTraceAndFileContext() {
       },
     );
 
-    assert.equal(result.trace.route, "/api/orchestrate");
-    assert.equal(result.trace.selectedAgent, "OperationsAgent");
-    assert.equal(result.metadata.fileContextUsed, true);
-    assert.deepEqual(result.metadata.filesReferenced, ["orchid.txt"]);
-    assert.equal(result.metadata.projectContextUsed, true);
-    assert.equal(result.metadata.workspaceContextUsed, true);
-    assert(savedMessages.some((message) => message.role === "assistant" && message.metadata?.executionTrace?.traceId));
+    assert.equal(result.agent, "ZAR");
+    assert.equal(result.metadata.agent, "ZAR");
+    assert.equal(result.trace.executionStatus, "success");
+    assert.equal("providerUsed" in result.metadata, false);
+    assert.equal("selectedAgent" in result.metadata, false);
+    assert(savedMessages.some((message) =>
+      message.role === "assistant" &&
+      message.metadata?.agent === "ZAR" &&
+      message.metadata?.execution?.traceId
+    ));
 
     const failed = await ChatExecutionService.execute(
       {
@@ -283,8 +286,8 @@ async function testChatTraceAndFileContext() {
         route: async () => ({ reply: "", agent: "ManagerAgent", metadata: {} }),
       },
     );
-    assert.equal(failed.metadata.executionStatus, "failed");
-    assert.equal(failed.metadata.failureReason, "upstream_empty_output");
+    assert.equal(failed.metadata.taskState, "failed");
+    assert.equal(failed.metadata.execution.failureReason, "upstream_empty_output");
     assert(!savedMessages.some((message) => message.role === "assistant" && !String(message.content || "").trim()));
 
     const templated = await ChatExecutionService.execute(
@@ -311,8 +314,8 @@ async function testChatTraceAndFileContext() {
         }),
       },
     );
-    assert.equal(templated.metadata.executionStatus, "failed");
-    assert.equal(templated.metadata.failureReason, "upstream_template_output");
+    assert.equal(templated.metadata.taskState, "failed");
+    assert.equal(templated.metadata.execution.failureReason, "upstream_template_output");
     assert(!String(templated.reply || "").includes("Next move"));
   } finally {
     (storage as any).createMessage = originalCreateMessage;

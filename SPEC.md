@@ -2,7 +2,7 @@
 
 **Repository:** `xoclonholdings/ZedAI`  
 **Canonical scope:** ZAR only  
-**Updated:** August 17, 2026  
+**Updated:** September 6, 2026
 **Role:** Canonical ZAR repository and runtime authority  
 **Architecture relationship:** ZAR operates within ZCOS, but ZCOS is specified separately. This document references ZCOS only where an external ZCOS contract directly constrains ZAR.
 
@@ -35,10 +35,10 @@ ZAR is designed around continuity rather than isolated prompts. The same ZAR rel
 ZAR's core responsibilities are to:
 
 - understand the user's objective before choosing a solution;
-- assemble authorized context from the sources available to ZAR;
-- reason under ZAR's behavior and evidence rules;
+- recognize when the user's language assumes prior shared context;
+- request authorized context from ZCOS without treating conversation history as confirmed Memory or canonical Knowledge;
 - ask only for information that materially changes the result;
-- coordinate specialized capabilities when the task requires them;
+- receive ZCOS's governed plan and coordinate typed galaxy capabilities when the task requires them;
 - prepare or perform authorized work;
 - distinguish preparation from execution and execution from verified completion;
 - learn from confirmed outcomes without silently converting inference into truth;
@@ -104,38 +104,36 @@ All live ZAR response and action paths should converge on one governed runtime. 
 Canonical runtime sequence:
 
 1. Verify identity and ownership.
-2. Interpret the user's language and objective.
-3. Detect missing context that would materially change correctness.
-4. Apply ZAR principles and behavior policy.
-5. Determine the reasoning depth and capabilities required.
-6. Retrieve authorized context and relevant sources.
-7. Coordinate specialist capabilities when necessary.
-8. Check authorization and approval for consequential actions.
-9. Execute or prepare the requested work.
-10. Verify or reconcile the result.
-11. Present one coherent ZAR response.
-12. Record only safe, governed evidence needed for history, learning, or audit.
+2. Interpret the user's language and user-facing objective.
+3. Detect continuity language and request authorized conversation history through ZCOS when relevant.
+4. Ask the smallest question only when the missing fact materially changes the outcome.
+5. Submit authenticated typed intent and available evidence classes to ZCOS.
+6. Receive ZCOS's governed context, reasoning depth, response form, capability plan, policy result, and verification state.
+7. Assign governed work to the typed capability or owning galaxy identified by that plan.
+8. Keep preparation, approval, execution, partial results, blockers, failure, and verified completion distinct.
+9. Present one coherent ZAR response without exposing internal prompts, provider routing, or retrieval diagnostics.
+10. Record only safe, governed evidence needed for history, learning, or audit.
 
 The user receives the useful result and rationale, not raw chain-of-thought, hidden prompts, provider traces, internal scoring, retrieval internals, or backend logs.
 
-## 6. Cognitive Core
+## 6. Interaction and Presentation Core
 
-ZAR's Cognitive Core is the hidden reasoning and response-governance chain used by normal chat and orchestrated work.
+ZAR owns the relational interaction and final presentation layer used by normal chat and orchestrated work. ZCOS owns the underlying Memory, Knowledge, reasoning, planning, capability routing, policy, and verification engines.
 
 Core components include:
 
 - **Lexicon Authority** - resolves terms, slang, acronyms, community language, technical language, and user-specific vocabulary before reasoning.
 - **Context Inquiry** - determines whether missing or ambiguous information is material enough to require a question.
-- **Principle Engine** - applies ZAR's universal operating principles.
-- **Strategic Reasoning** - activates deeper structured reasoning for architecture, product, strategy, planning, audits, research, and consequential decisions.
-- **Context Intelligence** - ranks, de-duplicates, compresses, and protects high-value context.
+- **Governance and voice policy** - applies ZAR's relational behavior and communication contract without replacing ZCOS policy authority.
+- **Conversation continuity** - detects references to prior work and requests owner-scoped history by topic, entity, Project, relationship, or time window.
+- **ZCOS typed runtime adapter** - submits intent and distinct evidence classes, then receives the governed plan and verified result.
 - **Document Intelligence** - turns uploaded material into retrievable, source-aware knowledge without creating a parallel truth store.
-- **Self-Orchestration** - determines which capabilities a turn needs.
-- **Adaptive Response Intelligence** - chooses the response form and depth appropriate to the request.
+- **Typed assignment presentation** - preserves the owning galaxy, capability, task state, approval requirement, blockers, uncertainty, and dissent.
+- **Adaptive response presentation** - renders ZCOS's selected form as a direct answer, research result, concise rationale, writing artifact, visual explanation, file, approval request, or implementation task.
 - **Voice + Presentation** - converts the result into the user's ZAR experience.
 - **Reflection** - stores safe summaries/evidence for important interactions without storing hidden reasoning.
 
-The intelligence layer should improve reasoning without changing ZAR into a visibly mechanical workflow engine.
+Legacy ZAR-named reasoning engines and lane agents may remain as migration evidence, but they are not the canonical live authority and must not surface as separate user-facing personalities.
 
 ## 7. Behavior Contract
 
@@ -399,7 +397,7 @@ The following represents the current ZAR direction based on the repository and r
 
 - Full end-to-end provider-backed voice transcription.
 - ZAR by Text production channel and verified identity linking.
-- Complete replacement/retirement of legacy lane-router paths.
+- Physical removal of legacy lane-router and ZAR-named reasoning files after all remaining non-canonical imports are retired.
 - Universal enforcement of evidence/confluence/probabilistic reasoning across every path.
 - Durable, fully reconciled relationship-learning and Constitution lifecycle.
 - Complete owner isolation and removal of every historical fallback identity.

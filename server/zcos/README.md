@@ -24,12 +24,19 @@ owner-bound capability gateway, shared ZCOS services, and approval authority.
 - Unified reasoning/governance runtime: `server/zcos/runtime/*`
 - Capability Registry and ZYLO resolution: `server/zcos/capabilities/*`
 - Provider-neutral external adapters: `server/zcos/external/*`
+- Owner-scoped conversation continuity evidence: `server/services/ConversationContinuityService.ts`
 
 ## Boundary Rule
 
 ZAR routes and UI may launch flows, display runs, approve/reject gates, show reports, and coordinate Capital work through the typed ZILLION capability. Every canonical chat turn submits a typed ZAR request to ZCOS and receives governed context plus a typed plan.
 
 ZCOS services create runs, execute stages, validate sources, resolve capabilities, create approvals, track errors, verify results, and generate reports. External providers return candidate-only envelopes and cannot write Memory, Knowledge, Projects, or execution state. ZILLION stores trading knowledge, evaluates scanners, creates trade theses, manages paper trades, and calculates Capital performance.
+
+Conversation history enters ZCOS as its own historical evidence class; it is
+never silently promoted into confirmed Memory or canonical Knowledge. Public
+ZAR responses expose task state, typed assignment, approval state, blockers,
+uncertainty, dissent, and useful evidence links while withholding provider and
+retrieval internals.
 
 PostgreSQL is authoritative for complete ZCOS execution traces. Prompt context,
 vectors, model responses, and external-source payloads are projections or

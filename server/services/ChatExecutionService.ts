@@ -9,6 +9,7 @@ import type {
   ZcosResultEnvelope,
   ZcosSourceEnvelope,
   ZcosVerificationEnvelope,
+  ZarContextualQuestion,
 } from "../../shared/zcos-intelligence";
 import type { ImageBlock, ReasoningEffort } from "../core/providers/provider-interface";
 import { ZarAutonomousOrchestrator } from "../zcos/orchestration/ZarAutonomousOrchestrator";
@@ -19,10 +20,12 @@ import {
 } from "../zcos/runtime/ZcosUnifiedIntelligenceRuntime";
 import { KnowledgeService } from "./KnowledgeService";
 import { DocumentIntelligenceService } from "./intelligence-core/DocumentIntelligenceService";
+import {
+  ConversationContinuityService,
+  type ConversationContinuityContext,
+} from "./ConversationContinuityService";
 import { ContextInquiryEngine } from "./knowledge-ingestion/ContextInquiryEngine";
 import { LexiconAuthorityService } from "./lexicon-authority/LexiconAuthorityService";
-import { ZarPrincipleEngine } from "./ZarPrincipleEngine";
-import { ZarStrategicReasoningEngine } from "./ZarStrategicReasoningEngine";
 import { ZarReflectionEngine } from "./ZarReflectionEngine";
 import { injectMemory } from "./MemoryInjector";
 import { buildWorkspaceMemoryContext } from "./WorkspaceMemoryService";
@@ -100,6 +103,8 @@ export interface ChatExecutionTrace {
   contextCompressionRatio?: number;
   documentCitations?: string[];
   lexiconResolutions?: string[];
+  conversationHistoryUsed?: boolean;
+  conversationHistoryCount?: number;
   zcosRequestId?: string;
   zcosPlanId?: string;
   zcosExecutionPlan?: ZcosExecutionPlan;
@@ -111,6 +116,7 @@ export interface ChatExecutionTrace {
 export interface ChatExecutionTestHooks {
   injectedMemory?: () => Promise<{ formatted: string }>;
   contextAssessment?: () => Promise<any>;
+  conversationHistory?: () => Promise<ConversationContinuityContext>;
   knowledgeContext?: () => Promise<any>;
   adminContext?: () => Promise<any>;
   fileContext?: () => Promise<{
@@ -171,6 +177,96 @@ function compactContextAssessment(assessment: any, topQuestion: any): Record<str
 
 function selectTopContextQuestion(questions: any[]): any | null {
   return [...(questions || [])].sort((a, b) => b.priority - a.priority)[0] || null;
+}
+
+export function buildContextualQuestionForTest(question: any): ZarContextualQuestion {
+  const supplied = Array.isArray(question?.choices)
+    ? question.choices.map(String).map((choice: string) => choice.trim()).filter(Boolean).slice(0, 4)
+    : [];
+  const defaults: Record<string, string[]> = {
+    identity: ["Yes", "No", "I'm not sure"],
+    decision: ["Use the current plan", "Review options first", "I'm not sure"],
+    purpose: ["Keep the current purpose", "Update it", "I'm not sure"],
+    relationship: ["Directly connected", "Related context", "Not connected", "I'm not sure"],
+  };
+  return {
+    prompt: questionOnly(String(question?.question || "What should ZAR use here?")),
+    choices: supplied.length >= 2
+      ? supplied
+      : (defaults[String(question?.category)] || ["Yes", "No", "I'm not sure"]),
+    allowFreeText: true,
+  };
+}
+
+function publicTrace(trace: ChatExecutionTrace): Record<string, unknown> {
+  return {
+    traceId: trace.traceId,
+    executionStatus: trace.executionStatus,
+    ...(trace.failureReason ? { failureReason: trace.failureReason } : {}),
+    ...(trace.zcosRequestId ? { requestId: trace.zcosRequestId } : {}),
+    ...(trace.zcosPlanId ? { planId: trace.zcosPlanId } : {}),
+  };
+}
+
+function publicErrorDetail(errorDetail: Record<string, any>): Record<string, unknown> {
+  return {
+    code: errorDetail.code,
+    userMessage: errorDetail.userMessage,
+    exactReason: errorDetail.exactReason,
+    action: errorDetail.action,
+  };
+}
+
+function publicResponseMetadata(
+  trace: ChatExecutionTrace,
+  managerMetadata: Record<string, any>,
+  requiresApproval: boolean,
+): Record<string, unknown> {
+  const assignments = trace.zcosExecutionPlan?.assignments || [];
+  const blockers = [
+    ...(trace.capabilityGaps || []).map((gap) => gap.message),
+    ...(trace.failureReason ? [trace.failureReason] : []),
+  ].filter(Boolean);
+  const taskState = trace.executionStatus === "failed"
+    ? "failed"
+    : trace.executionStatus === "partial"
+      ? "partial"
+      : assignments[0]?.status || "completed";
+  const evidenceLinks = Array.isArray(managerMetadata?.web?.pages)
+    ? managerMetadata.web.pages
+        .map((page: any) => ({
+          title: String(page?.title || page?.url || "Source"),
+          url: String(page?.url || ""),
+        }))
+        .filter((page: any) => /^https?:\/\//i.test(page.url))
+    : [];
+  const uncertainties = (trace.zcosVerification?.uncertainties || []).map((item) => ({
+    statement: item.statement,
+    material: item.material,
+    resolution: item.resolution,
+  }));
+  const dissent = (trace.zcosVerification?.confluence.conflicts || []).map((conflict) => ({
+    claim: conflict.claimKey,
+    values: conflict.values.map((value) => value.value),
+  }));
+  return {
+    agent: "ZAR",
+    responseForm: trace.zcosExecutionPlan?.responseForm || "direct_answer",
+    taskState,
+    assignments,
+    requiresApproval,
+    approvalStatus: requiresApproval ? "required" : "not_required",
+    blockers,
+    uncertainties,
+    dissent,
+    evidenceLinks,
+    documentCitations: trace.documentCitations || [],
+    ...(Array.isArray(managerMetadata.clientActions) ? { clientActions: managerMetadata.clientActions } : {}),
+    ...(Array.isArray(managerMetadata.nexysClientActions)
+      ? { nexysClientActions: managerMetadata.nexysClientActions }
+      : {}),
+    execution: publicTrace(trace),
+  };
 }
 
 function findPriorWebUrlFromMetadata(history: any[]): string | undefined {
@@ -338,7 +434,13 @@ export class ChatExecutionService {
       if (!input.message?.trim()) {
         trace.executionStatus = "failed";
         trace.failureReason = "message_required";
-        return { error: "message_required", reply: "Message required.", agent: "ZAR", metadata: { executionTrace: trace }, trace };
+        return {
+          error: "message_required",
+          reply: "Message required.",
+          agent: "ZAR",
+          metadata: { execution: publicTrace(trace) },
+          trace: publicTrace(trace),
+        };
       }
 
       if (input.persistUserMessage !== false && input.conversationId) {
@@ -356,11 +458,31 @@ export class ChatExecutionService {
         : [];
       const effectiveMessage = resolveReferencedWebpageForTest(input.message, history);
       const channelPermissions = input.context?.channelPermissions as
-        | { memory?: boolean; knowledge?: boolean; projects?: boolean }
+        | { memory?: boolean; knowledge?: boolean; projects?: boolean; conversationHistory?: boolean }
         | undefined;
       const memoryAllowed = channelPermissions?.memory !== false;
       const knowledgeAllowed = channelPermissions?.knowledge !== false;
       const projectsAllowed = channelPermissions?.projects !== false;
+      const conversationHistoryAllowed = channelPermissions?.conversationHistory !== false;
+      const conversationHistory = hooks.conversationHistory
+        ? await hooks.conversationHistory()
+        : await ConversationContinuityService.retrieve({
+            userId: input.userId,
+            message: input.message,
+            currentConversationId: input.conversationId,
+            projectId: input.projectId || input.context?.projectId,
+            enabled: conversationHistoryAllowed,
+          }).catch(() => ({
+            assumesSharedContext: false,
+            prompt: "",
+            evidence: [],
+            lookup: { topicTerms: [], entities: [], projectIds: [] },
+          }));
+      trace.conversationHistoryUsed = Boolean(conversationHistory.prompt);
+      trace.conversationHistoryCount = conversationHistory.evidence.length;
+      if (conversationHistory.prompt) {
+        trace.servicesInvoked.push("ConversationContinuityService.retrieve");
+      }
       const zcosRequest = ZcosRequestInterpreter.interpret({
         traceId: trace.traceId,
         userId: input.userId,
@@ -502,7 +624,7 @@ export class ChatExecutionService {
       // marks it as clarifying so downstream (this loop, next turn)
       // can detect it.
       if (pauseAndAsk) {
-        const { reply, question, assessment } = pauseAndAsk;
+        const { reply, question } = pauseAndAsk;
         trace.executionStatus = "success";
         trace.detectedIntent = "clarify";
         trace.selectedAgent = "ContextInquiryEngine";
@@ -527,17 +649,19 @@ export class ChatExecutionService {
         await ZcosUnifiedIntelligenceRuntime.persistTrace(preparedRuntime);
 
         const metadata = {
-          agent: "ContextInquiryEngine",
+          agent: "ZAR",
           actionType: "clarifying_question",
           clarifyingQuestion: true,
-          questionPriority: Number(question.priority),
-          questionCategory: question.category,
-          contextAssessment: compactContextAssessment(assessment, question),
-          zcosRequestId: zcosRequest.requestId,
-          zcosExecutionPlan: preparedRuntime.executionPlan,
-          zcosVerification: trace.zcosVerification,
-          zcosTrace: preparedRuntime.trace,
-          executionTrace: trace,
+          contextualQuestion: buildContextualQuestionForTest(question),
+          responseForm: preparedRuntime.executionPlan.responseForm,
+          taskState: "completed",
+          requiresApproval: false,
+          approvalStatus: "not_required",
+          blockers: [],
+          uncertainties: [],
+          dissent: [],
+          evidenceLinks: [],
+          execution: publicTrace(trace),
         };
 
         await saveAssistantMessage(input.conversationId, reply, metadata).catch(() => null);
@@ -557,9 +681,9 @@ export class ChatExecutionService {
 
         return {
           reply,
-          agent: "ContextInquiryEngine",
+          agent: "ZAR",
           metadata,
-          trace,
+          trace: publicTrace(trace),
         };
       }
 
@@ -655,28 +779,11 @@ export class ChatExecutionService {
         if (learningContext.prompt) trace.memorySources.push("learning_studio");
       }
 
-      const strategicReasoning = ZarStrategicReasoningEngine.prepare({
+      const governancePrompt = buildZarGovernancePrompt({
         userMessage: effectiveMessage,
         lane: "manager",
         knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
-        currentContext: input.context || {},
       });
-      const cognitiveLane = strategicReasoning.active ? "strategy" : "manager";
-      const voiceMode = strategicReasoning.active ? "strategy" : "chat";
-      const governancePrompt = buildZarGovernancePrompt({
-        userMessage: effectiveMessage,
-        lane: cognitiveLane,
-        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
-      });
-      const principlePrompt = ZarPrincipleEngine.buildPrompt({
-        userMessage: effectiveMessage,
-        lane: cognitiveLane,
-        isAdmin: Boolean(input.isAdmin),
-        knowledgePresent: Boolean(knowledge.prompt || adminContext.text || fileContext.prompt || learningContext.prompt),
-      });
-      const voicePrompt = hooks.voicePrompt
-        ? await hooks.voicePrompt()
-        : await buildZarVoicePrompt({ mode: voiceMode });
 
       // Document Intelligence — surface knowledge extracted from uploaded
       // and previously-ingested documents (connected in the knowledge
@@ -694,6 +801,7 @@ export class ChatExecutionService {
 
       const zcosSources = [
         sourceEnvelope(zcosRequest.requestId, { id: "identity-lexicon", type: "identity", title: "Lexicon authority", content: lexiconResolution.prompt, confidence: 0.7, currency: "current" }),
+        sourceEnvelope(zcosRequest.requestId, { id: "conversation-history", type: "conversation_history", title: "Authorized conversation history", content: conversationHistory.prompt, authority: "source", originGalaxy: "ZAR", originClass: "user_supplied", confidence: 0.75, currency: "historical" }),
         sourceEnvelope(zcosRequest.requestId, { id: "memory-injected", type: "memory", title: "Authorized memory", content: injectedMemory.formatted, confidence: 0.55 }),
         sourceEnvelope(zcosRequest.requestId, { id: "memory-workspace", type: "memory", title: "Workspace memory", content: workspaceMemory.prompt, authority: "canonical", confidence: 0.85, currency: "current" }),
         sourceEnvelope(zcosRequest.requestId, { id: "knowledge", type: "knowledge", title: "Knowledge context", content: knowledge.prompt, confidence: 0.65 }),
@@ -707,7 +815,7 @@ export class ChatExecutionService {
       preparedRuntime = ZcosUnifiedIntelligenceRuntime.prepare({
         request: zcosRequest,
         sources: zcosSources,
-        strategic: strategicReasoning.active,
+        strategic: false,
         materialUncertainty: contextMaterialUncertainty,
         hasFiles: Boolean(fileContext.prompt),
         hasGraphContext: documentKnowledge.objectIds.length > 0,
@@ -721,15 +829,17 @@ export class ChatExecutionService {
       trace.capabilityGaps = preparedRuntime.executionPlan.capabilityGaps;
       trace.zcosTrace = preparedRuntime.trace;
       const knowledgeBlock = preparedRuntime.governedContext;
+      const voiceMode = preparedRuntime.intelligencePlan.complexity === "deep" ||
+        preparedRuntime.intelligencePlan.complexity === "complex"
+        ? "strategy"
+        : "chat";
+      const voicePrompt = hooks.voicePrompt
+        ? await hooks.voicePrompt()
+        : await buildZarVoicePrompt({ mode: voiceMode });
 
-      // Cognitive Core order per SPEC.md § Cognitive Core:
-      //   0. Lexicon Authority 1. Context Inquiry   2. Principle
-      //   3. Strategic          4. Knowledge         5. Voice
-      //   6. Reflection (post-response)
-      // Intelligence Core reasoning stages (deep thinking + self-
-      // orchestration) sit with Strategic Reasoning before knowledge; the
-      // adaptive response directive sits just before Voice. Governance is
-      // pinned first; response policy is pinned last so style wins ties.
+      // ZAR supplies relationship, interaction, and presentation policy.
+      // ZCOS supplies governed context, reasoning, planning, capability
+      // routing, policy, and verification through the typed runtime.
       const cognitiveKnowledgePrompt = [
         governancePrompt,
         lexiconResolution.prompt,
@@ -737,8 +847,6 @@ export class ChatExecutionService {
         // Workspace memory sits ahead of general knowledge so ZAR always
         // works from the workspace's own library first.
         workspaceMemory.prompt,
-        principlePrompt,
-        strategicReasoning.prompt,
         preparedRuntime.reasoningPrompt,
         knowledgeBlock,
         preparedRuntime.responsePrompt,
@@ -754,7 +862,6 @@ export class ChatExecutionService {
         message: effectiveMessage,
         conversationId: input.conversationId,
         ip: input.ip || "",
-        targetAgent: input.targetAgent,
         context: {
           ...(input.context || {}),
           workspaceId: input.workspaceId,
@@ -762,7 +869,6 @@ export class ChatExecutionService {
           knowledgePrompt: cognitiveKnowledgePrompt,
           reasoningEffort: preparedRuntime.reasoningEffort,
           isAdmin: Boolean(input.isAdmin),
-          strategic: strategicReasoning.active,
           attachments: fileContext.imageBlocks || [],
           zcosRequest,
           zcosExecutionPlan: preparedRuntime.executionPlan,
@@ -858,40 +964,14 @@ export class ChatExecutionService {
           .map((provider) => `source:${provider}`),
       ]));
 
-      const metadata = {
-        ...managerMetadata,
-        strategic: strategicReasoning.active,
-        intelligencePlan: trace.intelligencePlan,
-        reasoningEffort: trace.reasoningEffort,
-        contextCompressionRatio: trace.contextCompressionRatio,
-        documentCitations: trace.documentCitations,
-        lexiconResolutions: trace.lexiconResolutions,
-        zcosRequestId: trace.zcosRequestId,
-        zcosPlanId: trace.zcosPlanId,
-        zcosExecutionPlan: trace.zcosExecutionPlan,
-        capabilityGaps: trace.capabilityGaps,
-        zcosVerification: trace.zcosVerification,
-        zcosTrace: trace.zcosTrace,
-        providerUsed: trace.providerUsed,
-        providerTarget: trace.providerTarget,
-        projectContextUsed: trace.projectContextUsed,
-        workspaceContextUsed: trace.workspaceContextUsed,
-        sourceCount: trace.sourceCount,
-        filesReferenced: trace.filesReferenced,
-        fileContextUsed: trace.fileContextUsed,
-        learningContextUsed: trace.learningContextUsed,
-        learningPathId: trace.learningPathId,
-        learningLessonId: trace.learningLessonId,
-        learningSourceCount: trace.learningSourceCount,
-        presentationAdjustments: trace.presentationAdjustments,
-        executionStatus: trace.executionStatus,
-        failureReason: trace.failureReason,
-        mocked: trace.mocked,
-        executionTrace: trace,
-      };
+      const metadata = publicResponseMetadata(
+        trace,
+        managerMetadata,
+        Boolean(response.requiresApproval),
+      );
 
       await saveAssistantMessage(input.conversationId, presented.content, {
-        agent: response.agent,
+        agent: "ZAR",
         requiresApproval: response.requiresApproval,
         ...metadata,
       });
@@ -903,7 +983,7 @@ export class ChatExecutionService {
           userMessage: input.message,
           assistantReply: presented.content,
           route: "orchestrate",
-          strategic: strategicReasoning.active,
+          strategic: voiceMode === "strategy",
           requiresApproval: response.requiresApproval,
           tags: [input.route === "sms" ? "sms" : "orchestrate", "cognitive-core", trace.selectedAgent || "unknown-agent"],
         }).catch((error) => {
@@ -927,10 +1007,11 @@ export class ChatExecutionService {
       });
 
       return {
-        ...response,
         reply: presented.content,
+        agent: "ZAR",
+        requiresApproval: Boolean(response.requiresApproval),
         metadata,
-        trace,
+        trace: publicTrace(trace),
       };
     } catch (error: any) {
       trace.executionStatus = "failed";
@@ -953,6 +1034,7 @@ export class ChatExecutionService {
         provider: trace.providerUsed,
         target: trace.providerTarget,
       });
+      const safeErrorDetail = publicErrorDetail(errorDetail);
       await (hooks.log || logRuntimeEvent)({
         level: "error",
         source: "server",
@@ -965,8 +1047,8 @@ export class ChatExecutionService {
         agent: "ZAR",
         executionStatus: trace.executionStatus,
         failureReason: trace.failureReason,
-        errorDetail,
-        executionTrace: trace,
+        errorDetail: safeErrorDetail,
+        execution: publicTrace(trace),
       }).catch(() => null);
       return {
         error: "execution_failed",
@@ -975,11 +1057,11 @@ export class ChatExecutionService {
         metadata: {
           executionStatus: trace.executionStatus,
           failureReason: trace.failureReason,
-          errorDetail,
-          executionTrace: trace,
+          errorDetail: safeErrorDetail,
+          execution: publicTrace(trace),
         },
-        errorDetail,
-        trace,
+        errorDetail: safeErrorDetail,
+        trace: publicTrace(trace),
       };
     }
   }
