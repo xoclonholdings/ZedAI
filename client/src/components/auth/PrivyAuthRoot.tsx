@@ -5,7 +5,9 @@ import { zarLogoSrc } from "@/lib/zarLogo";
 
 import { AuthProvider, type ExternalAuthAdapter } from "./AuthContext";
 
-export const privyAppId = import.meta.env.VITE_PRIVY_APP_ID?.trim() || "";
+export const privyAppId =
+  import.meta.env.VITE_PRIVY_APP_ID?.trim() ||
+  "cmniafufb004f0dl1p3fvdva6";
 export const isPrivyClientConfigured = Boolean(privyAppId);
 
 function PrivyBackedAuthProvider({ children }: { children: ReactNode }) {

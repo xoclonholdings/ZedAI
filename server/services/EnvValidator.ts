@@ -253,29 +253,6 @@ function pushDatabaseCheck(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
   }
 }
 
-function pushAdminAuthChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
-  if (!present(env, "ZAR_ADMIN_SECURE_PHRASE")) {
-    checks.push({
-      name: "ZAR_ADMIN_SECURE_PHRASE",
-      severity: "error",
-      message: "Not set. The admin secure-phrase fallback is unavailable.",
-    });
-  } else if (trimmed(env, "ZAR_ADMIN_SECURE_PHRASE").length < 16) {
-    checks.push({
-      name: "ZAR_ADMIN_SECURE_PHRASE",
-      severity: "warn",
-      message: `Only ${trimmed(env, "ZAR_ADMIN_SECURE_PHRASE").length} characters — short.`,
-      hint: "Use 16+ characters for a public deploy.",
-    });
-  } else {
-    checks.push({
-      name: "ZAR_ADMIN_SECURE_PHRASE",
-      severity: "ok",
-      message: "Configured for the admin fallback.",
-    });
-  }
-}
-
 function pushSmsChecks(env: NodeJS.ProcessEnv, checks: EnvCheck[]): void {
   const configured = ["TELNYX_API_KEY", "TELNYX_PUBLIC_KEY", "TELNYX_PHONE_NUMBER", "SMS_ENCRYPTION_KEY"]
     .some((key) => present(env, key));
@@ -378,7 +355,6 @@ export function validateEnv(
 
   pushSessionSecretCheck(env, checks);
   pushDatabaseCheck(env, checks);
-  pushAdminAuthChecks(env, checks);
   pushPrivyChecks(env, checks);
   pushCapitalChecks(env, checks);
   pushSmsChecks(env, checks);

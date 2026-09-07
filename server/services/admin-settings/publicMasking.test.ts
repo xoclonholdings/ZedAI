@@ -19,7 +19,6 @@ describe("public admin settings masking", () => {
 
   it("never returns auth secrets, social sessions, or legacy social passwords", async () => {
     const settings = mergeSettings(undefined);
-    settings.auth.securePhrase = "plaintext-admin-phrase";
     settings.auth.sessionSecret = "plaintext-session-secret";
     settings.integrations.socialPublishing.accounts = [{
       id: "social-instagram",
@@ -34,9 +33,7 @@ describe("public admin settings masking", () => {
     const publicSettings = await getPublicAdminSettings();
     const publicJson = JSON.stringify(publicSettings);
 
-    expect(publicSettings.auth.securePhrase).toBe("•••••• (set)");
     expect(publicSettings.auth.sessionSecret).toBe("");
-    expect(publicJson).not.toContain("plaintext-admin-phrase");
     expect(publicJson).not.toContain("plaintext-session-secret");
     expect(publicJson).not.toContain("plaintext-token");
     expect(publicJson).not.toContain("plaintext-browser-session");

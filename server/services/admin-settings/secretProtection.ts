@@ -95,7 +95,6 @@ function transformIntegrationSecrets<T extends SettingsShape>(
   transform: SecretTransformer,
 ): T {
   const next = cloneSettings(settings);
-  transformField(next.auth, "securePhrase", transform);
   transformField(next.auth, "sessionSecret", transform);
 
   const integrations = next.integrations;

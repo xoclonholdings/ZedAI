@@ -1,5 +1,4 @@
 export const REQUIRED_PRODUCTION_ENV_VARS = [
-  "ZAR_ADMIN_SECURE_PHRASE",
   "SESSION_SECRET",
 ] as const;
 

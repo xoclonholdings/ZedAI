@@ -171,8 +171,6 @@ async function requestJson(
 async function verifyLiveHttp(baseUrl: string): Promise<CheckResult[]> {
   const results: CheckResult[] = [];
   const normalizedBase = baseUrl.replace(/\/+$/, "");
-  const settings = await loadAdminSettings();
-
   const anonymous = await requestJson(normalizedBase, "/api/admin/settings");
   results.push({
     name: "http_anonymous_admin_denied",
@@ -180,37 +178,46 @@ async function verifyLiveHttp(baseUrl: string): Promise<CheckResult[]> {
     detail: `GET /api/admin/settings returned HTTP ${anonymous.response.status}.`,
   });
 
-  const adminJar = makeCookieJar();
-  const adminLogin = await requestJson(
+  const retiredLogin = await requestJson(
     normalizedBase,
     "/api/login",
     {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ passphrase: settings.auth.securePhrase }),
+      body: JSON.stringify({ passphrase: "retired" }),
+    },
+  );
+  results.push({
+    name: "http_privy_only_login",
+    status: retiredLogin.response.status === 404 ? "PASS" : "FAIL",
+    detail: `retired secure-phrase login returned HTTP ${retiredLogin.response.status}.`,
+  });
+
+  const privyAccessToken = process.env.PRIVY_TEST_ACCESS_TOKEN?.trim();
+  if (!privyAccessToken) {
+    results.push({
+      name: "http_authenticated_checks",
+      status: "SKIP",
+      detail: "Set PRIVY_TEST_ACCESS_TOKEN to verify the live admin session and authenticated chat trace.",
+    });
+    return results;
+  }
+
+  const adminJar = makeCookieJar();
+  const privyLogin = await requestJson(
+    normalizedBase,
+    "/api/auth/privy/session",
+    {
+      method: "POST",
+      headers: { authorization: `Bearer ${privyAccessToken}` },
     },
     adminJar,
   );
   const adminSettings = await requestJson(normalizedBase, "/api/admin/settings", {}, adminJar);
   results.push({
-    name: "http_admin_allowed",
-    status: adminLogin.response.ok && adminSettings.response.status === 200 ? "PASS" : "FAIL",
-    detail: `admin login HTTP ${adminLogin.response.status}; settings HTTP ${adminSettings.response.status}.`,
-  });
-
-  const legacyLogin = await requestJson(
-    normalizedBase,
-    "/api/login",
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username: "legacy-user", password: "legacy-password" }),
-    },
-  );
-  results.push({
-    name: "http_legacy_password_login_rejected",
-    status: legacyLogin.response.status === 401 ? "PASS" : "FAIL",
-    detail: `legacy username/password login returned HTTP ${legacyLogin.response.status}.`,
+    name: "http_privy_admin_allowed",
+    status: privyLogin.response.ok && adminSettings.response.status === 200 ? "PASS" : "FAIL",
+    detail: `Privy login HTTP ${privyLogin.response.status}; settings HTTP ${adminSettings.response.status}.`,
   });
 
   const chat = await requestJson(

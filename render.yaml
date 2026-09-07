@@ -15,17 +15,19 @@ services:
       - key: REQUIRE_DATABASE
         value: "true"
       - key: FRONTEND_URL
-        value: "https://zar-ai.onrender.com"
+        value: "https://zar-ai.online"
       - key: ZCOS_API_URL
-        value: "https://zcos.onrender.com"
+        value: "https://api.zcos.online"
+      - key: ZAR_APP_URL
+        value: "https://zar-ai.online"
       - key: DATABASE_URL
         sync: false
       - key: SESSION_SECRET
         sync: false
-      - key: ZAR_ADMIN_SECURE_PHRASE
-        sync: false
+      - key: PRIVY_ADMIN_EMAILS
+        value: "gabriel.dn@icloud.com,admin@zar-ai.online"
       - key: VITE_PRIVY_APP_ID
-        sync: false
+        value: "cmniafufb004f0dl1p3fvdva6"
       - key: PRIVY_APP_SECRET
         sync: false
       - key: ZILLION_PROSPER_API_URL

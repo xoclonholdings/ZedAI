@@ -25,7 +25,6 @@ describe("admin integration secret protection", () => {
 
   it("encrypts integration credentials and browser sessions at rest", () => {
     const settings = mergeSettings(undefined);
-    settings.auth.securePhrase = "admin-plaintext-secure-phrase";
     settings.integrations.github.accounts = [{
       id: "github-main",
       label: "main",
@@ -66,13 +65,11 @@ describe("admin integration secret protection", () => {
     const storedJson = JSON.stringify(stored);
 
     expect(isProtectedSecret(stored.integrations.github.accounts[0].token)).toBe(true);
-    expect(isProtectedSecret(stored.auth.securePhrase)).toBe(true);
     expect(isProtectedSecret(stored.auth.sessionSecret)).toBe(true);
     expect(isProtectedSecret(stored.integrations.email.accounts[0].password)).toBe(true);
     expect(isProtectedSecret(stored.integrations.socialPublishing.accounts[0].sessionState)).toBe(true);
     expect((stored.integrations.socialPublishing.accounts[0] as any).password).toBeUndefined();
     expect(storedJson).not.toContain("github-plaintext-token");
-    expect(storedJson).not.toContain("admin-plaintext-secure-phrase");
     expect(storedJson).not.toContain(TEST_SESSION_SECRET);
     expect(storedJson).not.toContain("email-plaintext-password");
     expect(storedJson).not.toContain("social-plaintext-session");
@@ -81,7 +78,6 @@ describe("admin integration secret protection", () => {
     expect(storedAdminSettingsNeedProtection(stored)).toBe(false);
 
     const revealed = revealStoredAdminSettings(stored);
-    expect(revealed.auth.securePhrase).toBe("admin-plaintext-secure-phrase");
     expect(revealed.auth.sessionSecret).toBe(TEST_SESSION_SECRET);
     expect(revealed.integrations.github.accounts[0].token).toBe("github-plaintext-token");
     expect(revealed.integrations.email.accounts[0].password).toBe("email-plaintext-password");

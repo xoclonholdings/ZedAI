@@ -106,6 +106,7 @@ function normalizeAuthSettings(rawAuth: Partial<AdminSettings["auth"]> | undefin
     ...defaults,
     ...supportedAuth,
   };
+  delete (auth as Record<string, unknown>).securePhrase;
 
   // Migrate the old dev defaults that caused long local lockouts.
   if (auth.maxFailedAttempts === 3) auth.maxFailedAttempts = defaults.maxFailedAttempts;

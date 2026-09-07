@@ -5,6 +5,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  VITE_PRIVY_APP_ID = "cmniafufb004f0dl1p3fvdva6"
 
 [[redirects]]
   from = "/api/*"

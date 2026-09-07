@@ -162,6 +162,10 @@ app.use((req, res, next) => {
 
   const server = await registerRoutes(app);
 
+  app.use("/api", (_req, res) => {
+    res.status(404).json({ error: "API endpoint not found" });
+  });
+
   app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
     if (error instanceof multer.MulterError) {
       if (error.code === "LIMIT_FILE_SIZE") {

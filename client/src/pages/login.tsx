@@ -1,15 +1,11 @@
-import { useState } from "react";
-
 import { useAuth } from "@/components/auth/UseAuth";
 import { isPrivyClientConfigured } from "@/components/auth/PrivyAuthRoot";
 import { Card, CardContent } from "@/components/ui/card";
 import { zarLogoSrc } from "@/lib/zarLogo";
 
-import { SecurePhraseForm } from "./login/SecurePhraseForm";
 import { PrivyLoginForm } from "./login/PrivyLoginForm";
 
 export default function Login() {
-  const [showPhraseFallback, setShowPhraseFallback] = useState(false);
   const { refresh, authError } = useAuth();
 
   return (
@@ -53,22 +49,6 @@ export default function Login() {
 
             {authError ? <p className="text-sm text-red-400">{authError}</p> : null}
 
-            <div className="border-t border-white/10 pt-3">
-              {!showPhraseFallback ? (
-                <button
-                  type="button"
-                  onClick={() => setShowPhraseFallback(true)}
-                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                >
-                  Use admin secure phrase
-                </button>
-              ) : (
-                <SecurePhraseForm
-                  onSuccess={refresh}
-                  onCancel={() => setShowPhraseFallback(false)}
-                />
-              )}
-            </div>
           </CardContent>
         </Card>
       </div>

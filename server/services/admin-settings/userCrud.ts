@@ -72,17 +72,3 @@ export async function findAdminUser() {
   const admin = settings.users.find((user) => user.isAdmin);
   return admin ? sanitizeUser(admin) : null;
 }
-
-/**
- * Admin fallback authentication. Regular users authenticate only through
- * Privy; there is no username/password route.
- */
-export async function authenticateAdminPassphrase(passphrase?: string) {
-  const settings = await loadAdminSettings();
-  const adminUser = settings.users.find((user) => user.isAdmin);
-
-  if (passphrase && adminUser && passphrase === settings.auth.securePhrase) {
-    return sanitizeUser(adminUser);
-  }
-  return null;
-}

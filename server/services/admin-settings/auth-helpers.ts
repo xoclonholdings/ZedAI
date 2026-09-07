@@ -5,20 +5,11 @@ import type {
   ManagedUser,
   PublicManagedUser,
 } from "../../../shared/adminSettings";
-import {
-  getEnvOrDevelopmentDefault,
-  isProductionEnvironment,
-  nowIso,
-  requireProductionEnv,
-} from "./env";
+import { isProductionEnvironment, nowIso, requireProductionEnv } from "./env";
 
 /** Defaults for the auth section, pulled from env in production. */
 export function defaultAuthSettings(): AuthSettings {
   return {
-    securePhrase: getEnvOrDevelopmentDefault(
-      "ZAR_ADMIN_SECURE_PHRASE",
-      "LOCAL-DEV-SECURE-PHRASE",
-    ),
     sessionTimeoutMinutes: 45,
     maxFailedAttempts: 10,
     lockoutDurationMinutes: 1,
@@ -29,7 +20,7 @@ export function defaultAuthSettings(): AuthSettings {
   };
 }
 
-/** Constructs the stable bootstrap owner used by the secure-phrase fallback. */
+/** Constructs the stable bootstrap owner attached to the verified admin email. */
 export function createDefaultAdminUser(): ManagedUser {
   const timestamp = nowIso();
   return {

@@ -27,7 +27,11 @@ function saveSession(req: Request): Promise<void> {
  * build-time secret/config value into each deployment.
  */
 function publicPrivyAppId(): string {
-  return (process.env.VITE_PRIVY_APP_ID || process.env.PRIVY_APP_ID || "").trim();
+  return (
+    process.env.VITE_PRIVY_APP_ID ||
+    process.env.PRIVY_APP_ID ||
+    "cmniafufb004f0dl1p3fvdva6"
+  ).trim();
 }
 
 /**

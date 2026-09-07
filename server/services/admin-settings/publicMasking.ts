@@ -18,9 +18,6 @@ export async function getPublicAdminSettings() {
     ...settings,
     auth: {
       ...settings.auth,
-      // Keep a truthy placeholder because the security-settings route uses
-      // presence to report whether a phrase is configured.
-      securePhrase: settings.auth.securePhrase ? "•••••• (set)" : "",
       sessionSecret: "",
     },
     integrations: {

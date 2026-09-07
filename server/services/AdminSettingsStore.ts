@@ -36,7 +36,6 @@ import { loadAdminSettings, updateAdminSettings } from "./admin-settings/io";
 export { loadAdminSettings, updateAdminSettings };
 export { getPublicAdminSettings } from "./admin-settings/publicMasking";
 export {
-  authenticateAdminPassphrase,
   findAdminUser,
   listManagedUsers,
   updateAuthSettings,

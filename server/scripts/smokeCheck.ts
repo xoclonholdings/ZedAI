@@ -40,7 +40,7 @@ async function main() {
         repoRoot: REPO_ROOT,
         hubDir: HUB_DIR,
         adminOwnerId: admin.id,
-        adminFallbackConfigured: Boolean(settings.auth.securePhrase),
+        adminAuthMethod: "privy-email",
         operatorStatus: operator.status,
         publicOperatorCount: settings.agents.length,
         gustoIntegrationStatus: settings.integrations.gusto.status,

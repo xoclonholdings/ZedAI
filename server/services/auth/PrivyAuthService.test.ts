@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   authenticatePrivyAccessToken,
+  isPrivyAdminEmail,
   PrivyAuthError,
   readBearerToken,
   readPrivyServerConfig,
@@ -38,6 +39,12 @@ describe("PrivyAuthService", () => {
     expect(() =>
       readPrivyServerConfig({ VITE_PRIVY_APP_ID: "app", PRIVY_APP_SECRET: "secret" }),
     ).not.toThrow();
+  });
+
+  it("grants admin only to a configured verified Privy email", () => {
+    const env = { PRIVY_ADMIN_EMAILS: "owner@example.com,admin@zar-ai.online" };
+    expect(isPrivyAdminEmail(" OWNER@example.com ", env)).toBe(true);
+    expect(isPrivyAdminEmail("user@example.com", env)).toBe(false);
   });
 
   it("accepts only a verified email account", () => {

@@ -33,8 +33,7 @@ export default function AccountSecuritySettings() {
   };
   const isAdmin =
     !!user?.isAdmin ||
-    !!user?.claims?.isAdmin ||
-    user?.email === "admin@zar-ai.online";
+    !!user?.claims?.isAdmin;
 
   async function handleLogout() {
     await logout();
@@ -62,7 +61,7 @@ export default function AccountSecuritySettings() {
 
         <SettingRow label="Sign-in" description="How this account is verified.">
           <span className="text-[13px] text-white/80 truncate max-w-[220px]">
-            {isAdmin ? "Admin secure phrase" : "Privy email code"}
+            Privy email code
           </span>
         </SettingRow>
 

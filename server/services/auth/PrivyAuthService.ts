@@ -8,6 +8,11 @@ import { db } from "../../db";
 import type { LocalUser } from "../../local-auth/types";
 
 const PROVIDER = "privy";
+const UNIVERSAL_PRIVY_APP_ID = "cmniafufb004f0dl1p3fvdva6";
+const DEFAULT_PRIVY_ADMIN_EMAILS = [
+  "gabriel.dn@icloud.com",
+  "admin@zar-ai.online",
+];
 
 export class PrivyAuthError extends Error {
   constructor(
@@ -38,6 +43,21 @@ function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
+export function isPrivyAdminEmail(
+  email: string,
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const configured = (
+    env.PRIVY_ADMIN_EMAILS ||
+    env.ZAR_ADMIN_EMAILS ||
+    DEFAULT_PRIVY_ADMIN_EMAILS.join(",")
+  )
+    .split(",")
+    .map(normalizeEmail)
+    .filter(Boolean);
+  return new Set(configured).has(normalizeEmail(email));
+}
+
 function hashExternalSubject(appId: string, subject: string): string {
   return createHash("sha256")
     .update(`${PROVIDER}\0${appId}\0${subject}`)
@@ -60,7 +80,11 @@ function usernameFromEmail(email: string): string {
 export function readPrivyServerConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): PrivyServerConfig {
-  const appId = (env.VITE_PRIVY_APP_ID || env.PRIVY_APP_ID || "").trim();
+  const appId = (
+    env.VITE_PRIVY_APP_ID ||
+    env.PRIVY_APP_ID ||
+    UNIVERSAL_PRIVY_APP_ID
+  ).trim();
   const appSecret = (env.PRIVY_APP_SECRET || "").trim();
 
   if (!appId || !appSecret) {
@@ -101,6 +125,7 @@ export async function resolvePrivyIdentity(input: {
   }
 
   const subjectHash = hashExternalSubject(input.appId, input.privyUser.id);
+  const adminAccess = isPrivyAdminEmail(input.verifiedEmail);
   const now = new Date();
   const [existingIdentity] = await db
     .select()
@@ -115,10 +140,17 @@ export async function resolvePrivyIdentity(input: {
     .limit(1);
 
   if (existingIdentity) {
+    const effectiveOwnerId = adminAccess ? "user_admin" : existingIdentity.userId;
+    if (effectiveOwnerId !== existingIdentity.userId) {
+      await db
+        .update(authIdentities)
+        .set({ userId: effectiveOwnerId, updatedAt: now })
+        .where(eq(authIdentities.id, existingIdentity.id));
+    }
     const [owner] = await db
       .select()
       .from(users)
-      .where(eq(users.id, existingIdentity.userId))
+      .where(eq(users.id, effectiveOwnerId))
       .limit(1);
     if (!owner) {
       throw new PrivyAuthError("ZAR Identity record is incomplete", 503);
@@ -139,7 +171,7 @@ export async function resolvePrivyIdentity(input: {
       firstName: owner.firstName || usernameFromEmail(input.verifiedEmail),
       lastName: owner.lastName || "",
       profileImageUrl: owner.profileImageUrl || "",
-      isAdmin: false,
+      isAdmin: adminAccess,
       isActive: true,
     };
   }
@@ -149,7 +181,9 @@ export async function resolvePrivyIdentity(input: {
     .from(users)
     .where(eq(users.email, input.verifiedEmail))
     .limit(1);
-  const ownerUserId = canonicalOwnerId(subjectHash);
+  const ownerUserId = adminAccess
+    ? "user_admin"
+    : emailOwner?.id || canonicalOwnerId(subjectHash);
   const displayName = usernameFromEmail(input.verifiedEmail);
 
   await db.transaction(async (tx) => {
@@ -157,7 +191,7 @@ export async function resolvePrivyIdentity(input: {
       .insert(users)
       .values({
         id: ownerUserId,
-        email: emailOwner ? null : input.verifiedEmail,
+        email: adminAccess || emailOwner ? null : input.verifiedEmail,
         firstName: displayName,
         lastName: "",
       })
@@ -195,7 +229,7 @@ export async function resolvePrivyIdentity(input: {
     firstName: displayName,
     lastName: "",
     profileImageUrl: "",
-    isAdmin: false,
+    isAdmin: adminAccess,
     isActive: true,
   };
 }

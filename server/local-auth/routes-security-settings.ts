@@ -26,7 +26,6 @@ export function registerSecuritySettingsRoutes(app: Express): void {
       const settings = await getPublicAdminSettings();
       const hostedCrossOrigin = Boolean(process.env.FRONTEND_URL?.trim());
       res.json({
-        securePhraseConfigured: Boolean(settings.auth.securePhrase),
         sessionTimeoutMinutes: settings.auth.sessionTimeoutMinutes,
         maxFailedAttempts: settings.auth.maxFailedAttempts,
         lockoutDurationMinutes: settings.auth.lockoutDurationMinutes,
@@ -42,16 +41,12 @@ export function registerSecuritySettingsRoutes(app: Express): void {
     async (req: Request, res: Response) => {
       try {
         const {
-          newSecurePhrase,
           sessionTimeoutMinutes,
           maxFailedAttempts,
           lockoutDurationMinutes,
           requireSecureCookies,
         } = req.body || {};
 
-        if (newSecurePhrase && String(newSecurePhrase).trim().length < 8) {
-          return res.status(400).json({ error: "Secure phrase must be at least 8 characters" });
-        }
         if (sessionTimeoutMinutes !== undefined && Number(sessionTimeoutMinutes) < 5) {
           return res.status(400).json({ error: "Session timeout must be at least 5 minutes" });
         }
@@ -63,7 +58,6 @@ export function registerSecuritySettingsRoutes(app: Express): void {
         }
 
         const auth = await updateAuthSettings({
-          securePhrase: newSecurePhrase?.trim(),
           sessionTimeoutMinutes,
           maxFailedAttempts,
           lockoutDurationMinutes,
@@ -74,7 +68,6 @@ export function registerSecuritySettingsRoutes(app: Express): void {
           success: true,
           message: "Security settings updated successfully",
           settings: {
-            securePhraseConfigured: Boolean(auth.securePhrase),
             sessionTimeoutMinutes: auth.sessionTimeoutMinutes,
             maxFailedAttempts: auth.maxFailedAttempts,
             lockoutDurationMinutes: auth.lockoutDurationMinutes,

@@ -50,7 +50,6 @@ export interface PublicManagedUser
   extends Omit<ManagedUser, "passwordHash" | "passwordSalt"> {}
 
 export interface AuthSettings {
-  securePhrase: string;
   sessionTimeoutMinutes: number;
   maxFailedAttempts: number;
   lockoutDurationMinutes: number;
